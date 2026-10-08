@@ -1,0 +1,34 @@
+# PUBLIC_HOST pilote à la fois l'adresse d'écoute et le HTTPS automatique :
+#   - ":80" en local : Caddy écoute en HTTP simple, pas de certificat.
+#   - un domaine réel ou un nom sslip.io en production : Caddy obtient seul
+#     un certificat Let's Encrypt, sans autre réglage.
+{$PUBLIC_HOST} {
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Socket.IO garde son chemin tel quel : pas de handle_path, qui le
+	# tronquerait avant qu'il n'atteigne le serveur realtime.
+	handle /socket.io/* {
+		reverse_proxy realtime:3002
+	}
+
+	# /realtime/health existe uniquement pour que la page d'accueil puisse
+	# vérifier l'état du service realtime depuis le navigateur.
+	handle_path /realtime/health {
+		reverse_proxy realtime:3002
+	}
+
+	handle_path /api/* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:8080
+	}
+}

@@ -8,8 +8,18 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    # gitleaks-action liste les commits de la pull request par l'API GitHub :
+    # les permissions par défaut du token (lecture seule) renvoient 403 sur
+    # cet appel sans ce bloc explicite.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks scanne la plage base..head de la pull request : un clone
+          # superficiel (le défaut) ne contient pas le commit de base.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -31,3 +41,75 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  infra-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Générer un fichier d'environnement de CI
+        run: |
+          set -euo pipefail
+          cat > .env <<EOF
+          PUBLIC_HOST=:80
+          POSTGRES_USER=kemet
+          POSTGRES_PASSWORD=$(openssl rand -hex 16)
+          POSTGRES_DB=kemet
+          UPLOADS_DIR=/data/uploads
+          EOF
+
+      - name: Construire et démarrer la pile
+        run: >
+          docker compose -f infra/docker-compose.yml --env-file .env
+          up -d --build --wait --wait-timeout 180
+
+      - name: Vérifier la page d'accueil à travers Caddy
+        run: |
+          set -euo pipefail
+          body=$(curl --fail --silent --show-error http://localhost/)
+          echo "$body" | grep -qi "<title>Kemet</title>"
+
+      - name: Vérifier /api/health à travers Caddy
+        run: |
+          set -euo pipefail
+          body=$(curl --fail --silent --show-error http://localhost/api/health)
+          echo "$body" | grep -q '"status":"ok"'
+
+      - name: Vérifier la poignée de main Socket.IO à travers Caddy
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "http://localhost/socket.io/?EIO=4&transport=polling")
+          test "$status" = "200"
+
+      - name: Consigner l'état et la mémoire des services dans le résumé
+        if: always()
+        run: |
+          {
+            echo "## infra-smoke"
+            echo
+            echo "### docker compose ps"
+            echo '```'
+            docker compose -f infra/docker-compose.yml --env-file .env ps
+            echo '```'
+            echo
+            echo "### docker stats --no-stream"
+            echo '```'
+            docker stats --no-stream
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Vérifier la santé des services et le plafond mémoire (3,2 Go)
+        run: node .github/scripts/check-infra-smoke.mjs
+
+      - name: Afficher les journaux des services en cas d'échec
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml --env-file .env logs
+
+      - name: Arrêter et nettoyer la pile
+        if: always()
+        run: docker compose -f infra/docker-compose.yml --env-file .env down -v
