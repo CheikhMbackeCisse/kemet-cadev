@@ -27,10 +27,14 @@ exemple pour déboguer un échec de ce job.
    `PUBLIC_HOST=:80` par défaut : Caddy écoute en HTTP simple sur le port 80
    de la machine, pas de certificat à gérer pour tester.
 
-2. Construire les images et démarrer tous les services :
+2. Construire les images et démarrer tous les services. Ajouter
+   `--profile dev` pour démarrer en plus Mailpit, qui capture les emails
+   envoyés par l'API (vérification, réinitialisation de mot de passe) sans
+   les livrer réellement ; son interface est sur `http://localhost:8025`.
+   Ce profil ne doit jamais être utilisé en production.
 
    ```
-   docker compose -f infra/docker-compose.yml --env-file .env up -d --build
+   docker compose -f infra/docker-compose.yml --env-file .env --profile dev up -d --build
    ```
 
    La première fois, la construction des images peut prendre plusieurs

@@ -7,7 +7,7 @@ RUN corepack enable
 WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @kemet/shared build && pnpm --filter @kemet/server build
+RUN pnpm --filter @kemet/shared build && pnpm --filter @kemet/db build && pnpm --filter @kemet/server build
 RUN pnpm --filter @kemet/server deploy --prod /prod/server
 
 FROM node:22-alpine AS runtime

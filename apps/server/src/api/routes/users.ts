@@ -1,0 +1,83 @@
+import type { FastifyInstance } from "fastify";
+import { paginationQuerySchema } from "@kemet/shared";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
+import { badRequest, notFound } from "../../errors.js";
+import {
+  countFollowers,
+  countFollowing,
+  createFollow,
+  deleteFollow,
+  findProfileByHandle,
+  findProfileByUserId,
+  isFollowing,
+  listCredentials,
+  listFollowers,
+  listFollowing,
+} from "../repositories/profiles.js";
+import { serializeCredential, serializeProfile, serializeProfileSummary } from "../serializers.js";
+import type { AppDeps } from "../app.js";
+
+async function requireProfileByHandle(db: AppDeps["db"], handle: string) {
+  const profile = await findProfileByHandle(db, handle);
+  if (!profile) throw notFound("Ce profil n'existe pas.");
+  return profile;
+}
+
+export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps): void {
+  app.get<{ Params: { handle: string } }>("/api/users/:handle", async (request) => {
+    const profile = await requireProfileByHandle(db, request.params.handle);
+    const viewerId = await getSessionUserId(auth, request);
+    const viewerProfile = viewerId ? await findProfileByUserId(db, viewerId) : null;
+    const credentials = await listCredentials(db, profile.id);
+    return {
+      profile: serializeProfile(profile),
+      credentials: credentials.map(serializeCredential),
+      followerCount: await countFollowers(db, profile.id),
+      followingCount: await countFollowing(db, profile.id),
+      isFollowedByViewer: viewerProfile ? await isFollowing(db, viewerProfile.id, profile.id) : null,
+    };
+  });
+
+  app.post<{ Params: { handle: string } }>("/api/users/:handle/follow", async (request) => {
+    const userId = await requireSessionUserId(auth, request);
+    const target = await requireProfileByHandle(db, request.params.handle);
+    const follower = await requireOwnProfile(db, userId);
+    if (follower.id === target.id) throw badRequest("Impossible de se suivre soi-même.");
+    await createFollow(db, follower.id, target.id);
+    return { following: true };
+  });
+
+  app.delete<{ Params: { handle: string } }>("/api/users/:handle/follow", async (request) => {
+    const userId = await requireSessionUserId(auth, request);
+    const target = await requireProfileByHandle(db, request.params.handle);
+    const follower = await requireOwnProfile(db, userId);
+    await deleteFollow(db, follower.id, target.id);
+    return { following: false };
+  });
+
+  app.get<{ Params: { handle: string }; Querystring: { cursor?: string; limit?: string } }>(
+    "/api/users/:handle/followers",
+    async (request) => {
+      const profile = await requireProfileByHandle(db, request.params.handle);
+      const query = paginationQuerySchema.parse(request.query);
+      const page = await listFollowers(db, profile.id, query.cursor, query.limit);
+      return { items: page.items.map(serializeProfileSummary), nextCursor: page.nextCursor };
+    },
+  );
+
+  app.get<{ Params: { handle: string }; Querystring: { cursor?: string; limit?: string } }>(
+    "/api/users/:handle/following",
+    async (request) => {
+      const profile = await requireProfileByHandle(db, request.params.handle);
+      const query = paginationQuerySchema.parse(request.query);
+      const page = await listFollowing(db, profile.id, query.cursor, query.limit);
+      return { items: page.items.map(serializeProfileSummary), nextCursor: page.nextCursor };
+    },
+  );
+}
+
+async function requireOwnProfile(db: AppDeps["db"], userId: string) {
+  const profile = await findProfileByUserId(db, userId);
+  if (!profile) throw badRequest("Complétez votre profil avant de suivre quelqu'un.");
+  return profile;
+}

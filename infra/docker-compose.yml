@@ -64,6 +64,16 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       VALKEY_URL: redis://valkey:6379
       UPLOADS_DIR: ${UPLOADS_DIR}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      WEB_APP_URL: ${WEB_APP_URL}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
     volumes:
       - uploads:${UPLOADS_DIR}
     deploy:
@@ -146,6 +156,22 @@ services:
       resources:
         limits:
           memory: 1024M
+
+  # Capture les emails envoyés en développement local au lieu de les livrer
+  # réellement. Démarré uniquement avec --profile dev (jamais en production,
+  # où SMTP_HOST pointe vers Brevo ou Resend). Interface web sur
+  # http://localhost:8025.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    profiles: ["dev"]
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
 
   valkey:
     image: valkey/valkey:8-alpine

@@ -42,6 +42,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  integration-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kemet_test
+          POSTGRES_PASSWORD: kemet_test
+          POSTGRES_DB: kemet_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kemet_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Tests d'intégration (packages/db, apps/server)
+        env:
+          DATABASE_URL_TEST: postgres://kemet_test:kemet_test@localhost:5432/kemet_test
+        run: pnpm turbo run test --filter=@kemet/db --filter=@kemet/server
+
   infra-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -60,6 +95,9 @@ jobs:
           POSTGRES_PASSWORD=$(openssl rand -hex 16)
           POSTGRES_DB=kemet
           UPLOADS_DIR=/data/uploads
+          BETTER_AUTH_SECRET=$(openssl rand -hex 32)
+          BETTER_AUTH_URL=http://localhost/api
+          WEB_APP_URL=http://localhost
           EOF
 
       - name: Construire et démarrer la pile
