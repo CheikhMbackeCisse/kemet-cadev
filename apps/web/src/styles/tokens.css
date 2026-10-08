@@ -1,0 +1,103 @@
+/**
+ * Variables de DESIGN.md. Le thème clair est la valeur par défaut sur :root ;
+ * le bloc media applique le sombre quand le système le demande et qu'aucun
+ * choix manuel n'est actif (pas de [data-theme]) ; le bloc [data-theme=dark]
+ * applique le sombre quoi que dise le système, pour le choix manuel.
+ */
+:root {
+  --bg: #ffffff;
+  --surface: #f8fafd;
+  --surface-2: #f2f6fb;
+  --border: #e5e7eb;
+  --border-strong: #d1d5dc;
+  --text: #1f1f1f;
+  --text-2: #364153;
+  --muted: #4a5565;
+  --subtle: #6a7282;
+  --primary: #1265dd;
+  --primary-hover: #0f56bd;
+  --link: #1265dd;
+  --accent-soft: #ecf3ff;
+  --accent-soft-2: #dbe9fd;
+  --assistant-bg: #f5f8ff;
+  --assistant-border: #d0e2ff;
+  --success: #1e8205;
+  --success-soft: #eaf5e6;
+  --danger: #c4320a;
+  --danger-soft: #fbe9e3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1320;
+    --surface: #141b2a;
+    --surface-2: #1b2436;
+    --border: #263049;
+    --border-strong: #34405c;
+    --text: #e8ecf4;
+    --text-2: #c3cbda;
+    --muted: #a9b3c6;
+    --subtle: #8792a8;
+    --primary: #1f6fe5;
+    --primary-hover: #3b82f0;
+    --link: #7fb0f7;
+    --accent-soft: #16233d;
+    --accent-soft-2: #1d2e50;
+    --assistant-bg: #121c30;
+    --assistant-border: #26406e;
+    --success: #4cc26a;
+    --success-soft: #12301b;
+    --danger: #f07856;
+    --danger-soft: #3a1b14;
+  }
+}
+
+/**
+ * Logo à deux versions (bleu #1265DD en clair, #3B82F0 en sombre, voir
+ * DESIGN.md) : bascule en CSS pure, sur le même principe que les variables
+ * ci-dessus, pour rester correcte avant même l'hydratation de React.
+ */
+.kemet-symbol-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .kemet-symbol-light {
+    display: none;
+  }
+
+  :root:not([data-theme="light"]) .kemet-symbol-dark {
+    display: inline;
+  }
+}
+
+:root[data-theme="dark"] .kemet-symbol-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .kemet-symbol-dark {
+  display: inline;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d1320;
+  --surface: #141b2a;
+  --surface-2: #1b2436;
+  --border: #263049;
+  --border-strong: #34405c;
+  --text: #e8ecf4;
+  --text-2: #c3cbda;
+  --muted: #a9b3c6;
+  --subtle: #8792a8;
+  --primary: #1f6fe5;
+  --primary-hover: #3b82f0;
+  --link: #7fb0f7;
+  --accent-soft: #16233d;
+  --accent-soft-2: #1d2e50;
+  --assistant-bg: #121c30;
+  --assistant-border: #26406e;
+  --success: #4cc26a;
+  --success-soft: #12301b;
+  --danger: #f07856;
+  --danger-soft: #3a1b14;
+}

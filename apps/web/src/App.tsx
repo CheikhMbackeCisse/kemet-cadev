@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
+import { DevUiPage } from "./pages/DevUiPage.js";
+import { ShellPreviewPage } from "./pages/ShellPreviewPage.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
+import { ThemeProvider } from "./theme/theme-context.js";
+import { ToastProvider } from "./components/ui/Toast.js";
+import { TooltipProvider } from "./components/ui/Tooltip.js";
 
 const STATUS_LABELS: Record<ServiceStatus, string> = {
   verification: "vérification…",
@@ -7,7 +12,7 @@ const STATUS_LABELS: Record<ServiceStatus, string> = {
   indisponible: "indisponible",
 };
 
-export function App() {
+function StatusPage() {
   const [statuses, setStatuses] = useState<Record<string, ServiceStatus>>(
     () => Object.fromEntries(SERVICE_CHECKS.map((service) => [service.name, "verification"])),
   );
@@ -30,11 +35,29 @@ export function App() {
             <span>{STATUS_LABELS[statuses[service.name] ?? "verification"]}</span>
           </li>
         ))}
-        <li className="flex items-center gap-2 text-neutral-500">
+        <li className="flex items-center gap-2 text-muted">
           <span className="w-20 font-medium">worker</span>
           <span>vérifié par Docker uniquement</span>
         </li>
       </ul>
     </main>
+  );
+}
+
+function resolvePage(pathname: string) {
+  if (import.meta.env.DEV) {
+    if (pathname.startsWith("/dev/ui/shell")) return <ShellPreviewPage />;
+    if (pathname.startsWith("/dev/ui")) return <DevUiPage />;
+  }
+  return <StatusPage />;
+}
+
+export function App() {
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <TooltipProvider>{resolvePage(window.location.pathname)}</TooltipProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

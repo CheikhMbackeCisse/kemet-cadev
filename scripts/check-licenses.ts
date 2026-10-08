@@ -3,14 +3,29 @@ import { writeFileSync } from "node:fs";
 
 const FORBIDDEN = ["GPL", "AGPL", "LGPL"];
 
+/**
+ * OFL-1.1 n'est autorisée que pour ces paquets de polices (fichiers de
+ * police eux-mêmes, pas du code) : voir docs/adr/ du lot 4.
+ */
+const OFL_ALLOWED_PACKAGES = new Set([
+  "@fontsource/plus-jakarta-sans",
+  "@fontsource-variable/geist-mono",
+]);
+
 interface LicensePackage {
   name: string;
   versions: string[];
   license: string;
 }
 
-function isForbidden(license: string): boolean {
-  return FORBIDDEN.some((forbidden) => license.toUpperCase().includes(forbidden));
+function isForbidden(license: string, entries: { name: string }[]): boolean {
+  if (FORBIDDEN.some((forbidden) => license.toUpperCase().includes(forbidden))) {
+    return true;
+  }
+  if (license.toUpperCase().includes("OFL")) {
+    return entries.some((entry) => !OFL_ALLOWED_PACKAGES.has(entry.name));
+  }
+  return false;
 }
 
 /**
@@ -35,7 +50,7 @@ const packages: LicensePackage[] = Object.entries(byLicense).map(([license, entr
   license,
 }));
 
-const violations = Object.keys(byLicense).filter(isForbidden);
+const violations = Object.keys(byLicense).filter((license) => isForbidden(license, byLicense[license]));
 
 if (violations.length > 0) {
   console.error("Licences interdites détectées :");

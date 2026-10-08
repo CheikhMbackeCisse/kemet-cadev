@@ -36,6 +36,7 @@ Le thème suit le réglage du système (`prefers-color-scheme`), avec un choix m
 | `--success` | #1E8205 | #4CC26A | Vérifié, actif |
 | `--success-soft` | #EAF5E6 | #12301B | Fond des pastilles de succès |
 | `--danger` | #C4320A | #F07856 | Erreurs, suppression |
+| `--danger-soft` | #FBE9E3 | #3A1B14 | Fond des pastilles d'erreur |
 
 Vérifier chaque couple texte/fond avec un outil de contraste : 4,5:1 minimum pour le texte courant, 3:1 pour le texte de 24 px et plus.
 
