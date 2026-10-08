@@ -14,7 +14,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "licenses:check": "tsx scripts/check-licenses.ts",
-    "eval:mistral-throughput": "tsx evals/mistral-throughput.ts",
+    "eval:llm-throughput": "tsx evals/llm-throughput.ts",
     "db:migrate": "pnpm --filter @kemet/db migrate",
     "db:seed": "pnpm --filter @kemet/db seed"
   },

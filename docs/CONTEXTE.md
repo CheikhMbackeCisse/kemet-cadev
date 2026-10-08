@@ -124,14 +124,7 @@ Il n'y a qu'un seul assistant sur la plateforme : **@kemet**. Ce sont les senior
 
 **Sécurité :** l'assistant ne lit que le salon où il est appelé et les skills choisis. Le contenu des messages et des skills est traité comme des données, jamais comme des ordres. Tout outil MCP demande l'accord de l'utilisateur.
 
-**Fournisseurs d'IA, gratuits :**
-
-- **Principal : Mistral, offre gratuite "Experiment".** Pas de carte bancaire, vérification par SMS. Contreparties : les données envoyées peuvent servir à l'entraînement (à écrire dans la politique de confidentialité, et on n'envoie que le strict nécessaire), débit limité, offre prévue pour l'évaluation.
-- **Secours :** un second fournisseur gratuit branché sur la même couche d'abstraction (Vercel AI SDK).
-- **Présélection des skills :** recherche plein texte PostgreSQL (`tsvector`, configurations french et english), pas de modèle d'embeddings en P0. Voir `docs/adr/0007-recherche-skills.md`.
-- **Protection du quota :** chargement des skills à la demande, cache des réponses, quota par utilisateur selon le niveau.
-
-**Vision après la compétition :** l'assistant tourne sur des modèles ouverts (Apache 2.0) hébergés sur les serveurs GPU de Systalink.
+@kemet passe par Google Gemini (famille Flash, offre gratuite), avec bascule automatique sur des modèles gratuits d'OpenRouter en cas de quota dépassé ou de panne, et un message clair si les deux sont saturés. Les deux passent par l'interface `LlmProvider`. Contrepartie de l'offre gratuite : Google peut utiliser les données envoyées, ce que dit la page de confidentialité. Le quota est protégé par un cache des réponses et une limite quotidienne par niveau. Après la compétition, l'assistant pourrait tourner sur des modèles ouverts hébergés par Systalink.
 
 ## Business model
 
@@ -208,7 +201,7 @@ Chaque membre doit pouvoir expliquer seul son module devant le jury. Le code est
 ## Vérifications à faire tout de suite
 
 1. Support Systalink : WebSockets acceptés ? Sous-domaine fourni avec le serveur ? Domaine .africa inclus ? Date du code promo ?
-2. Compte Mistral gratuit : création, limites réelles affichées dans la console.
+2. Compte Google AI Studio (Gemini) gratuit et compte OpenRouter : création, limites réelles affichées dans chaque console.
 3. Service d'emails gratuit : création du compte, test d'arrivée dans Gmail sans passer en spam.
 4. Appels : test d'un appel LiveKit sur la 4G d'Orange, Free et Expresso.
 5. GitHub : test de la vérification "membre d'une organisation" avec de vrais comptes.
