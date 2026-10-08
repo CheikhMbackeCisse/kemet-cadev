@@ -7,3 +7,5 @@ build/
 *.log
 .turbo/
 coverage/
+playwright-report/
+test-results/

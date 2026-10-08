@@ -1,0 +1,31 @@
+{
+  "name": "kemet",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "licenses:check": "tsx scripts/check-licenses.ts",
+    "eval:mistral-throughput": "tsx evals/mistral-throughput.ts",
+    "eval:embeddings-benchmark": "echo 'voir le commentaire en tete de evals/embeddings-benchmark.ts : transformers.js ne fait pas partie des dependances du workspace (conflit de licence sharp/LGPL a trancher)' && exit 1",
+    "db:migrate": "pnpm --filter @kemet/db migrate",
+    "db:seed": "pnpm --filter @kemet/db seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0",
+    "eslint": "^9.17.0",
+    "@eslint/js": "^9.17.0",
+    "typescript-eslint": "^8.19.0",
+    "prettier": "^3.4.0"
+  }
+}

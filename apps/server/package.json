@@ -1,0 +1,24 @@
+{
+  "name": "@kemet/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"tsx watch src/api/main.ts\" \"tsx watch src/realtime/main.ts\" \"tsx watch src/worker/main.ts\"",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kemet/shared": "workspace:*",
+    "fastify": "^5.2.0",
+    "socket.io": "^4.8.0",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.4.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "vitest": "^2.1.0"
+  }
+}
