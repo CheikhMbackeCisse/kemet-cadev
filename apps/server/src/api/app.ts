@@ -1,19 +1,30 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import rateLimit from "@fastify/rate-limit";
 import { toNodeHandler } from "better-auth/node";
 import { healthcheckResponseSchema } from "@kemet/shared";
 import type { Db } from "@kemet/db";
 import type { Auth } from "../auth/auth.js";
+import { createNoopChatPublisher, type ChatPublisher } from "../chat/pubsub.js";
 import { AppError } from "../errors.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerUserRoutes } from "./routes/users.js";
+import { registerSpaceRoutes } from "./routes/spaces.js";
+import { registerChannelRoutes } from "./routes/channels.js";
+import { registerMessageRoutes } from "./routes/messages.js";
+import { registerReadStateRoutes } from "./routes/read-states.js";
+import { registerInviteRoutes } from "./routes/invites.js";
 
 export interface AppDeps {
   db: Db;
   auth: Auth;
+  chat?: ChatPublisher;
 }
 
 export function buildApp(deps: AppDeps): FastifyInstance {
   const app = Fastify({ logger: true });
+  const chat = deps.chat ?? createNoopChatPublisher();
+
+  void app.register(rateLimit, { global: false });
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
@@ -24,7 +35,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     reply.status(500).send({ error: { code: "internal_error", message: "Erreur interne." } });
   });
 
-  app.get("/health", async () => healthcheckResponseSchema.parse({ status: "ok", service: "api" }));
+  const health = async () => healthcheckResponseSchema.parse({ status: "ok", service: "api" });
+  app.get("/health", health);
+  // Caddy ne tronque plus le préfixe /api (voir infra/Caddyfile) : toutes les
+  // routes atteintes depuis le navigateur le gardent, y compris celle-ci.
+  // /health reste accessible sans préfixe pour le healthcheck Docker, qui
+  // interroge le conteneur directement.
+  app.get("/api/health", health);
 
   const authHandler = toNodeHandler(deps.auth);
   app.register(async (scope) => {
@@ -41,5 +58,18 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   registerMeRoutes(app, deps);
   registerUserRoutes(app, deps);
 
+  const chatDeps: ChatAppDeps = { db: deps.db, auth: deps.auth, chat };
+  registerSpaceRoutes(app, chatDeps);
+  registerChannelRoutes(app, chatDeps);
+  registerMessageRoutes(app, chatDeps);
+  registerReadStateRoutes(app, chatDeps);
+  registerInviteRoutes(app, chatDeps);
+
   return app;
+}
+
+export interface ChatAppDeps {
+  db: Db;
+  auth: Auth;
+  chat: ChatPublisher;
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { DevUiPage } from "./pages/DevUiPage.js";
 import { ShellPreviewPage } from "./pages/ShellPreviewPage.js";
+import { SpacePage } from "./pages/SpacePage.js";
+import { InvitePage } from "./pages/InvitePage.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
 import { ThemeProvider } from "./theme/theme-context.js";
 import { ToastProvider } from "./components/ui/Toast.js";
@@ -45,6 +47,8 @@ function StatusPage() {
 }
 
 function resolvePage(pathname: string) {
+  if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
+  if (pathname.startsWith("/salons")) return <SpacePage />;
   if (import.meta.env.DEV) {
     if (pathname.startsWith("/dev/ui/shell")) return <ShellPreviewPage />;
     if (pathname.startsWith("/dev/ui")) return <DevUiPage />;

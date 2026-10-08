@@ -99,6 +99,9 @@ services:
       REALTIME_PORT: 3002
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       VALKEY_URL: redis://valkey:6379
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      WEB_APP_URL: ${WEB_APP_URL}
     deploy:
       resources:
         limits:

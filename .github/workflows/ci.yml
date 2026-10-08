@@ -75,7 +75,72 @@ jobs:
       - name: Tests d'intégration (packages/db, apps/server)
         env:
           DATABASE_URL_TEST: postgres://kemet_test:kemet_test@localhost:5432/kemet_test
-        run: pnpm turbo run test --filter=@kemet/db --filter=@kemet/server
+        # --concurrency=1 : les deux paquets partagent la même base de test et
+        # la remettent à zéro avant chaque test (resetTestDatabase) ; les
+        # lancer en parallèle ferait qu'un paquet efface le schéma en cours
+        # d'utilisation par l'autre.
+        run: pnpm turbo run test --filter=@kemet/db --filter=@kemet/server --concurrency=1
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Générer un fichier d'environnement de CI
+        run: |
+          set -euo pipefail
+          cat > .env <<EOF
+          PUBLIC_HOST=:80
+          POSTGRES_USER=kemet
+          POSTGRES_PASSWORD=$(openssl rand -hex 16)
+          POSTGRES_DB=kemet
+          UPLOADS_DIR=/data/uploads
+          BETTER_AUTH_SECRET=$(openssl rand -hex 32)
+          BETTER_AUTH_URL=http://localhost
+          WEB_APP_URL=http://localhost
+          SMTP_HOST=mailpit
+          SMTP_PORT=1025
+          EOF
+
+      - name: Construire et démarrer la pile (avec Mailpit)
+        run: >
+          docker compose -f infra/docker-compose.yml --env-file .env
+          --profile dev up -d --build --wait --wait-timeout 180
+
+      - name: Installer les navigateurs Playwright
+        run: pnpm --filter @kemet/web exec playwright install --with-deps chromium
+
+      - name: Lancer les parcours Playwright (bureau et mobile)
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost
+          MAILPIT_URL: http://localhost:8025
+        run: pnpm --filter @kemet/web test:e2e
+
+      - name: Déposer le rapport Playwright en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+
+      - name: Afficher les journaux des services en cas d'échec
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml --env-file .env logs
+
+      - name: Arrêter et nettoyer la pile
+        if: always()
+        run: docker compose -f infra/docker-compose.yml --env-file .env --profile dev down -v
 
   infra-smoke:
     runs-on: ubuntu-latest
@@ -96,7 +161,7 @@ jobs:
           POSTGRES_DB=kemet
           UPLOADS_DIR=/data/uploads
           BETTER_AUTH_SECRET=$(openssl rand -hex 32)
-          BETTER_AUTH_URL=http://localhost/api
+          BETTER_AUTH_URL=http://localhost
           WEB_APP_URL=http://localhost
           EOF
 

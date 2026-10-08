@@ -55,7 +55,8 @@ P0 = indispensable, terminé, testé et déployé le 19 octobre. P1 = visé. P2 
 | Module | P0 | P1 | P2 |
 | --- | --- | --- | --- |
 | Comptes et profils | Inscription email et GitHub, profil, pays avec drapeau, abonnés, parcours (déclaré ou vérifié), niveau | Vérification par email pro et par attestations | Import des dépôts GitHub |
-| Salons | Espaces publics et privés, salons texte, fils, mentions, réactions (emojis du système), non-lus, code coloré, salon de type "Mèmes" (images) | Fichiers, messages privés, stickers maison | Messages épinglés |
+| Salons | Espaces publics et privés, salons texte, fils, mentions, réactions (emojis du système), non-lus, code coloré, deux salons par défaut à la création d'un espace ("général", "mèmes") | Messages privés, stickers maison | Messages épinglés |
+| Fichiers et images dans les messages | Images (PNG, JPEG, WebP, GIF) affichées dans le salon et les fils ; PDF, texte, code, zip proposés en téléchargement ; type vérifié par le contenu, jamais par l'extension | | |
 | Fil de posts | Posts courts, réponses, partages, mèmes, onglets "Abonnements" et "Pour toi", formats optionnels (Astuce, À tester, Question) | Recherche dans le fil, retours structurés sur les posts "À tester" | |
 | Assistant et skills | Assistant @kemet, création de skills, appel explicite ou automatique, réponse en streaming qui cite le skill et son auteur, page publique du skill, étoiles, bouton "Utile" | Fiches de connaissance, outils MCP | Modèle hébergé chez Systalink |
 | Projets | Page projet, demandes d'aide et de collaboration, candidatures | Recherche par stack et par pays | |

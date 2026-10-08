@@ -3,6 +3,16 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  server: {
+    proxy: {
+      "/api": "http://localhost:3001",
+      "/socket.io": { target: "http://localhost:3002", ws: true },
+      "/realtime/health": {
+        target: "http://localhost:3002",
+        rewrite: (path) => path.replace(/^\/realtime/, ""),
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

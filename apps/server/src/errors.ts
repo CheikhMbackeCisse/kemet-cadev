@@ -15,3 +15,5 @@ export const notFound = (message: string) => new AppError("not_found", message, 
 export const conflict = (message: string) => new AppError("conflict", message, 409);
 
 export const badRequest = (message: string) => new AppError("bad_request", message, 400);
+
+export const forbidden = (message: string) => new AppError("forbidden", message, 403);

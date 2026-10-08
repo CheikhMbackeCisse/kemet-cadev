@@ -24,7 +24,11 @@
 		reverse_proxy realtime:3002
 	}
 
-	handle_path /api/* {
+	# Pas de handle_path : l'API enregistre toutes ses routes avec le préfixe
+	# /api inclus (/api/me, /api/auth/*, /api/spaces/*, et /api/health en
+	# plus de /health, ce dernier réservé au healthcheck Docker qui
+	# interroge le conteneur directement sans passer par Caddy).
+	handle /api/* {
 		reverse_proxy api:3001
 	}
 

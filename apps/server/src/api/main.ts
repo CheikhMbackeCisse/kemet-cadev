@@ -1,5 +1,7 @@
 import { createDb } from "@kemet/db";
+import { runMigrations } from "@kemet/db/migrate";
 import { createAuth } from "../auth/auth.js";
+import { createChatPublisher } from "../chat/pubsub.js";
 import { SmtpEmailSender } from "../email/smtp-email-sender.js";
 import { buildApp } from "./app.js";
 
@@ -9,7 +11,9 @@ if (!process.env.BETTER_AUTH_SECRET) {
   );
 }
 
-const db = createDb(process.env.DATABASE_URL ?? "postgres://kemet:kemet@localhost:5432/kemet");
+const databaseUrl = process.env.DATABASE_URL ?? "postgres://kemet:kemet@localhost:5432/kemet";
+await runMigrations(databaseUrl);
+const db = createDb(databaseUrl);
 
 const emailSender = new SmtpEmailSender({
   host: process.env.SMTP_HOST ?? "localhost",
@@ -31,7 +35,9 @@ const auth = createAuth({
       : undefined,
 });
 
-const app = buildApp({ db, auth });
+const chat = createChatPublisher(process.env.VALKEY_URL ?? "redis://localhost:6379");
+
+const app = buildApp({ db, auth, chat });
 
 const port = Number(process.env.API_PORT ?? 3001);
 app.listen({ port, host: "0.0.0.0" }).catch((error) => {

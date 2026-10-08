@@ -84,11 +84,11 @@ export function ShellPreviewPage() {
               <UserName name="Awa Ndiaye" countryCode="SN" level="architecte" />
               <span className="text-xs text-subtle">10:14</span>
             </div>
-            <p className="mt-0.5 text-sm text-text">
+            <p className="mt-0.5 text-base text-text">
               Le job `integration-tests` passe enfin contre une vraie base Postgres, les quatre
               tables Better Auth sont bonnes.
             </p>
-            <p className="mt-1 text-sm text-text">
+            <p className="mt-1 text-base text-text">
               Je pousse le correctif `globalPassThroughEnv` dans la foulée.
             </p>
           </div>
