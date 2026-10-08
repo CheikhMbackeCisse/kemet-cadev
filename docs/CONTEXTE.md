@@ -116,9 +116,9 @@ Il n'y a qu'un seul assistant sur la plateforme : **@kemet**. Ce sont les senior
 
 **Comment l'assistant s'en sert :**
 
-1. Au départ, l'assistant ne connaît que le nom et la description de chaque skill. Ça ne coûte presque rien.
-2. Quand une question arrive, il choisit le ou les skills utiles : soit l'utilisateur l'a demandé ("@kemet avec wave-paiements, comment…"), soit l'assistant reconnaît qu'un skill correspond.
-3. Il charge alors le contenu de ce skill, et seulement les passages pertinents des notes (recherche par le sens avec pgvector).
+1. La recherche plein texte de PostgreSQL présélectionne jusqu'à 20 skills candidats à partir du nom, de la description et des tags, parmi ceux que l'utilisateur a le droit d'utiliser. Ça ne coûte presque rien.
+2. Quand une question arrive, le modèle choisit le ou les skills utiles parmi ces candidats à partir de leurs descriptions : soit l'utilisateur l'a demandé ("@kemet avec wave-paiements, comment…"), soit l'assistant reconnaît qu'un skill correspond.
+3. Il charge alors le contenu complet de ce skill retenu (voir `docs/adr/0007-recherche-skills.md`).
 4. Il répond en streaming, et la réponse affiche "basé sur le skill wave-paiements d'Awa Ndiaye".
 5. Les lecteurs peuvent marquer la réponse "Utile", ce qui rapporte des points à l'auteur du skill. Les skills reçoivent aussi des étoiles, données seulement par ceux qui les ont utilisés.
 
@@ -128,7 +128,7 @@ Il n'y a qu'un seul assistant sur la plateforme : **@kemet**. Ce sont les senior
 
 - **Principal : Mistral, offre gratuite "Experiment".** Pas de carte bancaire, vérification par SMS. Contreparties : les données envoyées peuvent servir à l'entraînement (à écrire dans la politique de confidentialité, et on n'envoie que le strict nécessaire), débit limité, offre prévue pour l'évaluation.
 - **Secours :** un second fournisseur gratuit branché sur la même couche d'abstraction (Vercel AI SDK).
-- **Recherche dans les notes :** modèle d'embeddings multilingual-e5-small (licence MIT) exécuté sur notre serveur avec transformers.js. Gratuit, et les notes ne quittent pas notre serveur.
+- **Présélection des skills :** recherche plein texte PostgreSQL (`tsvector`, configurations french et english), pas de modèle d'embeddings en P0. Voir `docs/adr/0007-recherche-skills.md`.
 - **Protection du quota :** chargement des skills à la demande, cache des réponses, quota par utilisateur selon le niveau.
 
 **Vision après la compétition :** l'assistant tourne sur des modèles ouverts (Apache 2.0) hébergés sur les serveurs GPU de Systalink.
@@ -159,7 +159,7 @@ TypeScript partout. Un seul serveur Datacloud, tout en conteneurs Docker.
 | API | Fastify, Zod | MIT |
 | Temps réel | Socket.IO avec adaptateur Redis | MIT |
 | Tâches de fond | BullMQ | MIT |
-| Base de données | PostgreSQL avec pgvector, Drizzle ORM | PostgreSQL, Apache 2.0 |
+| Base de données | PostgreSQL 16, Drizzle ORM | PostgreSQL, Apache 2.0 |
 | Cache et diffusion | Valkey (version libre de Redis) | BSD-3 |
 | Authentification | Better Auth (email, GitHub) | MIT |
 | IA | Vercel AI SDK, SDK MCP officiel | Apache 2.0, MIT |
@@ -171,7 +171,7 @@ Les fichiers envoyés (images, mèmes) sont stockés sur un volume disque du ser
 
 **Pièges de licence identifiés :** sharp (libvips en LGPL), Judge0 (GPL), MinIO (AGPL), Redis 8 auto-hébergé (licences non libres ou AGPL, d'où Valkey), modèles Llama (licence propre), Twemoji (CC-BY, non listée : on garde les emojis du système).
 
-**Domaines du modèle de données :** utilisateurs (users, profiles, credentials, follows), discussion (spaces, members, channels, messages, threads, reactions, read_states), fil (posts, post_replies, post_reactions, post_feedback), assistant (skills, skill_files, skill_chunks, skill_ratings, assistant_invocations, mcp_servers), projets (projects, help_requests, applications), points (points_ledger, badges), compétitions (competitions, teams, submissions, votes, jury_scores).
+**Domaines du modèle de données :** utilisateurs (users, profiles, credentials, follows), discussion (spaces, members, channels, messages, threads, reactions, read_states), fil (posts, post_replies, post_reactions, post_feedback), assistant (skills, skill_files, skill_ratings, assistant_invocations, mcp_servers), projets (projects, help_requests, applications), points (points_ledger, badges), compétitions (competitions, teams, submissions, votes, jury_scores).
 
 ## Sécurité (résumé)
 
@@ -226,3 +226,4 @@ Chaque membre doit pouvoir expliquer seul son module devant le jury. Le code est
 - Fil détendu façon X ; l'apparence suit `docs/adr/0018-permission-de-copie-visuelle.md`.
 - Business model : récompenser l'utilité, pas les vues. Kemet Pro, crédits Datacloud, recrutement, compétitions sponsorisées.
 - Logo redessiné en vectoriel, fichiers dans `brand/`.
+- Pas d'embeddings ni de pgvector en P0 : sélection des skills par recherche plein texte PostgreSQL (`docs/adr/0007-recherche-skills.md`).

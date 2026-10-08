@@ -15,7 +15,6 @@
     "typecheck": "turbo run typecheck",
     "licenses:check": "tsx scripts/check-licenses.ts",
     "eval:mistral-throughput": "tsx evals/mistral-throughput.ts",
-    "eval:embeddings-benchmark": "echo 'voir le commentaire en tete de evals/embeddings-benchmark.ts : transformers.js ne fait pas partie des dependances du workspace (conflit de licence sharp/LGPL a trancher)' && exit 1",
     "db:migrate": "pnpm --filter @kemet/db migrate",
     "db:seed": "pnpm --filter @kemet/db seed"
   },
