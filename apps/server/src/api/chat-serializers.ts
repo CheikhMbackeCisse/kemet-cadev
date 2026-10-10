@@ -1,10 +1,11 @@
-import type { channels, messages, profiles, spaceInvites, spaceMembers, spaces } from "@kemet/db";
-import type { Channel, Invite, Message, Reaction, Space, SpaceMember } from "@kemet/shared";
+import type { channels, messageAttachments, messages, profiles, spaceInvites, spaceMembers, spaces } from "@kemet/db";
+import type { Attachment, Channel, Invite, Message, Reaction, Space, SpaceMember } from "@kemet/shared";
 
 type SpaceRow = typeof spaces.$inferSelect;
 type ChannelRow = typeof channels.$inferSelect;
 type MessageRow = typeof messages.$inferSelect;
 type ProfileRow = typeof profiles.$inferSelect;
+type AttachmentRow = typeof messageAttachments.$inferSelect;
 type SpaceMemberRole = (typeof spaceMembers.$inferSelect)["role"];
 type InviteRow = typeof spaceInvites.$inferSelect;
 
@@ -42,12 +43,24 @@ export function serializeChannel(row: ChannelRow, unreadCount: number): Channel 
   };
 }
 
+export function serializeAttachment(row: AttachmentRow): Attachment {
+  return {
+    id: row.id,
+    kind: row.kind,
+    mimeType: row.mimeType,
+    originalName: row.originalName,
+    byteSize: row.byteSize,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
 export function serializeMessage(
   row: MessageRow,
   author: ProfileRow,
   mentionedHandles: string[],
   reactions: Reaction[],
   replyCount: number,
+  attachments: AttachmentRow[],
 ): Message {
   const deleted = row.deletedAt !== null;
   return {
@@ -62,6 +75,7 @@ export function serializeMessage(
     mentionedHandles: deleted ? [] : mentionedHandles,
     reactions,
     replyCount,
+    attachments: deleted ? [] : attachments.map(serializeAttachment),
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
     deletedAt: row.deletedAt?.toISOString() ?? null,

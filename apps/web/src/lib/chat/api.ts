@@ -1,4 +1,4 @@
-import type { Channel, Invite, InvitePreview, Message, Space, SpaceMember } from "@kemet/shared";
+import type { Attachment, Channel, Invite, InvitePreview, Message, Space, SpaceMember } from "@kemet/shared";
 
 class ChatApiError extends Error {
   constructor(
@@ -81,11 +81,38 @@ export function listReplies(messageId: string, cursor?: string): Promise<Page<Me
   return request(`/api/messages/${messageId}/replies${query}`);
 }
 
-export function sendMessage(channelId: string, input: { clientId: string; body: string; parentMessageId?: string | null }) {
+export function sendMessage(
+  channelId: string,
+  input: { clientId: string; body: string; parentMessageId?: string | null; attachmentIds?: string[] },
+) {
   return request<{ message: Message }>(`/api/channels/${channelId}/messages`, {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export async function uploadAttachment(channelId: string, file: File): Promise<Attachment> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(`/api/channels/${channelId}/messages/attachments`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { attachment } = (await response.json()) as { attachment: Attachment };
+  return attachment;
+}
+
+export function attachmentUrl(attachmentId: string): string {
+  return `/api/attachments/${attachmentId}/content`;
 }
 
 export function editMessage(messageId: string, body: string) {

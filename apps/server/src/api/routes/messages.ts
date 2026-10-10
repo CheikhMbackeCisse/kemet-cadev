@@ -15,6 +15,7 @@ import {
   softDeleteMessage,
   toggleReaction,
 } from "../repositories/chat.js";
+import { attachToMessage, findPendingAttachment } from "../repositories/attachments.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { serializeMessage } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
@@ -28,7 +29,14 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
 
 async function toSerializedMessage(db: ChatAppDeps["db"], row: Awaited<ReturnType<typeof findMessageById>>) {
   const hydrated = await hydrateMessage(db, row!);
-  return serializeMessage(hydrated.row, hydrated.author, hydrated.mentionedHandles, hydrated.reactions, hydrated.replyCount);
+  return serializeMessage(
+    hydrated.row,
+    hydrated.author,
+    hydrated.mentionedHandles,
+    hydrated.reactions,
+    hydrated.replyCount,
+    hydrated.attachments,
+  );
 }
 
 export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat }: ChatAppDeps): void {
@@ -76,19 +84,36 @@ export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat }: 
         }
       }
 
-      const { message, created } = await insertMessage(db, {
-        channelId: channel.id,
-        authorId: profile.id,
-        clientId: input.clientId,
-        body: input.body,
-        parentMessageId: input.parentMessageId ?? null,
-      });
+      // Transaction : si la validation des fichiers échoue, l'insertion du
+      // message est annulée avec elle. Sans ça, une relance réseau avec le
+      // même clientId retomberait sur un message déjà créé mais sans ses
+      // fichiers, sans jamais pouvoir les rattacher (voir message:new et la
+      // déduplication par clientId dans docs/adr/0006-temps-reel.md).
+      const { message, created } = await db.transaction(async (tx) => {
+        const result = await insertMessage(tx, {
+          channelId: channel.id,
+          authorId: profile.id,
+          clientId: input.clientId,
+          body: input.body,
+          parentMessageId: input.parentMessageId ?? null,
+        });
 
-      if (created) {
-        const handles = extractMentionHandles(input.body);
-        const mentioned = await resolveMentionableProfiles(db, space.id, handles);
-        await insertMentions(db, message.id, mentioned.map((profile) => profile.id));
-      }
+        if (result.created) {
+          const attachmentIds = input.attachmentIds ?? [];
+          for (const attachmentId of attachmentIds) {
+            const pending = await findPendingAttachment(tx, attachmentId, profile.id, channel.id);
+            if (!pending) {
+              throw badRequest("Un fichier envoyé n'est plus disponible pour ce message.");
+            }
+          }
+          const handles = extractMentionHandles(input.body);
+          const mentioned = await resolveMentionableProfiles(tx, space.id, handles);
+          await insertMentions(tx, result.message.id, mentioned.map((profile) => profile.id));
+          await attachToMessage(tx, attachmentIds, result.message.id);
+        }
+
+        return result;
+      });
 
       const serialized = await toSerializedMessage(db, message);
       if (created) {

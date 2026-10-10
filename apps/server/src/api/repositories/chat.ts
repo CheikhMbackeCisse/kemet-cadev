@@ -11,7 +11,9 @@ import {
   spaceMembers,
   spaces,
   type Db,
+  type DbOrTx,
 } from "@kemet/db";
+import { listAttachmentsForMessages } from "./attachments.js";
 
 const generateInviteCode = customAlphabet("23456789abcdefghjkmnpqrstuvwxyz", 24);
 
@@ -165,7 +167,7 @@ export async function markChannelRead(db: Db, channelId: string, profileId: stri
 }
 
 export async function insertMessage(
-  db: Db,
+  db: DbOrTx,
   input: { channelId: string; authorId: string; clientId: string; body: string; parentMessageId: string | null },
 ) {
   const [inserted] = await db
@@ -229,7 +231,7 @@ export async function countReplies(db: Db, parentMessageId: string) {
   return rows.length;
 }
 
-export async function insertMentions(db: Db, messageId: string, profileIds: string[]) {
+export async function insertMentions(db: DbOrTx, messageId: string, profileIds: string[]) {
   if (profileIds.length === 0) return;
   await db
     .insert(messageMentions)
@@ -246,7 +248,7 @@ export async function listMentionedHandles(db: Db, messageId: string) {
   return rows.map((row) => row.handle);
 }
 
-export async function resolveMentionableProfiles(db: Db, spaceId: string, handles: string[]) {
+export async function resolveMentionableProfiles(db: DbOrTx, spaceId: string, handles: string[]) {
   if (handles.length === 0) return [];
   const rows = await db
     .select({ id: profiles.id, handle: profiles.handle })
@@ -331,13 +333,14 @@ export async function findProfileById(db: Db, profileId: string) {
 }
 
 export async function hydrateMessage(db: Db, row: typeof messages.$inferSelect) {
-  const [author, mentionedHandles, reactions, replyCount] = await Promise.all([
+  const [author, mentionedHandles, reactions, replyCount, attachments] = await Promise.all([
     findProfileById(db, row.authorId),
     listMentionedHandles(db, row.id),
     getMessageReactions(db, row.id),
     countReplies(db, row.id),
+    listAttachmentsForMessages(db, [row.id]),
   ]);
-  return { row, author: author!, mentionedHandles, reactions, replyCount };
+  return { row, author: author!, mentionedHandles, reactions, replyCount, attachments };
 }
 
 export async function redeemInvite(db: Db, code: string, profileId: string): Promise<InviteRedemptionResult> {

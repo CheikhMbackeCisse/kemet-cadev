@@ -1,10 +1,18 @@
 import { z } from "zod";
+import { attachmentSchema, MAX_ATTACHMENTS_PER_MESSAGE } from "./attachment.js";
 
-export const createMessageSchema = z.object({
-  clientId: z.string().uuid(),
-  body: z.string().min(1).max(4000),
-  parentMessageId: z.string().uuid().nullable().optional(),
-});
+export const createMessageSchema = z
+  .object({
+    clientId: z.string().uuid(),
+    body: z.string().max(4000),
+    parentMessageId: z.string().uuid().nullable().optional(),
+    attachmentIds: z.array(z.string().uuid()).max(MAX_ATTACHMENTS_PER_MESSAGE).optional(),
+  })
+  // Un message peut être une image ou un fichier sans légende, mais pas vide des deux.
+  .refine((input) => input.body.length > 0 || (input.attachmentIds?.length ?? 0) > 0, {
+    message: "Un message doit contenir du texte ou au moins un fichier.",
+    path: ["body"],
+  });
 
 export type CreateMessageInput = z.infer<typeof createMessageSchema>;
 
@@ -39,6 +47,7 @@ export const messageSchema = z.object({
   mentionedHandles: z.array(z.string()),
   reactions: z.array(reactionSchema),
   replyCount: z.number().int().nonnegative(),
+  attachments: z.array(attachmentSchema),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
   deletedAt: z.string().datetime().nullable(),

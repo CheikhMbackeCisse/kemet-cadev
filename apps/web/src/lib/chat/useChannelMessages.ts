@@ -8,7 +8,7 @@ export interface UseChannelMessagesResult {
   loading: boolean;
   error: boolean;
   reload: () => void;
-  send: (body: string, parentMessageId?: string | null) => Promise<void>;
+  send: (body: string, parentMessageId?: string | null, attachmentIds?: string[]) => Promise<void>;
   react: (messageId: string, emoji: string) => Promise<void>;
 }
 
@@ -80,10 +80,10 @@ export function useChannelMessages(channelId: string | null): UseChannelMessages
   const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
   const send = useCallback(
-    async (body: string, parentMessageId: string | null = null) => {
+    async (body: string, parentMessageId: string | null = null, attachmentIds: string[] = []) => {
       if (!channelId) return;
       const clientId = crypto.randomUUID();
-      const message = await sendMessage(channelId, { clientId, body, parentMessageId });
+      const message = await sendMessage(channelId, { clientId, body, parentMessageId, attachmentIds });
       setMessages((current) => upsertMessage(current, message.message));
     },
     [channelId],

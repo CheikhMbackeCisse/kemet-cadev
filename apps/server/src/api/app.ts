@@ -1,16 +1,20 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
+import multipart from "@fastify/multipart";
 import { toNodeHandler } from "better-auth/node";
 import { healthcheckResponseSchema } from "@kemet/shared";
 import type { Db } from "@kemet/db";
 import type { Auth } from "../auth/auth.js";
 import { createNoopChatPublisher, type ChatPublisher } from "../chat/pubsub.js";
 import { AppError } from "../errors.js";
+import { loadAttachmentLimits, type AttachmentLimits } from "../storage/config.js";
+import { InMemoryStorage, type FileStorage } from "../storage/file-storage.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerSpaceRoutes } from "./routes/spaces.js";
 import { registerChannelRoutes } from "./routes/channels.js";
 import { registerMessageRoutes } from "./routes/messages.js";
+import { registerAttachmentRoutes } from "./routes/attachments.js";
 import { registerReadStateRoutes } from "./routes/read-states.js";
 import { registerInviteRoutes } from "./routes/invites.js";
 
@@ -18,13 +22,18 @@ export interface AppDeps {
   db: Db;
   auth: Auth;
   chat?: ChatPublisher;
+  storage?: FileStorage;
+  attachmentLimits?: AttachmentLimits;
 }
 
 export function buildApp(deps: AppDeps): FastifyInstance {
   const app = Fastify({ logger: true });
   const chat = deps.chat ?? createNoopChatPublisher();
+  const storage = deps.storage ?? new InMemoryStorage();
+  const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
 
   void app.register(rateLimit, { global: false });
+  void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
@@ -58,10 +67,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   registerMeRoutes(app, deps);
   registerUserRoutes(app, deps);
 
-  const chatDeps: ChatAppDeps = { db: deps.db, auth: deps.auth, chat };
+  const chatDeps: ChatAppDeps = { db: deps.db, auth: deps.auth, chat, storage, attachmentLimits };
   registerSpaceRoutes(app, chatDeps);
   registerChannelRoutes(app, chatDeps);
   registerMessageRoutes(app, chatDeps);
+  registerAttachmentRoutes(app, chatDeps);
   registerReadStateRoutes(app, chatDeps);
   registerInviteRoutes(app, chatDeps);
 
@@ -72,4 +82,6 @@ export interface ChatAppDeps {
   db: Db;
   auth: Auth;
   chat: ChatPublisher;
+  storage: FileStorage;
+  attachmentLimits: AttachmentLimits;
 }

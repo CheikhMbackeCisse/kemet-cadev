@@ -14,6 +14,11 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /prod/server ./
+# Le volume nommé "uploads" (api et worker, voir infra/docker-compose.yml)
+# est vide à sa création : Docker copie alors les droits de ce dossier
+# dans l'image. Sans ça, il resterait root:root, illisible par l'utilisateur
+# non-root ci-dessous.
+RUN mkdir -p /data/uploads && chown -R node:node /data/uploads
 USER node
 EXPOSE 3001 3002 3003
 

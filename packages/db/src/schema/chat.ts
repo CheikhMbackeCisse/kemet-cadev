@@ -1,7 +1,9 @@
 import { relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  bigint,
   check,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -13,6 +15,7 @@ import {
 import { profiles } from "./profiles.js";
 
 export const spaceVisibilityEnum = pgEnum("space_visibility", ["public", "private"]);
+export const attachmentKindEnum = pgEnum("attachment_kind", ["image", "file"]);
 export const spaceMemberRoleEnum = pgEnum("space_member_role", ["owner", "admin", "member"]);
 
 export const spaces = pgTable("spaces", {
@@ -105,6 +108,33 @@ export const messages = pgTable(
   (table) => [uniqueIndex("messages_author_client_idx").on(table.authorId, table.clientId)],
 );
 
+export const messageAttachments = pgTable(
+  "message_attachments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Nul tant que le fichier n'est pas rattaché à un message envoyé : voir
+    // le nettoyage des fichiers orphelins dans apps/server/src/chat/
+    // attachments-cleanup.ts.
+    messageId: uuid("message_id").references(() => messages.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    storageKey: text("storage_key").notNull().unique(),
+    kind: attachmentKindEnum("kind").notNull(),
+    mimeType: text("mime_type").notNull(),
+    originalName: text("original_name").notNull(),
+    byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("message_attachments_message_idx").on(table.messageId),
+    index("message_attachments_author_idx").on(table.authorId),
+  ],
+);
+
 export const messageMentions = pgTable(
   "message_mentions",
   {
@@ -193,6 +223,13 @@ export const messagesRelations = relations(messages, ({ one, many }) => ({
   replies: many(messages, { relationName: "parent" }),
   mentions: many(messageMentions),
   reactions: many(messageReactions),
+  attachments: many(messageAttachments),
+}));
+
+export const messageAttachmentsRelations = relations(messageAttachments, ({ one }) => ({
+  message: one(messages, { fields: [messageAttachments.messageId], references: [messages.id] }),
+  channel: one(channels, { fields: [messageAttachments.channelId], references: [channels.id] }),
+  author: one(profiles, { fields: [messageAttachments.authorId], references: [profiles.id] }),
 }));
 
 export const messageMentionsRelations = relations(messageMentions, ({ one }) => ({

@@ -15,6 +15,10 @@ export const fr = {
       count === 1 ? `Réagir avec ${emoji}, 1 personne` : `Réagir avec ${emoji}, ${count} personnes`,
     sendError: "Le message n'a pas pu être envoyé.",
     retry: "Réessayer",
+    attachFile: "Joindre un fichier",
+    removeAttachment: (name: string) => `Retirer ${name}`,
+    attachmentUploadError: "L'envoi du fichier a échoué.",
+    downloadFile: (name: string) => `Télécharger ${name}`,
   },
   spaces: {
     createTitle: "Créer un espace",

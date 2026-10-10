@@ -14,3 +14,9 @@ export function createDb(databaseUrl: string) {
 }
 
 export type Db = ReturnType<typeof createDb>;
+
+/** Le type de `tx` à l'intérieur de `db.transaction(async (tx) => ...)`. */
+export type Transaction = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+/** Accepté par les fonctions de repository qui peuvent s'exécuter dans une transaction. */
+export type DbOrTx = Db | Transaction;

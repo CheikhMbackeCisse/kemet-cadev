@@ -1,13 +1,16 @@
-import { Hash, MessageSquare, Plus, Send, UserPlus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Download, Hash, MessageSquare, Paperclip, Plus, Send, UserPlus, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   addSpaceMember,
+  attachmentUrl,
+  ChatApiError,
   createInvite,
   createSpace,
   listChannels,
   listSpaceMembers,
   listSpaces,
   removeSpaceMember,
+  uploadAttachment,
 } from "../lib/chat/api.js";
 import { useChannelMessages } from "../lib/chat/useChannelMessages.js";
 import { AppShell } from "../components/shell/AppShell.js";
@@ -25,7 +28,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { UserName } from "../components/ui/UserName.js";
 import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { fr } from "../i18n/fr.js";
-import type { Channel, Space, SpaceMember } from "@kemet/shared";
+import type { Attachment, Channel, Space, SpaceMember } from "@kemet/shared";
 
 const MOBILE_TABS: MobileTabItem[] = [{ id: "salons", label: "Salons", icon: Hash }];
 const DIACRITICS_PATTERN = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");
@@ -67,7 +70,24 @@ export function SpacePage() {
 
   const [members, setMembers] = useState<SpaceMember[]>([]);
   const [draft, setDraft] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [memberHandle, setMemberHandle] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function switchChannel(channelId: string) {
+    // Une pièce jointe envoyée appartient au salon où elle a été envoyée
+    // (requireChannelAccess côté serveur la rejetterait dans un autre
+    // salon) : elle ne doit pas survivre à un changement de salon sans
+    // message envoyé. Nettoyage au clic plutôt que dans un effet réactif
+    // à `activeChannelId` : cet effet se redéclenchait aussi à la
+    // sélection automatique du premier salon d'un espace (refreshChannels
+    // ci-dessous), effaçant un brouillon en cours de frappe si cette
+    // sélection arrivait après coup.
+    setDraft("");
+    setPendingAttachments([]);
+    setActiveChannelId(channelId);
+  }
 
   const [createSpaceOpen, setCreateSpaceOpen] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
@@ -151,14 +171,34 @@ export function SpacePage() {
   }
 
   async function handleSend() {
-    if (!draft.trim()) return;
     const body = draft.trim();
+    if (!body && pendingAttachments.length === 0) return;
     try {
-      await send(body);
+      await send(body, null, pendingAttachments.map((attachment) => attachment.id));
       setDraft("");
+      setPendingAttachments([]);
     } catch {
       toast.show(fr.chat.sendError, "danger");
     }
+  }
+
+  async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !activeChannelId) return;
+    setUploadingAttachment(true);
+    try {
+      const attachment = await uploadAttachment(activeChannelId, file);
+      setPendingAttachments((current) => [...current, attachment]);
+    } catch (error) {
+      toast.show(error instanceof ChatApiError ? error.message : fr.chat.attachmentUploadError, "danger");
+    } finally {
+      setUploadingAttachment(false);
+    }
+  }
+
+  function removePendingAttachment(attachmentId: string) {
+    setPendingAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId));
   }
 
   async function handleAddMember() {
@@ -211,7 +251,7 @@ export function SpacePage() {
           spaceName: activeSpace?.name ?? "",
           channels: channelItems,
           activeChannelId: activeChannelId ?? "",
-          onSelect: setActiveChannelId,
+          onSelect: switchChannel,
         }}
         mobileTabs={MOBILE_TABS}
         activeMobileTabId="salons"
@@ -314,9 +354,35 @@ export function SpacePage() {
                         <span className="text-xs text-subtle">{formatTime(message.createdAt)}</span>
                         {message.editedAt && <span className="text-xs text-subtle">({fr.chat.edited})</span>}
                       </div>
-                      <p className="mt-0.5 text-base text-text">
-                        {message.deletedAt ? fr.chat.messageDeleted : message.body}
-                      </p>
+                      {message.body && (
+                        <p className="mt-0.5 text-base text-text">
+                          {message.deletedAt ? fr.chat.messageDeleted : message.body}
+                        </p>
+                      )}
+                      {!message.deletedAt && message.attachments.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {message.attachments.map((attachment) =>
+                            attachment.kind === "image" ? (
+                              <img
+                                key={attachment.id}
+                                src={attachmentUrl(attachment.id)}
+                                alt={attachment.originalName}
+                                className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
+                              />
+                            ) : (
+                              <a
+                                key={attachment.id}
+                                href={attachmentUrl(attachment.id)}
+                                aria-label={fr.chat.downloadFile(attachment.originalName)}
+                                className="inline-flex h-control-mobile items-center gap-2 rounded-card border border-border px-3 text-sm text-text hover:bg-surface-2 md:h-control"
+                              >
+                                <Download className="size-4" aria-hidden="true" />
+                                {attachment.originalName}
+                              </a>
+                            ),
+                          )}
+                        </div>
+                      )}
                       <div className="mt-1 flex flex-wrap items-center gap-1">
                         {message.reactions.map((reaction) => (
                           <button
@@ -344,20 +410,50 @@ export function SpacePage() {
               </div>
             )}
           </div>
-          <div className="flex shrink-0 gap-2 border-t border-border p-3">
-            <Input
-              placeholder={fr.chat.composerPlaceholder}
-              aria-label={fr.chat.composerPlaceholder}
-              value={draft}
-              disabled={!activeChannelId}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void handleSend();
-              }}
-            />
-            <Button onClick={handleSend} aria-label={fr.chat.send} disabled={!activeChannelId}>
-              <Send className="size-4" aria-hidden="true" />
-            </Button>
+          <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
+            {pendingAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {pendingAttachments.map((attachment) => (
+                  <span
+                    key={attachment.id}
+                    className="inline-flex items-center gap-1 rounded-card border border-border pl-2 text-xs text-text"
+                  >
+                    {attachment.originalName}
+                    <IconButton
+                      aria-label={fr.chat.removeAttachment(attachment.originalName)}
+                      onClick={() => removePendingAttachment(attachment.id)}
+                      className="size-control-compact max-md:size-control-mobile"
+                    >
+                      <X className="size-3" aria-hidden="true" />
+                    </IconButton>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
+              <IconButton
+                aria-label={fr.chat.attachFile}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={!activeChannelId}
+                loading={uploadingAttachment}
+              >
+                <Paperclip className="size-4" aria-hidden="true" />
+              </IconButton>
+              <Input
+                placeholder={fr.chat.composerPlaceholder}
+                aria-label={fr.chat.composerPlaceholder}
+                value={draft}
+                disabled={!activeChannelId}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void handleSend();
+                }}
+              />
+              <Button onClick={handleSend} aria-label={fr.chat.send} disabled={!activeChannelId || uploadingAttachment}>
+                <Send className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         </div>
       </AppShell>

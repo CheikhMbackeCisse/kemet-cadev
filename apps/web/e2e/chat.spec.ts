@@ -9,7 +9,7 @@ interface MailpitMessage {
 }
 
 async function findVerificationUrl(email: string): Promise<string> {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
     const list = await fetch(`${MAILPIT_URL}/api/v1/messages`).then((response) => response.json());
     const message = (list.messages as MailpitMessage[]).find((candidate) =>
       candidate.To.some((recipient) => recipient.Address === email),
@@ -42,7 +42,11 @@ async function signInBrowser(page: Page, email: string): Promise<void> {
 
 test("envoie un message dans un salon et le voit apparaître", async ({ page, request }) => {
   const email = `e2e-${test.info().project.name}-${Date.now()}@test.kemet`;
-  const handle = `e2e${test.info().project.name}${Date.now()}`.slice(0, 20);
+  // Pas de troncature : couper les derniers chiffres de Date.now() ferait
+  // collisionner deux essais lancés à quelques dizaines de ms d'écart (un
+  // essai et sa relance en CI, par exemple), rejetant la mise à jour du
+  // profil avec un conflit d'identifiant.
+  const handle = `e2e${test.info().project.name}${Date.now()}`;
 
   await signUpVerifyAndSignIn(request, email, handle);
   await signInBrowser(page, email);

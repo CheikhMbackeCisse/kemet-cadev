@@ -5,6 +5,7 @@ export * from "./schemas/pagination.js";
 export * from "./schemas/me.js";
 export * from "./schemas/space.js";
 export * from "./schemas/channel.js";
+export * from "./schemas/attachment.js";
 export * from "./schemas/message.js";
 export * from "./schemas/invite.js";
 export * from "./schemas/chat-event.js";
