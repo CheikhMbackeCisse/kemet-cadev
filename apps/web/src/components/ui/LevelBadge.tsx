@@ -1,6 +1,7 @@
+import type { Level } from "@kemet/shared";
 import { cn } from "../../lib/cn.js";
 
-export type Level = "apprenti" | "artisan" | "scribe" | "architecte" | "legende";
+export type { Level } from "@kemet/shared";
 
 const LEVEL_LABELS: Record<Level, string> = {
   apprenti: "Apprenti",

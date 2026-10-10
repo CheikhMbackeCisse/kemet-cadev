@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COUNTRY_CODES } from "../data/countries.js";
+import { levelSchema } from "./points.js";
 import { httpUrlSchema } from "./url.js";
 
 export const handleSchema = z
@@ -38,6 +39,7 @@ export const profileSchema = z.object({
   githubUrl: z.string().nullable(),
   openToOpportunities: z.boolean(),
   isDemo: z.boolean(),
+  level: levelSchema,
   createdAt: z.string().datetime(),
 });
 

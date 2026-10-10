@@ -18,16 +18,14 @@ export interface TabsProps {
 export function Tabs({ items, value, onValueChange, className }: TabsProps) {
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className={className}>
-      <RadixTabs.List className="flex items-center gap-1 border-b border-border">
+      <RadixTabs.List className="inline-flex items-center gap-1 rounded-control bg-surface-2 p-1">
         {items.map((item) => (
           <RadixTabs.Trigger
             key={item.value}
             value={item.value}
             className={cn(
-              "relative h-control max-md:h-control-mobile px-3 text-sm font-medium text-text-2",
-              "data-[state=active]:text-primary",
-              "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-transparent",
-              "data-[state=active]:after:bg-primary",
+              "h-control max-md:h-control-mobile rounded-control px-3 text-sm font-medium text-text-2",
+              "data-[state=active]:bg-primary data-[state=active]:text-white",
             )}
           >
             {item.label}

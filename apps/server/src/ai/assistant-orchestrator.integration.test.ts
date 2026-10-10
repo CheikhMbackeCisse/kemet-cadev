@@ -1,6 +1,7 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, type Db } from "@kemet/db";
+import { createDb, profiles, type Db } from "@kemet/db";
 import type { ChatEvent } from "@kemet/shared";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -216,5 +217,133 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     expect(failedEvent).toBeDefined();
     if (failedEvent?.type !== "assistant:failed") throw new Error("événement inattendu");
     expect(failedEvent.errorCode).toBe("quota_exceeded");
+  });
+
+  it("marquer une réponse Utile rapporte des points à l'auteur du skill cité", async () => {
+    const { cookie: askerCookie, profileId: askerId } = await createMember("utile-asker@test.kemet", "utileasker");
+    const { cookie: authorCookie, profileId: authorId } = await createMember("utile-author@test.kemet", "utileauthor");
+    const { cookie: reactorCookie, profileId: reactorId } = await createMember("utile-reactor@test.kemet", "utilereactor");
+    const { channelId } = await createSpaceAndChannel(askerCookie);
+
+    // Un compte flambant neuf ne rapporte rien (docs/CONTEXTE.md : "créer de
+    // faux comptes ne rapporte rien") : on le vieillit pour tester le cas
+    // normal séparément du garde-fou de fraîcheur, déjà couvert plus bas.
+    await db.update(profiles).set({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }).where(eq(profiles.id, reactorId));
+
+    const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";
+    const triggerMessageId = await sendTriggerMessage(askerCookie, channelId, triggerBody);
+    await createSkill(db, authorId, {
+      slug: "wave-paiements",
+      name: "wave-paiements",
+      description: "Intégration des paiements Wave côté serveur.",
+      content: "Toujours vérifier le statut de la transaction avant de rembourser.",
+      tags: [],
+      visibility: "public",
+    });
+
+    const chat = new RecordingChatPublisher();
+    const orchestrator = new KemetAssistantOrchestrator(db, chat, new FakeStreamingProvider(["réponse"]), new FullTextRetriever(db), new InMemoryResponseCache());
+    await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: askerId, body: triggerBody });
+
+    const doneEvent = chat.events.find((event) => event.type === "assistant:done");
+    if (doneEvent?.type !== "assistant:done") throw new Error("événement inattendu");
+    const invocationId = doneEvent.invocationId;
+
+    const helpful = await app.inject({
+      method: "PUT",
+      url: `/api/assistant-invocations/${invocationId}/feedback`,
+      headers: { cookie: reactorCookie },
+      payload: { helpful: true },
+    });
+    expect(helpful.statusCode).toBe(200);
+
+    // +5 pour le "Utile", +5 de régularité (jour actif).
+    const authorMe = await app.inject({ method: "GET", url: "/api/me", headers: { cookie: authorCookie } });
+    expect(authorMe.json().points).toBe(10);
+
+    // Retirer puis remettre "Utile" ne redonne pas de points une seconde fois.
+    await app.inject({
+      method: "PUT",
+      url: `/api/assistant-invocations/${invocationId}/feedback`,
+      headers: { cookie: reactorCookie },
+      payload: { helpful: false },
+    });
+    await app.inject({
+      method: "PUT",
+      url: `/api/assistant-invocations/${invocationId}/feedback`,
+      headers: { cookie: reactorCookie },
+      payload: { helpful: true },
+    });
+    const authorMeAgain = await app.inject({ method: "GET", url: "/api/me", headers: { cookie: authorCookie } });
+    expect(authorMeAgain.json().points).toBe(10);
+  });
+
+  it("un compte de moins de 7 jours marque Utile sans donner de points", async () => {
+    const { cookie: askerCookie, profileId: askerId } = await createMember("fresh-asker@test.kemet", "freshasker");
+    const { cookie: authorCookie, profileId: authorId } = await createMember("fresh-author@test.kemet", "freshauthor");
+    const { cookie: reactorCookie } = await createMember("fresh-reactor@test.kemet", "freshreactor");
+    const { channelId } = await createSpaceAndChannel(askerCookie);
+
+    const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";
+    const triggerMessageId = await sendTriggerMessage(askerCookie, channelId, triggerBody);
+    await createSkill(db, authorId, {
+      slug: "wave-paiements",
+      name: "wave-paiements",
+      description: "Intégration des paiements Wave côté serveur.",
+      content: "Toujours vérifier le statut de la transaction avant de rembourser.",
+      tags: [],
+      visibility: "public",
+    });
+
+    const chat = new RecordingChatPublisher();
+    const orchestrator = new KemetAssistantOrchestrator(db, chat, new FakeStreamingProvider(["réponse"]), new FullTextRetriever(db), new InMemoryResponseCache());
+    await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: askerId, body: triggerBody });
+
+    const doneEvent = chat.events.find((event) => event.type === "assistant:done");
+    if (doneEvent?.type !== "assistant:done") throw new Error("événement inattendu");
+
+    await app.inject({
+      method: "PUT",
+      url: `/api/assistant-invocations/${doneEvent.invocationId}/feedback`,
+      headers: { cookie: reactorCookie },
+      payload: { helpful: true },
+    });
+
+    const authorMe = await app.inject({ method: "GET", url: "/api/me", headers: { cookie: authorCookie } });
+    expect(authorMe.json().points).toBe(0);
+  });
+
+  it("ne rapporte pas de points pour son propre skill", async () => {
+    const { cookie: authorCookie, profileId: authorId } = await createMember("self-skill@test.kemet", "selfskill");
+    const { channelId } = await createSpaceAndChannel(authorCookie);
+    await db.update(profiles).set({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }).where(eq(profiles.id, authorId));
+
+    const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";
+    const triggerMessageId = await sendTriggerMessage(authorCookie, channelId, triggerBody);
+    await createSkill(db, authorId, {
+      slug: "wave-paiements",
+      name: "wave-paiements",
+      description: "Intégration des paiements Wave côté serveur.",
+      content: "Toujours vérifier le statut de la transaction avant de rembourser.",
+      tags: [],
+      visibility: "public",
+    });
+
+    const chat = new RecordingChatPublisher();
+    const orchestrator = new KemetAssistantOrchestrator(db, chat, new FakeStreamingProvider(["réponse"]), new FullTextRetriever(db), new InMemoryResponseCache());
+    await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: authorId, body: triggerBody });
+
+    const doneEvent = chat.events.find((event) => event.type === "assistant:done");
+    if (doneEvent?.type !== "assistant:done") throw new Error("événement inattendu");
+
+    await app.inject({
+      method: "PUT",
+      url: `/api/assistant-invocations/${doneEvent.invocationId}/feedback`,
+      headers: { cookie: authorCookie },
+      payload: { helpful: true },
+    });
+
+    const authorMe = await app.inject({ method: "GET", url: "/api/me", headers: { cookie: authorCookie } });
+    expect(authorMe.json().points).toBe(0);
   });
 });

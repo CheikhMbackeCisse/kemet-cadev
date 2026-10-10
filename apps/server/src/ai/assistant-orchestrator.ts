@@ -7,7 +7,7 @@ import { serializeMessage } from "../api/chat-serializers.js";
 import { canViewSkill, findAuthorProfile, findSkillBySlug, findSkillsByIds } from "../api/repositories/skills.js";
 import { completeInvocation, failInvocation, insertInvocation, markInvocationStreaming } from "../api/repositories/assistant.js";
 import { LlmProviderError, type LlmMessage, type LlmProviderName, type StreamingLlmProvider } from "./llm-provider.js";
-import { checkDailyQuota, DEFAULT_DAILY_QUOTA } from "./quota.js";
+import { checkDailyQuota } from "./quota.js";
 import { buildCacheKey, type ResponseCache } from "./response-cache.js";
 import type { SkillCandidate, SkillRetriever } from "./skill-retriever.js";
 
@@ -51,7 +51,9 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     private readonly provider: StreamingLlmProvider,
     private readonly retriever: SkillRetriever,
     private readonly cache: ResponseCache,
-    private readonly dailyQuota: number = DEFAULT_DAILY_QUOTA,
+    // Limite fixe utilisée seulement par les tests ; en production, le
+    // quota se calcule par niveau (apps/server/src/ai/quota.ts).
+    private readonly dailyQuotaOverride?: number,
   ) {}
 
   async handleMention(input: AssistantMentionInput): Promise<void> {
@@ -60,7 +62,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     // Le quota se vérifie avant de créer la ligne d'invocation : sinon elle
     // compterait dans son propre total (toujours au moins une de trop) et
     // rejetterait une personne qui n'a encore jamais dépassé la limite.
-    const quota = await checkDailyQuota(this.db, input.requestedBy, this.dailyQuota);
+    const quota = await checkDailyQuota(this.db, input.requestedBy, this.dailyQuotaOverride);
     if (!quota.allowed) {
       await this.chat.publish({
         type: "assistant:failed",

@@ -1,10 +1,10 @@
 import type { credentials, profiles } from "@kemet/db";
-import type { Credential, Profile, ProfileSummary } from "@kemet/shared";
+import type { Credential, Level, Profile, ProfileSummary } from "@kemet/shared";
 
 type ProfileRow = typeof profiles.$inferSelect;
 type CredentialRow = typeof credentials.$inferSelect;
 
-export function serializeProfile(row: ProfileRow): Profile {
+export function serializeProfile(row: ProfileRow, level: Level): Profile {
   return {
     id: row.id,
     handle: row.handle,
@@ -16,19 +16,19 @@ export function serializeProfile(row: ProfileRow): Profile {
     githubUrl: row.githubUrl,
     openToOpportunities: row.openToOpportunities,
     isDemo: row.isDemo,
+    level,
     createdAt: row.createdAt.toISOString(),
   };
 }
 
 export function serializeProfileSummary(row: ProfileRow): ProfileSummary {
-  const profile = serializeProfile(row);
   return {
-    id: profile.id,
-    handle: profile.handle,
-    displayName: profile.displayName,
-    country: profile.country,
-    title: profile.title,
-    isDemo: profile.isDemo,
+    id: row.id,
+    handle: row.handle,
+    displayName: row.displayName,
+    country: row.country as ProfileSummary["country"],
+    title: row.title,
+    isDemo: row.isDemo,
   };
 }
 

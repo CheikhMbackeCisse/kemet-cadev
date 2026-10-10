@@ -9,6 +9,7 @@ import {
   listCredentials,
   upsertProfile,
 } from "../repositories/profiles.js";
+import { computeProfilePoints } from "../repositories/points.js";
 import { serializeCredential, serializeProfile } from "../serializers.js";
 import type { AppDeps } from "../app.js";
 
@@ -18,9 +19,13 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
     const account = await findAccountById(db, userId);
     const profile = await findProfileByUserId(db, userId);
     const credentials = profile ? await listCredentials(db, profile.id) : [];
+    // Le total de points reste discret à l'affichage (DESIGN.md), mais
+    // reste accessible à chacun pour son propre profil.
+    const points = profile ? await computeProfilePoints(db, profile.id) : null;
     return {
       user: { id: account.id, email: account.email, emailVerified: account.emailVerified },
-      profile: profile ? serializeProfile(profile) : null,
+      profile: profile && points ? serializeProfile(profile, points.level) : null,
+      points: points?.totalPoints ?? 0,
       credentials: credentials.map(serializeCredential),
     };
   });
@@ -42,6 +47,7 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
     }
 
     const profile = await upsertProfile(db, userId, patch);
-    return { profile: serializeProfile(profile) };
+    const { level } = await computeProfilePoints(db, profile.id);
+    return { profile: serializeProfile(profile, level) };
   });
 }

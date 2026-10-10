@@ -63,6 +63,11 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
     });
   }
 
+  async function getPoints(cookie: string): Promise<number> {
+    const me = await app.inject({ method: "GET", url: "/api/me", headers: { cookie } });
+    return me.json().points as number;
+  }
+
   it("n'affiche dans Abonnements que les posts de soi-même et de ceux qu'on suit", async () => {
     const a = await createMember("a@test.kemet", "feeda");
     const b = await createMember("b@test.kemet", "feedb");
@@ -168,6 +173,24 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
     });
     expect(asAuthor.statusCode).toBe(200);
     expect(asAuthor.json().reply.isSolution).toBe(true);
+    // +10 pour la solution, +5 de régularité (une action aujourd'hui compte
+    // comme un jour actif dans les 90 derniers jours).
+    expect(await getPoints(replier.cookie)).toBe(15);
+
+    // Démarquer puis remarquer la même réponse ne redonne pas de points.
+    await app.inject({
+      method: "PUT",
+      url: `/api/post-replies/${replyId}/solution`,
+      headers: { cookie: author.cookie },
+      payload: { isSolution: false },
+    });
+    await app.inject({
+      method: "PUT",
+      url: `/api/post-replies/${replyId}/solution`,
+      headers: { cookie: author.cookie },
+      payload: { isSolution: true },
+    });
+    expect(await getPoints(replier.cookie)).toBe(15);
   });
 
   it("n'accepte un retour structuré qu'une fois par personne, et seulement sur un post À tester", async () => {
@@ -198,6 +221,8 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
       payload: { body: "Ça fonctionne bien." },
     });
     expect(firstFeedback.statusCode).toBe(200);
+    // +10 pour le retour, +5 de régularité (jour actif).
+    expect(await getPoints(tester.cookie)).toBe(15);
 
     const secondFeedback = await app.inject({
       method: "POST",
@@ -206,6 +231,26 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
       payload: { body: "Un autre retour." },
     });
     expect(secondFeedback.statusCode).toBe(409);
+    expect(await getPoints(tester.cookie)).toBe(15);
+  });
+
+  it("refuse que l'auteur d'un post À tester se donne son propre retour", async () => {
+    const author = await createMember("feedback-self@test.kemet", "feedbackself");
+    const aTester = await createPost(author.cookie, {
+      body: "À tester.",
+      format: "a_tester",
+      testUrl: "https://example.com/demo",
+    });
+    const aTesterId = aTester.json().post.id as string;
+
+    const ownFeedback = await app.inject({
+      method: "POST",
+      url: `/api/posts/${aTesterId}/feedback`,
+      headers: { cookie: author.cookie },
+      payload: { body: "Mon propre retour." },
+    });
+    expect(ownFeedback.statusCode).toBe(400);
+    expect(await getPoints(author.cookie)).toBe(0);
   });
 
   it("refuse un post À tester sans lien de démo ou de dépôt", async () => {

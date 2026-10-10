@@ -9,6 +9,9 @@ export const meResponseSchema = z.object({
     emailVerified: z.boolean(),
   }),
   profile: profileSchema.nullable(),
+  // Visible seulement sur son propre profil : docs/CONTEXTE.md veut que le
+  // total reste discret pour les autres, qui ne voient que le niveau.
+  points: z.number().int().nonnegative(),
   credentials: z.array(credentialSchema),
 });
 

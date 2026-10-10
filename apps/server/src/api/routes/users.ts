@@ -14,6 +14,7 @@ import {
   listFollowers,
   listFollowing,
 } from "../repositories/profiles.js";
+import { computeProfilePoints } from "../repositories/points.js";
 import { serializeCredential, serializeProfile, serializeProfileSummary } from "../serializers.js";
 import type { AppDeps } from "../app.js";
 
@@ -29,8 +30,9 @@ export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps):
     const viewerId = await getSessionUserId(auth, request);
     const viewerProfile = viewerId ? await findProfileByUserId(db, viewerId) : null;
     const credentials = await listCredentials(db, profile.id);
+    const { level } = await computeProfilePoints(db, profile.id);
     return {
-      profile: serializeProfile(profile),
+      profile: serializeProfile(profile, level),
       credentials: credentials.map(serializeCredential),
       followerCount: await countFollowers(db, profile.id),
       followingCount: await countFollowing(db, profile.id),

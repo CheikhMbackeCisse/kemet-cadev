@@ -32,6 +32,7 @@ import {
   togglePostReaction,
 } from "../repositories/posts.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
+import { awardPoints, POINTS_POST_FEEDBACK_GIVEN, POINTS_POST_REPLY_SOLUTION } from "../repositories/points.js";
 import { serializePostFeedbackEntry, serializePostReply, serializePostSummary } from "../post-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 
@@ -202,6 +203,15 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDe
     }
     const input = markPostReplySolutionSchema.parse(request.body);
     const updated = await setPostReplySolution(db, post.id, reply.id, input.isSolution);
+    if (input.isSolution) {
+      await awardPoints(db, {
+        profileId: updated.authorId,
+        source: "post_reply_solution",
+        sourceId: updated.id,
+        amount: POINTS_POST_REPLY_SOLUTION,
+        givenByProfileId: profile.id,
+      });
+    }
     const { author } = await hydratePostReply(db, updated);
     return { reply: serializePostReply(updated, author) };
   });
@@ -214,12 +224,22 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDe
     if (post.format !== "a_tester") {
       throw badRequest("Seuls les posts À tester reçoivent un retour structuré.");
     }
+    if (post.authorId === profile.id) {
+      throw badRequest("L'auteur d'un post ne peut pas se donner son propre retour.");
+    }
     if (await hasProfileGivenFeedback(db, post.id, profile.id)) {
       throw conflict("Vous avez déjà donné un retour sur ce post.");
     }
     const input = createPostFeedbackSchema.parse(request.body);
     const feedback = await insertPostFeedback(db, { postId: post.id, authorId: profile.id, body: input.body });
     if (!feedback) throw conflict("Vous avez déjà donné un retour sur ce post.");
+    await awardPoints(db, {
+      profileId: profile.id,
+      source: "post_feedback_given",
+      sourceId: feedback.id,
+      amount: POINTS_POST_FEEDBACK_GIVEN,
+      givenByProfileId: null,
+    });
     return { feedback: serializePostFeedbackEntry(feedback, profile) };
   });
 
