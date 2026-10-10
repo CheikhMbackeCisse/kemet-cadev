@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COUNTRY_CODES } from "../data/countries.js";
+import { httpUrlSchema } from "./url.js";
 
 export const handleSchema = z
   .string()
@@ -19,7 +20,7 @@ export const updateProfileSchema = z
     title: z.string().max(120).nullable(),
     bio: z.string().max(500).nullable(),
     stack: stackSchema,
-    githubUrl: z.string().url().max(200).nullable(),
+    githubUrl: httpUrlSchema(200).nullable(),
     openToOpportunities: z.boolean(),
   })
   .partial();

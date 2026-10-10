@@ -2,10 +2,18 @@ import type {
   AssistantInvocationDetail,
   Attachment,
   Channel,
+  CreatePostInput,
+  CreatePostReplyInput,
   CreateSkillInput,
+  FeedTab,
   Invite,
   InvitePreview,
+  MeResponse,
   Message,
+  PostFeedbackEntry,
+  PostReactionResult,
+  PostReply,
+  PostSummary,
   Space,
   SpaceMember,
   SkillDetail,
@@ -206,6 +214,71 @@ export function previewInvite(code: string) {
 
 export function acceptInvite(code: string) {
   return request<{ joined: boolean; status: string; spaceId?: string }>(`/api/invites/${code}/accept`, { method: "POST" });
+}
+
+export function getMe() {
+  return request<MeResponse>("/api/me");
+}
+
+export function listPosts(tab: FeedTab, cursor?: string): Promise<Page<PostSummary>> {
+  const params = new URLSearchParams({ tab });
+  if (cursor) params.set("cursor", cursor);
+  return request(`/api/posts?${params.toString()}`);
+}
+
+export function getPost(postId: string) {
+  return request<{ post: PostSummary }>(`/api/posts/${postId}`);
+}
+
+export function createPost(input: CreatePostInput) {
+  return request<{ post: PostSummary }>("/api/posts", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function editPost(postId: string, body: string) {
+  return request<{ post: PostSummary }>(`/api/posts/${postId}`, { method: "PATCH", body: JSON.stringify({ body }) });
+}
+
+export function deletePost(postId: string) {
+  return request<{ deleted: boolean }>(`/api/posts/${postId}`, { method: "DELETE" });
+}
+
+export function sharePost(postId: string, body = "") {
+  return request<{ post: PostSummary }>(`/api/posts/${postId}/share`, { method: "POST", body: JSON.stringify({ body }) });
+}
+
+export function togglePostReaction(postId: string) {
+  return request<PostReactionResult>(`/api/posts/${postId}/reactions`, { method: "PUT" });
+}
+
+export function listPostReplies(postId: string, cursor?: string): Promise<Page<PostReply>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/posts/${postId}/replies${query}`);
+}
+
+export function createPostReply(postId: string, input: CreatePostReplyInput) {
+  return request<{ reply: PostReply }>(`/api/posts/${postId}/replies`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function deletePostReply(replyId: string) {
+  return request<{ deleted: boolean }>(`/api/post-replies/${replyId}`, { method: "DELETE" });
+}
+
+export function markPostReplySolution(replyId: string, isSolution: boolean) {
+  return request<{ reply: PostReply }>(`/api/post-replies/${replyId}/solution`, {
+    method: "PUT",
+    body: JSON.stringify({ isSolution }),
+  });
+}
+
+export function createPostFeedback(postId: string, body: string) {
+  return request<{ feedback: PostFeedbackEntry }>(`/api/posts/${postId}/feedback`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export function listPostFeedback(postId: string) {
+  return request<{ items: PostFeedbackEntry[] }>(`/api/posts/${postId}/feedback`);
 }
 
 export { ChatApiError };

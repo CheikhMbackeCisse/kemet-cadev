@@ -1,4 +1,4 @@
-import { Download, Hash, MessageSquare, Paperclip, Plus, Send, Star, UserPlus, X } from "lucide-react";
+import { Download, Hash, MessageSquare, Paperclip, Plus, Rss, Send, Star, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   addSpaceMember,
@@ -31,7 +31,10 @@ import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { fr } from "../i18n/fr.js";
 import { KEMET_HANDLE, type Attachment, type Channel, type Space, type SpaceMember } from "@kemet/shared";
 
-const MOBILE_TABS: MobileTabItem[] = [{ id: "salons", label: "Salons", icon: Hash }];
+const MOBILE_TABS: MobileTabItem[] = [
+  { id: "fil", label: "Fil", icon: Rss },
+  { id: "salons", label: "Salons", icon: Hash },
+];
 const DIACRITICS_PATTERN = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");
 
 function readParam(name: string): string | null {
@@ -266,10 +269,25 @@ export function SpacePage() {
         }}
         mobileTabs={MOBILE_TABS}
         activeMobileTabId="salons"
-        onSelectMobileTab={() => {}}
+        onSelectMobileTab={(id) => {
+          if (id === "fil") window.location.href = "/fil";
+        }}
         topBarExtra={
           <>
             <ThemeToggle />
+            <a
+              href="/fil"
+              aria-label={fr.feed.title}
+              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
+            >
+              <Rss className="size-5" aria-hidden="true" />
+            </a>
+            <a
+              href="/fil"
+              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
+            >
+              {fr.feed.title}
+            </a>
             <a
               href="/skills"
               aria-label={fr.skills.title}

@@ -11,4 +11,6 @@ export * from "./schemas/invite.js";
 export * from "./schemas/chat-event.js";
 export * from "./schemas/skill.js";
 export * from "./schemas/assistant.js";
+export * from "./schemas/url.js";
+export * from "./schemas/post.js";
 export * from "./data/countries.js";

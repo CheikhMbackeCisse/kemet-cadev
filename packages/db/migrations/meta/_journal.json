@@ -29,6 +29,13 @@
       "when": 1791591512227,
       "tag": "0003_assistant_and_skills",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791617593326,
+      "tag": "0004_flashy_green_goblin",
+      "breakpoints": true
     }
   ]
 }

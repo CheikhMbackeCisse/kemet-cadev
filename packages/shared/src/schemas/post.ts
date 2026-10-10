@@ -1,0 +1,143 @@
+import { z } from "zod";
+import { httpUrlSchema } from "./url.js";
+
+export const MAX_POST_BODY_LENGTH = 1000;
+export const MAX_POST_REPLY_LENGTH = 1000;
+export const MAX_POST_FEEDBACK_LENGTH = 2000;
+export const MAX_POST_TEST_ASK_LENGTH = 300;
+
+export const postFormatSchema = z.enum(["astuce", "a_tester", "question"]);
+
+export type PostFormat = z.infer<typeof postFormatSchema>;
+
+export const createPostSchema = z
+  .object({
+    body: z.string().max(MAX_POST_BODY_LENGTH),
+    format: postFormatSchema.nullable().optional(),
+    testUrl: httpUrlSchema(500).nullable().optional(),
+    testAsk: z.string().min(1).max(MAX_POST_TEST_ASK_LENGTH).nullable().optional(),
+  })
+  .refine((input) => input.body.trim().length > 0, {
+    message: "Un post doit contenir du texte.",
+    path: ["body"],
+  })
+  .refine((input) => input.format === "a_tester" || (!input.testUrl && !input.testAsk), {
+    message: "Le lien et la demande de retour ne s'utilisent qu'avec le format À tester.",
+    path: ["testUrl"],
+  })
+  .refine((input) => input.format !== "a_tester" || !!input.testUrl, {
+    message: "Un post À tester doit indiquer un lien de démo ou de dépôt.",
+    path: ["testUrl"],
+  });
+
+export type CreatePostInput = z.infer<typeof createPostSchema>;
+
+export const editPostSchema = z.object({
+  body: z.string().max(MAX_POST_BODY_LENGTH),
+});
+
+export type EditPostInput = z.infer<typeof editPostSchema>;
+
+export const sharePostSchema = z.object({
+  body: z.string().max(MAX_POST_BODY_LENGTH).optional().default(""),
+});
+
+export type SharePostInput = z.infer<typeof sharePostSchema>;
+
+export const createPostReplySchema = z.object({
+  body: z.string().min(1).max(MAX_POST_REPLY_LENGTH),
+});
+
+export type CreatePostReplyInput = z.infer<typeof createPostReplySchema>;
+
+export const markPostReplySolutionSchema = z.object({
+  isSolution: z.boolean(),
+});
+
+export type MarkPostReplySolutionInput = z.infer<typeof markPostReplySolutionSchema>;
+
+export const createPostFeedbackSchema = z.object({
+  body: z.string().min(1).max(MAX_POST_FEEDBACK_LENGTH),
+});
+
+export type CreatePostFeedbackInput = z.infer<typeof createPostFeedbackSchema>;
+
+export const feedTabSchema = z.enum(["abonnements", "pour-toi"]);
+
+export type FeedTab = z.infer<typeof feedTabSchema>;
+
+export const feedQuerySchema = z.object({
+  tab: feedTabSchema.default("abonnements"),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export type FeedQuery = z.infer<typeof feedQuerySchema>;
+
+export const sharedPostPreviewSchema = z.object({
+  id: z.string().uuid(),
+  authorId: z.string().uuid(),
+  authorHandle: z.string(),
+  authorDisplayName: z.string(),
+  body: z.string(),
+  format: postFormatSchema.nullable(),
+  deletedAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+});
+
+export type SharedPostPreview = z.infer<typeof sharedPostPreviewSchema>;
+
+export const postSummarySchema = z.object({
+  id: z.string().uuid(),
+  authorId: z.string().uuid(),
+  authorHandle: z.string(),
+  authorDisplayName: z.string(),
+  body: z.string(),
+  format: postFormatSchema.nullable(),
+  testUrl: z.string().nullable(),
+  testAsk: z.string().nullable(),
+  sharedPost: sharedPostPreviewSchema.nullable(),
+  utileCount: z.number().int().nonnegative(),
+  reactedByMe: z.boolean(),
+  replyCount: z.number().int().nonnegative(),
+  feedbackCount: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  editedAt: z.string().datetime().nullable(),
+  deletedAt: z.string().datetime().nullable(),
+});
+
+export type PostSummary = z.infer<typeof postSummarySchema>;
+
+export const postReactionResultSchema = z.object({
+  utileCount: z.number().int().nonnegative(),
+  reactedByMe: z.boolean(),
+});
+
+export type PostReactionResult = z.infer<typeof postReactionResultSchema>;
+
+export const postReplySchema = z.object({
+  id: z.string().uuid(),
+  postId: z.string().uuid(),
+  authorId: z.string().uuid(),
+  authorHandle: z.string(),
+  authorDisplayName: z.string(),
+  body: z.string(),
+  isSolution: z.boolean(),
+  createdAt: z.string().datetime(),
+  editedAt: z.string().datetime().nullable(),
+  deletedAt: z.string().datetime().nullable(),
+});
+
+export type PostReply = z.infer<typeof postReplySchema>;
+
+export const postFeedbackEntrySchema = z.object({
+  id: z.string().uuid(),
+  postId: z.string().uuid(),
+  authorId: z.string().uuid(),
+  authorHandle: z.string(),
+  authorDisplayName: z.string(),
+  body: z.string(),
+  createdAt: z.string().datetime(),
+});
+
+export type PostFeedbackEntry = z.infer<typeof postFeedbackEntrySchema>;

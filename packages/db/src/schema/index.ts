@@ -4,3 +4,4 @@ export * from "./credentials.js";
 export * from "./follows.js";
 export * from "./chat.js";
 export * from "./assistant.js";
+export * from "./feed.js";

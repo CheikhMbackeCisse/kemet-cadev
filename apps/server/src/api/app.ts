@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import multipart from "@fastify/multipart";
 import { toNodeHandler } from "better-auth/node";
+import { ZodError } from "zod";
 import { healthcheckResponseSchema } from "@kemet/shared";
 import type { Db } from "@kemet/db";
 import type { Auth } from "../auth/auth.js";
@@ -19,6 +20,7 @@ import { registerReadStateRoutes } from "./routes/read-states.js";
 import { registerInviteRoutes } from "./routes/invites.js";
 import { registerSkillRoutes } from "./routes/skills.js";
 import { registerAssistantRoutes } from "./routes/assistant.js";
+import { registerPostRoutes } from "./routes/posts.js";
 import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
 
 export interface AppDeps {
@@ -43,6 +45,14 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {
       reply.status(error.statusCode).send({ error: { code: error.code, message: error.message } });
+      return;
+    }
+    // Une route invalide un corps de requête avec schema.parse(), jamais
+    // schema.safeParse() : sans ce cas, une entrée refusée par une règle
+    // Zod (plutôt qu'une vérification explicite via badRequest()) tombait
+    // dans la branche 500 ci-dessous.
+    if (error instanceof ZodError) {
+      reply.status(400).send({ error: { code: "invalid_input", message: "Les données envoyées ne sont pas valides." } });
       return;
     }
     app.log.error(error);
@@ -81,6 +91,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   registerInviteRoutes(app, chatDeps);
   registerSkillRoutes(app, chatDeps);
   registerAssistantRoutes(app, chatDeps);
+  registerPostRoutes(app, chatDeps);
 
   return app;
 }
