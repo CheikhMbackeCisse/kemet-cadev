@@ -1,4 +1,17 @@
-import type { Attachment, Channel, Invite, InvitePreview, Message, Space, SpaceMember } from "@kemet/shared";
+import type {
+  AssistantInvocationDetail,
+  Attachment,
+  Channel,
+  CreateSkillInput,
+  Invite,
+  InvitePreview,
+  Message,
+  Space,
+  SpaceMember,
+  SkillDetail,
+  SkillSummary,
+  UpdateSkillInput,
+} from "@kemet/shared";
 
 class ChatApiError extends Error {
   constructor(
@@ -147,6 +160,44 @@ export function listInvites(spaceId: string) {
 
 export function revokeInvite(inviteId: string) {
   return request<{ revoked: boolean }>(`/api/invites/${inviteId}`, { method: "DELETE" });
+}
+
+export function listSkills() {
+  return request<{ items: SkillSummary[] }>("/api/skills");
+}
+
+export function getSkill(slug: string) {
+  return request<{ skill: SkillDetail }>(`/api/skills/${slug}`);
+}
+
+export function createSkill(input: CreateSkillInput) {
+  return request<{ skill: SkillDetail }>("/api/skills", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function updateSkill(slug: string, input: UpdateSkillInput) {
+  return request<{ skill: SkillDetail }>(`/api/skills/${slug}`, { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export function deleteSkill(slug: string) {
+  return request<{ deleted: boolean }>(`/api/skills/${slug}`, { method: "DELETE" });
+}
+
+export function rateSkill(slug: string, stars: number) {
+  return request<{ ratings: { average: number | null; count: number } }>(`/api/skills/${slug}/rating`, {
+    method: "PUT",
+    body: JSON.stringify({ stars }),
+  });
+}
+
+export function getAssistantInvocation(messageId: string) {
+  return request<AssistantInvocationDetail>(`/api/messages/${messageId}/assistant-invocation`);
+}
+
+export function sendAssistantFeedback(invocationId: string, helpful: boolean) {
+  return request<{ helpful: boolean }>(`/api/assistant-invocations/${invocationId}/feedback`, {
+    method: "PUT",
+    body: JSON.stringify({ helpful }),
+  });
 }
 
 export function previewInvite(code: string) {

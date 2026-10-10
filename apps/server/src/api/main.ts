@@ -5,6 +5,10 @@ import { createChatPublisher } from "../chat/pubsub.js";
 import { SmtpEmailSender } from "../email/smtp-email-sender.js";
 import { loadAttachmentLimits } from "../storage/config.js";
 import { LocalDiskStorage } from "../storage/file-storage.js";
+import { createLlmProviderFromEnv } from "../ai/create-llm-provider.js";
+import { FullTextRetriever } from "../ai/skill-retriever.js";
+import { RedisResponseCache } from "../ai/response-cache.js";
+import { KemetAssistantOrchestrator } from "../ai/assistant-orchestrator.js";
 import { buildApp } from "./app.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -41,11 +45,27 @@ const auth = createAuth({
       : undefined,
 });
 
-const chat = createChatPublisher(process.env.VALKEY_URL ?? "redis://localhost:6379");
+const valkeyUrl = process.env.VALKEY_URL ?? "redis://localhost:6379";
+const chat = createChatPublisher(valkeyUrl);
 const storage = new LocalDiskStorage(process.env.UPLOADS_DIR ?? "/data/uploads");
 const attachmentLimits = loadAttachmentLimits();
 
-const app = buildApp({ db, auth, chat, storage, attachmentLimits });
+// Sans les deux clés, l'assistant reste inerte (NoopAssistantOrchestrator,
+// voir buildApp) plutôt que de faire échouer le démarrage du serveur :
+// utile en développement local avant d'avoir créé les comptes Gemini et
+// OpenRouter.
+const assistant =
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.OPENROUTER_API_KEY
+    ? new KemetAssistantOrchestrator(
+        db,
+        chat,
+        createLlmProviderFromEnv(process.env),
+        new FullTextRetriever(db),
+        new RedisResponseCache(valkeyUrl),
+      )
+    : undefined;
+
+const app = buildApp({ db, auth, chat, storage, attachmentLimits, assistant });
 
 const port = Number(process.env.API_PORT ?? 3001);
 app.listen({ port, host: "0.0.0.0" }).catch((error) => {

@@ -1,6 +1,6 @@
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { KemetSymbol } from "../ui/KemetSymbol.js";
 
@@ -16,6 +16,8 @@ export interface AssistantMessageProps {
   skill?: AssistantSkillReference;
   readSummary?: string;
   onFeedback?: (helpful: boolean) => void;
+  hideFeedback?: boolean;
+  initialFeedback?: "helpful" | "not-helpful" | null;
   className?: string;
 }
 
@@ -24,9 +26,13 @@ export function AssistantMessage({
   skill,
   readSummary,
   onFeedback,
+  hideFeedback = false,
+  initialFeedback = null,
   className,
 }: AssistantMessageProps) {
-  const [feedback, setFeedback] = useState<"helpful" | "not-helpful" | null>(null);
+  const [feedback, setFeedback] = useState<"helpful" | "not-helpful" | null>(initialFeedback);
+
+  useEffect(() => setFeedback(initialFeedback), [initialFeedback]);
 
   function handleFeedback(helpful: boolean) {
     setFeedback(helpful ? "helpful" : "not-helpful");
@@ -62,32 +68,34 @@ export function AssistantMessage({
         </p>
       )}
 
-      <div className="mt-3 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => handleFeedback(true)}
-          aria-pressed={feedback === "helpful"}
-          className={cn(
-            "inline-flex h-control-compact items-center gap-1.5 rounded-control border border-border-strong px-2.5 text-xs font-medium text-text-2 hover:bg-surface-2",
-            feedback === "helpful" && "border-success text-success",
-          )}
-        >
-          <ThumbsUp className="size-3.5" aria-hidden="true" />
-          Utile
-        </button>
-        <button
-          type="button"
-          onClick={() => handleFeedback(false)}
-          aria-pressed={feedback === "not-helpful"}
-          className={cn(
-            "inline-flex h-control-compact items-center gap-1.5 rounded-control border border-border-strong px-2.5 text-xs font-medium text-text-2 hover:bg-surface-2",
-            feedback === "not-helpful" && "border-danger text-danger",
-          )}
-        >
-          <ThumbsDown className="size-3.5" aria-hidden="true" />
-          Pas utile
-        </button>
-      </div>
+      {!hideFeedback && (
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleFeedback(true)}
+            aria-pressed={feedback === "helpful"}
+            className={cn(
+              "inline-flex h-control-compact items-center gap-1.5 rounded-control border border-border-strong px-2.5 text-xs font-medium text-text-2 hover:bg-surface-2",
+              feedback === "helpful" && "border-success text-success",
+            )}
+          >
+            <ThumbsUp className="size-3.5" aria-hidden="true" />
+            Utile
+          </button>
+          <button
+            type="button"
+            onClick={() => handleFeedback(false)}
+            aria-pressed={feedback === "not-helpful"}
+            className={cn(
+              "inline-flex h-control-compact items-center gap-1.5 rounded-control border border-border-strong px-2.5 text-xs font-medium text-text-2 hover:bg-surface-2",
+              feedback === "not-helpful" && "border-danger text-danger",
+            )}
+          >
+            <ThumbsDown className="size-3.5" aria-hidden="true" />
+            Pas utile
+          </button>
+        </div>
+      )}
     </div>
   );
 }

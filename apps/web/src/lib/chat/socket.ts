@@ -37,6 +37,9 @@ const EVENT_TYPES: ChatEvent["type"][] = [
   "message:deleted",
   "reaction:updated",
   "member:removed",
+  "assistant:chunk",
+  "assistant:done",
+  "assistant:failed",
 ];
 
 export function onChatEvent(handler: ChatEventHandler): () => void {

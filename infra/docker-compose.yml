@@ -77,6 +77,8 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       EMAIL_FROM: ${EMAIL_FROM}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
     volumes:
       - uploads:${UPLOADS_DIR}
     deploy:

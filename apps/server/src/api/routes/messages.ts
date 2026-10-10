@@ -3,6 +3,7 @@ import { createMessageSchema, editMessageSchema, paginationQuerySchema, toggleRe
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { extractMentionHandles } from "../../chat/mentions.js";
+import { mentionsAssistant } from "../../chat/kemet-assistant.js";
 import {
   findMessageById,
   editMessage,
@@ -39,7 +40,7 @@ async function toSerializedMessage(db: ChatAppDeps["db"], row: Awaited<ReturnTyp
   );
 }
 
-export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat }: ChatAppDeps): void {
+export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat, assistant }: ChatAppDeps): void {
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/channels/:id/messages",
     async (request) => {
@@ -118,6 +119,21 @@ export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat }: 
       const serialized = await toSerializedMessage(db, message);
       if (created) {
         await chat.publish({ type: "message:new", channelId: channel.id, message: serialized });
+        if (mentionsAssistant(input.body)) {
+          // Volontairement non attendu : la réponse HTTP ne doit pas attendre
+          // la fin du flux de l'assistant, diffusé à part par Socket.IO
+          // (voir apps/server/src/ai/assistant-orchestrator.ts). Une erreur
+          // ici est déjà transformée en événement assistant:failed par
+          // l'orchestrateur, donc seulement journalisée si elle s'en échappe.
+          assistant
+            .handleMention({
+              channelId: channel.id,
+              triggerMessageId: message.id,
+              requestedBy: profile.id,
+              body: input.body,
+            })
+            .catch((error) => app.log.error(error, "échec de l'invocation de l'assistant"));
+        }
       }
       return { message: serialized };
     },

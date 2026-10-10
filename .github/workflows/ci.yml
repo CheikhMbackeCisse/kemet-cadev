@@ -137,9 +137,16 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
 
-      - name: Afficher les journaux des services en cas d'échec
+      - name: Enregistrer les journaux des services en cas d'échec
         if: failure()
-        run: docker compose -f infra/docker-compose.yml --env-file .env logs
+        run: docker compose -f infra/docker-compose.yml --env-file .env logs --timestamps > docker-compose.log
+
+      - name: Déposer les journaux des services en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-compose-logs
+          path: docker-compose.log
 
       - name: Arrêter et nettoyer la pile
         if: always()

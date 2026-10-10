@@ -9,4 +9,6 @@ export * from "./schemas/attachment.js";
 export * from "./schemas/message.js";
 export * from "./schemas/invite.js";
 export * from "./schemas/chat-event.js";
+export * from "./schemas/skill.js";
+export * from "./schemas/assistant.js";
 export * from "./data/countries.js";

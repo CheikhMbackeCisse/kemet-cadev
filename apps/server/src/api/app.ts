@@ -17,6 +17,9 @@ import { registerMessageRoutes } from "./routes/messages.js";
 import { registerAttachmentRoutes } from "./routes/attachments.js";
 import { registerReadStateRoutes } from "./routes/read-states.js";
 import { registerInviteRoutes } from "./routes/invites.js";
+import { registerSkillRoutes } from "./routes/skills.js";
+import { registerAssistantRoutes } from "./routes/assistant.js";
+import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
 
 export interface AppDeps {
   db: Db;
@@ -24,6 +27,7 @@ export interface AppDeps {
   chat?: ChatPublisher;
   storage?: FileStorage;
   attachmentLimits?: AttachmentLimits;
+  assistant?: AssistantOrchestrator;
 }
 
 export function buildApp(deps: AppDeps): FastifyInstance {
@@ -31,6 +35,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const chat = deps.chat ?? createNoopChatPublisher();
   const storage = deps.storage ?? new InMemoryStorage();
   const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
+  const assistant = deps.assistant ?? new NoopAssistantOrchestrator();
 
   void app.register(rateLimit, { global: false });
   void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
@@ -67,13 +72,15 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   registerMeRoutes(app, deps);
   registerUserRoutes(app, deps);
 
-  const chatDeps: ChatAppDeps = { db: deps.db, auth: deps.auth, chat, storage, attachmentLimits };
+  const chatDeps: ChatAppDeps = { db: deps.db, auth: deps.auth, chat, storage, attachmentLimits, assistant };
   registerSpaceRoutes(app, chatDeps);
   registerChannelRoutes(app, chatDeps);
   registerMessageRoutes(app, chatDeps);
   registerAttachmentRoutes(app, chatDeps);
   registerReadStateRoutes(app, chatDeps);
   registerInviteRoutes(app, chatDeps);
+  registerSkillRoutes(app, chatDeps);
+  registerAssistantRoutes(app, chatDeps);
 
   return app;
 }
@@ -84,4 +91,5 @@ export interface ChatAppDeps {
   chat: ChatPublisher;
   storage: FileStorage;
   attachmentLimits: AttachmentLimits;
+  assistant: AssistantOrchestrator;
 }

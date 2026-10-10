@@ -19,7 +19,8 @@ export function Dialog({ open, onOpenChange, title, description, children, class
         <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <RadixDialog.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-panel border border-border bg-bg p-6 shadow-floating",
+            "fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-panel border border-border bg-bg p-6 shadow-floating",
+            "max-h-[85vh]",
             className,
           )}
         >

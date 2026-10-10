@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { hash } from "@node-rs/argon2";
 import { createDb } from "./client.js";
-import { account, credentials, follows, profiles, user } from "./schema/index.js";
+import { account, credentials, follows, profiles, skills, user } from "./schema/index.js";
 
 /**
  * Mot de passe commun des comptes de démonstration, pour que le jury puisse
@@ -203,6 +203,52 @@ async function seed(): Promise<void> {
   for (let i = 1; i < profileIds.length; i += 1) {
     await db.insert(follows).values({ followerId: profileIds[i]!, followeeId: profileIds[0]! });
   }
+
+  await db.insert(skills).values([
+    {
+      authorId: profileIds[0]!,
+      slug: "wave-paiements",
+      name: "wave-paiements",
+      description: "Intégrer les paiements Wave dans une API Node.js : webhooks, statuts, remboursements.",
+      content:
+        "Utiliser ce skill pour toute question sur l'intégration de Wave (paiement mobile) côté serveur.\n\n" +
+        "Points clés :\n" +
+        "- Les webhooks Wave arrivent sans garantie d'ordre : toujours vérifier le statut actuel de la " +
+        "transaction via l'API avant de considérer un paiement comme confirmé.\n" +
+        "- Un remboursement partiel n'existe pas côté Wave : il faut rembourser en totalité puis relancer " +
+        "un paiement pour la part restante.\n" +
+        "- Toujours vérifier la signature du webhook avant de traiter son contenu.\n\n" +
+        "Exemple de vérification de signature :\n" +
+        "```ts\n" +
+        "const expected = createHmac('sha256', secret).update(rawBody).digest('hex');\n" +
+        "if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader))) {\n" +
+        "  throw new Error('signature invalide');\n" +
+        "}\n" +
+        "```",
+      tags: ["wave", "paiement", "mobile money", "webhook"],
+      visibility: "public",
+      isDemo: true,
+    },
+    {
+      authorId: profileIds[2]!,
+      slug: "ci-docker-fiable",
+      name: "ci-docker-fiable",
+      description: "Rendre une CI GitHub Actions stable quand elle construit et démarre des images Docker.",
+      content:
+        "Utiliser ce skill pour une CI qui construit des images Docker et les fait démarrer pour des tests " +
+        "d'intégration ou end-to-end.\n\n" +
+        "Points clés :\n" +
+        "- Toujours attendre un healthcheck explicite avant de lancer les tests, jamais un délai fixe : " +
+        "le temps de démarrage varie selon la charge du runner.\n" +
+        "- Mettre en cache les couches Docker entre les exécutions (buildx avec un cache GitHub Actions) " +
+        "réduit le temps de CI de plusieurs minutes.\n" +
+        "- Un service qui dépasse la mémoire allouée au runner échoue silencieusement : surveiller la " +
+        "mémoire de chaque conteneur, pas seulement les journaux applicatifs.",
+      tags: ["ci", "docker", "github actions", "tests"],
+      visibility: "public",
+      isDemo: true,
+    },
+  ]);
 
   console.log(`${DEMO_ACCOUNTS.length} comptes de démonstration créés (mot de passe : ${DEMO_PASSWORD}).`);
   process.exit(0);

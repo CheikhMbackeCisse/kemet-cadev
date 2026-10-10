@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { messageSchema } from "./message.js";
+import { skillCitationSchema } from "./assistant.js";
 
 export const chatEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("message:new"), channelId: z.string().uuid(), message: messageSchema }),
@@ -19,6 +20,25 @@ export const chatEventSchema = z.discriminatedUnion("type", [
     type: z.literal("member:removed"),
     spaceId: z.string().uuid(),
     profileId: z.string().uuid(),
+  }),
+  z.object({
+    type: z.literal("assistant:chunk"),
+    channelId: z.string().uuid(),
+    invocationId: z.string().uuid(),
+    delta: z.string(),
+  }),
+  z.object({
+    type: z.literal("assistant:done"),
+    channelId: z.string().uuid(),
+    invocationId: z.string().uuid(),
+    message: messageSchema,
+    skill: skillCitationSchema.nullable(),
+  }),
+  z.object({
+    type: z.literal("assistant:failed"),
+    channelId: z.string().uuid(),
+    invocationId: z.string().uuid(),
+    errorCode: z.string(),
   }),
 ]);
 

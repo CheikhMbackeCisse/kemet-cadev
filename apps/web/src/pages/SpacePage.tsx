@@ -1,4 +1,4 @@
-import { Download, Hash, MessageSquare, Paperclip, Plus, Send, UserPlus, X } from "lucide-react";
+import { Download, Hash, MessageSquare, Paperclip, Plus, Send, Star, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   addSpaceMember,
@@ -13,6 +13,7 @@ import {
   uploadAttachment,
 } from "../lib/chat/api.js";
 import { useChannelMessages } from "../lib/chat/useChannelMessages.js";
+import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { AppShell } from "../components/shell/AppShell.js";
 import type { ChannelItem, MobileTabItem, SpaceItem } from "../components/shell/types.js";
 import { Avatar } from "../components/ui/Avatar.js";
@@ -28,7 +29,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { UserName } from "../components/ui/UserName.js";
 import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { fr } from "../i18n/fr.js";
-import type { Attachment, Channel, Space, SpaceMember } from "@kemet/shared";
+import { KEMET_HANDLE, type Attachment, type Channel, type Space, type SpaceMember } from "@kemet/shared";
 
 const MOBILE_TABS: MobileTabItem[] = [{ id: "salons", label: "Salons", icon: Hash }];
 const DIACRITICS_PATTERN = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");
@@ -137,7 +138,17 @@ export function SpacePage() {
     if (activeSpaceId && activeChannelId) writeParams({ space: activeSpaceId, channel: activeChannelId });
   }, [activeSpaceId, activeChannelId]);
 
-  const { messages, loading, error: messagesError, reload: reloadMessages, send, react } = useChannelMessages(activeChannelId);
+  const {
+    messages,
+    loading,
+    error: messagesError,
+    assistantStream,
+    assistantMetaByMessageId,
+    reload: reloadMessages,
+    send,
+    react,
+    giveAssistantFeedback,
+  } = useChannelMessages(activeChannelId);
 
   const spaceItems: SpaceItem[] = useMemo(
     () => spaces.map((space) => ({ id: space.id, name: space.name, icon: Hash })),
@@ -259,6 +270,19 @@ export function SpacePage() {
         topBarExtra={
           <>
             <ThemeToggle />
+            <a
+              href="/skills"
+              aria-label={fr.skills.title}
+              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
+            >
+              <Star className="size-5" aria-hidden="true" />
+            </a>
+            <a
+              href="/skills"
+              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
+            >
+              {fr.skills.title}
+            </a>
             <IconButton
               aria-label={fr.spaces.createTitle}
               className="lg:hidden"
@@ -345,7 +369,31 @@ export function SpacePage() {
               <EmptyState icon={MessageSquare} message={fr.chat.noMessages} />
             ) : (
               <div className="flex flex-col gap-4">
-                {messages.map((message) => (
+                {messages.map((message) =>
+                  message.authorHandle === KEMET_HANDLE ? (
+                    <AssistantMessage
+                      key={message.id}
+                      content={message.deletedAt ? fr.chat.messageDeleted : message.body}
+                      skill={
+                        assistantMetaByMessageId[message.id]?.skill
+                          ? {
+                              skillName: assistantMetaByMessageId[message.id]!.skill!.name,
+                              skillHref: `/skills/${assistantMetaByMessageId[message.id]!.skill!.slug}`,
+                              authorName: assistantMetaByMessageId[message.id]!.skill!.authorDisplayName,
+                              authorHref: `/u/${assistantMetaByMessageId[message.id]!.skill!.authorHandle}`,
+                            }
+                          : undefined
+                      }
+                      initialFeedback={
+                        assistantMetaByMessageId[message.id]?.helpful === true
+                          ? "helpful"
+                          : assistantMetaByMessageId[message.id]?.helpful === false
+                            ? "not-helpful"
+                            : null
+                      }
+                      onFeedback={(helpful) => void giveAssistantFeedback(message.id, helpful)}
+                    />
+                  ) : (
                   <div key={message.id} className="flex gap-3">
                     <Avatar name={message.authorDisplayName} />
                     <div className="min-w-0 flex-1">
@@ -406,7 +454,15 @@ export function SpacePage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ),
+                )}
+                {assistantStream && (
+                  <AssistantMessage
+                    content={assistantStream.text || "…"}
+                    hideFeedback
+                    readSummary={assistantStream.failed ? fr.chat.assistantUnavailable : undefined}
+                  />
+                )}
               </div>
             )}
           </div>
