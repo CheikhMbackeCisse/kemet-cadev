@@ -3,16 +3,22 @@ import type {
   AssistantInvocationDetail,
   Attachment,
   Channel,
+  CompetitionDetail,
+  CompetitionSummary,
   CreateApplicationInput,
+  CreateCompetitionRequestInput,
   CreateHelpRequestInput,
   CreatePostInput,
   CreatePostReplyInput,
   CreateProjectInput,
   CreateSkillInput,
+  CreateSubmissionInput,
+  CreateTeamInput,
   FeedTab,
   HelpRequest,
   Invite,
   InvitePreview,
+  JuryScoreInput,
   MeResponse,
   Message,
   PostFeedbackEntry,
@@ -21,12 +27,17 @@ import type {
   PostSummary,
   ProjectDetail,
   ProjectSummary,
+  ReviewCompetitionInput,
   Space,
   SpaceMember,
   SkillDetail,
   SkillSummary,
+  Submission,
+  SubmissionResult,
+  Team,
   UpdateProjectInput,
   UpdateSkillInput,
+  UpdateSubmissionInput,
 } from "@kemet/shared";
 
 class ChatApiError extends Error {
@@ -341,6 +352,70 @@ export function decideApplication(applicationId: string, accepted: boolean) {
     method: "PUT",
     body: JSON.stringify({ accepted }),
   });
+}
+
+export function listCompetitions(cursor?: string): Promise<Page<CompetitionSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/competitions${query}`);
+}
+
+export function listPendingCompetitions() {
+  return request<{ items: CompetitionDetail[] }>("/api/competitions/pending");
+}
+
+export function getCompetition(slug: string) {
+  return request<{ competition: CompetitionDetail }>(`/api/competitions/${slug}`);
+}
+
+export function requestCompetition(input: CreateCompetitionRequestInput) {
+  return request<{ competition: CompetitionDetail }>("/api/competitions", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function reviewCompetition(competitionId: string, input: ReviewCompetitionInput) {
+  return request<{ competition: CompetitionDetail }>(`/api/competitions/${competitionId}/review`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export function listTeams(slug: string) {
+  return request<{ items: Team[] }>(`/api/competitions/${slug}/teams`);
+}
+
+export function createTeam(slug: string, input: CreateTeamInput) {
+  return request<{ team: Team }>(`/api/competitions/${slug}/teams`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function joinTeam(teamId: string) {
+  return request<{ team: Team }>(`/api/teams/${teamId}/join`, { method: "POST" });
+}
+
+export function listSubmissions(slug: string) {
+  return request<{ items: Submission[] }>(`/api/competitions/${slug}/submissions`);
+}
+
+export function createSubmission(slug: string, input: CreateSubmissionInput) {
+  return request<{ submission: Submission }>(`/api/competitions/${slug}/submissions`, { method: "POST", body: JSON.stringify(input) });
+}
+
+export function updateSubmission(submissionId: string, input: UpdateSubmissionInput) {
+  return request<{ submission: Submission }>(`/api/submissions/${submissionId}`, { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export function voteForSubmission(submissionId: string) {
+  return request<{ submissionId: string }>(`/api/submissions/${submissionId}/vote`, { method: "POST" });
+}
+
+export function getMyVote(slug: string) {
+  return request<{ submissionId: string | null }>(`/api/competitions/${slug}/my-vote`);
+}
+
+export function submitJuryScore(submissionId: string, input: JuryScoreInput) {
+  return request<{ score: number }>(`/api/submissions/${submissionId}/jury-score`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export function getCompetitionResults(slug: string) {
+  return request<{ items: SubmissionResult[] }>(`/api/competitions/${slug}/results`);
 }
 
 export { ChatApiError };

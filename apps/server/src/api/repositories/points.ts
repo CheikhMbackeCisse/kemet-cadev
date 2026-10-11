@@ -6,6 +6,10 @@ export const POINTS_POST_REPLY_SOLUTION = 10;
 export const POINTS_POST_FEEDBACK_GIVEN = 10;
 export const POINTS_ASSISTANT_SKILL_HELPFUL = 5;
 export const POINTS_PROJECT_HELP_CONFIRMED = 20;
+export const POINTS_COMPETITION_PARTICIPATION = 10;
+// Classement : 1er, 2e, 3e (docs/CONTEXTE.md). Un rang au-delà n'est pas
+// récompensé.
+export const POINTS_COMPETITION_VICTORY_BY_RANK: ReadonlyArray<number> = [200, 100, 50];
 
 // Valeur non spécifiée par docs/CONTEXTE.md ("plafond de points qu'une même
 // personne peut te donner par jour") : choisie arbitrairement, à ajuster
@@ -47,6 +51,8 @@ const ENTRAIDE_SOURCES: ReadonlySet<PointsSource> = new Set([
   "post_feedback_given",
   "assistant_skill_helpful",
   "project_help_confirmed",
+  "competition_participation",
+  "competition_victory",
 ]);
 
 export interface AwardPointsInput {

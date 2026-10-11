@@ -27,6 +27,7 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       profile: profile && points ? serializeProfile(profile, points.level) : null,
       points: points?.totalPoints ?? 0,
       credentials: credentials.map(serializeCredential),
+      isPlatformAdmin: profile?.isPlatformAdmin ?? false,
     };
   });
 

@@ -57,6 +57,13 @@
       "when": 1791643176438,
       "tag": "0007_sturdy_fenris",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791681178758,
+      "tag": "0008_fearless_morgan_stark",
+      "breakpoints": true
     }
   ]
 }

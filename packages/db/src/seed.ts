@@ -176,6 +176,10 @@ async function seed(): Promise<void> {
         githubUrl: demoAccount.githubUrl,
         openToOpportunities: demoAccount.openToOpportunities,
         isDemo: true,
+        // Un seul compte de démonstration porte le rôle admin (validation
+        // des compétitions, lot 10) : aucune interface ne permet encore de
+        // l'attribuer, voir packages/db/src/schema/profiles.ts.
+        isPlatformAdmin: demoAccount.handle === "amina-diallo",
       })
       .returning({ id: profiles.id });
     profileIds.push(profile!.id);

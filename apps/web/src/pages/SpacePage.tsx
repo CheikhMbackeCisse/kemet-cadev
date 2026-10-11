@@ -1,4 +1,4 @@
-import { Download, FolderGit2, Hash, MessageSquare, Paperclip, Plus, Rss, Send, Star, UserPlus, X } from "lucide-react";
+import { Download, FolderGit2, Hash, MessageSquare, Paperclip, Plus, Rss, Send, Star, Trophy, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   addSpaceMember,
@@ -35,6 +35,7 @@ const MOBILE_TABS: MobileTabItem[] = [
   { id: "fil", label: "Fil", icon: Rss },
   { id: "salons", label: "Salons", icon: Hash },
   { id: "projets", label: "Projets", icon: FolderGit2 },
+  { id: "competitions", label: "Compétitions", icon: Trophy },
 ];
 const DIACRITICS_PATTERN = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");
 
@@ -273,6 +274,7 @@ export function SpacePage() {
         onSelectMobileTab={(id) => {
           if (id === "fil") window.location.href = "/fil";
           if (id === "projets") window.location.href = "/projets";
+          if (id === "competitions") window.location.href = "/competitions";
         }}
         topBarExtra={
           <>
@@ -315,6 +317,19 @@ export function SpacePage() {
               className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
             >
               {fr.projects.title}
+            </a>
+            <a
+              href="/competitions"
+              aria-label={fr.competitions.title}
+              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
+            >
+              <Trophy className="size-5" aria-hidden="true" />
+            </a>
+            <a
+              href="/competitions"
+              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
+            >
+              {fr.competitions.title}
             </a>
             <IconButton
               aria-label={fr.spaces.createTitle}

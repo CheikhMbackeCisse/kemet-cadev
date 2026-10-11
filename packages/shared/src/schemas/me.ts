@@ -13,6 +13,10 @@ export const meResponseSchema = z.object({
   // total reste discret pour les autres, qui ne voient que le niveau.
   points: z.number().int().nonnegative(),
   credentials: z.array(credentialSchema),
+  // Sert à afficher les actions réservées (valider une compétition, lot 10) ;
+  // aucune interface ne permet encore de changer ce champ, voir
+  // packages/db/src/schema/profiles.ts.
+  isPlatformAdmin: z.boolean(),
 });
 
 export type MeResponse = z.infer<typeof meResponseSchema>;

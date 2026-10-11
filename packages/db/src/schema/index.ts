@@ -7,3 +7,4 @@ export * from "./assistant.js";
 export * from "./feed.js";
 export * from "./points.js";
 export * from "./projects.js";
+export * from "./competitions.js";
