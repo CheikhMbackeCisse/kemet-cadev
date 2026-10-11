@@ -35,6 +35,11 @@ import { findProfileByUserId } from "../repositories/profiles.js";
 import { awardPoints, POINTS_POST_FEEDBACK_GIVEN, POINTS_POST_REPLY_SOLUTION } from "../repositories/points.js";
 import { serializePostFeedbackEntry, serializePostReply, serializePostSummary } from "../post-serializers.js";
 import type { ChatAppDeps } from "../app.js";
+import { antiSpamMax } from "../../moderation/anti-spam.js";
+
+const MAX_POSTS_PER_MINUTE = 20;
+const MAX_SHARES_PER_MINUTE = 20;
+const MAX_REPLIES_PER_MINUTE = 30;
 
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
@@ -63,7 +68,7 @@ async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferS
   );
 }
 
-export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
+export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamConfig }: ChatAppDeps): void {
   app.get<{ Querystring: { tab?: string; cursor?: string; limit?: string } }>("/api/posts", async (request) => {
     const userId = await getSessionUserId(auth, request);
     const profile = await findOwnProfile(db, userId);
@@ -78,20 +83,24 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDe
     return { items, nextCursor: page.nextCursor };
   });
 
-  app.post("/api/posts", { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } }, async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const input = createPostSchema.parse(request.body);
-    const post = await insertPost(db, {
-      authorId: profile.id,
-      body: input.body.trim(),
-      format: input.format ?? null,
-      testUrl: input.testUrl ?? null,
-      testAsk: input.testAsk ?? null,
-      sharedPostId: null,
-    });
-    return { post: await toSerializedPost(db, post, profile.id) };
-  });
+  app.post(
+    "/api/posts",
+    { config: { rateLimit: { max: antiSpamMax(db, auth, antiSpamConfig, MAX_POSTS_PER_MINUTE), timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const input = createPostSchema.parse(request.body);
+      const post = await insertPost(db, {
+        authorId: profile.id,
+        body: input.body.trim(),
+        format: input.format ?? null,
+        testUrl: input.testUrl ?? null,
+        testAsk: input.testAsk ?? null,
+        sharedPostId: null,
+      });
+      return { post: await toSerializedPost(db, post, profile.id) };
+    },
+  );
 
   app.get<{ Params: { id: string } }>("/api/posts/:id", async (request) => {
     const userId = await getSessionUserId(auth, request);
@@ -126,7 +135,7 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDe
 
   app.post<{ Params: { id: string } }>(
     "/api/posts/:id/share",
-    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    { config: { rateLimit: { max: antiSpamMax(db, auth, antiSpamConfig, MAX_SHARES_PER_MINUTE), timeWindow: "1 minute" } } },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
@@ -175,7 +184,7 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDe
 
   app.post<{ Params: { id: string } }>(
     "/api/posts/:id/replies",
-    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    { config: { rateLimit: { max: antiSpamMax(db, auth, antiSpamConfig, MAX_REPLIES_PER_MINUTE), timeWindow: "1 minute" } } },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);

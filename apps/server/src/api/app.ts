@@ -11,6 +11,7 @@ import { AppError } from "../errors.js";
 import { loadAuthConfig, type AuthConfig } from "../config/auth-config.js";
 import { loadAttachmentLimits, type AttachmentLimits } from "../storage/config.js";
 import { InMemoryStorage, type FileStorage } from "../storage/file-storage.js";
+import { loadAntiSpamConfig, type AntiSpamConfig } from "../moderation/anti-spam-config.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerSpaceRoutes } from "./routes/spaces.js";
@@ -34,6 +35,7 @@ export interface AppDeps {
   attachmentLimits?: AttachmentLimits;
   assistant?: AssistantOrchestrator;
   authConfig?: AuthConfig;
+  antiSpamConfig?: AntiSpamConfig;
 }
 
 export function buildApp(deps: AppDeps): FastifyInstance {
@@ -43,6 +45,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
   const assistant = deps.assistant ?? new NoopAssistantOrchestrator();
   const authConfig = deps.authConfig ?? loadAuthConfig();
+  const antiSpamConfig = deps.antiSpamConfig ?? loadAntiSpamConfig();
 
   void app.register(rateLimit, { global: false });
   void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
@@ -60,49 +63,75 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       reply.status(400).send({ error: { code: "invalid_input", message: "Les données envoyées ne sont pas valides." } });
       return;
     }
+    // @fastify/rate-limit (429) et d'autres erreurs internes à Fastify posent
+    // un statusCode 4xx explicite sur l'erreur qu'elles lèvent : le
+    // respecter plutôt que de toujours répondre 500 évite de masquer, par
+    // exemple, une limite de débit dépassée derrière une erreur interne.
+    if (error instanceof Error) {
+      const statusCode = (error as { statusCode?: unknown }).statusCode;
+      if (typeof statusCode === "number" && statusCode >= 400 && statusCode < 500) {
+        reply.status(statusCode).send({ error: { code: "request_error", message: error.message } });
+        return;
+      }
+    }
     app.log.error(error);
     reply.status(500).send({ error: { code: "internal_error", message: "Erreur interne." } });
   });
 
-  const health = async () => healthcheckResponseSchema.parse({ status: "ok", service: "api" });
-  app.get("/health", health);
-  // Caddy ne tronque plus le préfixe /api (voir infra/Caddyfile) : toutes les
-  // routes atteintes depuis le navigateur le gardent, y compris celle-ci.
-  // /health reste accessible sans préfixe pour le healthcheck Docker, qui
-  // interroge le conteneur directement.
-  app.get("/api/health", health);
+  // `register()` met en file d'attente le chargement de rateLimit et de
+  // multipart : sans ce `after()`, les routes ci-dessous seraient déclarées
+  // avant que ces deux plugins n'aient fini de charger, et le hook `onRoute`
+  // posé par rateLimit sur `config.rateLimit` ne s'appliquerait jamais (les
+  // limites configurées par route resteraient silencieusement sans effet).
+  app.after(() => {
+    const health = async () => healthcheckResponseSchema.parse({ status: "ok", service: "api" });
+    app.get("/health", health);
+    // Caddy ne tronque plus le préfixe /api (voir infra/Caddyfile) : toutes les
+    // routes atteintes depuis le navigateur le gardent, y compris celle-ci.
+    // /health reste accessible sans préfixe pour le healthcheck Docker, qui
+    // interroge le conteneur directement.
+    app.get("/api/health", health);
 
-  // Public, sans session : la page de connexion s'en sert pour savoir si
-  // elle doit proposer le bouton GitHub (voir docs/adr/0014-comptes-et-visiteur.md).
-  app.get("/api/auth-config", async () => authConfig);
+    // Public, sans session : la page de connexion s'en sert pour savoir si
+    // elle doit proposer le bouton GitHub (voir docs/adr/0014-comptes-et-visiteur.md).
+    app.get("/api/auth-config", async () => authConfig);
 
-  const authHandler = toNodeHandler(deps.auth);
-  app.register(async (scope) => {
-    // Le handler Better Auth lit lui-même le flux brut de la requête : le
-    // parseur JSON de Fastify ne doit pas consommer le corps avant lui. La
-    // portée du plugin limite ce changement à ces seules routes.
-    scope.addContentTypeParser("application/json", (_request, _payload, done) => done(null));
-    scope.all("/api/auth/*", async (request, reply) => {
-      reply.hijack();
-      await authHandler(request.raw, reply.raw);
+    const authHandler = toNodeHandler(deps.auth);
+    app.register(async (scope) => {
+      // Le handler Better Auth lit lui-même le flux brut de la requête : le
+      // parseur JSON de Fastify ne doit pas consommer le corps avant lui. La
+      // portée du plugin limite ce changement à ces seules routes.
+      scope.addContentTypeParser("application/json", (_request, _payload, done) => done(null));
+      scope.all("/api/auth/*", async (request, reply) => {
+        reply.hijack();
+        await authHandler(request.raw, reply.raw);
+      });
     });
+
+    registerMeRoutes(app, deps);
+    registerUserRoutes(app, deps);
+
+    const chatDeps: ChatAppDeps = {
+      db: deps.db,
+      auth: deps.auth,
+      chat,
+      storage,
+      attachmentLimits,
+      assistant,
+      antiSpamConfig,
+    };
+    registerSpaceRoutes(app, chatDeps);
+    registerChannelRoutes(app, chatDeps);
+    registerMessageRoutes(app, chatDeps);
+    registerAttachmentRoutes(app, chatDeps);
+    registerReadStateRoutes(app, chatDeps);
+    registerInviteRoutes(app, chatDeps);
+    registerSkillRoutes(app, chatDeps);
+    registerAssistantRoutes(app, chatDeps);
+    registerPostRoutes(app, chatDeps);
+    registerProjectRoutes(app, chatDeps);
+    registerCompetitionRoutes(app, chatDeps);
   });
-
-  registerMeRoutes(app, deps);
-  registerUserRoutes(app, deps);
-
-  const chatDeps: ChatAppDeps = { db: deps.db, auth: deps.auth, chat, storage, attachmentLimits, assistant };
-  registerSpaceRoutes(app, chatDeps);
-  registerChannelRoutes(app, chatDeps);
-  registerMessageRoutes(app, chatDeps);
-  registerAttachmentRoutes(app, chatDeps);
-  registerReadStateRoutes(app, chatDeps);
-  registerInviteRoutes(app, chatDeps);
-  registerSkillRoutes(app, chatDeps);
-  registerAssistantRoutes(app, chatDeps);
-  registerPostRoutes(app, chatDeps);
-  registerProjectRoutes(app, chatDeps);
-  registerCompetitionRoutes(app, chatDeps);
 
   return app;
 }
@@ -114,4 +143,5 @@ export interface ChatAppDeps {
   storage: FileStorage;
   attachmentLimits: AttachmentLimits;
   assistant: AssistantOrchestrator;
+  antiSpamConfig: AntiSpamConfig;
 }

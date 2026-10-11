@@ -13,7 +13,10 @@ import { findMessageById } from "../repositories/chat.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { serializeAttachment } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
+import { antiSpamMax } from "../../moderation/anti-spam.js";
 import { requireChannelAccess } from "./channels.js";
+
+const MAX_ATTACHMENTS_PER_MINUTE = 30;
 
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
@@ -29,11 +32,18 @@ function sanitizeFilename(name: string): string {
 
 export function registerAttachmentRoutes(
   app: FastifyInstance,
-  { db, auth, storage, attachmentLimits }: ChatAppDeps,
+  { db, auth, storage, attachmentLimits, antiSpamConfig }: ChatAppDeps,
 ): void {
   app.post<{ Params: { id: string } }>(
     "/api/channels/:id/messages/attachments",
-    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    {
+      config: {
+        rateLimit: {
+          max: antiSpamMax(db, auth, antiSpamConfig, MAX_ATTACHMENTS_PER_MINUTE),
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);

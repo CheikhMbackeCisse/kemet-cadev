@@ -1,5 +1,6 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, pointsLedger, type Db } from "@kemet/db";
+import { createDb, pointsLedger, profiles, type Db } from "@kemet/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -90,6 +91,12 @@ describe.skipIf(!databaseUrl)("Points et niveaux (base Postgres réelle)", () =>
     const author = await createMember("cap-author@test.kemet", "capauthor");
     const replier = await createMember("cap-replier@test.kemet", "capreplier");
 
+    // Six questions d'affilée dépassent la limite anti-spam réduite d'un
+    // compte flambant neuf (lot 11, apps/server/src/moderation/) : l'auteur
+    // est vieilli pour tester le plafond de points, pas l'anti-spam, déjà
+    // couvert par ses propres tests.
+    await db.update(profiles).set({ createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000) }).where(eq(profiles.id, author.profileId));
+
     // Plafond à 50, +10 par solution marquée : la 6e des 6 questions ne
     // devrait plus rien apporter.
     for (let i = 0; i < 6; i++) {
@@ -105,6 +112,10 @@ describe.skipIf(!databaseUrl)("Points et niveaux (base Postgres réelle)", () =>
   it("résiste à des requêtes concurrentes qui tentent de dépasser le plafond quotidien", async () => {
     const author = await createMember("concurrent-author@test.kemet", "concurrentauthor");
     const replier = await createMember("concurrent-replier@test.kemet", "concurrentreplier");
+
+    // Même raison que le test précédent : l'auteur publie six questions, au-delà
+    // de la limite anti-spam d'un compte flambant neuf.
+    await db.update(profiles).set({ createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000) }).where(eq(profiles.id, author.profileId));
 
     const replies = await Promise.all(
       Array.from({ length: 6 }, () => createQuestionWithReply(author.cookie, replier.cookie)),

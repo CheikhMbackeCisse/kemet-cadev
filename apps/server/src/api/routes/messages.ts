@@ -20,7 +20,10 @@ import { attachToMessage, findPendingAttachment } from "../repositories/attachme
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { serializeMessage } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
+import { antiSpamMax } from "../../moderation/anti-spam.js";
 import { requireChannelAccess } from "./channels.js";
+
+const MAX_MESSAGES_PER_MINUTE = 20;
 
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
@@ -46,7 +49,10 @@ async function toSerializedMessage(db: ChatAppDeps["db"], row: Awaited<ReturnTyp
   );
 }
 
-export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat, assistant }: ChatAppDeps): void {
+export function registerMessageRoutes(
+  app: FastifyInstance,
+  { db, auth, chat, assistant, antiSpamConfig }: ChatAppDeps,
+): void {
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/channels/:id/messages",
     async (request) => {
@@ -77,7 +83,14 @@ export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat, as
 
   app.post<{ Params: { id: string } }>(
     "/api/channels/:id/messages",
-    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    {
+      config: {
+        rateLimit: {
+          max: antiSpamMax(db, auth, antiSpamConfig, MAX_MESSAGES_PER_MINUTE),
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
