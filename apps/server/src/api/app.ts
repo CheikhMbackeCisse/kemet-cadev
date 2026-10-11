@@ -21,6 +21,7 @@ import { registerInviteRoutes } from "./routes/invites.js";
 import { registerSkillRoutes } from "./routes/skills.js";
 import { registerAssistantRoutes } from "./routes/assistant.js";
 import { registerPostRoutes } from "./routes/posts.js";
+import { registerProjectRoutes } from "./routes/projects.js";
 import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
 
 export interface AppDeps {
@@ -92,6 +93,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   registerSkillRoutes(app, chatDeps);
   registerAssistantRoutes(app, chatDeps);
   registerPostRoutes(app, chatDeps);
+  registerProjectRoutes(app, chatDeps);
 
   return app;
 }

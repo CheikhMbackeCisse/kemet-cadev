@@ -7,6 +7,8 @@ import { SkillsPage } from "./pages/SkillsPage.js";
 import { SkillPage } from "./pages/SkillPage.js";
 import { FeedPage } from "./pages/FeedPage.js";
 import { PostPage } from "./pages/PostPage.js";
+import { ProjectsPage } from "./pages/ProjectsPage.js";
+import { ProjectPage } from "./pages/ProjectPage.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
 import { ThemeProvider } from "./theme/theme-context.js";
 import { ToastProvider } from "./components/ui/Toast.js";
@@ -57,6 +59,8 @@ function resolvePage(pathname: string) {
   if (pathname.startsWith("/skills/")) return <SkillPage />;
   if (pathname === "/fil" || pathname === "/fil/") return <FeedPage />;
   if (pathname.startsWith("/fil/")) return <PostPage />;
+  if (pathname === "/projets" || pathname === "/projets/") return <ProjectsPage />;
+  if (pathname.startsWith("/projets/")) return <ProjectPage />;
   if (import.meta.env.DEV) {
     if (pathname.startsWith("/dev/ui/shell")) return <ShellPreviewPage />;
     if (pathname.startsWith("/dev/ui")) return <DevUiPage />;

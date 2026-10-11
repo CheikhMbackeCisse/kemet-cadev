@@ -5,6 +5,7 @@ import { levelForPoints, type Level } from "@kemet/shared";
 export const POINTS_POST_REPLY_SOLUTION = 10;
 export const POINTS_POST_FEEDBACK_GIVEN = 10;
 export const POINTS_ASSISTANT_SKILL_HELPFUL = 5;
+export const POINTS_PROJECT_HELP_CONFIRMED = 20;
 
 // Valeur non spécifiée par docs/CONTEXTE.md ("plafond de points qu'une même
 // personne peut te donner par jour") : choisie arbitrairement, à ajuster
@@ -45,6 +46,7 @@ const ENTRAIDE_SOURCES: ReadonlySet<PointsSource> = new Set([
   "post_reply_solution",
   "post_feedback_given",
   "assistant_skill_helpful",
+  "project_help_confirmed",
 ]);
 
 export interface AwardPointsInput {

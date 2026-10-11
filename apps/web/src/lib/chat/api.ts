@@ -1,11 +1,16 @@
 import type {
+  Application,
   AssistantInvocationDetail,
   Attachment,
   Channel,
+  CreateApplicationInput,
+  CreateHelpRequestInput,
   CreatePostInput,
   CreatePostReplyInput,
+  CreateProjectInput,
   CreateSkillInput,
   FeedTab,
+  HelpRequest,
   Invite,
   InvitePreview,
   MeResponse,
@@ -14,10 +19,13 @@ import type {
   PostReactionResult,
   PostReply,
   PostSummary,
+  ProjectDetail,
+  ProjectSummary,
   Space,
   SpaceMember,
   SkillDetail,
   SkillSummary,
+  UpdateProjectInput,
   UpdateSkillInput,
 } from "@kemet/shared";
 
@@ -279,6 +287,60 @@ export function createPostFeedback(postId: string, body: string) {
 
 export function listPostFeedback(postId: string) {
   return request<{ items: PostFeedbackEntry[] }>(`/api/posts/${postId}/feedback`);
+}
+
+export function listProjects(cursor?: string): Promise<Page<ProjectSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/projects${query}`);
+}
+
+export function getProject(slug: string) {
+  return request<{ project: ProjectDetail }>(`/api/projects/${slug}`);
+}
+
+export function createProject(input: CreateProjectInput) {
+  return request<{ project: ProjectDetail }>("/api/projects", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function updateProject(slug: string, input: UpdateProjectInput) {
+  return request<{ project: ProjectDetail }>(`/api/projects/${slug}`, { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export function deleteProject(slug: string) {
+  return request<{ deleted: boolean }>(`/api/projects/${slug}`, { method: "DELETE" });
+}
+
+export function listHelpRequests(slug: string) {
+  return request<{ items: HelpRequest[] }>(`/api/projects/${slug}/help-requests`);
+}
+
+export function createHelpRequest(slug: string, input: CreateHelpRequestInput) {
+  return request<{ helpRequest: HelpRequest }>(`/api/projects/${slug}/help-requests`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function closeHelpRequest(helpRequestId: string) {
+  return request<{ helpRequest: HelpRequest }>(`/api/help-requests/${helpRequestId}/close`, { method: "PUT" });
+}
+
+export function listApplications(helpRequestId: string) {
+  return request<{ items: Application[] }>(`/api/help-requests/${helpRequestId}/applications`);
+}
+
+export function createApplication(helpRequestId: string, input: CreateApplicationInput) {
+  return request<{ application: Application }>(`/api/help-requests/${helpRequestId}/applications`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function decideApplication(applicationId: string, accepted: boolean) {
+  return request<{ application: Application }>(`/api/applications/${applicationId}/decision`, {
+    method: "PUT",
+    body: JSON.stringify({ accepted }),
+  });
 }
 
 export { ChatApiError };

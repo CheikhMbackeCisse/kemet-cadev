@@ -4,12 +4,13 @@ import { profiles } from "./profiles.js";
 
 // Chaque lot qui attribue des points ajoute sa propre valeur ici au moment où
 // il est codé : le parcours vérifié (lot 3, pas encore
-// d'écran de vérification), l'aide confirmée sur un projet (lot 9) et les
-// résultats de compétition (lot 10) n'existent pas encore.
+// d'écran de vérification) et les résultats de compétition (lot 10)
+// n'existent pas encore.
 export const pointsSourceEnum = pgEnum("points_source", [
   "post_reply_solution",
   "post_feedback_given",
   "assistant_skill_helpful",
+  "project_help_confirmed",
 ]);
 
 export const pointsLedger = pgTable(

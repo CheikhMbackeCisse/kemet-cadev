@@ -43,6 +43,20 @@
       "when": 1791637711509,
       "tag": "0005_perfect_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791643142673,
+      "tag": "0006_huge_the_hood",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791643176438,
+      "tag": "0007_sturdy_fenris",
+      "breakpoints": true
     }
   ]
 }
