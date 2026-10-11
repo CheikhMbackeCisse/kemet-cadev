@@ -11,7 +11,14 @@ import { ProjectsPage } from "./pages/ProjectsPage.js";
 import { ProjectPage } from "./pages/ProjectPage.js";
 import { CompetitionsPage } from "./pages/CompetitionsPage.js";
 import { CompetitionPage } from "./pages/CompetitionPage.js";
+import { HomePage } from "./pages/HomePage.js";
+import { LoginPage } from "./pages/LoginPage.js";
+import { SignupPage } from "./pages/SignupPage.js";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage.js";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage.js";
+import { CompleteProfilePage } from "./pages/CompleteProfilePage.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
+import { SessionProvider } from "./session/SessionProvider.js";
 import { ThemeProvider } from "./theme/theme-context.js";
 import { ToastProvider } from "./components/ui/Toast.js";
 import { TooltipProvider } from "./components/ui/Tooltip.js";
@@ -55,6 +62,13 @@ function StatusPage() {
 }
 
 function resolvePage(pathname: string) {
+  if (pathname === "/") return <HomePage />;
+  if (pathname === "/connexion") return <LoginPage />;
+  if (pathname === "/inscription") return <SignupPage />;
+  if (pathname === "/mot-de-passe-oublie") return <ForgotPasswordPage />;
+  if (pathname === "/reinitialiser-mot-de-passe") return <ResetPasswordPage />;
+  if (pathname === "/completer-profil") return <CompleteProfilePage />;
+  if (pathname === "/statut") return <StatusPage />;
   if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
   if (pathname.startsWith("/salons")) return <SpacePage />;
   if (pathname === "/skills" || pathname === "/skills/") return <SkillsPage />;
@@ -76,7 +90,9 @@ export function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <TooltipProvider>{resolvePage(window.location.pathname)}</TooltipProvider>
+        <TooltipProvider>
+          <SessionProvider>{resolvePage(window.location.pathname)}</SessionProvider>
+        </TooltipProvider>
       </ToastProvider>
     </ThemeProvider>
   );

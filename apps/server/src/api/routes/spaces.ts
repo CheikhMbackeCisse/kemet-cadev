@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { addSpaceMemberSchema, createSpaceSchema, paginationQuerySchema } from "@kemet/shared";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   addSpaceMember,
@@ -22,10 +22,16 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-async function requireVisibleSpace(db: ChatAppDeps["db"], spaceId: string, profileId: string) {
+// `null` pour un visiteur (pas de session, mode visiteur du lot 11a) : les
+// routes de lecture appellent ceci au lieu de requireOwnProfile.
+async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
+  return userId ? findProfileByUserId(db, userId) : null;
+}
+
+async function requireVisibleSpace(db: ChatAppDeps["db"], spaceId: string, profileId: string | null) {
   const space = await findSpaceById(db, spaceId);
   if (!space) throw notFound("Cet espace n'existe pas.");
-  const membership = await findSpaceMembership(db, spaceId, profileId);
+  const membership = profileId ? await findSpaceMembership(db, spaceId, profileId) : null;
   if (space.visibility === "private" && !membership) throw notFound("Cet espace n'existe pas.");
   return { space, membership };
 }
@@ -55,10 +61,10 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
   });
 
   app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/spaces", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
+    const userId = await getSessionUserId(auth, request);
+    const profile = await findOwnProfile(db, userId);
     const query = paginationQuerySchema.parse(request.query);
-    const page = await listSpacesForViewer(db, profile.id, query.cursor, query.limit);
+    const page = await listSpacesForViewer(db, profile?.id ?? null, query.cursor, query.limit);
     return {
       items: page.items.map((row) => serializeSpace(row, row.role)),
       nextCursor: page.nextCursor,
@@ -66,9 +72,9 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
   });
 
   app.get<{ Params: { id: string } }>("/api/spaces/:id", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const { space, membership } = await requireVisibleSpace(db, request.params.id, profile.id);
+    const userId = await getSessionUserId(auth, request);
+    const profile = await findOwnProfile(db, userId);
+    const { space, membership } = await requireVisibleSpace(db, request.params.id, profile?.id ?? null);
     return { space: serializeSpace(space, membership?.role ?? null) };
   });
 

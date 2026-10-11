@@ -23,7 +23,10 @@ import { Input } from "../components/ui/Input.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
+import { AccountMenu } from "../components/shell/AccountMenu.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { ThemeToggle } from "../theme/ThemeToggle.js";
+import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
 const FORMAT_LABELS: Record<PostFormat, string> = {
@@ -57,12 +60,13 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
 
 interface PostCardProps {
   post: PostSummary;
+  canInteract: boolean;
   onReact: (postId: string) => void;
   onShare: (postId: string) => void;
   onFeedback: (postId: string) => void;
 }
 
-function PostCard({ post, onReact, onShare, onFeedback }: PostCardProps) {
+function PostCard({ post, canInteract, onReact, onShare, onFeedback }: PostCardProps) {
   return (
     <li className="rounded-card border border-border p-4">
       <div className="flex gap-3">
@@ -86,20 +90,29 @@ function PostCard({ post, onReact, onShare, onFeedback }: PostCardProps) {
               <MessageSquare className="size-4" aria-hidden="true" />
               {post.replyCount}
             </a>
-            <IconButton aria-label={fr.feed.share} onClick={() => onShare(post.id)}>
-              <Share2 className="size-4" aria-hidden="true" />
-            </IconButton>
-            <button
-              type="button"
-              onClick={() => onReact(post.id)}
-              aria-pressed={post.reactedByMe}
-              aria-label={fr.feed.utileAriaLabel(post.utileCount)}
-              className={`inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs hover:bg-surface-2 ${post.reactedByMe ? "text-primary" : "text-muted hover:text-text"}`}
-            >
-              <Sparkles className="size-4" aria-hidden="true" />
-              {post.utileCount}
-            </button>
-            {post.format === "a_tester" && (
+            {canInteract && (
+              <IconButton aria-label={fr.feed.share} onClick={() => onShare(post.id)}>
+                <Share2 className="size-4" aria-hidden="true" />
+              </IconButton>
+            )}
+            {canInteract ? (
+              <button
+                type="button"
+                onClick={() => onReact(post.id)}
+                aria-pressed={post.reactedByMe}
+                aria-label={fr.feed.utileAriaLabel(post.utileCount)}
+                className={`inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs hover:bg-surface-2 ${post.reactedByMe ? "text-primary" : "text-muted hover:text-text"}`}
+              >
+                <Sparkles className="size-4" aria-hidden="true" />
+                {post.utileCount}
+              </button>
+            ) : (
+              <span className="inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted">
+                <Sparkles className="size-4" aria-hidden="true" />
+                {post.utileCount}
+              </span>
+            )}
+            {canInteract && post.format === "a_tester" && (
               <Button variant="ghost" className="px-2 text-xs" onClick={() => onFeedback(post.id)}>
                 <CheckCircle2 className="size-4" aria-hidden="true" />
                 {fr.feed.iTested}
@@ -114,7 +127,9 @@ function PostCard({ post, onReact, onShare, onFeedback }: PostCardProps) {
 
 export function FeedPage() {
   const toast = useToast();
-  const [tab, setTab] = useState<FeedTab>("abonnements");
+  const { status } = useSession();
+  const canInteract = status === "ready";
+  const [tab, setTab] = useState<FeedTab>(status === "visitor" ? "pour-toi" : "abonnements");
   const [posts, setPosts] = useState<PostSummary[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,6 +158,10 @@ export function FeedPage() {
   }, []);
 
   useEffect(() => load(tab), [tab, load]);
+
+  useEffect(() => {
+    if (status === "visitor") setTab("pour-toi");
+  }, [status]);
 
   async function loadMore() {
     if (!nextCursor) return;
@@ -224,7 +243,7 @@ export function FeedPage() {
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col gap-3">
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} onReact={handleReact} onShare={handleShare} onFeedback={setFeedbackPostId} />
+          <PostCard key={post.id} post={post} canInteract={canInteract} onReact={handleReact} onShare={handleShare} onFeedback={setFeedbackPostId} />
         ))}
       </ul>
       {nextCursor && (
@@ -250,10 +269,14 @@ export function FeedPage() {
             <Hash className="size-4" aria-hidden="true" />
             {fr.feed.salonsLink}
           </a>
+          <AccountMenu />
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-card border border-border p-4">
+      {status === "visitor" && <VisitorBanner />}
+
+      {canInteract && (
+        <div className="flex flex-col gap-3 rounded-card border border-border p-4">
         <Textarea
           placeholder={fr.feed.composerPlaceholder}
           aria-label={fr.feed.composerPlaceholder}
@@ -305,13 +328,16 @@ export function FeedPage() {
             {publishError}
           </p>
         )}
-      </div>
+        </div>
+      )}
 
       <Tabs
         value={tab}
         onValueChange={(value) => setTab(value as FeedTab)}
         items={[
-          { value: "abonnements", label: fr.feed.tabAbonnements, content: tab === "abonnements" ? feedContent : null },
+          ...(status === "visitor"
+            ? []
+            : [{ value: "abonnements", label: fr.feed.tabAbonnements, content: tab === "abonnements" ? feedContent : null }]),
           { value: "pour-toi", label: fr.feed.tabPourToi, content: tab === "pour-toi" ? feedContent : null },
         ]}
       />

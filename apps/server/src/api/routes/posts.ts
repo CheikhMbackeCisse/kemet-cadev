@@ -10,7 +10,7 @@ import {
   sharePostSchema,
 } from "@kemet/shared";
 import type { posts } from "@kemet/db";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   editPost,
@@ -42,7 +42,13 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferSelect, viewerProfileId: string) {
+// `null` pour un visiteur (pas de session, mode visiteur du lot 11a) :
+// seule la lecture du fil "Pour toi" lui est accessible.
+async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
+  return userId ? findProfileByUserId(db, userId) : null;
+}
+
+async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferSelect, viewerProfileId: string | null) {
   const hydrated = await hydratePost(db, row, viewerProfileId);
   return serializePostSummary(
     hydrated.row,
@@ -59,14 +65,16 @@ async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferS
 
 export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
   app.get<{ Querystring: { tab?: string; cursor?: string; limit?: string } }>("/api/posts", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
+    const userId = await getSessionUserId(auth, request);
+    const profile = await findOwnProfile(db, userId);
     const query = feedQuerySchema.parse(request.query);
+    // Un visiteur n'a pas d'abonnements : l'onglet "Pour toi" lui est servi
+    // quel que soit l'onglet demandé, l'interface ne lui proposant que celui-là.
     const page =
-      query.tab === "pour-toi"
+      query.tab === "pour-toi" || !profile
         ? await listPourToiFeed(db, query.limit)
         : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
-    const items = await Promise.all(page.items.map((row) => toSerializedPost(db, row, profile.id)));
+    const items = await Promise.all(page.items.map((row) => toSerializedPost(db, row, profile?.id ?? null)));
     return { items, nextCursor: page.nextCursor };
   });
 
@@ -86,11 +94,11 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDe
   });
 
   app.get<{ Params: { id: string } }>("/api/posts/:id", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
+    const userId = await getSessionUserId(auth, request);
+    const profile = await findOwnProfile(db, userId);
     const post = await findPostById(db, request.params.id);
     if (!post) throw notFound("Ce post n'existe pas.");
-    return { post: await toSerializedPost(db, post, profile.id) };
+    return { post: await toSerializedPost(db, post, profile?.id ?? null) };
   });
 
   app.patch<{ Params: { id: string } }>("/api/posts/:id", async (request) => {
@@ -148,8 +156,9 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth }: ChatAppDe
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/posts/:id/replies",
     async (request) => {
-      const userId = await requireSessionUserId(auth, request);
-      await requireOwnProfile(db, userId);
+      // Aucune résolution de profil nécessaire, visiteur ou non : les
+      // réponses à un post n'ont pas de notion de visibilité privée dans ce
+      // module, à la différence des salons.
       const post = await findPostById(db, request.params.id);
       if (!post) throw notFound("Ce post n'existe pas.");
       const query = paginationQuerySchema.parse(request.query);

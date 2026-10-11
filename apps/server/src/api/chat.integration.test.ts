@@ -254,4 +254,42 @@ describe.skipIf(!databaseUrl)("Salons et espaces (base Postgres réelle)", () =>
     const afterKick = await app.inject({ method: "GET", url: `/api/spaces/${space.id}`, headers: { cookie: member } });
     expect(afterKick.statusCode).toBe(404);
   });
+
+  it("laisse un visiteur sans session lire un espace public et ses messages, mais pas un espace privé", async () => {
+    const owner = await createMember("owner8@test.kemet", "Owner", "owner8");
+    const publicSpace = await createSpace(owner, "visitor-space");
+    const privateSpace = await createSpace(owner, "visitor-secret-space", "private");
+    const channels = await listChannels(owner, publicSpace.id);
+    const generalChannel = channels.find((c) => c.slug === "general")!;
+    await app.inject({
+      method: "POST",
+      url: `/api/channels/${generalChannel.id}/messages`,
+      headers: { cookie: owner },
+      payload: { clientId: crypto.randomUUID(), body: "Visible sans compte" },
+    });
+
+    const spaceList = await app.inject({ method: "GET", url: "/api/spaces" });
+    expect(spaceList.statusCode).toBe(200);
+    expect(spaceList.json().items.map((item: { id: string }) => item.id)).toContain(publicSpace.id);
+
+    const spaceDetail = await app.inject({ method: "GET", url: `/api/spaces/${publicSpace.id}` });
+    expect(spaceDetail.statusCode).toBe(200);
+
+    const visitorChannels = await app.inject({ method: "GET", url: `/api/spaces/${publicSpace.id}/channels` });
+    expect(visitorChannels.statusCode).toBe(200);
+
+    const messages = await app.inject({ method: "GET", url: `/api/channels/${generalChannel.id}/messages` });
+    expect(messages.statusCode).toBe(200);
+    expect(messages.json().items).toHaveLength(1);
+
+    const writeAttempt = await app.inject({
+      method: "POST",
+      url: `/api/channels/${generalChannel.id}/messages`,
+      payload: { clientId: crypto.randomUUID(), body: "Je ne devrais pas pouvoir écrire" },
+    });
+    expect(writeAttempt.statusCode).toBe(401);
+
+    const privateDetail = await app.inject({ method: "GET", url: `/api/spaces/${privateSpace.id}` });
+    expect(privateDetail.statusCode).toBe(404);
+  });
 });

@@ -14,8 +14,11 @@ import {
 } from "../lib/chat/api.js";
 import { useChannelMessages } from "../lib/chat/useChannelMessages.js";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
+import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { AppShell } from "../components/shell/AppShell.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import type { ChannelItem, MobileTabItem, SpaceItem } from "../components/shell/types.js";
+import { useSession } from "../session/SessionProvider.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
@@ -64,6 +67,8 @@ function slugify(name: string): string {
 
 export function SpacePage() {
   const toast = useToast();
+  const { status } = useSession();
+  const canInteract = status === "ready";
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spacesLoading, setSpacesLoading] = useState(true);
   const [spacesError, setSpacesError] = useState(false);
@@ -136,8 +141,10 @@ export function SpacePage() {
   }, [activeSpaceId, refreshChannels]);
 
   useEffect(() => {
-    if (activeSpaceId) void listSpaceMembers(activeSpaceId).then((page) => setMembers(page.items));
-  }, [activeSpaceId]);
+    // Réservé aux membres connectés : un visiteur n'a pas accès à
+    // GET /api/spaces/:id/members (voir apps/server/src/api/routes/spaces.ts).
+    if (activeSpaceId && canInteract) void listSpaceMembers(activeSpaceId).then((page) => setMembers(page.items));
+  }, [activeSpaceId, canInteract]);
 
   useEffect(() => {
     if (activeSpaceId && activeChannelId) writeParams({ space: activeSpaceId, channel: activeChannelId });
@@ -153,7 +160,7 @@ export function SpacePage() {
     send,
     react,
     giveAssistantFeedback,
-  } = useChannelMessages(activeChannelId);
+  } = useChannelMessages(activeChannelId, canInteract);
 
   const spaceItems: SpaceItem[] = useMemo(
     () => spaces.map((space) => ({ id: space.id, name: space.name, icon: Hash })),
@@ -279,13 +286,10 @@ export function SpacePage() {
         topBarExtra={
           <>
             <ThemeToggle />
-            <a
-              href="/fil"
-              aria-label={fr.feed.title}
-              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
-            >
-              <Rss className="size-5" aria-hidden="true" />
-            </a>
+            {/* Fil, Projets et Compétitions ont déjà leur icône dans la
+                barre d'onglets mobile (MOBILE_TABS) : inutile de les
+                répéter ici sur mobile, où la place manque. Skills n'a pas
+                d'onglet mobile, son icône reste donc le seul accès. */}
             <a
               href="/fil"
               className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
@@ -307,23 +311,9 @@ export function SpacePage() {
             </a>
             <a
               href="/projets"
-              aria-label={fr.projects.title}
-              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
-            >
-              <FolderGit2 className="size-5" aria-hidden="true" />
-            </a>
-            <a
-              href="/projets"
               className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
             >
               {fr.projects.title}
-            </a>
-            <a
-              href="/competitions"
-              aria-label={fr.competitions.title}
-              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
-            >
-              <Trophy className="size-5" aria-hidden="true" />
             </a>
             <a
               href="/competitions"
@@ -331,19 +321,27 @@ export function SpacePage() {
             >
               {fr.competitions.title}
             </a>
-            <IconButton
-              aria-label={fr.spaces.createTitle}
-              className="lg:hidden"
-              onClick={() => setCreateSpaceOpen(true)}
-            >
-              <Plus className="size-5" aria-hidden="true" />
-            </IconButton>
-            <Button variant="secondary" className="hidden lg:inline-flex" onClick={() => setCreateSpaceOpen(true)}>
-              {fr.spaces.createTitle}
-            </Button>
+            {canInteract && (
+              <>
+                <IconButton
+                  aria-label={fr.spaces.createTitle}
+                  className="lg:hidden"
+                  onClick={() => setCreateSpaceOpen(true)}
+                >
+                  <Plus className="size-5" aria-hidden="true" />
+                </IconButton>
+                <Button variant="secondary" className="hidden lg:inline-flex" onClick={() => setCreateSpaceOpen(true)}>
+                  {fr.spaces.createTitle}
+                </Button>
+              </>
+            )}
+            <AccountMenu />
           </>
         }
-        rightPanel={{
+        rightPanel={
+          !canInteract
+            ? undefined
+            : {
           title: fr.spaces.members,
           content: (
             <div className="flex flex-col gap-4 text-sm">
@@ -373,7 +371,8 @@ export function SpacePage() {
               </Button>
             </div>
           ),
-        }}
+        }
+        }
       >
         <div className="flex h-full flex-col">
           <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-6">
@@ -480,25 +479,33 @@ export function SpacePage() {
                         </div>
                       )}
                       <div className="mt-1 flex flex-wrap items-center gap-1">
-                        {message.reactions.map((reaction) => (
+                        {message.reactions.map((reaction) =>
+                          canInteract ? (
+                            <button
+                              key={reaction.emoji}
+                              type="button"
+                              onClick={() => react(message.id, reaction.emoji)}
+                              aria-label={fr.chat.reactionLabel(reaction.emoji, reaction.profileIds.length)}
+                              className="rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-2"
+                            >
+                              {reaction.emoji} {reaction.profileIds.length}
+                            </button>
+                          ) : (
+                            <span key={reaction.emoji} className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle">
+                              {reaction.emoji} {reaction.profileIds.length}
+                            </span>
+                          ),
+                        )}
+                        {canInteract && (
                           <button
-                            key={reaction.emoji}
                             type="button"
-                            onClick={() => react(message.id, reaction.emoji)}
-                            aria-label={fr.chat.reactionLabel(reaction.emoji, reaction.profileIds.length)}
-                            className="rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-2"
+                            onClick={() => react(message.id, "👍")}
+                            aria-label={fr.chat.addReaction}
+                            className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-subtle hover:bg-surface-2"
                           >
-                            {reaction.emoji} {reaction.profileIds.length}
+                            <Plus className="size-3" aria-hidden="true" />
                           </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => react(message.id, "👍")}
-                          aria-label={fr.chat.addReaction}
-                          className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-subtle hover:bg-surface-2"
-                        >
-                          <Plus className="size-3" aria-hidden="true" />
-                        </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -514,6 +521,12 @@ export function SpacePage() {
               </div>
             )}
           </div>
+          {status === "visitor" && (
+            <div className="shrink-0 border-t border-border p-3">
+              <VisitorBanner />
+            </div>
+          )}
+          {canInteract && (
           <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
             {pendingAttachments.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -559,6 +572,7 @@ export function SpacePage() {
               </Button>
             </div>
           </div>
+          )}
         </div>
       </AppShell>
 

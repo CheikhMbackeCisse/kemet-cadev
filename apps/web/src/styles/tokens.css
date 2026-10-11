@@ -57,25 +57,30 @@
  * DESIGN.md) : bascule en CSS pure, sur le même principe que les variables
  * ci-dessus, pour rester correcte avant même l'hydratation de React.
  */
-.kemet-symbol-dark {
+.kemet-symbol-dark,
+.kemet-wordmark-dark {
   display: none;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .kemet-symbol-light {
+  :root:not([data-theme="light"]) .kemet-symbol-light,
+  :root:not([data-theme="light"]) .kemet-wordmark-light {
     display: none;
   }
 
-  :root:not([data-theme="light"]) .kemet-symbol-dark {
+  :root:not([data-theme="light"]) .kemet-symbol-dark,
+  :root:not([data-theme="light"]) .kemet-wordmark-dark {
     display: inline;
   }
 }
 
-:root[data-theme="dark"] .kemet-symbol-light {
+:root[data-theme="dark"] .kemet-symbol-light,
+:root[data-theme="dark"] .kemet-wordmark-light {
   display: none;
 }
 
-:root[data-theme="dark"] .kemet-symbol-dark {
+:root[data-theme="dark"] .kemet-symbol-dark,
+:root[data-theme="dark"] .kemet-wordmark-dark {
   display: inline;
 }
 

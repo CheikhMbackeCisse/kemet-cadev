@@ -1,10 +1,11 @@
 import * as RadixSelect from "@radix-ui/react-select";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import type { ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
 
 export interface SelectOption {
   value: string;
-  label: string;
+  label: ReactNode;
 }
 
 export interface SelectProps {
@@ -44,8 +45,11 @@ export function Select({
         <RadixSelect.Content
           position="popper"
           sideOffset={4}
-          className="z-50 overflow-hidden rounded-panel border border-border bg-surface shadow-floating"
+          className="z-50 max-h-[var(--radix-select-content-available-height)] overflow-hidden rounded-panel border border-border bg-surface shadow-floating"
         >
+          <RadixSelect.ScrollUpButton className="flex items-center justify-center py-1 text-muted">
+            <ChevronUp className="size-4" aria-hidden="true" />
+          </RadixSelect.ScrollUpButton>
           <RadixSelect.Viewport className="p-1">
             {options.map((option) => (
               <RadixSelect.Item
@@ -63,6 +67,9 @@ export function Select({
               </RadixSelect.Item>
             ))}
           </RadixSelect.Viewport>
+          <RadixSelect.ScrollDownButton className="flex items-center justify-center py-1 text-muted">
+            <ChevronDown className="size-4" aria-hidden="true" />
+          </RadixSelect.ScrollDownButton>
         </RadixSelect.Content>
       </RadixSelect.Portal>
     </RadixSelect.Root>

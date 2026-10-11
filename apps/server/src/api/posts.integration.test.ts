@@ -258,4 +258,26 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
     const response = await createPost(author.cookie, { body: "À tester.", format: "a_tester" });
     expect(response.statusCode).toBe(400);
   });
+
+  it("laisse un visiteur sans session lire le fil « Pour toi », jamais « Abonnements »", async () => {
+    const author = await createMember("visitor-feed@test.kemet", "visitorfeed");
+    const post = await createPost(author.cookie, { body: "Un post visible sans compte." });
+    const postId = post.json().post.id as string;
+
+    const feed = await app.inject({ method: "GET", url: "/api/posts?tab=pour-toi" });
+    expect(feed.statusCode).toBe(200);
+    expect(feed.json().items.map((item: { id: string }) => item.id)).toContain(postId);
+
+    // Un visiteur n'a pas d'abonnements : même en demandant "abonnements",
+    // la réponse reste "Pour toi" plutôt que d'exiger une session.
+    const defaultFeed = await app.inject({ method: "GET", url: "/api/posts" });
+    expect(defaultFeed.statusCode).toBe(200);
+
+    const detail = await app.inject({ method: "GET", url: `/api/posts/${postId}` });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().post.reactedByMe).toBe(false);
+
+    const writeAttempt = await app.inject({ method: "POST", url: "/api/posts", payload: { body: "Je ne devrais pas pouvoir publier" } });
+    expect(writeAttempt.statusCode).toBe(401);
+  });
 });

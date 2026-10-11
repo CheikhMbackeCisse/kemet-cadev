@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { createChannelSchema, renameChannelSchema } from "@kemet/shared";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   countUnreadMessages,
@@ -21,12 +21,17 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-export async function requireChannelAccess(db: ChatAppDeps["db"], channelId: string, profileId: string) {
+// `null` pour un visiteur (pas de session, mode visiteur du lot 11a).
+async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
+  return userId ? findProfileByUserId(db, userId) : null;
+}
+
+export async function requireChannelAccess(db: ChatAppDeps["db"], channelId: string, profileId: string | null) {
   const channel = await findChannelById(db, channelId);
   if (!channel) throw notFound("Ce salon n'existe pas.");
   const space = await findSpaceById(db, channel.spaceId);
   if (!space) throw notFound("Ce salon n'existe pas.");
-  const membership = await findSpaceMembership(db, space.id, profileId);
+  const membership = profileId ? await findSpaceMembership(db, space.id, profileId) : null;
   if (space.visibility === "private" && !membership) throw notFound("Ce salon n'existe pas.");
   return { channel, space, membership };
 }
@@ -39,17 +44,17 @@ function requireAdmin(membership: { role: string } | null) {
 
 export function registerChannelRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
   app.get<{ Params: { id: string } }>("/api/spaces/:id/channels", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
+    const userId = await getSessionUserId(auth, request);
+    const profile = await findOwnProfile(db, userId);
     const space = await findSpaceById(db, request.params.id);
     if (!space) throw notFound("Cet espace n'existe pas.");
-    const membership = await findSpaceMembership(db, space.id, profile.id);
+    const membership = profile ? await findSpaceMembership(db, space.id, profile.id) : null;
     if (space.visibility === "private" && !membership) throw notFound("Cet espace n'existe pas.");
     const since = membership?.joinedAt ?? space.createdAt;
     const channelRows = await listChannelsBySpace(db, space.id);
     const items = await Promise.all(
       channelRows.map(async (channel) => {
-        const unreadCount = await countUnreadMessages(db, channel.id, profile.id, since);
+        const unreadCount = profile ? await countUnreadMessages(db, channel.id, profile.id, since) : 0;
         return serializeChannel(channel, unreadCount);
       }),
     );

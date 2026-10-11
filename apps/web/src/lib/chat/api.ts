@@ -35,6 +35,7 @@ import type {
   Submission,
   SubmissionResult,
   Team,
+  UpdateProfileInput,
   UpdateProjectInput,
   UpdateSkillInput,
   UpdateSubmissionInput,
@@ -237,6 +238,46 @@ export function acceptInvite(code: string) {
 
 export function getMe() {
   return request<MeResponse>("/api/me");
+}
+
+export function updateMyProfile(input: UpdateProfileInput) {
+  return request<{ profile: MeResponse["profile"] }>("/api/me/profile", { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export function getAuthConfig() {
+  return request<{ githubEnabled: boolean }>("/api/auth-config");
+}
+
+export function signUp(input: { email: string; password: string; name: string }) {
+  return request<{ user: { id: string } }>("/api/auth/sign-up/email", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function signIn(input: { email: string; password: string }) {
+  return request<{ user: { id: string } }>("/api/auth/sign-in/email", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function signOut() {
+  return request<{ success: boolean }>("/api/auth/sign-out", { method: "POST" });
+}
+
+export async function signInWithGithub(callbackURL: string): Promise<void> {
+  const result = await request<{ url: string }>("/api/auth/sign-in/social", {
+    method: "POST",
+    body: JSON.stringify({ provider: "github", callbackURL }),
+  });
+  window.location.href = result.url;
+}
+
+export function forgotPassword(email: string, redirectTo: string) {
+  return request<{ status: boolean }>("/api/auth/forget-password", { method: "POST", body: JSON.stringify({ email, redirectTo }) });
+}
+
+export function resetPassword(newPassword: string, token: string) {
+  return request<{ status: boolean }>("/api/auth/reset-password", { method: "POST", body: JSON.stringify({ newPassword, token }) });
+}
+
+export function resendVerificationEmail(email: string) {
+  return request<{ status: boolean }>("/api/auth/send-verification-email", { method: "POST", body: JSON.stringify({ email }) });
 }
 
 export function listPosts(tab: FeedTab, cursor?: string): Promise<Page<PostSummary>> {

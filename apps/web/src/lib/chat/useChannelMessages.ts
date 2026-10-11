@@ -35,7 +35,7 @@ function upsertMessage(messages: Message[], incoming: Message): Message[] {
   return next;
 }
 
-export function useChannelMessages(channelId: string | null): UseChannelMessagesResult {
+export function useChannelMessages(channelId: string | null, hasProfile = true): UseChannelMessagesResult {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(channelId !== null);
   const [error, setError] = useState(false);
@@ -63,7 +63,7 @@ export function useChannelMessages(channelId: string | null): UseChannelMessages
         setMessages(page.items.slice().reverse());
         setLoading(false);
         const last = page.items.at(0);
-        if (last) void markChannelRead(channelId, last.id);
+        if (last && hasProfile) void markChannelRead(channelId, last.id);
       })
       .catch(() => {
         if (cancelled) return;
@@ -76,7 +76,7 @@ export function useChannelMessages(channelId: string | null): UseChannelMessages
       if (event.type === "message:new" || event.type === "message:updated") {
         if (event.channelId !== channelId || event.message.parentMessageId) return;
         setMessages((current) => upsertMessage(current, event.message));
-        if (event.type === "message:new") void markChannelRead(channelId, event.message.id);
+        if (event.type === "message:new" && hasProfile) void markChannelRead(channelId, event.message.id);
       } else if (event.type === "message:deleted") {
         if (event.channelId !== channelId) return;
         setMessages((current) =>
@@ -102,7 +102,7 @@ export function useChannelMessages(channelId: string | null): UseChannelMessages
           [event.message.id]: { invocationId: event.invocationId, skill: event.skill },
         }));
         setMessages((current) => upsertMessage(current, event.message));
-        void markChannelRead(channelId, event.message.id);
+        if (hasProfile) void markChannelRead(channelId, event.message.id);
       } else if (event.type === "assistant:failed") {
         if (event.channelId !== channelId) return;
         setAssistantStream((current) =>
@@ -115,7 +115,7 @@ export function useChannelMessages(channelId: string | null): UseChannelMessages
       unsubscribe();
       leaveChannel(channelId);
     };
-  }, [channelId, reloadToken]);
+  }, [channelId, reloadToken, hasProfile]);
 
   useEffect(() => {
     // Le socle (skill cité, étoile "Utile") n'est jamais recalculé sur le

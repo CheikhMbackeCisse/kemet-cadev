@@ -8,6 +8,7 @@ import type { Db } from "@kemet/db";
 import type { Auth } from "../auth/auth.js";
 import { createNoopChatPublisher, type ChatPublisher } from "../chat/pubsub.js";
 import { AppError } from "../errors.js";
+import { loadAuthConfig, type AuthConfig } from "../config/auth-config.js";
 import { loadAttachmentLimits, type AttachmentLimits } from "../storage/config.js";
 import { InMemoryStorage, type FileStorage } from "../storage/file-storage.js";
 import { registerMeRoutes } from "./routes/me.js";
@@ -32,6 +33,7 @@ export interface AppDeps {
   storage?: FileStorage;
   attachmentLimits?: AttachmentLimits;
   assistant?: AssistantOrchestrator;
+  authConfig?: AuthConfig;
 }
 
 export function buildApp(deps: AppDeps): FastifyInstance {
@@ -40,6 +42,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const storage = deps.storage ?? new InMemoryStorage();
   const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
   const assistant = deps.assistant ?? new NoopAssistantOrchestrator();
+  const authConfig = deps.authConfig ?? loadAuthConfig();
 
   void app.register(rateLimit, { global: false });
   void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
@@ -68,6 +71,10 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // /health reste accessible sans préfixe pour le healthcheck Docker, qui
   // interroge le conteneur directement.
   app.get("/api/health", health);
+
+  // Public, sans session : la page de connexion s'en sert pour savoir si
+  // elle doit proposer le bouton GitHub (voir docs/adr/0014-comptes-et-visiteur.md).
+  app.get("/api/auth-config", async () => authConfig);
 
   const authHandler = toNodeHandler(deps.auth);
   app.register(async (scope) => {

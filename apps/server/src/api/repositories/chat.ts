@@ -79,22 +79,28 @@ export async function findSpaceMembership(db: Db, spaceId: string, profileId: st
   return member ?? null;
 }
 
-export async function listSpacesForViewer(db: Db, profileId: string, cursor: string | undefined, limit: number) {
-  const memberRows = await db
-    .select({ id: spaceMembers.spaceId })
-    .from(spaceMembers)
-    .where(eq(spaceMembers.profileId, profileId));
-  const memberIds = memberRows.map((row) => row.id);
+// `profileId` est `null` pour un visiteur (mode visiteur, lot 11a) : seuls
+// les espaces publics sont alors visibles, sans jointure d'appartenance.
+export async function listSpacesForViewer(db: Db, profileId: string | null, cursor: string | undefined, limit: number) {
+  const memberIds = profileId
+    ? (await db.select({ id: spaceMembers.spaceId }).from(spaceMembers).where(eq(spaceMembers.profileId, profileId))).map(
+        (row) => row.id,
+      )
+    : [];
   const visibility =
     memberIds.length > 0 ? or(eq(spaces.visibility, "public"), inArray(spaces.id, memberIds)) : eq(spaces.visibility, "public");
   const condition = cursor ? and(visibility, lt(spaces.createdAt, new Date(cursor))) : visibility;
-  const rows = await db
-    .select({ space: spaces, role: spaceMembers.role })
-    .from(spaces)
-    .leftJoin(spaceMembers, and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.profileId, profileId)))
-    .where(condition)
-    .orderBy(desc(spaces.createdAt))
-    .limit(limit + 1);
+  const rows = profileId
+    ? await db
+        .select({ space: spaces, role: spaceMembers.role })
+        .from(spaces)
+        .leftJoin(spaceMembers, and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.profileId, profileId)))
+        .where(condition)
+        .orderBy(desc(spaces.createdAt))
+        .limit(limit + 1)
+    : (await db.select({ space: spaces }).from(spaces).where(condition).orderBy(desc(spaces.createdAt)).limit(limit + 1)).map(
+        (row) => ({ ...row, role: null }),
+      );
   const page = toPage(
     rows.map((row) => ({ ...row.space, role: row.role })),
     limit,

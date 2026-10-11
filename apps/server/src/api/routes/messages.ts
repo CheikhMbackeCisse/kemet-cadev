@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { createMessageSchema, editMessageSchema, paginationQuerySchema, toggleReactionSchema } from "@kemet/shared";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { extractMentionHandles } from "../../chat/mentions.js";
 import { mentionsAssistant } from "../../chat/kemet-assistant.js";
@@ -28,6 +28,12 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
+// `null` pour un visiteur (pas de session, mode visiteur du lot 11a) : les
+// deux routes de lecture ci-dessous l'acceptent, jamais les routes d'écriture.
+async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
+  return userId ? findProfileByUserId(db, userId) : null;
+}
+
 async function toSerializedMessage(db: ChatAppDeps["db"], row: Awaited<ReturnType<typeof findMessageById>>) {
   const hydrated = await hydrateMessage(db, row!);
   return serializeMessage(
@@ -44,9 +50,9 @@ export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat, as
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/channels/:id/messages",
     async (request) => {
-      const userId = await requireSessionUserId(auth, request);
-      const profile = await requireOwnProfile(db, userId);
-      await requireChannelAccess(db, request.params.id, profile.id);
+      const userId = await getSessionUserId(auth, request);
+      const profile = await findOwnProfile(db, userId);
+      await requireChannelAccess(db, request.params.id, profile?.id ?? null);
       const query = paginationQuerySchema.parse(request.query);
       const page = await listChannelMessages(db, request.params.id, query.cursor, query.limit);
       const items = await Promise.all(page.items.map((row) => toSerializedMessage(db, row)));
@@ -57,11 +63,11 @@ export function registerMessageRoutes(app: FastifyInstance, { db, auth, chat, as
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/messages/:id/replies",
     async (request) => {
-      const userId = await requireSessionUserId(auth, request);
-      const profile = await requireOwnProfile(db, userId);
+      const userId = await getSessionUserId(auth, request);
+      const profile = await findOwnProfile(db, userId);
       const parent = await findMessageById(db, request.params.id);
       if (!parent) throw notFound("Ce message n'existe pas.");
-      await requireChannelAccess(db, parent.channelId, profile.id);
+      await requireChannelAccess(db, parent.channelId, profile?.id ?? null);
       const query = paginationQuerySchema.parse(request.query);
       const page = await listThreadReplies(db, request.params.id, query.cursor, query.limit);
       const items = await Promise.all(page.items.map((row) => toSerializedMessage(db, row)));

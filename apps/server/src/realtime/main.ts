@@ -2,12 +2,13 @@ import Fastify from "fastify";
 import { Server, type Socket } from "socket.io";
 import { fromNodeHeaders } from "better-auth/node";
 import { healthcheckResponseSchema } from "@kemet/shared";
-import { and, eq } from "drizzle-orm";
-import { createDb, channels, profiles, spaceMembers, spaces } from "@kemet/db";
+import { eq } from "drizzle-orm";
+import { createDb, channels } from "@kemet/db";
 import { runMigrations } from "@kemet/db/migrate";
 import { createAuth } from "../auth/auth.js";
 import { SmtpEmailSender } from "../email/smtp-email-sender.js";
 import { subscribeChatEvents } from "../chat/pubsub.js";
+import { canAccessChannel, findProfileId } from "./access.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error(
@@ -41,24 +42,6 @@ function channelRoom(channelId: string): string {
   return `channel:${channelId}`;
 }
 
-async function findProfileId(userId: string): Promise<string | null> {
-  const [profile] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.userId, userId));
-  return profile?.id ?? null;
-}
-
-async function canAccessChannel(profileId: string, channelId: string): Promise<boolean> {
-  const [channel] = await db.select().from(channels).where(eq(channels.id, channelId));
-  if (!channel) return false;
-  const [space] = await db.select().from(spaces).where(eq(spaces.id, channel.spaceId));
-  if (!space) return false;
-  if (space.visibility === "public") return true;
-  const [membership] = await db
-    .select()
-    .from(spaceMembers)
-    .where(and(eq(spaceMembers.spaceId, space.id), eq(spaceMembers.profileId, profileId)));
-  return membership != null;
-}
-
 async function listChannelIdsInSpace(spaceId: string): Promise<string[]> {
   const rows = await db.select({ id: channels.id }).from(channels).where(eq(channels.spaceId, spaceId));
   return rows.map((row) => row.id);
@@ -80,13 +63,18 @@ app
 
     const socketsByProfile = new Map<string, Set<Socket>>();
 
+    // Mode visiteur (lot 11a) : sans session, la connexion est acceptée avec
+    // `profileId = null` plutôt que refusée — seuls les salons d'un espace
+    // public lui seront ensuite ouverts par canAccessChannel. Une session
+    // valide sans profil associé reste refusée, comportement inchangé.
     io.use(async (socket, next) => {
       const session = await auth.api.getSession({ headers: fromNodeHeaders(socket.handshake.headers) });
       if (!session) {
-        next(new Error("unauthorized"));
+        socket.data.profileId = null;
+        next();
         return;
       }
-      const profileId = await findProfileId(session.user.id);
+      const profileId = await findProfileId(db, session.user.id);
       if (!profileId) {
         next(new Error("profile_required"));
         return;
@@ -96,14 +84,16 @@ app
     });
 
     io.on("connection", (socket) => {
-      const profileId: string = socket.data.profileId;
-      const existing = socketsByProfile.get(profileId) ?? new Set<Socket>();
-      existing.add(socket);
-      socketsByProfile.set(profileId, existing);
+      const profileId: string | null = socket.data.profileId;
+      if (profileId) {
+        const existing = socketsByProfile.get(profileId) ?? new Set<Socket>();
+        existing.add(socket);
+        socketsByProfile.set(profileId, existing);
+      }
       app.log.info({ socketId: socket.id, profileId }, "client connecté");
 
       socket.on("channel:join", async ({ channelId }: { channelId: string }, ack?: (ok: boolean) => void) => {
-        const allowed = await canAccessChannel(profileId, channelId);
+        const allowed = await canAccessChannel(db, profileId, channelId);
         if (!allowed) {
           ack?.(false);
           return;
@@ -116,15 +106,20 @@ app
         void socket.leave(channelRoom(channelId));
       });
 
+      // Un visiteur n'a pas de composeur côté interface ; le serveur ne lui
+      // fait pas confiance pour autant et ignore ces événements sans profil.
       socket.on("typing:start", ({ channelId }: { channelId: string }) => {
+        if (!profileId) return;
         socket.to(channelRoom(channelId)).emit("typing:start", { channelId, profileId });
       });
 
       socket.on("typing:stop", ({ channelId }: { channelId: string }) => {
+        if (!profileId) return;
         socket.to(channelRoom(channelId)).emit("typing:stop", { channelId, profileId });
       });
 
       socket.on("disconnect", () => {
+        if (!profileId) return;
         const sockets = socketsByProfile.get(profileId);
         sockets?.delete(socket);
         if (sockets && sockets.size === 0) socketsByProfile.delete(profileId);
