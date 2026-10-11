@@ -43,6 +43,9 @@ export function HomePage() {
         </a>
         <Button onClick={() => (window.location.href = "/inscription")}>{fr.auth.homeVisitorSignup}</Button>
       </div>
+      <a href="/pro" className="text-sm text-link hover:underline">
+        {fr.auth.homeVisitorDiscoverPro}
+      </a>
     </main>
   );
 }

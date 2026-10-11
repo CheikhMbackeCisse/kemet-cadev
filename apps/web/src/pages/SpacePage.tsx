@@ -1,4 +1,4 @@
-import { Download, FolderGit2, Hash, MessageSquare, Paperclip, Plus, Rss, Send, Star, Trophy, UserPlus, X } from "lucide-react";
+import { Download, FolderGit2, Hash, MessageSquare, Paperclip, Plus, Rss, Send, Sparkles, Star, Trophy, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   addSpaceMember,
@@ -320,6 +320,19 @@ export function SpacePage() {
               className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
             >
               {fr.competitions.title}
+            </a>
+            <a
+              href="/pro"
+              aria-label={fr.pro.title}
+              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
+            >
+              <Sparkles className="size-5" aria-hidden="true" />
+            </a>
+            <a
+              href="/pro"
+              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
+            >
+              {fr.pro.title}
             </a>
             {canInteract && (
               <>

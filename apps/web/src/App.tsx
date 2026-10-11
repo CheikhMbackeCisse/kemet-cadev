@@ -11,6 +11,7 @@ import { ProjectsPage } from "./pages/ProjectsPage.js";
 import { ProjectPage } from "./pages/ProjectPage.js";
 import { CompetitionsPage } from "./pages/CompetitionsPage.js";
 import { CompetitionPage } from "./pages/CompetitionPage.js";
+import { ProPage } from "./pages/ProPage.js";
 import { HomePage } from "./pages/HomePage.js";
 import { LoginPage } from "./pages/LoginPage.js";
 import { SignupPage } from "./pages/SignupPage.js";
@@ -79,6 +80,7 @@ function resolvePage(pathname: string) {
   if (pathname.startsWith("/projets/")) return <ProjectPage />;
   if (pathname === "/competitions" || pathname === "/competitions/") return <CompetitionsPage />;
   if (pathname.startsWith("/competitions/")) return <CompetitionPage />;
+  if (pathname === "/pro") return <ProPage />;
   if (import.meta.env.DEV) {
     if (pathname.startsWith("/dev/ui/shell")) return <ShellPreviewPage />;
     if (pathname.startsWith("/dev/ui")) return <DevUiPage />;

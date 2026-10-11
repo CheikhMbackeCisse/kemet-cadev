@@ -269,6 +269,13 @@ export function FeedPage() {
             <Hash className="size-4" aria-hidden="true" />
             {fr.feed.salonsLink}
           </a>
+          <a
+            href="/pro"
+            className="inline-flex h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text hover:bg-surface-2"
+          >
+            <Sparkles className="size-4" aria-hidden="true" />
+            {fr.pro.title}
+          </a>
           <AccountMenu />
         </div>
       </div>
