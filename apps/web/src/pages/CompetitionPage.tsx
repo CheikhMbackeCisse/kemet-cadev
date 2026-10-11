@@ -14,6 +14,7 @@ import {
   listSubmissions,
   listTeams,
   submitJuryScore,
+  updateSubmission,
   voteForSubmission,
 } from "../lib/chat/api.js";
 import { Badge } from "../components/ui/Badge.js";
@@ -63,6 +64,7 @@ export function CompetitionPage() {
   const [teamError, setTeamError] = useState<string | null>(null);
 
   const [submitOpen, setSubmitOpen] = useState(false);
+  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null);
   const [projectId, setProjectId] = useState("");
   const [submissionTitle, setSubmissionTitle] = useState("");
   const [submissionPitch, setSubmissionPitch] = useState("");
@@ -137,24 +139,49 @@ export function CompetitionPage() {
     }
   }
 
+  function closeSubmitDialog() {
+    setSubmitOpen(false);
+    setEditingSubmission(null);
+    setProjectId("");
+    setSubmissionTitle("");
+    setSubmissionPitch("");
+    setSubmissionDescription("");
+    setRepoUrl("");
+    setDemoUrl("");
+  }
+
+  function openEditSubmission(submission: Submission) {
+    setEditingSubmission(submission);
+    setSubmissionTitle(submission.title);
+    setSubmissionPitch(submission.pitch);
+    setSubmissionDescription(submission.description ?? "");
+    setRepoUrl(submission.repoUrl ?? "");
+    setDemoUrl(submission.demoUrl ?? "");
+    setSubmitOpen(true);
+  }
+
   async function handleSubmit() {
     setSubmitError(null);
     try {
-      await createSubmission(slug, {
-        projectId,
-        title: submissionTitle,
-        pitch: submissionPitch,
-        description: submissionDescription,
-        repoUrl,
-        demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
-      });
-      setSubmitOpen(false);
-      setProjectId("");
-      setSubmissionTitle("");
-      setSubmissionPitch("");
-      setSubmissionDescription("");
-      setRepoUrl("");
-      setDemoUrl("");
+      if (editingSubmission) {
+        await updateSubmission(editingSubmission.id, {
+          title: submissionTitle,
+          pitch: submissionPitch,
+          description: submissionDescription,
+          repoUrl,
+          demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
+        });
+      } else {
+        await createSubmission(slug, {
+          projectId,
+          title: submissionTitle,
+          pitch: submissionPitch,
+          description: submissionDescription,
+          repoUrl,
+          demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
+        });
+      }
+      closeSubmitDialog();
       loadSubmissions();
       loadTeams();
     } catch (err) {
@@ -295,6 +322,11 @@ export function CompetitionPage() {
                           <span className="text-xs text-subtle">{submission.teamName}</span>
                         </div>
                         <p className="mt-1 text-sm text-text-2">{submission.pitch}</p>
+                        {submission.viewerIsTeamMember && competition.phase === "submission" && (
+                          <Button variant="secondary" className="mt-2 text-xs" onClick={() => openEditSubmission(submission)}>
+                            {fr.competitions.editSubmission}
+                          </Button>
+                        )}
                         {submission.repoUrl ? (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <a href={submission.repoUrl} target="_blank" rel="noreferrer" className="text-xs text-link hover:underline">
@@ -391,21 +423,26 @@ export function CompetitionPage() {
         </div>
       </Dialog>
 
-      <Dialog open={submitOpen} onOpenChange={setSubmitOpen} title={fr.competitions.submitProjectTitle}>
+      <Dialog
+        open={submitOpen}
+        onOpenChange={(open) => (open ? setSubmitOpen(true) : closeSubmitDialog())}
+        title={editingSubmission ? fr.competitions.editSubmissionTitle : fr.competitions.submitProjectTitle}
+      >
         <div className="flex flex-col gap-3">
-          {myProjects.length === 0 ? (
-            <p className="text-sm text-subtle">{fr.competitions.noOwnProjects}</p>
-          ) : (
-            <label className="flex flex-col gap-1 text-sm text-text-2">
-              {fr.competitions.projectLabel}
-              <Select
-                aria-label={fr.competitions.projectLabel}
-                value={projectId}
-                onValueChange={setProjectId}
-                options={myProjects.map((project) => ({ value: project.id, label: project.name }))}
-              />
-            </label>
-          )}
+          {!editingSubmission &&
+            (myProjects.length === 0 ? (
+              <p className="text-sm text-subtle">{fr.competitions.noOwnProjects}</p>
+            ) : (
+              <label className="flex flex-col gap-1 text-sm text-text-2">
+                {fr.competitions.projectLabel}
+                <Select
+                  aria-label={fr.competitions.projectLabel}
+                  value={projectId}
+                  onValueChange={setProjectId}
+                  options={myProjects.map((project) => ({ value: project.id, label: project.name }))}
+                />
+              </label>
+            ))}
           <label className="flex flex-col gap-1 text-sm text-text-2">
             {fr.competitions.titleLabel}
             <Input value={submissionTitle} onChange={(event) => setSubmissionTitle(event.target.value)} />
@@ -431,8 +468,11 @@ export function CompetitionPage() {
               {submitError}
             </p>
           )}
-          <Button onClick={handleSubmit} disabled={!projectId || !submissionTitle.trim() || !submissionPitch.trim() || !repoUrl.trim()}>
-            {fr.competitions.submitProjectSubmit}
+          <Button
+            onClick={handleSubmit}
+            disabled={(!editingSubmission && !projectId) || !submissionTitle.trim() || !submissionPitch.trim() || !repoUrl.trim()}
+          >
+            {editingSubmission ? fr.competitions.editSubmissionSubmit : fr.competitions.submitProjectSubmit}
           </Button>
         </div>
       </Dialog>

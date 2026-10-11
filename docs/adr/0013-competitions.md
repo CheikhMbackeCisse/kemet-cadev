@@ -94,9 +94,6 @@ liste ait un sens). Visibles pour tout le monde dès la phase de vote.
 
 - Pas de recherche ni de défis de code sans exécution (P1, `docs/CONTEXTE.md`)
   dans ce lot.
-- Pas d'écran de modification d'une soumission dans l'interface : la route
-  `PATCH /api/submissions/:id` existe et est testée, mais seule la création
-  est câblée côté `apps/web`.
 - **Aucun test Playwright pour le parcours de vote**, à la différence des
   autres parcours critiques listés dans ce fichier. La validation admin
   n'a ni API ni interface de contournement pour un compte créé à la volée

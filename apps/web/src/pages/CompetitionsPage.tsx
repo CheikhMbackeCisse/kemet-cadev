@@ -42,6 +42,9 @@ export function CompetitionsPage() {
   const [pendingLoading, setPendingLoading] = useState(false);
   const [pendingError, setPendingError] = useState(false);
 
+  const [rejectTarget, setRejectTarget] = useState<CompetitionDetail | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
+
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -106,14 +109,21 @@ export function CompetitionsPage() {
     }
   }
 
-  async function handleReview(competitionId: string, approve: boolean) {
+  async function handleReview(competitionId: string, approve: boolean, note?: string) {
     try {
-      await reviewCompetition(competitionId, { approve });
+      await reviewCompetition(competitionId, note ? { approve, note } : { approve });
       setPending((current) => current.filter((item) => item.id !== competitionId));
       load();
     } catch {
       toast.show(fr.competitions.reviewError, "danger");
     }
+  }
+
+  async function handleRejectConfirm() {
+    if (!rejectTarget) return;
+    await handleReview(rejectTarget.id, false, rejectNote.trim() || undefined);
+    setRejectTarget(null);
+    setRejectNote("");
   }
 
   return (
@@ -155,7 +165,7 @@ export function CompetitionsPage() {
                     <Button variant="secondary" className="text-xs" onClick={() => handleReview(competition.id, true)}>
                       {fr.competitions.approve}
                     </Button>
-                    <Button variant="ghost" className="text-xs text-danger" onClick={() => handleReview(competition.id, false)}>
+                    <Button variant="ghost" className="text-xs text-danger" onClick={() => setRejectTarget(competition)}>
                       {fr.competitions.reject}
                     </Button>
                   </div>
@@ -242,6 +252,28 @@ export function CompetitionsPage() {
             disabled={!name.trim() || !slug.trim() || !pitch.trim() || !registrationClosesAt || !submissionClosesAt || !votingClosesAt}
           >
             {fr.competitions.requestSubmit}
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={rejectTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRejectTarget(null);
+            setRejectNote("");
+          }
+        }}
+        title={fr.competitions.reject}
+        description={rejectTarget?.name}
+      >
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1 text-sm text-text-2">
+            {fr.competitions.reviewNoteLabel}
+            <Textarea value={rejectNote} onChange={(event) => setRejectNote(event.target.value)} className="min-h-20" autoFocus />
+          </label>
+          <Button variant="danger" onClick={handleRejectConfirm}>
+            {fr.competitions.reject}
           </Button>
         </div>
       </Dialog>
