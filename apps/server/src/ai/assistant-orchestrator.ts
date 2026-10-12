@@ -224,14 +224,19 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
       ? skills.map((skill) => `<skill nom="${skill.name}">\n${skill.content}\n</skill>`).join("\n\n")
       : "Aucun skill retenu pour cette question.";
 
-    const system = [
-      SYSTEM_PROMPT_PREFIX,
+    // L'historique et le contenu des skills viennent d'utilisateurs de la
+    // plateforme : jamais dans le message système, réservé à la consigne de
+    // rôle, pour qu'ils restent structurellement des données plutôt que des
+    // instructions (docs/CONTEXTE.md, "protection contre l'injection de
+    // prompt").
+    const context = [
       `<historique>\n${historyText || "Aucun message précédent."}\n</historique>`,
       `<skill>\n${skillsText}\n</skill>`,
     ].join("\n\n");
 
     return [
-      { role: "system", content: system },
+      { role: "system", content: SYSTEM_PROMPT_PREFIX },
+      { role: "user", content: context },
       { role: "user", content: question || "Bonjour." },
     ];
   }
