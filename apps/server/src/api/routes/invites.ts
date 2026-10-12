@@ -29,22 +29,26 @@ function requireAdmin(membership: { role: string } | null) {
 }
 
 export function registerInviteRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
-  app.post<{ Params: { id: string } }>("/api/spaces/:id/invites", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const space = await findSpaceById(db, request.params.id);
-    if (!space) throw notFound("Cet espace n'existe pas.");
-    const membership = await findSpaceMembership(db, space.id, profile.id);
-    requireAdmin(membership);
-    const input = createInviteSchema.parse(request.body);
-    const invite = await createInvite(db, {
-      spaceId: space.id,
-      createdBy: profile.id,
-      maxUses: input.maxUses ?? null,
-      expiresInDays: input.expiresInDays,
-    });
-    return { invite: serializeInvite(invite, profile.handle) };
-  });
+  app.post<{ Params: { id: string } }>(
+    "/api/spaces/:id/invites",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const space = await findSpaceById(db, request.params.id);
+      if (!space) throw notFound("Cet espace n'existe pas.");
+      const membership = await findSpaceMembership(db, space.id, profile.id);
+      requireAdmin(membership);
+      const input = createInviteSchema.parse(request.body);
+      const invite = await createInvite(db, {
+        spaceId: space.id,
+        createdBy: profile.id,
+        maxUses: input.maxUses ?? null,
+        expiresInDays: input.expiresInDays,
+      });
+      return { invite: serializeInvite(invite, profile.handle) };
+    },
+  );
 
   app.get<{ Params: { id: string } }>("/api/spaces/:id/invites", async (request) => {
     const userId = await requireSessionUserId(auth, request);
@@ -57,16 +61,20 @@ export function registerInviteRoutes(app: FastifyInstance, { db, auth }: ChatApp
     return { items: rows.map((row) => serializeInvite(row.invite, row.createdByHandle)) };
   });
 
-  app.delete<{ Params: { inviteId: string } }>("/api/invites/:inviteId", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const invite = await findInviteById(db, request.params.inviteId);
-    if (!invite) throw notFound("Cette invitation n'existe pas.");
-    const membership = await findSpaceMembership(db, invite.spaceId, profile.id);
-    requireAdmin(membership);
-    await revokeInvite(db, invite.id);
-    return { revoked: true };
-  });
+  app.delete<{ Params: { inviteId: string } }>(
+    "/api/invites/:inviteId",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const invite = await findInviteById(db, request.params.inviteId);
+      if (!invite) throw notFound("Cette invitation n'existe pas.");
+      const membership = await findSpaceMembership(db, invite.spaceId, profile.id);
+      requireAdmin(membership);
+      await revokeInvite(db, invite.id);
+      return { revoked: true };
+    },
+  );
 
   app.get<{ Params: { code: string } }>(
     "/api/invites/:code",

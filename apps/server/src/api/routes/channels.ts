@@ -61,31 +61,39 @@ export function registerChannelRoutes(app: FastifyInstance, { db, auth }: ChatAp
     return { items };
   });
 
-  app.post<{ Params: { id: string } }>("/api/spaces/:id/channels", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const space = await findSpaceById(db, request.params.id);
-    if (!space) throw notFound("Cet espace n'existe pas.");
-    const membership = await findSpaceMembership(db, space.id, profile.id);
-    if (space.visibility === "private" && !membership) throw notFound("Cet espace n'existe pas.");
-    requireAdmin(membership);
-    const input = createChannelSchema.parse(request.body);
-    const existing = (await listChannelsBySpace(db, space.id)).find((channel) => channel.slug === input.slug);
-    if (existing) throw conflict("Un salon avec cet identifiant existe déjà dans cet espace.");
-    const displayOrder = (await listChannelsBySpace(db, space.id)).length;
-    const channel = await createChannel(db, space.id, input.name, input.slug, displayOrder);
-    return { channel: serializeChannel(channel, 0) };
-  });
+  app.post<{ Params: { id: string } }>(
+    "/api/spaces/:id/channels",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const space = await findSpaceById(db, request.params.id);
+      if (!space) throw notFound("Cet espace n'existe pas.");
+      const membership = await findSpaceMembership(db, space.id, profile.id);
+      if (space.visibility === "private" && !membership) throw notFound("Cet espace n'existe pas.");
+      requireAdmin(membership);
+      const input = createChannelSchema.parse(request.body);
+      const existing = (await listChannelsBySpace(db, space.id)).find((channel) => channel.slug === input.slug);
+      if (existing) throw conflict("Un salon avec cet identifiant existe déjà dans cet espace.");
+      const displayOrder = (await listChannelsBySpace(db, space.id)).length;
+      const channel = await createChannel(db, space.id, input.name, input.slug, displayOrder);
+      return { channel: serializeChannel(channel, 0) };
+    },
+  );
 
-  app.patch<{ Params: { id: string } }>("/api/channels/:id", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const { membership } = await requireChannelAccess(db, request.params.id, profile.id);
-    requireAdmin(membership);
-    const input = renameChannelSchema.parse(request.body);
-    const channel = await renameChannel(db, request.params.id, input.name);
-    const since = membership?.joinedAt ?? channel.createdAt;
-    const unreadCount = await countUnreadMessages(db, channel.id, profile.id, since);
-    return { channel: serializeChannel(channel, unreadCount) };
-  });
+  app.patch<{ Params: { id: string } }>(
+    "/api/channels/:id",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const { membership } = await requireChannelAccess(db, request.params.id, profile.id);
+      requireAdmin(membership);
+      const input = renameChannelSchema.parse(request.body);
+      const channel = await renameChannel(db, request.params.id, input.name);
+      const since = membership?.joinedAt ?? channel.createdAt;
+      const unreadCount = await countUnreadMessages(db, channel.id, profile.id, since);
+      return { channel: serializeChannel(channel, unreadCount) };
+    },
+  );
 }

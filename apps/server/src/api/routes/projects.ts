@@ -85,27 +85,35 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     return { project: serializeProjectDetail(project, owner!, openHelpRequestCount, projectsConfig.datacloudReferralUrl) };
   });
 
-  app.patch<{ Params: { slug: string } }>("/api/projects/:slug", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const project = await findProjectBySlug(db, request.params.slug);
-    if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
-    if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire peut modifier ce projet.");
-    const input = updateProjectSchema.parse(request.body);
-    const updated = await updateProject(db, project.id, input);
-    const openHelpRequestCount = await countOpenHelpRequests(db, project.id);
-    return { project: serializeProjectDetail(updated, profile, openHelpRequestCount, projectsConfig.datacloudReferralUrl) };
-  });
+  app.patch<{ Params: { slug: string } }>(
+    "/api/projects/:slug",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const project = await findProjectBySlug(db, request.params.slug);
+      if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
+      if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire peut modifier ce projet.");
+      const input = updateProjectSchema.parse(request.body);
+      const updated = await updateProject(db, project.id, input);
+      const openHelpRequestCount = await countOpenHelpRequests(db, project.id);
+      return { project: serializeProjectDetail(updated, profile, openHelpRequestCount, projectsConfig.datacloudReferralUrl) };
+    },
+  );
 
-  app.delete<{ Params: { slug: string } }>("/api/projects/:slug", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const project = await findProjectBySlug(db, request.params.slug);
-    if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
-    if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire peut supprimer ce projet.");
-    await softDeleteProject(db, project.id);
-    return { deleted: true };
-  });
+  app.delete<{ Params: { slug: string } }>(
+    "/api/projects/:slug",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const project = await findProjectBySlug(db, request.params.slug);
+      if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
+      if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire peut supprimer ce projet.");
+      await softDeleteProject(db, project.id);
+      return { deleted: true };
+    },
+  );
 
   app.get<{ Params: { slug: string } }>("/api/projects/:slug/help-requests", async (request) => {
     await requireSessionUserId(auth, request);
@@ -140,18 +148,22 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     },
   );
 
-  app.put<{ Params: { id: string } }>("/api/help-requests/:id/close", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const helpRequest = await findHelpRequestById(db, request.params.id);
-    if (!helpRequest) throw notFound("Cette demande n'existe pas.");
-    const project = await findProjectById(db, helpRequest.projectId);
-    if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
-    if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut fermer cette demande.");
-    if (helpRequest.status === "closed") throw conflict("Cette demande est déjà fermée.");
-    const closed = await closeHelpRequest(db, helpRequest.id);
-    return { helpRequest: serializeHelpRequest(closed, await countApplications(db, closed.id)) };
-  });
+  app.put<{ Params: { id: string } }>(
+    "/api/help-requests/:id/close",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const helpRequest = await findHelpRequestById(db, request.params.id);
+      if (!helpRequest) throw notFound("Cette demande n'existe pas.");
+      const project = await findProjectById(db, helpRequest.projectId);
+      if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
+      if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut fermer cette demande.");
+      if (helpRequest.status === "closed") throw conflict("Cette demande est déjà fermée.");
+      const closed = await closeHelpRequest(db, helpRequest.id);
+      return { helpRequest: serializeHelpRequest(closed, await countApplications(db, closed.id)) };
+    },
+  );
 
   app.get<{ Params: { id: string } }>("/api/help-requests/:id/applications", async (request) => {
     const userId = await requireSessionUserId(auth, request);
@@ -187,30 +199,34 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     },
   );
 
-  app.put<{ Params: { id: string } }>("/api/applications/:id/decision", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const application = await findApplicationById(db, request.params.id);
-    if (!application) throw notFound("Cette candidature n'existe pas.");
-    const helpRequest = await findHelpRequestById(db, application.helpRequestId);
-    if (!helpRequest) throw notFound("Cette demande n'existe pas.");
-    const project = await findProjectById(db, helpRequest.projectId);
-    if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
-    if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut décider de cette candidature.");
-    if (application.status !== "pending") throw conflict("Cette candidature a déjà reçu une décision.");
-    const input = decideApplicationSchema.parse(request.body);
-    const decided = await decideApplication(db, application.id, input.accepted);
-    if (!decided) throw notFound("Cette candidature n'existe pas.");
-    if (decided.status === "accepted") {
-      await awardPoints(db, {
-        profileId: decided.applicantId,
-        source: "project_help_confirmed",
-        sourceId: decided.id,
-        amount: POINTS_PROJECT_HELP_CONFIRMED,
-        givenByProfileId: profile.id,
-      });
-    }
-    const applicantProfile = await findProfileById(db, decided.applicantId);
-    return { application: serializeApplication(decided, applicantProfile!) };
-  });
+  app.put<{ Params: { id: string } }>(
+    "/api/applications/:id/decision",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const application = await findApplicationById(db, request.params.id);
+      if (!application) throw notFound("Cette candidature n'existe pas.");
+      const helpRequest = await findHelpRequestById(db, application.helpRequestId);
+      if (!helpRequest) throw notFound("Cette demande n'existe pas.");
+      const project = await findProjectById(db, helpRequest.projectId);
+      if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
+      if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut décider de cette candidature.");
+      if (application.status !== "pending") throw conflict("Cette candidature a déjà reçu une décision.");
+      const input = decideApplicationSchema.parse(request.body);
+      const decided = await decideApplication(db, application.id, input.accepted);
+      if (!decided) throw notFound("Cette candidature n'existe pas.");
+      if (decided.status === "accepted") {
+        await awardPoints(db, {
+          profileId: decided.applicantId,
+          source: "project_help_confirmed",
+          sourceId: decided.id,
+          amount: POINTS_PROJECT_HELP_CONFIRMED,
+          givenByProfileId: profile.id,
+        });
+      }
+      const applicantProfile = await findProfileById(db, decided.applicantId);
+      return { application: serializeApplication(decided, applicantProfile!) };
+    },
+  );
 }

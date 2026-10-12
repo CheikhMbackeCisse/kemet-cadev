@@ -158,48 +158,60 @@ export function registerMessageRoutes(
     },
   );
 
-  app.patch<{ Params: { id: string } }>("/api/messages/:id", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const message = await findMessageById(db, request.params.id);
-    if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-    await requireChannelAccess(db, message.channelId, profile.id);
-    if (message.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce message.");
-    const input = editMessageSchema.parse(request.body);
-    const updated = await editMessage(db, message.id, input.body);
-    const serialized = await toSerializedMessage(db, updated);
-    await chat.publish({ type: "message:updated", channelId: message.channelId, message: serialized });
-    return { message: serialized };
-  });
+  app.patch<{ Params: { id: string } }>(
+    "/api/messages/:id",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const message = await findMessageById(db, request.params.id);
+      if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
+      await requireChannelAccess(db, message.channelId, profile.id);
+      if (message.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce message.");
+      const input = editMessageSchema.parse(request.body);
+      const updated = await editMessage(db, message.id, input.body);
+      const serialized = await toSerializedMessage(db, updated);
+      await chat.publish({ type: "message:updated", channelId: message.channelId, message: serialized });
+      return { message: serialized };
+    },
+  );
 
-  app.delete<{ Params: { id: string } }>("/api/messages/:id", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const message = await findMessageById(db, request.params.id);
-    if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-    const { membership } = await requireChannelAccess(db, message.channelId, profile.id);
-    const isAuthor = message.authorId === profile.id;
-    const isAdmin = membership?.role === "owner" || membership?.role === "admin";
-    if (!isAuthor && !isAdmin) throw forbidden("Impossible de supprimer le message d'un autre membre.");
-    await softDeleteMessage(db, message.id);
-    await chat.publish({ type: "message:deleted", channelId: message.channelId, messageId: message.id });
-    return { deleted: true };
-  });
+  app.delete<{ Params: { id: string } }>(
+    "/api/messages/:id",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const message = await findMessageById(db, request.params.id);
+      if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
+      const { membership } = await requireChannelAccess(db, message.channelId, profile.id);
+      const isAuthor = message.authorId === profile.id;
+      const isAdmin = membership?.role === "owner" || membership?.role === "admin";
+      if (!isAuthor && !isAdmin) throw forbidden("Impossible de supprimer le message d'un autre membre.");
+      await softDeleteMessage(db, message.id);
+      await chat.publish({ type: "message:deleted", channelId: message.channelId, messageId: message.id });
+      return { deleted: true };
+    },
+  );
 
-  app.put<{ Params: { id: string } }>("/api/messages/:id/reactions", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const message = await findMessageById(db, request.params.id);
-    if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-    await requireChannelAccess(db, message.channelId, profile.id);
-    const input = toggleReactionSchema.parse(request.body);
-    const reactions = await toggleReaction(db, message.id, profile.id, input.emoji);
-    await chat.publish({
-      type: "reaction:updated",
-      channelId: message.channelId,
-      messageId: message.id,
-      reactions,
-    });
-    return { reactions };
-  });
+  app.put<{ Params: { id: string } }>(
+    "/api/messages/:id/reactions",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const message = await findMessageById(db, request.params.id);
+      if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
+      await requireChannelAccess(db, message.channelId, profile.id);
+      const input = toggleReactionSchema.parse(request.body);
+      const reactions = await toggleReaction(db, message.id, profile.id, input.emoji);
+      await chat.publish({
+        type: "reaction:updated",
+        channelId: message.channelId,
+        messageId: message.id,
+        reactions,
+      });
+      return { reactions };
+    },
+  );
 }

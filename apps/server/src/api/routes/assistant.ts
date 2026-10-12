@@ -43,31 +43,35 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
   // marquer la réponse Utile", ce qui rapporte des points à l'auteur du
   // skill cité). Pas de retrait de points si la marque est retirée ensuite :
   // simplification acceptée, voir docs/adr/0011-points-et-niveaux.md.
-  app.put<{ Params: { id: string } }>("/api/assistant-invocations/:id/feedback", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await findProfileByUserId(db, userId);
-    if (!profile) throw badRequest("Complétez votre profil avant de donner votre avis.");
-    const invocation = await findInvocationById(db, request.params.id);
-    if (!invocation || invocation.status !== "done") throw notFound("Cette réponse n'existe pas.");
-    await requireChannelAccess(db, invocation.channelId, profile.id);
-    const input = assistantFeedbackSchema.parse(request.body);
-    if (input.helpful && invocation.helpful !== true) {
-      const citedSkills = await findSkillsByIds(db, invocation.skillIds);
-      const authorIds = [...new Set(citedSkills.map((skill) => skill.authorId))].filter((id) => id !== profile.id);
-      if (authorIds.length > 0) {
-        const amount = await computeUtileAwardAmount(db, POINTS_ASSISTANT_SKILL_HELPFUL, profile);
-        for (const authorId of authorIds) {
-          await awardPoints(db, {
-            profileId: authorId,
-            source: "assistant_skill_helpful",
-            sourceId: invocation.id,
-            amount,
-            givenByProfileId: profile.id,
-          });
+  app.put<{ Params: { id: string } }>(
+    "/api/assistant-invocations/:id/feedback",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await findProfileByUserId(db, userId);
+      if (!profile) throw badRequest("Complétez votre profil avant de donner votre avis.");
+      const invocation = await findInvocationById(db, request.params.id);
+      if (!invocation || invocation.status !== "done") throw notFound("Cette réponse n'existe pas.");
+      await requireChannelAccess(db, invocation.channelId, profile.id);
+      const input = assistantFeedbackSchema.parse(request.body);
+      if (input.helpful && invocation.helpful !== true) {
+        const citedSkills = await findSkillsByIds(db, invocation.skillIds);
+        const authorIds = [...new Set(citedSkills.map((skill) => skill.authorId))].filter((id) => id !== profile.id);
+        if (authorIds.length > 0) {
+          const amount = await computeUtileAwardAmount(db, POINTS_ASSISTANT_SKILL_HELPFUL, profile);
+          for (const authorId of authorIds) {
+            await awardPoints(db, {
+              profileId: authorId,
+              source: "assistant_skill_helpful",
+              sourceId: invocation.id,
+              amount,
+              givenByProfileId: profile.id,
+            });
+          }
         }
       }
-    }
-    await setInvocationHelpful(db, invocation.id, input.helpful);
-    return { helpful: input.helpful };
-  });
+      await setInvocationHelpful(db, invocation.id, input.helpful);
+      return { helpful: input.helpful };
+    },
+  );
 }

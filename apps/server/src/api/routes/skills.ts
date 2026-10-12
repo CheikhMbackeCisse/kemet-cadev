@@ -85,41 +85,53 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
     return { skill: serializeSkillDetail(skill, author, ratings) };
   });
 
-  app.patch<{ Params: { slug: string } }>("/api/skills/:slug", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const skill = await requireVisibleSkill(db, request.params.slug, profile.id);
-    if (skill.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce skill.");
-    const input = updateSkillSchema.parse(request.body);
-    await requireSpaceMembershipForVisibility(
-      db,
-      profile.id,
-      input.visibility ?? skill.visibility,
-      input.spaceId !== undefined ? input.spaceId : skill.spaceId,
-    );
-    const updated = await updateSkill(db, skill.id, input);
-    const ratings = await getSkillRatingStats(db, skill.id);
-    return { skill: serializeSkillDetail(updated, profile, ratings) };
-  });
+  app.patch<{ Params: { slug: string } }>(
+    "/api/skills/:slug",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const skill = await requireVisibleSkill(db, request.params.slug, profile.id);
+      if (skill.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce skill.");
+      const input = updateSkillSchema.parse(request.body);
+      await requireSpaceMembershipForVisibility(
+        db,
+        profile.id,
+        input.visibility ?? skill.visibility,
+        input.spaceId !== undefined ? input.spaceId : skill.spaceId,
+      );
+      const updated = await updateSkill(db, skill.id, input);
+      const ratings = await getSkillRatingStats(db, skill.id);
+      return { skill: serializeSkillDetail(updated, profile, ratings) };
+    },
+  );
 
-  app.delete<{ Params: { slug: string } }>("/api/skills/:slug", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const skill = await requireVisibleSkill(db, request.params.slug, profile.id);
-    if (skill.authorId !== profile.id) throw forbidden("Seul l'auteur peut supprimer ce skill.");
-    await deleteSkill(db, skill.id);
-    return { deleted: true };
-  });
+  app.delete<{ Params: { slug: string } }>(
+    "/api/skills/:slug",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const skill = await requireVisibleSkill(db, request.params.slug, profile.id);
+      if (skill.authorId !== profile.id) throw forbidden("Seul l'auteur peut supprimer ce skill.");
+      await deleteSkill(db, skill.id);
+      return { deleted: true };
+    },
+  );
 
-  app.put<{ Params: { slug: string } }>("/api/skills/:slug/rating", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const skill = await requireVisibleSkill(db, request.params.slug, profile.id);
-    if (!(await hasProfileUsedSkill(db, profile.id, skill.id))) {
-      throw forbidden("Seuls ceux à qui ce skill a déjà servi peuvent lui donner des étoiles.");
-    }
-    const input = rateSkillSchema.parse(request.body);
-    const ratings = await rateSkill(db, skill.id, profile.id, input.stars);
-    return { ratings };
-  });
+  app.put<{ Params: { slug: string } }>(
+    "/api/skills/:slug/rating",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const skill = await requireVisibleSkill(db, request.params.slug, profile.id);
+      if (!(await hasProfileUsedSkill(db, profile.id, skill.id))) {
+        throw forbidden("Seuls ceux à qui ce skill a déjà servi peuvent lui donner des étoiles.");
+      }
+      const input = rateSkillSchema.parse(request.body);
+      const ratings = await rateSkill(db, skill.id, profile.id, input.stars);
+      return { ratings };
+    },
+  );
 }

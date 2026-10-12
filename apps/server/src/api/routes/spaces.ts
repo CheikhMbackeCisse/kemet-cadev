@@ -43,22 +43,26 @@ function requireAdmin(membership: { role: string } | null) {
 }
 
 export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: ChatAppDeps): void {
-  app.post("/api/spaces", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const input = createSpaceSchema.parse(request.body);
-    if (await findSpaceBySlug(db, input.slug)) {
-      throw conflict("Cet identifiant d'espace est déjà pris.");
-    }
-    const space = await createSpaceWithDefaults(db, {
-      name: input.name,
-      slug: input.slug,
-      description: input.description ?? null,
-      visibility: input.visibility,
-      creatorProfileId: profile.id,
-    });
-    return { space: serializeSpace(space, "owner") };
-  });
+  app.post(
+    "/api/spaces",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const input = createSpaceSchema.parse(request.body);
+      if (await findSpaceBySlug(db, input.slug)) {
+        throw conflict("Cet identifiant d'espace est déjà pris.");
+      }
+      const space = await createSpaceWithDefaults(db, {
+        name: input.name,
+        slug: input.slug,
+        description: input.description ?? null,
+        visibility: input.visibility,
+        creatorProfileId: profile.id,
+      });
+      return { space: serializeSpace(space, "owner") };
+    },
+  );
 
   app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/spaces", async (request) => {
     const userId = await getSessionUserId(auth, request);
@@ -86,22 +90,27 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     return { items: members.map(serializeSpaceMember) };
   });
 
-  app.post<{ Params: { id: string } }>("/api/spaces/:id/members", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const { membership } = await requireVisibleSpace(db, request.params.id, profile.id);
-    requireAdmin(membership);
-    const input = addSpaceMemberSchema.parse(request.body);
-    const target = await findProfileByHandle(db, input.handle);
-    if (!target) throw notFound("Ce profil n'existe pas.");
-    const existingMembership = await findSpaceMembership(db, request.params.id, target.id);
-    if (existingMembership) throw conflict("Ce profil est déjà membre de l'espace.");
-    await addSpaceMember(db, request.params.id, target.id, "member");
-    return { added: true };
-  });
+  app.post<{ Params: { id: string } }>(
+    "/api/spaces/:id/members",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const { membership } = await requireVisibleSpace(db, request.params.id, profile.id);
+      requireAdmin(membership);
+      const input = addSpaceMemberSchema.parse(request.body);
+      const target = await findProfileByHandle(db, input.handle);
+      if (!target) throw notFound("Ce profil n'existe pas.");
+      const existingMembership = await findSpaceMembership(db, request.params.id, target.id);
+      if (existingMembership) throw conflict("Ce profil est déjà membre de l'espace.");
+      await addSpaceMember(db, request.params.id, target.id, "member");
+      return { added: true };
+    },
+  );
 
   app.delete<{ Params: { id: string; profileId: string } }>(
     "/api/spaces/:id/members/:profileId",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);

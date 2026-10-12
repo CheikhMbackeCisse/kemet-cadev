@@ -31,24 +31,28 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
     };
   });
 
-  app.patch("/api/me/profile", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const patch = updateProfileSchema.parse(request.body);
-    const existing = await findProfileByUserId(db, userId);
+  app.patch(
+    "/api/me/profile",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const patch = updateProfileSchema.parse(request.body);
+      const existing = await findProfileByUserId(db, userId);
 
-    if (!existing && (!patch.handle || !patch.country || !patch.displayName)) {
-      throw badRequest("L'identifiant, le pays et le nom affiché sont requis à la création du profil.");
-    }
-
-    if (patch.handle) {
-      const owner = await findProfileByHandle(db, patch.handle);
-      if (owner && owner.userId !== userId) {
-        throw conflict("Cet identifiant est déjà pris.");
+      if (!existing && (!patch.handle || !patch.country || !patch.displayName)) {
+        throw badRequest("L'identifiant, le pays et le nom affiché sont requis à la création du profil.");
       }
-    }
 
-    const profile = await upsertProfile(db, userId, patch);
-    const { level } = await computeProfilePoints(db, profile.id);
-    return { profile: serializeProfile(profile, level) };
-  });
+      if (patch.handle) {
+        const owner = await findProfileByHandle(db, patch.handle);
+        if (owner && owner.userId !== userId) {
+          throw conflict("Cet identifiant est déjà pris.");
+        }
+      }
+
+      const profile = await upsertProfile(db, userId, patch);
+      const { level } = await computeProfilePoints(db, profile.id);
+      return { profile: serializeProfile(profile, level) };
+    },
+  );
 }

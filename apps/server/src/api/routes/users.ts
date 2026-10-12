@@ -40,22 +40,30 @@ export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps):
     };
   });
 
-  app.post<{ Params: { handle: string } }>("/api/users/:handle/follow", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const target = await requireProfileByHandle(db, request.params.handle);
-    const follower = await requireOwnProfile(db, userId);
-    if (follower.id === target.id) throw badRequest("Impossible de se suivre soi-même.");
-    await createFollow(db, follower.id, target.id);
-    return { following: true };
-  });
+  app.post<{ Params: { handle: string } }>(
+    "/api/users/:handle/follow",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const target = await requireProfileByHandle(db, request.params.handle);
+      const follower = await requireOwnProfile(db, userId);
+      if (follower.id === target.id) throw badRequest("Impossible de se suivre soi-même.");
+      await createFollow(db, follower.id, target.id);
+      return { following: true };
+    },
+  );
 
-  app.delete<{ Params: { handle: string } }>("/api/users/:handle/follow", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const target = await requireProfileByHandle(db, request.params.handle);
-    const follower = await requireOwnProfile(db, userId);
-    await deleteFollow(db, follower.id, target.id);
-    return { following: false };
-  });
+  app.delete<{ Params: { handle: string } }>(
+    "/api/users/:handle/follow",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const target = await requireProfileByHandle(db, request.params.handle);
+      const follower = await requireOwnProfile(db, userId);
+      await deleteFollow(db, follower.id, target.id);
+      return { following: false };
+    },
+  );
 
   app.get<{ Params: { handle: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/users/:handle/followers",

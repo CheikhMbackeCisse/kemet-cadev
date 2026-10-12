@@ -107,20 +107,24 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
     return { items };
   });
 
-  app.put<{ Params: { id: string } }>("/api/competitions/:id/review", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const admin = await requireAdmin(db, userId);
-    const input = reviewCompetitionSchema.parse(request.body);
-    const existing = await findCompetitionById(db, request.params.id);
-    if (!existing) throw notFound("Cette compétition n'existe pas.");
-    if (existing.status !== "pending_review") throw conflict("Cette compétition a déjà reçu une décision.");
-    const reviewed = await reviewCompetition(db, request.params.id, admin.id, input);
-    if (!reviewed) throw notFound("Cette compétition n'existe pas.");
-    const creator = await findProfileById(db, reviewed.createdBy);
-    return {
-      competition: serializeCompetitionDetail(reviewed, 0, 0, creator!.handle, { isCreator: false, isAdmin: true, isJuror: false }),
-    };
-  });
+  app.put<{ Params: { id: string } }>(
+    "/api/competitions/:id/review",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const admin = await requireAdmin(db, userId);
+      const input = reviewCompetitionSchema.parse(request.body);
+      const existing = await findCompetitionById(db, request.params.id);
+      if (!existing) throw notFound("Cette compétition n'existe pas.");
+      if (existing.status !== "pending_review") throw conflict("Cette compétition a déjà reçu une décision.");
+      const reviewed = await reviewCompetition(db, request.params.id, admin.id, input);
+      if (!reviewed) throw notFound("Cette compétition n'existe pas.");
+      const creator = await findProfileById(db, reviewed.createdBy);
+      return {
+        competition: serializeCompetitionDetail(reviewed, 0, 0, creator!.handle, { isCreator: false, isAdmin: true, isJuror: false }),
+      };
+    },
+  );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug", async (request) => {
     const userId = await requireSessionUserId(auth, request);
@@ -142,33 +146,41 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
     };
   });
 
-  app.post<{ Params: { slug: string } }>("/api/competitions/:slug/teams", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const competition = await requireCompetitionBySlug(db, request.params.slug);
-    if (competition.status !== "published") throw notFound("Cette compétition n'existe pas.");
-    if (computeCompetitionPhase(competition) !== "registration") throw badRequest("Les inscriptions sont fermées pour cette compétition.");
-    const input = createTeamSchema.parse(request.body);
-    const result = await createTeam(db, competition.id, profile.id, input);
-    if ("error" in result) {
-      if (result.error === "already_member") throw conflict("Vous faites déjà partie d'une équipe de cette compétition.");
-      throw conflict("Ce nom d'équipe est déjà pris pour cette compétition.");
-    }
-    return { team: serializeTeam(result.team, profile.handle, [profile.handle], false, true) };
-  });
+  app.post<{ Params: { slug: string } }>(
+    "/api/competitions/:slug/teams",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const competition = await requireCompetitionBySlug(db, request.params.slug);
+      if (competition.status !== "published") throw notFound("Cette compétition n'existe pas.");
+      if (computeCompetitionPhase(competition) !== "registration") throw badRequest("Les inscriptions sont fermées pour cette compétition.");
+      const input = createTeamSchema.parse(request.body);
+      const result = await createTeam(db, competition.id, profile.id, input);
+      if ("error" in result) {
+        if (result.error === "already_member") throw conflict("Vous faites déjà partie d'une équipe de cette compétition.");
+        throw conflict("Ce nom d'équipe est déjà pris pour cette compétition.");
+      }
+      return { team: serializeTeam(result.team, profile.handle, [profile.handle], false, true) };
+    },
+  );
 
-  app.post<{ Params: { id: string } }>("/api/teams/:id/join", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const team = await findTeamById(db, request.params.id);
-    if (!team) throw notFound("Cette équipe n'existe pas.");
-    const competition = await findCompetitionById(db, team.competitionId);
-    if (computeCompetitionPhase(competition!) !== "registration") throw badRequest("Les inscriptions sont fermées pour cette compétition.");
-    const member = await joinTeam(db, team.id, team.competitionId, profile.id);
-    if (!member) throw conflict("Vous faites déjà partie d'une équipe de cette compétition.");
-    const [captain, memberHandles] = await Promise.all([findProfileById(db, team.captainId), listTeamMemberHandles(db, team.id)]);
-    return { team: serializeTeam(team, captain!.handle, memberHandles, false, true) };
-  });
+  app.post<{ Params: { id: string } }>(
+    "/api/teams/:id/join",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const team = await findTeamById(db, request.params.id);
+      if (!team) throw notFound("Cette équipe n'existe pas.");
+      const competition = await findCompetitionById(db, team.competitionId);
+      if (computeCompetitionPhase(competition!) !== "registration") throw badRequest("Les inscriptions sont fermées pour cette compétition.");
+      const member = await joinTeam(db, team.id, team.competitionId, profile.id);
+      if (!member) throw conflict("Vous faites déjà partie d'une équipe de cette compétition.");
+      const [captain, memberHandles] = await Promise.all([findProfileById(db, team.captainId), listTeamMemberHandles(db, team.id)]);
+      return { team: serializeTeam(team, captain!.handle, memberHandles, false, true) };
+    },
+  );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug/teams", async (request) => {
     const userId = await requireSessionUserId(auth, request);
@@ -189,49 +201,57 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
     return { items };
   });
 
-  app.post<{ Params: { slug: string } }>("/api/competitions/:slug/submissions", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const competition = await requireCompetitionBySlug(db, request.params.slug);
-    if (competition.status !== "published") throw notFound("Cette compétition n'existe pas.");
-    if (computeCompetitionPhase(competition) !== "submission") throw badRequest("Les soumissions ne sont pas ouvertes pour cette compétition.");
-    const team = await findTeamForMember(db, competition.id, profile.id);
-    if (!team) throw forbidden("Rejoignez une équipe avant de soumettre un projet.");
-    const existing = await findSubmissionByTeamId(db, team.id);
-    if (existing) throw conflict("Cette équipe a déjà soumis un projet.");
-    const input = createSubmissionSchema.parse(request.body);
-    const project = await findProjectById(db, input.projectId);
-    if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
-    if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut le soumettre à une compétition.");
-    const submission = await createSubmission(db, competition.id, team.id, profile.id, input);
-    const memberIds = await listTeamMemberIds(db, team.id);
-    await Promise.all(
-      memberIds.map((memberId) =>
-        awardPoints(db, { profileId: memberId, source: "competition_participation", sourceId: submission.id, amount: POINTS_COMPETITION_PARTICIPATION }),
-      ),
-    );
-    return { submission: serializeSubmission(submission, team.name, project.slug, profile.handle, true, true) };
-  });
-
-  app.patch<{ Params: { id: string } }>("/api/submissions/:id", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const submission = await findSubmissionById(db, request.params.id);
-    if (!submission) throw notFound("Cette soumission n'existe pas.");
-    const isMember = await isTeamMember(db, submission.teamId, profile.id);
-    if (!isMember) throw forbidden("Seule l'équipe à l'origine de cette soumission peut la modifier.");
-    const competition = await findCompetitionById(db, submission.competitionId);
-    if (computeCompetitionPhase(competition!) !== "submission") throw badRequest("Les soumissions ne sont plus modifiables pour cette compétition.");
-    const input = updateSubmissionSchema.parse(request.body);
-    if (input.projectId) {
+  app.post<{ Params: { slug: string } }>(
+    "/api/competitions/:slug/submissions",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const competition = await requireCompetitionBySlug(db, request.params.slug);
+      if (competition.status !== "published") throw notFound("Cette compétition n'existe pas.");
+      if (computeCompetitionPhase(competition) !== "submission") throw badRequest("Les soumissions ne sont pas ouvertes pour cette compétition.");
+      const team = await findTeamForMember(db, competition.id, profile.id);
+      if (!team) throw forbidden("Rejoignez une équipe avant de soumettre un projet.");
+      const existing = await findSubmissionByTeamId(db, team.id);
+      if (existing) throw conflict("Cette équipe a déjà soumis un projet.");
+      const input = createSubmissionSchema.parse(request.body);
       const project = await findProjectById(db, input.projectId);
       if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
       if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut le soumettre à une compétition.");
-    }
-    const updated = await updateSubmission(db, submission.id, input);
-    const project = await findProjectById(db, updated.projectId);
-    return { submission: serializeSubmission(updated, "", project!.slug, profile.handle, true, true) };
-  });
+      const submission = await createSubmission(db, competition.id, team.id, profile.id, input);
+      const memberIds = await listTeamMemberIds(db, team.id);
+      await Promise.all(
+        memberIds.map((memberId) =>
+          awardPoints(db, { profileId: memberId, source: "competition_participation", sourceId: submission.id, amount: POINTS_COMPETITION_PARTICIPATION }),
+        ),
+      );
+      return { submission: serializeSubmission(submission, team.name, project.slug, profile.handle, true, true) };
+    },
+  );
+
+  app.patch<{ Params: { id: string } }>(
+    "/api/submissions/:id",
+    { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const submission = await findSubmissionById(db, request.params.id);
+      if (!submission) throw notFound("Cette soumission n'existe pas.");
+      const isMember = await isTeamMember(db, submission.teamId, profile.id);
+      if (!isMember) throw forbidden("Seule l'équipe à l'origine de cette soumission peut la modifier.");
+      const competition = await findCompetitionById(db, submission.competitionId);
+      if (computeCompetitionPhase(competition!) !== "submission") throw badRequest("Les soumissions ne sont plus modifiables pour cette compétition.");
+      const input = updateSubmissionSchema.parse(request.body);
+      if (input.projectId) {
+        const project = await findProjectById(db, input.projectId);
+        if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
+        if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut le soumettre à une compétition.");
+      }
+      const updated = await updateSubmission(db, submission.id, input);
+      const project = await findProjectById(db, updated.projectId);
+      return { submission: serializeSubmission(updated, "", project!.slug, profile.handle, true, true) };
+    },
+  );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug/submissions", async (request) => {
     const userId = await requireSessionUserId(auth, request);
@@ -250,17 +270,21 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
     return { items };
   });
 
-  app.post<{ Params: { id: string } }>("/api/submissions/:id/vote", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const submission = await findSubmissionById(db, request.params.id);
-    if (!submission) throw notFound("Cette soumission n'existe pas.");
-    const competition = await findCompetitionById(db, submission.competitionId);
-    if (computeCompetitionPhase(competition!) !== "voting") throw badRequest("Le vote n'est pas ouvert pour cette compétition.");
-    const vote = await castVote(db, submission.competitionId, submission.id, profile.id);
-    if (!vote) throw forbidden("Vous ne pouvez pas voter pour la soumission de votre propre équipe.");
-    return { submissionId: vote.submissionId };
-  });
+  app.post<{ Params: { id: string } }>(
+    "/api/submissions/:id/vote",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const submission = await findSubmissionById(db, request.params.id);
+      if (!submission) throw notFound("Cette soumission n'existe pas.");
+      const competition = await findCompetitionById(db, submission.competitionId);
+      if (computeCompetitionPhase(competition!) !== "voting") throw badRequest("Le vote n'est pas ouvert pour cette compétition.");
+      const vote = await castVote(db, submission.competitionId, submission.id, profile.id);
+      if (!vote) throw forbidden("Vous ne pouvez pas voter pour la soumission de votre propre équipe.");
+      return { submissionId: vote.submissionId };
+    },
+  );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug/my-vote", async (request) => {
     const userId = await requireSessionUserId(auth, request);
@@ -270,20 +294,24 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
     return { submissionId: vote?.submissionId ?? null };
   });
 
-  app.put<{ Params: { id: string } }>("/api/submissions/:id/jury-score", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const { level } = await computeProfilePoints(db, profile.id);
-    if (!JUROR_LEVELS.has(level)) throw forbidden("Seuls les niveaux Architecte et Légende peuvent noter une soumission.");
-    const submission = await findSubmissionById(db, request.params.id);
-    if (!submission) throw notFound("Cette soumission n'existe pas.");
-    const competition = await findCompetitionById(db, submission.competitionId);
-    if (computeCompetitionPhase(competition!) !== "voting") throw badRequest("Le jury ne note plus pour cette compétition.");
-    const input = juryScoreInputSchema.parse(request.body);
-    const score = await submitJuryScore(db, submission.competitionId, submission.id, profile.id, input);
-    if (!score) throw forbidden("Vous ne pouvez pas noter la soumission de votre propre équipe.");
-    return { score: score.score };
-  });
+  app.put<{ Params: { id: string } }>(
+    "/api/submissions/:id/jury-score",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const { level } = await computeProfilePoints(db, profile.id);
+      if (!JUROR_LEVELS.has(level)) throw forbidden("Seuls les niveaux Architecte et Légende peuvent noter une soumission.");
+      const submission = await findSubmissionById(db, request.params.id);
+      if (!submission) throw notFound("Cette soumission n'existe pas.");
+      const competition = await findCompetitionById(db, submission.competitionId);
+      if (computeCompetitionPhase(competition!) !== "voting") throw badRequest("Le jury ne note plus pour cette compétition.");
+      const input = juryScoreInputSchema.parse(request.body);
+      const score = await submitJuryScore(db, submission.competitionId, submission.id, profile.id, input);
+      if (!score) throw forbidden("Vous ne pouvez pas noter la soumission de votre propre équipe.");
+      return { score: score.score };
+    },
+  );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug/results", async (request) => {
     await requireSessionUserId(auth, request);
