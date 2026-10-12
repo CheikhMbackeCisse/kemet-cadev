@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import multipart from "@fastify/multipart";
+import helmet from "@fastify/helmet";
 import { toNodeHandler } from "better-auth/node";
 import { ZodError } from "zod";
 import { healthcheckResponseSchema } from "@kemet/shared";
@@ -49,6 +50,17 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   void app.register(rateLimit, { global: false });
   void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
+  // API JSON pure, jamais de page HTML servie : une politique stricte ne
+  // coûte rien et vaut mieux que l'absence totale d'en-têtes de sécurité
+  // qui prévalait jusqu'ici en dehors de la route de fichiers
+  // (apps/server/src/api/routes/attachments.ts, qui pose déjà la même
+  // valeur à la main sur sa propre route). `useDefaults: false` est
+  // nécessaire : sans lui, helmet fusionne ses directives par défaut
+  // (font-src/style-src plus permissifs, frame-ancestors 'self') avec
+  // celle posée ici au lieu de la remplacer.
+  void app.register(helmet, {
+    contentSecurityPolicy: { useDefaults: false, directives: { defaultSrc: ["'none'"] } },
+  });
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AppError) {

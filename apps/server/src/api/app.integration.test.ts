@@ -58,6 +58,17 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
     return extractCookie(signIn);
   }
 
+  it("pose des en-têtes de sécurité stricts, sans fuite des directives par défaut d'helmet", async () => {
+    const response = await app.inject({ method: "GET", url: "/api/health" });
+    expect(response.statusCode).toBe(200);
+    // `useDefaults: false` (apps/server/src/api/app.ts) doit remplacer les
+    // directives par défaut d'helmet, pas les fusionner avec defaultSrc :
+    // sans lui, l'en-tête réel autorise bien plus que 'none' (font-src
+    // 'self' https: data:, frame-ancestors 'self', etc.).
+    expect(response.headers["content-security-policy"]).toBe("default-src 'none'");
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
+  });
+
   it("refuse la connexion avant la vérification de l'email", async () => {
     const email = "non-verifie@test.kemet";
     await app.inject({

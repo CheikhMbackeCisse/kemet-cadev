@@ -32,7 +32,18 @@
 		reverse_proxy api:3001
 	}
 
+	# apps/web est une app React servie sans script en ligne. style-src garde
+	# 'unsafe-inline' : un style dynamique dans le code
+	# (apps/web/src/components/shell/MobileTabBar.tsx) et les composants
+	# Radix basés sur Popper (Select, Menu, Tooltip) posent tous deux des
+	# attributs style en ligne au runtime pour le positionnement. Un
+	# refactor qui viserait à retirer 'unsafe-inline' devrait traiter les
+	# deux sources, pas seulement MobileTabBar.tsx, et reste hors de ce
+	# correctif. L'API (handle /api/*) pose sa propre politique, plus
+	# stricte, elle-même (apps/server/src/api/app.ts) : cette en-tête ne
+	# vaut que pour l'app web, jamais pour /api/* ni /socket.io/*.
 	handle {
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 		reverse_proxy web:8080
 	}
 }
