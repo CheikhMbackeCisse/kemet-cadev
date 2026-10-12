@@ -44,6 +44,7 @@ const MAX_REPLIES_PER_MINUTE = 30;
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
   if (!profile) throw badRequest("Complétez votre profil avant de publier dans le fil.");
+  if (profile.suspendedAt) throw forbidden("Ce compte est suspendu.");
   return profile;
 }
 

@@ -13,10 +13,14 @@ export const meResponseSchema = z.object({
   // total reste discret pour les autres, qui ne voient que le niveau.
   points: z.number().int().nonnegative(),
   credentials: z.array(credentialSchema),
-  // Sert à afficher les actions réservées (valider une compétition, lot 10) ;
-  // aucune interface ne permet encore de changer ce champ, voir
-  // packages/db/src/schema/profiles.ts.
+  // Sert à afficher les actions réservées (valider une compétition, lot 10,
+  // ou résoudre un signalement, lot 7 bis) ; aucune interface ne permet
+  // encore de changer ce champ, voir packages/db/src/schema/profiles.ts.
   isPlatformAdmin: z.boolean(),
+  // Un compte suspendu (lot 7 bis) garde l'accès en lecture mais ne peut
+  // plus écrire : l'interface s'appuie sur ce champ pour masquer composeur
+  // et actions, en plus du rejet côté serveur.
+  isSuspended: z.boolean(),
 });
 
 export type MeResponse = z.infer<typeof meResponseSchema>;

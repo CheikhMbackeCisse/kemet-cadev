@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { paginationQuerySchema } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
-import { badRequest, notFound } from "../../errors.js";
+import { badRequest, forbidden, notFound } from "../../errors.js";
 import {
   countFollowers,
   countFollowing,
@@ -89,5 +89,6 @@ export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps):
 async function requireOwnProfile(db: AppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
   if (!profile) throw badRequest("Complétez votre profil avant de suivre quelqu'un.");
+  if (profile.suspendedAt) throw forbidden("Ce compte est suspendu.");
   return profile;
 }

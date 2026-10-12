@@ -28,6 +28,7 @@ const MAX_MESSAGES_PER_MINUTE = 20;
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
   if (!profile) throw badRequest("Complétez votre profil avant d'écrire dans un salon.");
+  if (profile.suspendedAt) throw forbidden("Ce compte est suspendu.");
   return profile;
 }
 

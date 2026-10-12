@@ -25,6 +25,8 @@ import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
+import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
+import { ReportMenu } from "../components/moderation/ReportMenu.js";
 import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
@@ -61,12 +63,13 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
 interface PostCardProps {
   post: PostSummary;
   canInteract: boolean;
+  viewerProfileId: string | null;
   onReact: (postId: string) => void;
   onShare: (postId: string) => void;
   onFeedback: (postId: string) => void;
 }
 
-function PostCard({ post, canInteract, onReact, onShare, onFeedback }: PostCardProps) {
+function PostCard({ post, canInteract, viewerProfileId, onReact, onShare, onFeedback }: PostCardProps) {
   return (
     <li className="rounded-card border border-border p-4">
       <div className="flex gap-3">
@@ -118,6 +121,9 @@ function PostCard({ post, canInteract, onReact, onShare, onFeedback }: PostCardP
                 {fr.feed.iTested}
               </Button>
             )}
+            {canInteract && !post.deletedAt && viewerProfileId && viewerProfileId !== post.authorId && (
+              <ReportMenu contentType="post" contentId={post.id} authorId={post.authorId} authorHandle={post.authorHandle} />
+            )}
           </div>
         </div>
       </div>
@@ -127,8 +133,8 @@ function PostCard({ post, canInteract, onReact, onShare, onFeedback }: PostCardP
 
 export function FeedPage() {
   const toast = useToast();
-  const { status } = useSession();
-  const canInteract = status === "ready";
+  const { status, profile, isSuspended } = useSession();
+  const canInteract = status === "ready" && !isSuspended;
   const [tab, setTab] = useState<FeedTab>(status === "visitor" ? "pour-toi" : "abonnements");
   const [posts, setPosts] = useState<PostSummary[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -243,7 +249,15 @@ export function FeedPage() {
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col gap-3">
         {posts.map((post) => (
-          <PostCard key={post.id} post={post} canInteract={canInteract} onReact={handleReact} onShare={handleShare} onFeedback={setFeedbackPostId} />
+          <PostCard
+            key={post.id}
+            post={post}
+            canInteract={canInteract}
+            viewerProfileId={profile?.id ?? null}
+            onReact={handleReact}
+            onShare={handleShare}
+            onFeedback={setFeedbackPostId}
+          />
         ))}
       </ul>
       {nextCursor && (
@@ -281,6 +295,7 @@ export function FeedPage() {
       </div>
 
       {status === "visitor" && <VisitorBanner />}
+      {isSuspended && <SuspendedBanner />}
 
       {canInteract && (
         <div className="flex flex-col gap-3 rounded-card border border-border p-4">

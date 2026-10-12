@@ -47,6 +47,16 @@ export async function upsertProfile(db: Db, userId: string, patch: UpdateProfile
   return updated!;
 }
 
+export async function suspendProfile(db: Db, profileId: string) {
+  const [profile] = await db.update(profiles).set({ suspendedAt: new Date() }).where(eq(profiles.id, profileId)).returning();
+  return profile!;
+}
+
+export async function reinstateProfile(db: Db, profileId: string) {
+  const [profile] = await db.update(profiles).set({ suspendedAt: null }).where(eq(profiles.id, profileId)).returning();
+  return profile!;
+}
+
 export async function countFollowers(db: Db, profileId: string) {
   const [row] = await db.select({ value: count() }).from(follows).where(eq(follows.followeeId, profileId));
   return row?.value ?? 0;

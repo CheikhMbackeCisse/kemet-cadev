@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { updateProfileSchema } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
-import { badRequest, conflict } from "../../errors.js";
+import { badRequest, conflict, forbidden } from "../../errors.js";
 import {
   findAccountById,
   findProfileByHandle,
@@ -28,6 +28,7 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       points: points?.totalPoints ?? 0,
       credentials: credentials.map(serializeCredential),
       isPlatformAdmin: profile?.isPlatformAdmin ?? false,
+      isSuspended: profile?.suspendedAt != null,
     };
   });
 
@@ -38,6 +39,11 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       const userId = await requireSessionUserId(auth, request);
       const patch = updateProfileSchema.parse(request.body);
       const existing = await findProfileByUserId(db, userId);
+
+      // La création initiale du profil reste autorisée (un compte flambant
+      // neuf ne peut pas déjà être suspendu) ; seule la modification d'un
+      // profil existant est bloquée, comme toute autre écriture.
+      if (existing?.suspendedAt) throw forbidden("Ce compte est suspendu.");
 
       if (!existing && (!patch.handle || !patch.country || !patch.displayName)) {
         throw badRequest("L'identifiant, le pays et le nom affiché sont requis à la création du profil.");

@@ -56,6 +56,7 @@ const JUROR_LEVELS = new Set(["architecte", "legende"]);
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
   if (!profile) throw badRequest("Complétez votre profil avant de participer à une compétition.");
+  if (profile.suspendedAt) throw forbidden("Ce compte est suspendu.");
   return profile;
 }
 

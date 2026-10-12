@@ -19,8 +19,12 @@ import type {
   Invite,
   InvitePreview,
   JuryScoreInput,
+  CreateReportInput,
   MeResponse,
   Message,
+  ModerationActionEntry,
+  Report,
+  ResolveReportInput,
   PostFeedbackEntry,
   PostReactionResult,
   PostReply,
@@ -457,6 +461,28 @@ export function submitJuryScore(submissionId: string, input: JuryScoreInput) {
 
 export function getCompetitionResults(slug: string) {
   return request<{ items: SubmissionResult[] }>(`/api/competitions/${slug}/results`);
+}
+
+export function createReport(input: CreateReportInput) {
+  return request<{ report: Report }>("/api/reports", { method: "POST", body: JSON.stringify(input) });
+}
+
+export function listPendingReports(cursor?: string): Promise<Page<Report>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/reports${query}`);
+}
+
+export function resolveReport(reportId: string, input: ResolveReportInput) {
+  return request<{ report: Report }>(`/api/reports/${reportId}/resolve`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export function reinstateProfile(handle: string) {
+  return request<{ reinstated: boolean }>(`/api/profiles/${handle}/reinstate`, { method: "POST" });
+}
+
+export function listModerationLog(cursor?: string): Promise<Page<ModerationActionEntry>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/moderation/log${query}`);
 }
 
 export { ChatApiError };

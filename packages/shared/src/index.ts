@@ -16,4 +16,5 @@ export * from "./schemas/post.js";
 export * from "./schemas/points.js";
 export * from "./schemas/project.js";
 export * from "./schemas/competition.js";
+export * from "./schemas/moderation.js";
 export * from "./data/countries.js";

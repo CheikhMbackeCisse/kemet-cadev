@@ -10,6 +10,7 @@ interface SessionContextValue {
   profile: MeResponse["profile"];
   points: number;
   isPlatformAdmin: boolean;
+  isSuspended: boolean;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -52,6 +53,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       profile: me?.profile ?? null,
       points: me?.points ?? 0,
       isPlatformAdmin: me?.isPlatformAdmin ?? false,
+      isSuspended: me?.isSuspended ?? false,
       refresh,
       signOut,
     }),

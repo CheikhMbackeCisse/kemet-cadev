@@ -26,6 +26,7 @@ import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
+import { ReportMenu } from "../components/moderation/ReportMenu.js";
 import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { fr } from "../i18n/fr.js";
 
@@ -52,6 +53,7 @@ export function PostPage() {
   const [error, setError] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [myProfileId, setMyProfileId] = useState<string | null>(null);
+  const [isSuspended, setIsSuspended] = useState(false);
 
   const [replies, setReplies] = useState<PostReply[]>([]);
   const [replyDraft, setReplyDraft] = useState("");
@@ -79,7 +81,12 @@ export function PostPage() {
 
   useEffect(() => {
     loadPost();
-    getMe().then((me) => setMyProfileId(me.profile?.id ?? null)).catch(() => {});
+    getMe()
+      .then((me) => {
+        setMyProfileId(me.profile?.id ?? null);
+        setIsSuspended(me.isSuspended);
+      })
+      .catch(() => {});
   }, [loadPost]);
 
   useEffect(() => {
@@ -253,6 +260,11 @@ export function PostPage() {
                 <Trash2 className="size-4" aria-hidden="true" />
                 {fr.feed.delete}
               </Button>
+            )}
+            {!isAuthor && myProfileId && !isSuspended && !post.deletedAt && (
+              <div className="ml-auto">
+                <ReportMenu contentType="post" contentId={post.id} authorId={post.authorId} authorHandle={post.authorHandle} />
+              </div>
             )}
           </div>
         </div>

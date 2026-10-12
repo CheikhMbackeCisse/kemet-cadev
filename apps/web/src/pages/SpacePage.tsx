@@ -17,6 +17,8 @@ import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { AppShell } from "../components/shell/AppShell.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
+import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
+import { ReportMenu } from "../components/moderation/ReportMenu.js";
 import type { ChannelItem, MobileTabItem, SpaceItem } from "../components/shell/types.js";
 import { useSession } from "../session/SessionProvider.js";
 import { Avatar } from "../components/ui/Avatar.js";
@@ -67,8 +69,12 @@ function slugify(name: string): string {
 
 export function SpacePage() {
   const toast = useToast();
-  const { status } = useSession();
+  const { status, profile, isSuspended } = useSession();
   const canInteract = status === "ready";
+  // Un compte suspendu garde la lecture (canInteract) mais pas l'écriture :
+  // composeur, réactions et signalement s'appuient sur canWrite plutôt que
+  // sur canInteract.
+  const canWrite = canInteract && !isSuspended;
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spacesLoading, setSpacesLoading] = useState(true);
   const [spacesError, setSpacesError] = useState(false);
@@ -334,7 +340,7 @@ export function SpacePage() {
             >
               {fr.pro.title}
             </a>
-            {canInteract && (
+            {canWrite && (
               <>
                 <IconButton
                   aria-label={fr.spaces.createTitle}
@@ -493,7 +499,7 @@ export function SpacePage() {
                       )}
                       <div className="mt-1 flex flex-wrap items-center gap-1">
                         {message.reactions.map((reaction) =>
-                          canInteract ? (
+                          canWrite ? (
                             <button
                               key={reaction.emoji}
                               type="button"
@@ -509,7 +515,7 @@ export function SpacePage() {
                             </span>
                           ),
                         )}
-                        {canInteract && (
+                        {canWrite && (
                           <button
                             type="button"
                             onClick={() => react(message.id, "👍")}
@@ -518,6 +524,9 @@ export function SpacePage() {
                           >
                             <Plus className="size-3" aria-hidden="true" />
                           </button>
+                        )}
+                        {canWrite && !message.deletedAt && profile && profile.id !== message.authorId && (
+                          <ReportMenu contentType="message" contentId={message.id} authorId={message.authorId} authorHandle={message.authorHandle} />
                         )}
                       </div>
                     </div>
@@ -539,7 +548,12 @@ export function SpacePage() {
               <VisitorBanner />
             </div>
           )}
-          {canInteract && (
+          {isSuspended && (
+            <div className="shrink-0 border-t border-border p-3">
+              <SuspendedBanner />
+            </div>
+          )}
+          {canWrite && (
           <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
             {pendingAttachments.length > 0 && (
               <div className="flex flex-wrap gap-2">

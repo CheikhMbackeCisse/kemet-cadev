@@ -23,6 +23,7 @@ import type { ChatAppDeps } from "../app.js";
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
   if (!profile) throw badRequest("Complétez votre profil avant de publier un skill.");
+  if (profile.suspendedAt) throw forbidden("Ce compte est suspendu.");
   return profile;
 }
 

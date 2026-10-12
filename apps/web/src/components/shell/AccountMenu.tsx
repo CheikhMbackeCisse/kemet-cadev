@@ -5,7 +5,7 @@ import { Menu } from "../ui/Menu.js";
 import { fr } from "../../i18n/fr.js";
 
 export function AccountMenu() {
-  const { status, profile, signOut } = useSession();
+  const { status, profile, isPlatformAdmin, signOut } = useSession();
 
   if (status === "loading") return null;
 
@@ -30,8 +30,12 @@ export function AccountMenu() {
           </span>
         </Button>
       }
-      items={[{ value: "sign-out", label: fr.auth.signOut, danger: true }]}
+      items={[
+        ...(isPlatformAdmin ? [{ value: "moderation", label: fr.moderation.navLink }] : []),
+        { value: "sign-out", label: fr.auth.signOut, danger: true },
+      ]}
       onSelect={(value) => {
+        if (value === "moderation") window.location.href = "/moderation";
         if (value === "sign-out") void signOut();
       }}
     />
