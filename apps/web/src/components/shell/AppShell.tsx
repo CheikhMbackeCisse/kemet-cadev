@@ -30,40 +30,56 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const [channelDrawerOpen, setChannelDrawerOpen] = useState(false);
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [rightSheetOpen, setRightSheetOpen] = useState(false);
+
+  const activeChannelName = channelList.channels.find(
+    (channel) => channel.id === channelList.activeChannelId,
+  )?.name;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg">
       <SpaceRail {...spaceRail} />
 
-      <div className="hidden w-channel-list shrink-0 flex-col border-r border-border bg-surface lg:flex">
-        <h2 className="px-3 pt-3 text-md font-bold text-text">{channelList.spaceName}</h2>
+      <div className="hidden w-channel-list shrink-0 flex-col border-r border-border-strong bg-surface lg:flex">
+        <div className="flex h-12 shrink-0 items-center border-b border-border px-3">
+          <h2 className="truncate text-md font-semibold text-text">{channelList.spaceName}</h2>
+        </div>
         <ChannelList {...channelList} className="flex-1" />
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3 lg:px-4">
-          <IconButton aria-label="Ouvrir la liste des salons" className="lg:hidden" onClick={() => setChannelDrawerOpen(true)}>
+          <IconButton
+            aria-label="Ouvrir la liste des salons"
+            className="lg:hidden"
+            onClick={() => setChannelDrawerOpen(true)}
+          >
             <MenuIcon className="size-5" aria-hidden="true" />
           </IconButton>
-          <h1 className="truncate text-md font-semibold text-text lg:hidden">{channelList.spaceName}</h1>
+          <h1 className="truncate text-md font-semibold text-text lg:hidden">
+            {activeChannelName
+              ? `${channelList.spaceName} · #${activeChannelName}`
+              : channelList.spaceName}
+          </h1>
+          {activeChannelName && (
+            <h2 className="hidden truncate text-md font-semibold text-text lg:block">
+              #{activeChannelName}
+            </h2>
+          )}
           <div className="flex items-center gap-2">
             {topBarExtra}
+            {/* Sous lg le panneau devient une feuille, sans autre point
+                d'entree que ce bouton. Au-dessus il est affiche en colonne et
+                se ferme par sa propre croix : un bouton de bascule de plus
+                encombrait la barre du haut. */}
             {rightPanel && (
-              <>
-                <IconButton
-                  aria-label={rightPanelOpen ? "Fermer le panneau" : "Ouvrir le panneau"}
-                  active={rightPanelOpen}
-                  className="hidden lg:inline-flex"
-                  onClick={() => setRightPanelOpen((open) => !open)}
-                >
-                  <PanelRight className="size-4" aria-hidden="true" />
-                </IconButton>
-                <IconButton aria-label="Ouvrir le panneau" className="lg:hidden" onClick={() => setRightSheetOpen(true)}>
-                  <PanelRight className="size-5" aria-hidden="true" />
-                </IconButton>
-              </>
+              <IconButton
+                aria-label="Ouvrir le panneau"
+                className="lg:hidden"
+                onClick={() => setRightSheetOpen(true)}
+              >
+                <PanelRight className="size-5" aria-hidden="true" />
+              </IconButton>
             )}
           </div>
         </header>
@@ -73,11 +89,7 @@ export function AppShell({
         </main>
       </div>
 
-      {rightPanel && rightPanelOpen && (
-        <RightPanel title={rightPanel.title} onClose={() => setRightPanelOpen(false)}>
-          {rightPanel.content}
-        </RightPanel>
-      )}
+      {rightPanel && <RightPanel title={rightPanel.title}>{rightPanel.content}</RightPanel>}
 
       <Sheet
         open={channelDrawerOpen}
@@ -95,12 +107,21 @@ export function AppShell({
       </Sheet>
 
       {rightPanel && (
-        <Sheet open={rightSheetOpen} onOpenChange={setRightSheetOpen} side="bottom" title={rightPanel.title}>
+        <Sheet
+          open={rightSheetOpen}
+          onOpenChange={setRightSheetOpen}
+          side="bottom"
+          title={rightPanel.title}
+        >
           {rightPanel.content}
         </Sheet>
       )}
 
-      <MobileTabBar tabs={mobileTabs} activeTabId={activeMobileTabId} onSelect={onSelectMobileTab} />
+      <MobileTabBar
+        tabs={mobileTabs}
+        activeTabId={activeMobileTabId}
+        onSelect={onSelectMobileTab}
+      />
     </div>
   );
 }

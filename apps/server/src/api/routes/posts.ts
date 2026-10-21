@@ -31,6 +31,7 @@ import {
   softDeletePostReply,
   togglePostReaction,
 } from "../repositories/posts.js";
+import { attachToPost, findPendingPostAttachment, listAttachmentsForPosts } from "../repositories/post-attachments.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { awardPoints, POINTS_POST_FEEDBACK_GIVEN, POINTS_POST_REPLY_SOLUTION } from "../repositories/points.js";
 import { serializePostFeedbackEntry, serializePostReply, serializePostSummary } from "../post-serializers.js";
@@ -65,7 +66,10 @@ async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferS
       replyCount: hydrated.replyCount,
       feedbackCount: hydrated.feedbackCount,
     },
-    hydrated.sharedPost ? { row: hydrated.sharedPost, author: hydrated.sharedAuthor! } : null,
+    hydrated.attachments,
+    hydrated.sharedPost
+      ? { row: hydrated.sharedPost, author: hydrated.sharedAuthor!, attachments: hydrated.sharedAttachments }
+      : null,
   );
 }
 
@@ -91,13 +95,25 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const input = createPostSchema.parse(request.body);
-      const post = await insertPost(db, {
-        authorId: profile.id,
-        body: input.body.trim(),
-        format: input.format ?? null,
-        testUrl: input.testUrl ?? null,
-        testAsk: input.testAsk ?? null,
-        sharedPostId: null,
+      // Transaction : si une image envoyée n'est plus disponible, la
+      // création du post est annulée avec elle, comme pour les fichiers
+      // joints à un message (routes/messages.ts).
+      const post = await db.transaction(async (tx) => {
+        const attachmentIds = input.attachmentIds ?? [];
+        for (const attachmentId of attachmentIds) {
+          const pending = await findPendingPostAttachment(tx, attachmentId, profile.id);
+          if (!pending) throw badRequest("Une image envoyée n'est plus disponible pour ce post.");
+        }
+        const created = await insertPost(tx, {
+          authorId: profile.id,
+          body: input.body.trim(),
+          format: input.format ?? null,
+          testUrl: input.testUrl ?? null,
+          testAsk: input.testAsk ?? null,
+          sharedPostId: null,
+        });
+        await attachToPost(tx, attachmentIds, created.id);
+        return created;
       });
       return { post: await toSerializedPost(db, post, profile.id) };
     },
@@ -122,7 +138,10 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       if (post.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce post.");
       const input = editPostSchema.parse(request.body);
       const body = input.body.trim();
-      if (body.length === 0 && !post.sharedPostId) throw badRequest("Un post doit contenir du texte.");
+      if (body.length === 0 && !post.sharedPostId) {
+        const attachments = await listAttachmentsForPosts(db, [post.id]);
+        if (attachments.length === 0) throw badRequest("Un post doit contenir du texte ou au moins une image.");
+      }
       const updated = await editPost(db, post.id, body);
       return { post: await toSerializedPost(db, updated, profile.id) };
     },

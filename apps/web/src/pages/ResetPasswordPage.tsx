@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
@@ -26,7 +26,8 @@ export function ResetPasswordPage() {
     );
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
@@ -44,7 +45,9 @@ export function ResetPasswordPage() {
       <AuthLayout title={fr.auth.resetPasswordTitle}>
         <div className="flex flex-col gap-3">
           <p className="text-sm text-text-2">{fr.auth.resetPasswordSuccess}</p>
-          <Button onClick={() => (window.location.href = "/connexion")}>{fr.auth.loginSubmit}</Button>
+          <Button type="button" onClick={() => (window.location.href = "/connexion")}>
+            {fr.auth.loginSubmit}
+          </Button>
         </div>
       </AuthLayout>
     );
@@ -52,7 +55,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout title={fr.auth.resetPasswordTitle}>
-      <div className="flex flex-col gap-3">
+      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.newPasswordLabel}
           <Input
@@ -69,10 +72,10 @@ export function ResetPasswordPage() {
             {error}
           </p>
         )}
-        <Button onClick={handleSubmit} loading={submitting} disabled={password.length < 8}>
+        <Button type="submit" loading={submitting} disabled={password.length < 8}>
           {fr.auth.resetPasswordSubmit}
         </Button>
-      </div>
+      </form>
     </AuthLayout>
   );
 }

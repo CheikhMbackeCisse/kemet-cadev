@@ -13,8 +13,8 @@ export interface ChannelListProps {
 export function ChannelList({ channels, activeChannelId, onSelect, className }: ChannelListProps) {
   return (
     <div className={cn("flex h-full flex-col", className)}>
-      <nav aria-label="Salons" className="flex-1 overflow-y-auto px-2 pt-3">
-        <ul className="flex flex-col gap-0.5">
+      <nav aria-label="Salons" className="flex-1 overflow-y-auto px-2 py-3">
+        <ul className="flex flex-col gap-1">
           {channels.map((channel) => (
             <li key={channel.id}>
               <button
@@ -22,10 +22,10 @@ export function ChannelList({ channels, activeChannelId, onSelect, className }: 
                 onClick={() => onSelect(channel.id)}
                 aria-current={channel.id === activeChannelId ? "page" : undefined}
                 className={cn(
-                  "flex h-control-mobile w-full items-center gap-2 rounded-control px-2 text-sm text-text-2 lg:h-9",
+                  "flex h-control-mobile w-full items-center gap-2 rounded-control px-2 text-sm text-text-2 transition-colors duration-150 lg:h-9",
                   channel.id === activeChannelId
                     ? "bg-accent-soft font-medium text-primary"
-                    : "hover:bg-surface-2",
+                    : "hover:bg-surface-2 hover:text-text",
                 )}
               >
                 <Hash className="size-4 shrink-0" aria-hidden="true" />

@@ -29,8 +29,10 @@ import type {
   PostReactionResult,
   PostReply,
   PostSummary,
+  ProfileSummary,
   ProjectDetail,
   ProjectSummary,
+  PublicProfileResponse,
   ReviewCompetitionInput,
   Space,
   SpaceMember,
@@ -90,8 +92,9 @@ export function getSpace(spaceId: string) {
   return request<{ space: Space }>(`/api/spaces/${spaceId}`);
 }
 
-export function listSpaceMembers(spaceId: string) {
-  return request<{ items: SpaceMember[] }>(`/api/spaces/${spaceId}/members`);
+export function listSpaceMembers(spaceId: string, cursor?: string): Promise<Page<SpaceMember>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/spaces/${spaceId}/members${query}`);
 }
 
 export function addSpaceMember(spaceId: string, handle: string) {
@@ -158,6 +161,30 @@ export async function uploadAttachment(channelId: string, file: File): Promise<A
 
 export function attachmentUrl(attachmentId: string): string {
   return `/api/attachments/${attachmentId}/content`;
+}
+
+export async function uploadPostAttachment(file: File): Promise<Attachment> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/posts/attachments", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { attachment } = (await response.json()) as { attachment: Attachment };
+  return attachment;
+}
+
+export function postAttachmentUrl(attachmentId: string): string {
+  return `/api/post-attachments/${attachmentId}/content`;
 }
 
 export function editMessage(messageId: string, body: string) {
@@ -248,8 +275,30 @@ export function updateMyProfile(input: UpdateProfileInput) {
   return request<{ profile: MeResponse["profile"] }>("/api/me/profile", { method: "PATCH", body: JSON.stringify(input) });
 }
 
+export function getUserProfile(handle: string) {
+  return request<PublicProfileResponse>(`/api/users/${handle}`);
+}
+
+export function followUser(handle: string) {
+  return request<{ following: boolean }>(`/api/users/${handle}/follow`, { method: "POST" });
+}
+
+export function unfollowUser(handle: string) {
+  return request<{ following: boolean }>(`/api/users/${handle}/follow`, { method: "DELETE" });
+}
+
+export function listUserFollowers(handle: string, cursor?: string): Promise<Page<ProfileSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/users/${handle}/followers${query}`);
+}
+
+export function listUserFollowing(handle: string, cursor?: string): Promise<Page<ProfileSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/users/${handle}/following${query}`);
+}
+
 export function getAuthConfig() {
-  return request<{ githubEnabled: boolean }>("/api/auth-config");
+  return request<{ githubEnabled: boolean; googleEnabled: boolean; linkedinEnabled: boolean }>("/api/auth-config");
 }
 
 export function signUp(input: { email: string; password: string; name: string }) {
@@ -264,10 +313,12 @@ export function signOut() {
   return request<{ success: boolean }>("/api/auth/sign-out", { method: "POST" });
 }
 
-export async function signInWithGithub(callbackURL: string): Promise<void> {
+export type SocialProvider = "github" | "google" | "linkedin";
+
+export async function signInWithSocialProvider(provider: SocialProvider, callbackURL: string): Promise<void> {
   const result = await request<{ url: string }>("/api/auth/sign-in/social", {
     method: "POST",
-    body: JSON.stringify({ provider: "github", callbackURL }),
+    body: JSON.stringify({ provider, callbackURL }),
   });
   window.location.href = result.url;
 }

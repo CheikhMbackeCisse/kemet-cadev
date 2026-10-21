@@ -3,7 +3,8 @@ import type { LucideIcon } from "lucide-react";
 export interface SpaceItem {
   id: string;
   name: string;
-  icon: LucideIcon;
+  /** Image de l'espace. Absente : le rail affiche son monogramme. */
+  imageUrl?: string | null;
 }
 
 export interface ChannelItem {

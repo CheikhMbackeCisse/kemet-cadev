@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
+import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
 import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
-import { ChatApiError, getAuthConfig, signIn, signInWithGithub } from "../lib/chat/api.js";
+import { ChatApiError, signIn } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
@@ -12,27 +13,22 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [githubEnabled, setGithubEnabled] = useState(false);
-
-  useEffect(() => {
-    getAuthConfig()
-      .then((config) => setGithubEnabled(config.githubEnabled))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (status === "ready") window.location.href = "/fil";
     if (status === "incomplete") window.location.href = "/completer-profil";
   }, [status]);
 
-  async function handleSubmit() {
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
       await signIn({ email, password });
       await refresh();
     } catch (err) {
-      if (err instanceof ChatApiError && err.statusCode === 403) setError(fr.auth.emailNotVerifiedError);
+      if (err instanceof ChatApiError && err.statusCode === 403)
+        setError(fr.auth.emailNotVerifiedError);
       else setError(fr.auth.loginError);
     } finally {
       setSubmitting(false);
@@ -40,39 +36,61 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title={fr.auth.loginTitle} subtitle={fr.auth.loginSubtitle}>
-      <div className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.emailLabel}
-          <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} autoFocus />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.passwordLabel}
-          <Input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} />
-        </label>
-        <a href="/mot-de-passe-oublie" className="self-end text-xs text-link hover:underline">
-          {fr.auth.forgotPasswordLink}
-        </a>
-        {error && (
-          <p className="text-sm text-danger" role="alert">
-            {error}
-          </p>
-        )}
-        <Button onClick={handleSubmit} loading={submitting} disabled={!email.trim() || !password}>
-          {fr.auth.loginSubmit}
-        </Button>
-        {githubEnabled && (
-          <>
-            <div className="flex items-center gap-2 text-xs text-subtle">
-              <span className="h-px flex-1 bg-border" />
-              {fr.auth.orSeparator}
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <Button variant="secondary" onClick={() => void signInWithGithub("/fil")}>
-              {fr.auth.continueWithGithub}
-            </Button>
-          </>
-        )}
+    <AuthLayout
+      title={fr.auth.loginTitle}
+      subtitle={fr.auth.loginSubtitle}
+      intro={
+        <>
+          <p className="text-xl font-bold text-auth-text">{fr.auth.landingHeadline}</p>
+          <p className="text-sm text-auth-text-muted">{fr.auth.landingPitch}</p>
+        </>
+      }
+      footer={
+        <p className="text-center text-sm text-auth-text-muted">
+          {fr.auth.landingVisitorIntro}{" "}
+          <a href="/salons" className="font-medium text-auth-text underline underline-offset-2">
+            {fr.auth.landingBrowseSpaces}
+          </a>{" "}
+          ·{" "}
+          <a href="/fil" className="font-medium text-auth-text underline underline-offset-2">
+            {fr.auth.landingBrowseFeed}
+          </a>
+        </p>
+      }
+    >
+      <div className="flex flex-col gap-2">
+        <SocialSignInButtons callbackURL="/fil" />
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          <label className="flex flex-col gap-1 text-sm text-text-2">
+            {fr.auth.emailLabel}
+            <Input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-text-2">
+            {fr.auth.passwordLabel}
+            <Input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          <a href="/mot-de-passe-oublie" className="self-end text-sm text-link hover:underline">
+            {fr.auth.forgotPasswordLink}
+          </a>
+          {error && (
+            <p className="text-sm text-danger" role="alert">
+              {error}
+            </p>
+          )}
+          <Button type="submit" loading={submitting} disabled={!email.trim() || !password}>
+            {fr.auth.loginSubmit}
+          </Button>
+        </form>
         <p className="text-center text-sm text-subtle">
           {fr.auth.noAccountYet}{" "}
           <a href="/inscription" className="text-link hover:underline">

@@ -15,7 +15,9 @@ async function findVerificationUrl(email: string): Promise<string> {
       candidate.To.some((recipient) => recipient.Address === email),
     );
     if (message) {
-      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) => response.json());
+      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) =>
+        response.json(),
+      );
       const match = (detail.HTML as string).match(/href="([^"]+)"/);
       if (match) return match[1]!;
     }
@@ -24,8 +26,14 @@ async function findVerificationUrl(email: string): Promise<string> {
   throw new Error(`Email de vérification introuvable pour ${email}.`);
 }
 
-async function signUpVerifyAndSignIn(request: APIRequestContext, email: string, handle: string): Promise<void> {
-  await request.post("/api/auth/sign-up/email", { data: { email, password: PASSWORD, name: handle } });
+async function signUpVerifyAndSignIn(
+  request: APIRequestContext,
+  email: string,
+  handle: string,
+): Promise<void> {
+  await request.post("/api/auth/sign-up/email", {
+    data: { email, password: PASSWORD, name: handle },
+  });
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
@@ -45,13 +53,18 @@ test("publie un skill et le retrouve sur sa page publique", async ({ page, reque
   await signInBrowser(page, email);
 
   await page.goto("/skills");
-  await page.getByRole("button", { name: "Publier un skill" }).click();
+  await page.getByRole("link", { name: "Publier", exact: true }).click();
+  await expect(page).toHaveURL(/\/skills\/nouveau$/);
 
   await page.getByLabel("Nom").fill(slug);
   await page.getByLabel(/Description/).fill("Une phrase qui explique quand utiliser ce skill.");
-  await page.getByLabel(/Contenu/).fill("Instructions détaillées pour ce skill de test bout en bout.");
+  await page
+    .getByLabel(/Contenu/)
+    .fill("Instructions détaillées pour ce skill de test bout en bout.");
   await page.getByRole("button", { name: "Publier", exact: true }).click();
 
+  // La page renvoie vers la liste une fois le skill publié.
+  await expect(page).toHaveURL(/\/skills$/);
   await page.getByRole("link", { name: new RegExp(slug) }).click();
   await expect(page.getByRole("heading", { name: slug })).toBeVisible();
 });

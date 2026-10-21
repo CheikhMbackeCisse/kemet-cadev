@@ -1,4 +1,4 @@
-import { Compass, Flame, Hash, Home, MessageSquare, Swords, Trophy, User } from "lucide-react";
+import { Flame, Hash, MessageSquare, Trophy, User } from "lucide-react";
 import { useState } from "react";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { AppShell } from "../components/shell/AppShell.js";
@@ -6,13 +6,12 @@ import type { ChannelItem, MobileTabItem, SpaceItem } from "../components/shell/
 import { Avatar } from "../components/ui/Avatar.js";
 import { KemetSymbol } from "../components/ui/KemetSymbol.js";
 import { UserName } from "../components/ui/UserName.js";
-import { ThemeToggle } from "../theme/ThemeToggle.js";
 
 const SAMPLE_SPACES: SpaceItem[] = [
-  { id: "accueil", name: "Accueil", icon: Home },
-  { id: "decouvrir", name: "Découvrir", icon: Compass },
-  { id: "competitions", name: "Compétitions", icon: Trophy },
-  { id: "duels", name: "Duels", icon: Swords },
+  { id: "accueil", name: "Dev Sénégal" },
+  { id: "decouvrir", name: "Carrière Freelance" },
+  { id: "competitions", name: "CADEV 2026" },
+  { id: "duels", name: "Entraide Backend" },
 ];
 
 const SAMPLE_CHANNELS: ChannelItem[] = [
@@ -53,7 +52,6 @@ export function ShellPreviewPage() {
       mobileTabs={SAMPLE_TABS}
       activeMobileTabId={activeTabId}
       onSelectMobileTab={setActiveTabId}
-      topBarExtra={<ThemeToggle />}
       rightPanel={{
         title: "Détails du salon",
         content: (
@@ -67,9 +65,9 @@ export function ShellPreviewPage() {
             <div>
               <h3 className="mb-2 font-medium text-text">Membres actifs</h3>
               <div className="flex flex-col gap-2">
-                <UserName name="Awa Ndiaye" countryCode="SN" level="architecte" />
-                <UserName name="Koffi Mensah" countryCode="CI" level="scribe" />
-                <UserName name="Chidi Okafor" countryCode="NG" level="artisan" />
+                <UserName name="Awa Ndiaye" level="architecte" />
+                <UserName name="Koffi Mensah" level="scribe" />
+                <UserName name="Chidi Okafor" level="artisan" />
               </div>
             </div>
           </div>
@@ -81,7 +79,7 @@ export function ShellPreviewPage() {
           <Avatar name="Awa Ndiaye" />
           <div className="flex-1">
             <div className="flex items-baseline gap-2">
-              <UserName name="Awa Ndiaye" countryCode="SN" level="architecte" />
+              <UserName name="Awa Ndiaye" level="architecte" />
               <span className="text-xs text-subtle">10:14</span>
             </div>
             <p className="mt-0.5 text-base text-text">
@@ -98,11 +96,11 @@ export function ShellPreviewPage() {
           <Avatar name="Koffi Mensah" />
           <div className="flex-1">
             <div className="flex items-baseline gap-2">
-              <UserName name="Koffi Mensah" countryCode="CI" level="scribe" />
+              <UserName name="Koffi Mensah" level="scribe" />
               <span className="text-xs text-subtle">10:16</span>
             </div>
             <pre className="mt-1 overflow-x-auto rounded-control border border-border bg-surface p-3 font-mono text-sm text-text">
-{`globalPassThroughEnv: ["DATABASE_URL_TEST"]`}
+              {`globalPassThroughEnv: ["DATABASE_URL_TEST"]`}
             </pre>
           </div>
         </div>

@@ -71,6 +71,27 @@
       "when": 1791821952428,
       "tag": "0009_amused_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791859134439,
+      "tag": "0010_legal_doctor_doom",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791911132130,
+      "tag": "0011_clean_cammi",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791925760684,
+      "tag": "0012_premium_vindicator",
+      "breakpoints": true
     }
   ]
 }

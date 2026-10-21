@@ -7,9 +7,9 @@ import { Dialog } from "../components/ui/Dialog.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { IconButton } from "../components/ui/IconButton.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
-import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
+import { RailPage } from "../components/layout/RailPage.js";
 
 function readSlug(pathname: string): string {
   return pathname.replace(/^\/skills\//, "");
@@ -43,10 +43,18 @@ export function SkillPage() {
     setActionError(null);
     try {
       const { ratings } = await rateSkill(slug, stars);
-      setSkill((current) => (current ? { ...current, averageStars: ratings.average, ratingCount: ratings.count } : current));
+      setSkill((current) =>
+        current
+          ? { ...current, averageStars: ratings.average, ratingCount: ratings.count }
+          : current,
+      );
       setMyRating(stars);
     } catch (err) {
-      setActionError(err instanceof ChatApiError && err.statusCode === 403 ? fr.skills.rateRequiresUsage : fr.skills.rateError);
+      setActionError(
+        err instanceof ChatApiError && err.statusCode === 403
+          ? fr.skills.rateRequiresUsage
+          : fr.skills.rateError,
+      );
     }
   }
 
@@ -62,29 +70,34 @@ export function SkillPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
+      <RailPage activeSection="skills" className="gap-4 px-4 py-8">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
-      </main>
+      </RailPage>
     );
   }
 
   if (error || !skill) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
-        <ErrorState message={fr.skills.loadingError} retry={{ label: fr.chat.retry, onClick: load }} />
-      </main>
+      <RailPage activeSection="skills" className="gap-4 px-4 py-8">
+        <ErrorState
+          message={fr.skills.loadingError}
+          retry={{ label: fr.chat.retry, onClick: load }}
+        />
+      </RailPage>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
+    <RailPage activeSection="skills" className="gap-4 px-4 py-8">
       <div className="flex items-center justify-between">
-        <a href="/skills" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
+        <a
+          href="/skills"
+          className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
+        >
           <ArrowLeft className="size-4" aria-hidden="true" />
           {fr.skills.back}
         </a>
-        <ThemeToggle />
       </div>
 
       <div>
@@ -93,7 +106,10 @@ export function SkillPage() {
         <p className="mt-3 text-sm text-text-2">{skill.description}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {skill.tags.map((tag) => (
-            <span key={tag} className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle">
+            <span
+              key={tag}
+              className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle"
+            >
               {tag}
             </span>
           ))}
@@ -117,7 +133,11 @@ export function SkillPage() {
               onClick={() => void handleRate(stars)}
               className={cn(myRating !== null && stars <= myRating && "text-primary")}
             >
-              <Star className="size-4" aria-hidden="true" fill={myRating !== null && stars <= myRating ? "currentColor" : "none"} />
+              <Star
+                className="size-4"
+                aria-hidden="true"
+                fill={myRating !== null && stars <= myRating ? "currentColor" : "none"}
+              />
             </IconButton>
           ))}
         </div>
@@ -133,7 +153,12 @@ export function SkillPage() {
         {fr.skills.delete}
       </Button>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen} title={fr.skills.delete} description={fr.skills.deleteConfirm}>
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={fr.skills.delete}
+        description={fr.skills.deleteConfirm}
+      >
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
             {fr.skills.cancel}
@@ -143,6 +168,6 @@ export function SkillPage() {
           </Button>
         </div>
       </Dialog>
-    </main>
+    </RailPage>
   );
 }

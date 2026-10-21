@@ -33,6 +33,7 @@ export async function upsertProfile(db: Db, userId: string, patch: UpdateProfile
         handle: patch.handle!,
         displayName: patch.displayName!,
         country: patch.country!,
+        role: patch.role,
         title: patch.title,
         bio: patch.bio,
         stack: patch.stack,

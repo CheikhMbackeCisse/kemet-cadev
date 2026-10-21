@@ -10,9 +10,9 @@ import { ErrorState } from "../components/ui/ErrorState.js";
 import { Input } from "../components/ui/Input.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { useToast } from "../components/ui/Toast.js";
-import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { RailPage } from "../components/layout/RailPage.js";
 
 const TARGET_LABELS = {
   message: fr.moderation.targetMessage,
@@ -28,10 +28,21 @@ const ACTION_LABELS: Record<ModerationActionEntry["action"], string> = {
 };
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function ReportRow({ report, onResolve }: { report: Report; onResolve: (reportId: string, action: "hide" | "dismiss" | "suspend", reason: string) => void }) {
+function ReportRow({
+  report,
+  onResolve,
+}: {
+  report: Report;
+  onResolve: (reportId: string, action: "hide" | "dismiss" | "suspend", reason: string) => void;
+}) {
   const [reason, setReason] = useState("");
   const isContent = report.targetType === "message" || report.targetType === "post";
 
@@ -39,7 +50,9 @@ function ReportRow({ report, onResolve }: { report: Report; onResolve: (reportId
     <li className="rounded-card border border-border p-3">
       <div className="flex items-baseline gap-2">
         <Badge>{TARGET_LABELS[report.targetType]}</Badge>
-        <span className="text-xs text-subtle">{fr.moderation.reportedBy(report.reporterHandle)}</span>
+        <span className="text-xs text-subtle">
+          {fr.moderation.reportedBy(report.reporterHandle)}
+        </span>
         <span className="text-xs text-subtle">{formatTime(report.createdAt)}</span>
       </div>
       <p className="mt-1 text-sm text-text">{report.targetSummary}</p>
@@ -53,16 +66,28 @@ function ReportRow({ report, onResolve }: { report: Report; onResolve: (reportId
           className="w-auto flex-1"
         />
         {isContent && (
-          <Button variant="secondary" className="text-xs" onClick={() => onResolve(report.id, "hide", reason)}>
+          <Button
+            variant="secondary"
+            className="text-xs"
+            onClick={() => onResolve(report.id, "hide", reason)}
+          >
             {fr.moderation.hide}
           </Button>
         )}
         {report.targetType === "profile" && (
-          <Button variant="secondary" className="text-xs" onClick={() => onResolve(report.id, "suspend", reason)}>
+          <Button
+            variant="secondary"
+            className="text-xs"
+            onClick={() => onResolve(report.id, "suspend", reason)}
+          >
             {fr.moderation.suspend}
           </Button>
         )}
-        <Button variant="ghost" className="text-xs text-danger" onClick={() => onResolve(report.id, "dismiss", reason)}>
+        <Button
+          variant="ghost"
+          className="text-xs text-danger"
+          onClick={() => onResolve(report.id, "dismiss", reason)}
+        >
           {fr.moderation.dismiss}
         </Button>
       </div>
@@ -129,7 +154,11 @@ export function ModerationPage() {
     setLogCursor(page.nextCursor);
   }
 
-  async function handleResolve(reportId: string, action: "hide" | "dismiss" | "suspend", reason: string) {
+  async function handleResolve(
+    reportId: string,
+    action: "hide" | "dismiss" | "suspend",
+    reason: string,
+  ) {
     try {
       await resolveReport(reportId, { action, reason: reason.trim() || undefined });
       setReports((current) => current.filter((report) => report.id !== reportId));
@@ -143,21 +172,20 @@ export function ModerationPage() {
 
   if (!isPlatformAdmin) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col items-center justify-center gap-4 px-4 py-8">
+      <RailPage className="items-center justify-center gap-4 px-4 py-8">
         <EmptyState icon={ShieldAlert} message={fr.moderation.forbidden} />
-      </main>
+      </RailPage>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-6 px-4 py-8">
+    <RailPage className="gap-6 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <div>
-          <h1 className="text-lg font-semibold text-text">{fr.moderation.title}</h1>
+          <h1 className="text-lg font-bold text-text">{fr.moderation.title}</h1>
           <p className="text-sm text-subtle">{fr.moderation.subtitle}</p>
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <AccountMenu />
         </div>
       </div>
@@ -167,7 +195,10 @@ export function ModerationPage() {
         {reportsLoading ? (
           <Skeleton className="h-20 w-full" />
         ) : reportsError ? (
-          <ErrorState message={fr.moderation.loadingError} retry={{ label: fr.chat.retry, onClick: loadReports }} />
+          <ErrorState
+            message={fr.moderation.loadingError}
+            retry={{ label: fr.chat.retry, onClick: loadReports }}
+          />
         ) : reports.length === 0 ? (
           <p className="text-sm text-subtle">{fr.moderation.queueEmpty}</p>
         ) : (
@@ -189,7 +220,10 @@ export function ModerationPage() {
         {logLoading ? (
           <Skeleton className="h-20 w-full" />
         ) : logError ? (
-          <ErrorState message={fr.moderation.loadingError} retry={{ label: fr.chat.retry, onClick: loadLog }} />
+          <ErrorState
+            message={fr.moderation.loadingError}
+            retry={{ label: fr.chat.retry, onClick: loadLog }}
+          />
         ) : log.length === 0 ? (
           <p className="text-sm text-subtle">{fr.moderation.logEmpty}</p>
         ) : (
@@ -199,7 +233,9 @@ export function ModerationPage() {
                 <div className="flex items-baseline gap-2">
                   <Badge>{TARGET_LABELS[entry.targetType]}</Badge>
                   <span className="font-medium text-text">{ACTION_LABELS[entry.action]}</span>
-                  <span className="text-xs text-subtle">{fr.moderation.actionBy(entry.actorHandle)}</span>
+                  <span className="text-xs text-subtle">
+                    {fr.moderation.actionBy(entry.actorHandle)}
+                  </span>
                   <span className="text-xs text-subtle">{formatTime(entry.createdAt)}</span>
                 </div>
                 <p className="mt-1 text-text-2">{entry.targetSummary}</p>
@@ -214,6 +250,6 @@ export function ModerationPage() {
           </Button>
         )}
       </div>
-    </main>
+    </RailPage>
   );
 }

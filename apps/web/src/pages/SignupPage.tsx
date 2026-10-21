@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
+import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
 import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
-import { ChatApiError, getAuthConfig, resendVerificationEmail, signIn, signInWithGithub, signUp } from "../lib/chat/api.js";
+import { ChatApiError, resendVerificationEmail, signIn, signUp } from "../lib/chat/api.js";
 import { useToast } from "../components/ui/Toast.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
@@ -16,20 +17,14 @@ export function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [awaitingVerification, setAwaitingVerification] = useState(false);
-  const [githubEnabled, setGithubEnabled] = useState(false);
-
-  useEffect(() => {
-    getAuthConfig()
-      .then((config) => setGithubEnabled(config.githubEnabled))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (status === "ready") window.location.href = "/fil";
     if (status === "incomplete") window.location.href = "/completer-profil";
   }, [status]);
 
-  async function handleSubmit() {
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
@@ -72,8 +67,10 @@ export function SignupPage() {
               {error}
             </p>
           )}
-          <Button onClick={handleRetrySignIn}>{fr.auth.iVerifiedMyEmail}</Button>
-          <Button variant="ghost" onClick={handleResend}>
+          <Button type="button" onClick={handleRetrySignIn}>
+            {fr.auth.iVerifiedMyEmail}
+          </Button>
+          <Button type="button" variant="ghost" onClick={handleResend}>
             {fr.auth.resendVerificationEmail}
           </Button>
         </div>
@@ -84,38 +81,29 @@ export function SignupPage() {
   return (
     <AuthLayout title={fr.auth.signupTitle} subtitle={fr.auth.signupSubtitle}>
       <div className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.nameLabel}
-          <Input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} autoFocus />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.emailLabel}
-          <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.passwordLabel}
-          <Input type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} />
-        </label>
-        {error && (
-          <p className="text-sm text-danger" role="alert">
-            {error}
-          </p>
-        )}
-        <Button onClick={handleSubmit} loading={submitting} disabled={!name.trim() || !email.trim() || password.length < 8}>
-          {fr.auth.signupSubmit}
-        </Button>
-        {githubEnabled && (
-          <>
-            <div className="flex items-center gap-2 text-xs text-subtle">
-              <span className="h-px flex-1 bg-border" />
-              {fr.auth.orSeparator}
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <Button variant="secondary" onClick={() => void signInWithGithub("/fil")}>
-              {fr.auth.continueWithGithub}
-            </Button>
-          </>
-        )}
+        <SocialSignInButtons callbackURL="/fil" />
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+          <label className="flex flex-col gap-1 text-sm text-text-2">
+            {fr.auth.nameLabel}
+            <Input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-text-2">
+            {fr.auth.emailLabel}
+            <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-text-2">
+            {fr.auth.passwordLabel}
+            <Input type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} />
+          </label>
+          {error && (
+            <p className="text-sm text-danger" role="alert">
+              {error}
+            </p>
+          )}
+          <Button type="submit" loading={submitting} disabled={!name.trim() || !email.trim() || password.length < 8}>
+            {fr.auth.signupSubmit}
+          </Button>
+        </form>
         <p className="text-center text-sm text-subtle">
           {fr.auth.alreadyHaveAccount}{" "}
           <a href="/connexion" className="text-link hover:underline">

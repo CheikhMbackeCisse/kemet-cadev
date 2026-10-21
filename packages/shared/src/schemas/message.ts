@@ -43,6 +43,8 @@ export const messageSchema = z.object({
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
+  authorCountry: z.string(),
   body: z.string(),
   mentionedHandles: z.array(z.string()),
   reactions: z.array(reactionSchema),

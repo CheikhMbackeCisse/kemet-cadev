@@ -37,6 +37,7 @@ export const ATTACHMENT_TEXT_EXTENSIONS = [
 ] as const;
 
 export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
+export const MAX_POST_ATTACHMENTS = 4;
 
 export const attachmentKindSchema = z.enum(["image", "file"]);
 

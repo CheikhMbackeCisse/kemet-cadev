@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attachmentSchema, MAX_POST_ATTACHMENTS } from "./attachment.js";
 import { httpUrlSchema } from "./url.js";
 
 export const MAX_POST_BODY_LENGTH = 1000;
@@ -16,9 +17,10 @@ export const createPostSchema = z
     format: postFormatSchema.nullable().optional(),
     testUrl: httpUrlSchema(500).nullable().optional(),
     testAsk: z.string().min(1).max(MAX_POST_TEST_ASK_LENGTH).nullable().optional(),
+    attachmentIds: z.array(z.string().uuid()).max(MAX_POST_ATTACHMENTS).optional(),
   })
-  .refine((input) => input.body.trim().length > 0, {
-    message: "Un post doit contenir du texte.",
+  .refine((input) => input.body.trim().length > 0 || (input.attachmentIds?.length ?? 0) > 0, {
+    message: "Un post doit contenir du texte ou au moins une image.",
     path: ["body"],
   })
   .refine((input) => input.format === "a_tester" || (!input.testUrl && !input.testAsk), {
@@ -79,8 +81,11 @@ export const sharedPostPreviewSchema = z.object({
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
+  authorCountry: z.string(),
   body: z.string(),
   format: postFormatSchema.nullable(),
+  attachments: z.array(attachmentSchema),
   deletedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
 });
@@ -92,10 +97,13 @@ export const postSummarySchema = z.object({
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
+  authorCountry: z.string(),
   body: z.string(),
   format: postFormatSchema.nullable(),
   testUrl: z.string().nullable(),
   testAsk: z.string().nullable(),
+  attachments: z.array(attachmentSchema),
   sharedPost: sharedPostPreviewSchema.nullable(),
   utileCount: z.number().int().nonnegative(),
   reactedByMe: z.boolean(),
@@ -121,6 +129,8 @@ export const postReplySchema = z.object({
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
+  authorCountry: z.string(),
   body: z.string(),
   isSolution: z.boolean(),
   createdAt: z.string().datetime(),
@@ -136,6 +146,8 @@ export const postFeedbackEntrySchema = z.object({
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
+  authorCountry: z.string(),
   body: z.string(),
   createdAt: z.string().datetime(),
 });

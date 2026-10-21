@@ -9,7 +9,7 @@ type AttachmentRow = typeof messageAttachments.$inferSelect;
 type SpaceMemberRole = (typeof spaceMembers.$inferSelect)["role"];
 type InviteRow = typeof spaceInvites.$inferSelect;
 
-export function serializeSpace(row: SpaceRow, role: SpaceMemberRole | null): Space {
+export function serializeSpace(row: SpaceRow, role: SpaceMemberRole | null, memberCount: number): Space {
   return {
     id: row.id,
     name: row.name,
@@ -17,6 +17,7 @@ export function serializeSpace(row: SpaceRow, role: SpaceMemberRole | null): Spa
     description: row.description,
     visibility: row.visibility,
     role,
+    memberCount,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -26,6 +27,8 @@ export function serializeSpaceMember(row: { profile: ProfileRow; role: SpaceMemb
     profileId: row.profile.id,
     handle: row.profile.handle,
     displayName: row.profile.displayName,
+    avatarUrl: row.profile.avatarUrl,
+    country: row.profile.country,
     role: row.role,
     joinedAt: row.joinedAt.toISOString(),
   };
@@ -71,6 +74,8 @@ export function serializeMessage(
     authorId: row.authorId,
     authorHandle: author.handle,
     authorDisplayName: author.displayName,
+    authorAvatarUrl: author.avatarUrl,
+    authorCountry: author.country,
     body: deleted ? "" : row.body,
     mentionedHandles: deleted ? [] : mentionedHandles,
     reactions,

@@ -60,6 +60,8 @@ export const projectSummarySchema = z.object({
   ownerId: z.string().uuid(),
   ownerHandle: z.string(),
   ownerDisplayName: z.string(),
+  ownerAvatarUrl: z.string().nullable(),
+  ownerCountry: z.string(),
   openHelpRequestCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
 });

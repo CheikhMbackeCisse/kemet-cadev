@@ -25,7 +25,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "migrate": "drizzle-kit migrate",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx --env-file-if-exists=../../.env src/seed.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.0",

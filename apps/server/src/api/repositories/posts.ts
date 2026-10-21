@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 import { follows, postFeedback, postReactions, postReplies, posts, profiles, type Db, type DbOrTx } from "@kemet/db";
 import type { CreatePostInput } from "@kemet/shared";
 import { findProfileById } from "./chat.js";
+import { listAttachmentsForPosts } from "./post-attachments.js";
 
 // Fenêtre du classement "Pour toi" : sans les niveaux (lot 8, pas encore
 // posé), pondérer par le niveau de ceux qui réagissent comme le prévoit
@@ -137,16 +138,29 @@ export async function togglePostReaction(db: Db, postId: string, profileId: stri
 // `viewerProfileId` est `null` pour un visiteur (mode visiteur, lot 11a) :
 // jamais réagi, sans requête.
 export async function hydratePost(db: Db, row: typeof posts.$inferSelect, viewerProfileId: string | null) {
-  const [author, utileCount, reactedByMe, replyCount, feedbackCount, sharedPost] = await Promise.all([
+  const [author, utileCount, reactedByMe, replyCount, feedbackCount, sharedPost, attachments] = await Promise.all([
     findProfileById(db, row.authorId),
     countPostReactions(db, row.id),
     viewerProfileId ? isPostReactedByProfile(db, row.id, viewerProfileId) : Promise.resolve(false),
     countPostReplies(db, row.id),
     countPostFeedback(db, row.id),
     row.sharedPostId ? findPostById(db, row.sharedPostId) : Promise.resolve(null),
+    listAttachmentsForPosts(db, [row.id]),
   ]);
   const sharedAuthor = sharedPost ? await findProfileById(db, sharedPost.authorId) : null;
-  return { row, author: author!, utileCount, reactedByMe, replyCount, feedbackCount, sharedPost, sharedAuthor };
+  const sharedAttachments = sharedPost ? await listAttachmentsForPosts(db, [sharedPost.id]) : [];
+  return {
+    row,
+    author: author!,
+    utileCount,
+    reactedByMe,
+    replyCount,
+    feedbackCount,
+    attachments,
+    sharedPost,
+    sharedAuthor,
+    sharedAttachments,
+  };
 }
 
 export async function insertPostReply(db: Db, input: { postId: string; authorId: string; body: string }) {

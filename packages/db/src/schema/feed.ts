@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  bigint,
   boolean,
   check,
   index,
@@ -37,10 +38,10 @@ export const posts = pgTable(
   (table) => [
     index("posts_author_created_idx").on(table.authorId, table.createdAt),
     index("posts_shared_post_idx").on(table.sharedPostId),
-    check(
-      "posts_body_or_share",
-      sql`length(${table.body}) > 0 or ${table.sharedPostId} is not null`,
-    ),
+    // Pas de CHECK "texte ou pièce jointe" ici : un post peut maintenant
+    // n'avoir que des images (post_attachments), une autre table qu'un
+    // CHECK ne peut pas voir. Cette règle reste appliquée par
+    // createPostSchema, comme pour les messages (createMessageSchema).
     // Écrit avec coalesce pour éviter le piège des CHECK Postgres : une
     // comparaison à NULL (format non renseigné) vaut NULL, pas faux, et un
     // CHECK qui vaut NULL est considéré respecté. Sans le coalesce, un post
@@ -49,6 +50,29 @@ export const posts = pgTable(
       "posts_test_fields_require_a_tester_format",
       sql`coalesce(${table.format} = 'a_tester', false) or (${table.testUrl} is null and ${table.testAsk} is null)`,
     ),
+  ],
+);
+
+export const postAttachments = pgTable(
+  "post_attachments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Nul tant que l'image n'est pas rattachée à un post publié : voir le
+    // nettoyage des fichiers orphelins dans
+    // apps/server/src/feed/post-attachments-cleanup.ts.
+    postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    storageKey: text("storage_key").notNull().unique(),
+    mimeType: text("mime_type").notNull(),
+    originalName: text("original_name").notNull(),
+    byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("post_attachments_post_idx").on(table.postId),
+    index("post_attachments_author_idx").on(table.authorId),
   ],
 );
 
@@ -117,6 +141,12 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   replies: many(postReplies),
   reactions: many(postReactions),
   feedback: many(postFeedback),
+  attachments: many(postAttachments),
+}));
+
+export const postAttachmentsRelations = relations(postAttachments, ({ one }) => ({
+  post: one(posts, { fields: [postAttachments.postId], references: [posts.id] }),
+  author: one(profiles, { fields: [postAttachments.authorId], references: [profiles.id] }),
 }));
 
 export const postRepliesRelations = relations(postReplies, ({ one }) => ({

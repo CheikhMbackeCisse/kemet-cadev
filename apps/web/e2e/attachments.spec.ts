@@ -22,7 +22,9 @@ async function findVerificationUrl(email: string): Promise<string> {
       candidate.To.some((recipient) => recipient.Address === email),
     );
     if (message) {
-      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) => response.json());
+      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) =>
+        response.json(),
+      );
       const match = (detail.HTML as string).match(/href="([^"]+)"/);
       if (match) return match[1]!;
     }
@@ -31,7 +33,11 @@ async function findVerificationUrl(email: string): Promise<string> {
   throw new Error(`Email de vérification introuvable pour ${email}.`);
 }
 
-async function signUpVerifyAndSignIn(request: APIRequestContext, email: string, handle: string): Promise<void> {
+async function signUpVerifyAndSignIn(
+  request: APIRequestContext,
+  email: string,
+  handle: string,
+): Promise<void> {
   await request.post("/api/auth/sign-up/email", {
     data: { email, password: PASSWORD, name: handle },
   });
@@ -54,16 +60,14 @@ test("envoie une image dans un salon et la voit affichée en ligne", async ({ pa
   // essai et sa relance en CI, par exemple), rejetant la mise à jour du
   // profil avec un conflit d'identifiant.
   const handle = `e2eatt${test.info().project.name}${Date.now()}`;
+  const fileName = `photo-${handle}.png`;
 
   await signUpVerifyAndSignIn(request, email, handle);
   await signInBrowser(page, email);
 
-  await page.goto("/salons");
-  await page
-    .getByRole("banner")
-    .getByRole("button", { name: "Créer un espace" })
-    .filter({ visible: true })
-    .click();
+  // Créer l'espace fait partie de la mise en place, pas de ce qui est testé
+  // ici : chat.spec.ts couvre le point d'entrée depuis le rail.
+  await page.goto("/salons/nouveau");
   await page.getByLabel("Nom").fill(`Espace ${handle}`);
   await page.getByRole("button", { name: "Créer", exact: true }).click();
 
@@ -75,13 +79,13 @@ test("envoie une image dans un salon et la voit affichée en ligne", async ({ pa
   await expect(composer).toBeEnabled();
 
   await page.locator('input[type="file"]').setInputFiles({
-    name: "photo.png",
+    name: fileName,
     mimeType: "image/png",
     buffer: PNG_BYTES,
   });
-  await expect(page.getByText("photo.png")).toBeVisible();
+  await expect(page.getByText(fileName)).toBeVisible();
 
   await page.getByRole("button", { name: "Envoyer" }).click();
 
-  await expect(page.getByAltText("photo.png")).toBeVisible();
+  await expect(page.getByAltText(fileName)).toBeVisible();
 });

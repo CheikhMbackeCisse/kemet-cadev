@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"tsx watch src/api/main.ts\" \"tsx watch src/realtime/main.ts\" \"tsx watch src/worker/main.ts\"",
+    "dev": "concurrently \"tsx watch --env-file-if-exists=../../.env src/api/main.ts\" \"tsx watch --env-file-if-exists=../../.env src/realtime/main.ts\" \"tsx watch --env-file-if-exists=../../.env src/worker/main.ts\"",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

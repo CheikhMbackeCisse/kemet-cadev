@@ -20,6 +20,12 @@ export class SmtpEmailSender implements EmailSender {
       port: config.port,
       secure: config.port === 465,
       auth: config.user ? { user: config.user, pass: config.password } : undefined,
+      // Un relais SMTP lent ou injoignable ne doit jamais faire attendre une
+      // requête HTTP : ces délais bornent l'envoi bien en dessous des
+      // dizaines de minutes par défaut de nodemailer.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 10_000,
     });
   }
 

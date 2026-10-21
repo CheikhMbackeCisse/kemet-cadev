@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { Button } from "../components/ui/Button.js";
 import { CountrySelect } from "../components/ui/CountrySelect.js";
@@ -20,13 +20,14 @@ export function CompleteProfilePage() {
     if (status === "ready") window.location.href = "/fil";
   }, [status]);
 
-  async function handleSubmit() {
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
       await updateMyProfile({ handle: handle.toLowerCase(), displayName, country });
       await refresh();
-      window.location.href = "/fil";
+      window.location.href = "/ton-role";
     } catch (err) {
       if (err instanceof ChatApiError && err.statusCode === 409) setError(fr.auth.handleAlreadyTakenError);
       else setError(fr.auth.completeProfileError);
@@ -37,7 +38,7 @@ export function CompleteProfilePage() {
 
   return (
     <AuthLayout title={fr.auth.completeProfileTitle} subtitle={fr.auth.completeProfileSubtitle}>
-      <div className="flex flex-col gap-3">
+      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.displayNameLabel}
           <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus />
@@ -49,17 +50,22 @@ export function CompleteProfilePage() {
         </label>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.countryLabel}
-          <CountrySelect aria-label={fr.auth.countryLabel} value={country} onValueChange={setCountry} />
+          <CountrySelect
+            aria-label={fr.auth.countryLabel}
+            value={country}
+            onValueChange={setCountry}
+            placeholder={fr.auth.countrySelectPlaceholder}
+          />
         </label>
         {error && (
           <p className="text-sm text-danger" role="alert">
             {error}
           </p>
         )}
-        <Button onClick={handleSubmit} loading={submitting} disabled={!handle.trim() || !displayName.trim() || !country}>
+        <Button type="submit" loading={submitting} disabled={!handle.trim() || !displayName.trim() || !country}>
           {fr.auth.completeProfileSubmit}
         </Button>
-      </div>
+      </form>
     </AuthLayout>
   );
 }

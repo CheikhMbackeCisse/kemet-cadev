@@ -7,8 +7,25 @@ describe("createPostSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejette un post sans texte", () => {
+  it("rejette un post sans texte ni image", () => {
     const result = createPostSchema.safeParse({ body: "   " });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepte un post sans texte s'il a au moins une image", () => {
+    const result = createPostSchema.safeParse({ body: "", attachmentIds: ["3f6b2b5a-2b1f-4c3e-9b1a-1a2b3c4d5e6f"] });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejette plus de quatre images sur un post", () => {
+    const attachmentIds = [
+      "3f6b2b5a-2b1f-4c3e-9b1a-1a2b3c4d5e61",
+      "3f6b2b5a-2b1f-4c3e-9b1a-1a2b3c4d5e62",
+      "3f6b2b5a-2b1f-4c3e-9b1a-1a2b3c4d5e63",
+      "3f6b2b5a-2b1f-4c3e-9b1a-1a2b3c4d5e64",
+      "3f6b2b5a-2b1f-4c3e-9b1a-1a2b3c4d5e65",
+    ];
+    const result = createPostSchema.safeParse({ body: "Un post.", attachmentIds });
     expect(result.success).toBe(false);
   });
 

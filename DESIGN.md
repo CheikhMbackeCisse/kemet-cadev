@@ -9,7 +9,7 @@ Règles d'interface de Kemet. Elles s'appliquent à chaque écran, sans exceptio
 3. **Un seul élément marquant.** Le bloc de réponse de l'assistant @kemet est le seul élément visuellement fort. Tout le reste est discret.
 4. **Pensé pour le téléphone et les connexions lentes.** Chaque écran est conçu en taille mobile en même temps qu'en taille bureau.
 5. **L'ergonomie partout**, pas seulement dans les formulaires : états vides, chargements, erreurs, clavier, premier lancement.
-6. **Original.** On peut reprendre un mécanisme d'un autre produit, jamais son apparence. Le fil ne ressemble pas à X, les salons ne ressemblent pas à Discord.
+6. **Pas d'originalité à tout prix.** On peut reprendre un mécanisme *et* une apparence d'un autre produit (Discord, X, LinkedIn, GitHub, Linear, Slack…) quand ça rend l'écran plus clair ou plus soigné, au cas par cas. Ce qui ne bouge jamais : les tokens de couleur, Plus Jakarta Sans/Geist Mono, les icônes Lucide, la grille 4px, et la liste « Ce qui est interdit » ci-dessous — ces interdits visent à éviter l'air générique IA, pas la ressemblance avec un produit existant, donc ils restent en vigueur même quand on copie. Jamais le logo, les couleurs de marque ou les assets d'un autre produit. Autorisation donnée le 14/10/2026, plus large que celle du lot du rail des espaces : cette fois l'apparence elle-même peut être reprise, pas seulement le mécanisme.
 
 ## Couleurs
 
@@ -71,7 +71,7 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 - Rail des espaces : 64 px.
 - Liste des salons : 240 px.
 - Contenu : fluide.
-- Panneau de détails à droite : 300 px, refermable.
+- Panneau de détails à droite : 300 px, affiché en permanence sur grand écran. Sous 1024 px il devient une feuille, ouverte depuis la barre du haut. Il n'est pas refermable sur grand écran : sa bascule encombrait la barre du haut, et une fois fermé rien ne permettait de le rouvrir.
 - Pages de lecture (profil, post, skill) : largeur de contenu maximale de 960 px.
 
 **Mobile (moins de 768 px) :**
@@ -83,7 +83,8 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 
 ## Composants clés
 
-- **Nom d'utilisateur :** prénom et nom, drapeau du pays (SVG flag-icons, 16 x 12 px, avec le nom du pays en `title` et pour les lecteurs d'écran), badge de niveau discret. Jamais de total de points à côté d'un nom.
+- **Nom d'utilisateur :** prénom et nom, badge de niveau discret. Pas de drapeau ici : il est porté par l'avatar (voir ci-dessous). Jamais de total de points à côté d'un nom.
+- **Avatar :** photo ou motif généré, en 24, 32 ou 40 px. À 32 et 40 px, le drapeau du pays s'ajoute en badge sur le coin inférieur droit de la photo (SVG flag-icons, avec le nom du pays en `title` et pour les lecteurs d'écran). Jamais à 24 px, où le badge ne laisserait plus voir la photo. C'est le seul endroit où le drapeau apparaît : la règle précédente le mettait aussi à côté du nom, ce qui affichait deux drapeaux par message et par post. Corrigé le 20/10/2026. Là où aucun avatar n'est rendu (aperçu d'un post partagé, retour structuré), on affiche un avatar de 32 px plutôt qu'un drapeau isolé.
 - **Badge de niveau :** petite pastille avec le nom du niveau (Apprenti, Artisan, Scribe, Architecte, Légende). Couleur neutre, sauf Légende qui utilise `--primary`.
 - **Message :** avatar de 32 px, nom, heure, contenu. Les messages successifs d'une même personne sont regroupés sous un seul avatar.
 - **Bloc de réponse de l'assistant :** fond `--assistant-bg`, bordure `--assistant-border`, icône Kemet, nom "kemet", ligne "Basé sur le skill wave-paiements d'Awa Ndiaye" (lien vers le skill et le profil), mention de ce que l'assistant a lu, boutons "Utile" et "Pas utile". C'est le seul bloc coloré de l'interface.
@@ -112,7 +113,7 @@ Chaque écran et chaque liste a quatre états dessinés :
 
 Ces choix font "interface générée par une IA" :
 
-- dégradés décoratifs, effet verre dépoli, halos lumineux ;
+- dégradés décoratifs, effet verre dépoli, halos lumineux (une seule exception, les écrans de compte, voir ci-dessous) ;
 - emojis utilisés comme icônes ;
 - cartes toutes identiques avec la même ombre grise ;
 - bordure colorée à gauche des cartes ;
@@ -120,6 +121,18 @@ Ces choix font "interface générée par une IA" :
 - chiffres ou statistiques décoratifs ;
 - animations d'apparition sur chaque section ;
 - polices Inter, Roboto, Arial.
+
+### La seule exception : les écrans de compte
+
+Les écrans de compte (connexion, inscription, mot de passe oublié, réinitialisation)
+ont droit à un fond de marque avec dégradé et halos lumineux. L'interdit a été levé
+pour ces écrans le 20/10/2026, après comparaison avec la page de
+connexion de Systalink. Voir `docs/adr/0019-fond-des-ecrans-de-compte.md`.
+
+Le périmètre est strict : le dégradé et les halos vivent dans le fond, derrière
+une carte opaque qui porte le formulaire. Le formulaire lui-même, ses champs, ses
+boutons et ses textes restent des composants Kemet ordinaires, sans dégradé ni
+halo. Aucun autre écran du produit ne bénéficie de cette exception.
 
 ## Mouvement
 
@@ -142,3 +155,4 @@ Ces choix font "interface générée par une IA" :
   - `kemet-app-icon.svg` et PNG : icône de la web app ; `kemet-app-icon-maskable-512.png` pour Android ; `apple-touch-icon.png` pour iOS ; `favicon.svg`, `favicon-32.png`, `favicon-16.png`.
   - Zone de protection autour du logo : au moins la largeur du bras du "k". Hauteur minimale du mot-symbole : 16 px.
   - Sur fond sombre, le bleu du logo est #3B82F0.
+- Exception à la règle "aucune couleur écrite en dur" : les logos des fournisseurs de connexion sociale (Google, LinkedIn, GitHub) dans `apps/web/src/components/auth/SocialProviderIcon.tsx` gardent leurs couleurs de marque officielles, hors de notre contrôle, identiques dans les deux thèmes.

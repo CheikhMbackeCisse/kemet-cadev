@@ -16,6 +16,8 @@ export function serializeProjectSummary(row: ProjectRow, owner: ProfileRow, open
     ownerId: row.ownerId,
     ownerHandle: owner.handle,
     ownerDisplayName: owner.displayName,
+    ownerAvatarUrl: owner.avatarUrl,
+    ownerCountry: owner.country,
     openHelpRequestCount,
     createdAt: row.createdAt.toISOString(),
   };

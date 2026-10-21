@@ -13,11 +13,16 @@ export const countryCodeSchema = z.enum(COUNTRY_CODES);
 
 export const stackSchema = z.array(z.string().min(1).max(40)).max(20);
 
+export const profileRoleSchema = z.enum(["developer", "designer", "hr", "student", "project_manager", "other"]);
+
+export type ProfileRole = z.infer<typeof profileRoleSchema>;
+
 export const updateProfileSchema = z
   .object({
     handle: handleSchema,
     displayName: z.string().min(1).max(80),
     country: countryCodeSchema,
+    role: profileRoleSchema.nullable(),
     title: z.string().max(120).nullable(),
     bio: z.string().max(500).nullable(),
     stack: stackSchema,
@@ -33,10 +38,12 @@ export const profileSchema = z.object({
   handle: handleSchema,
   displayName: z.string(),
   country: countryCodeSchema,
+  role: profileRoleSchema.nullable(),
   title: z.string().nullable(),
   bio: z.string().nullable(),
   stack: z.array(z.string()),
   githubUrl: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
   openToOpportunities: z.boolean(),
   isDemo: z.boolean(),
   level: levelSchema,
@@ -51,6 +58,7 @@ export const profileSummarySchema = profileSchema.pick({
   displayName: true,
   country: true,
   title: true,
+  avatarUrl: true,
   isDemo: true,
 });
 

@@ -10,10 +10,12 @@ export function serializeProfile(row: ProfileRow, level: Level): Profile {
     handle: row.handle,
     displayName: row.displayName,
     country: row.country as Profile["country"],
+    role: row.role,
     title: row.title,
     bio: row.bio,
     stack: row.stack,
     githubUrl: row.githubUrl,
+    avatarUrl: row.avatarUrl,
     openToOpportunities: row.openToOpportunities,
     isDemo: row.isDemo,
     level,
@@ -28,6 +30,7 @@ export function serializeProfileSummary(row: ProfileRow): ProfileSummary {
     displayName: row.displayName,
     country: row.country as ProfileSummary["country"],
     title: row.title,
+    avatarUrl: row.avatarUrl,
     isDemo: row.isDemo,
   };
 }

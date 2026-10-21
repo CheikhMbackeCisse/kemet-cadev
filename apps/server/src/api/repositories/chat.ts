@@ -1,5 +1,5 @@
 import { customAlphabet } from "nanoid";
-import { and, asc, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import {
   channels,
   messageMentions,
@@ -116,13 +116,38 @@ export async function removeSpaceMember(db: Db, spaceId: string, profileId: stri
   await db.delete(spaceMembers).where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.profileId, profileId)));
 }
 
-export async function listSpaceMembers(db: Db, spaceId: string) {
-  return db
+export async function listSpaceMembers(db: Db, spaceId: string, cursor: string | undefined, limit: number) {
+  const condition = cursor
+    ? and(eq(spaceMembers.spaceId, spaceId), gt(spaceMembers.joinedAt, new Date(cursor)))
+    : eq(spaceMembers.spaceId, spaceId);
+  const rows = await db
     .select({ profile: profiles, role: spaceMembers.role, joinedAt: spaceMembers.joinedAt })
     .from(spaceMembers)
     .innerJoin(profiles, eq(profiles.id, spaceMembers.profileId))
-    .where(eq(spaceMembers.spaceId, spaceId))
-    .orderBy(asc(spaceMembers.joinedAt));
+    .where(condition)
+    .orderBy(asc(spaceMembers.joinedAt))
+    .limit(limit + 1);
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const last = items.at(-1);
+  return { items, nextCursor: hasMore && last ? last.joinedAt.toISOString() : null };
+}
+
+export async function countSpaceMembers(db: Db, spaceId: string) {
+  const [row] = await db.select({ value: count() }).from(spaceMembers).where(eq(spaceMembers.spaceId, spaceId));
+  return row?.value ?? 0;
+}
+
+// Pour l'affichage d'un nombre de membres sur une liste d'espaces : une
+// requête groupée plutôt qu'un countSpaceMembers par espace.
+export async function countSpaceMembersBatch(db: Db, spaceIds: string[]): Promise<Map<string, number>> {
+  if (spaceIds.length === 0) return new Map();
+  const rows = await db
+    .select({ spaceId: spaceMembers.spaceId, value: count() })
+    .from(spaceMembers)
+    .where(inArray(spaceMembers.spaceId, spaceIds))
+    .groupBy(spaceMembers.spaceId);
+  return new Map(rows.map((row) => [row.spaceId, row.value]));
 }
 
 export async function listChannelsBySpace(db: Db, spaceId: string) {

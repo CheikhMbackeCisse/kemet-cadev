@@ -29,11 +29,17 @@ const emailSender = new SmtpEmailSender({
   from: process.env.EMAIL_FROM ?? "kemet@example.com",
 });
 
+const additionalTrustedOrigins = (process.env.EXTRA_TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const auth = createAuth({
   db,
   emailSender,
   baseUrl: process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
   webAppUrl: process.env.WEB_APP_URL ?? "http://localhost:5173",
+  additionalTrustedOrigins,
   secret: process.env.BETTER_AUTH_SECRET,
   // Désactivable uniquement pour l'environnement e2e (voir .env.example) :
   // une pile de test qui crée plusieurs comptes de suite depuis la même
@@ -42,6 +48,14 @@ const auth = createAuth({
   github:
     process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
       ? { clientId: process.env.GITHUB_CLIENT_ID, clientSecret: process.env.GITHUB_CLIENT_SECRET }
+      : undefined,
+  google:
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET }
+      : undefined,
+  linkedin:
+    process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET
+      ? { clientId: process.env.LINKEDIN_CLIENT_ID, clientSecret: process.env.LINKEDIN_CLIENT_SECRET }
       : undefined,
 });
 

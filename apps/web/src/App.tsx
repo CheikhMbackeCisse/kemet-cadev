@@ -1,29 +1,93 @@
-import { useEffect, useState } from "react";
-import { DevUiPage } from "./pages/DevUiPage.js";
-import { ShellPreviewPage } from "./pages/ShellPreviewPage.js";
-import { SpacePage } from "./pages/SpacePage.js";
-import { InvitePage } from "./pages/InvitePage.js";
-import { SkillsPage } from "./pages/SkillsPage.js";
-import { SkillPage } from "./pages/SkillPage.js";
-import { FeedPage } from "./pages/FeedPage.js";
-import { PostPage } from "./pages/PostPage.js";
-import { ProjectsPage } from "./pages/ProjectsPage.js";
-import { ProjectPage } from "./pages/ProjectPage.js";
-import { CompetitionsPage } from "./pages/CompetitionsPage.js";
-import { CompetitionPage } from "./pages/CompetitionPage.js";
-import { ProPage } from "./pages/ProPage.js";
-import { ModerationPage } from "./pages/ModerationPage.js";
-import { HomePage } from "./pages/HomePage.js";
-import { LoginPage } from "./pages/LoginPage.js";
-import { SignupPage } from "./pages/SignupPage.js";
-import { ForgotPasswordPage } from "./pages/ForgotPasswordPage.js";
-import { ResetPasswordPage } from "./pages/ResetPasswordPage.js";
-import { CompleteProfilePage } from "./pages/CompleteProfilePage.js";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { Skeleton } from "./components/ui/Skeleton.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
 import { SessionProvider } from "./session/SessionProvider.js";
 import { ThemeProvider } from "./theme/theme-context.js";
 import { ToastProvider } from "./components/ui/Toast.js";
 import { TooltipProvider } from "./components/ui/Tooltip.js";
+
+/**
+ * Chaque page est chargée à la demande : sans ce découpage, les vingt-deux
+ * écrans partaient dans un seul fichier de 610 ko, téléchargé en entier avant
+ * le premier affichage, y compris sur un téléphone en 3G.
+ */
+const DevUiPage = lazy(() =>
+  import("./pages/DevUiPage.js").then((m) => ({ default: m.DevUiPage })),
+);
+const ShellPreviewPage = lazy(() =>
+  import("./pages/ShellPreviewPage.js").then((m) => ({ default: m.ShellPreviewPage })),
+);
+const NewSpacePage = lazy(() =>
+  import("./pages/NewSpacePage.js").then((m) => ({ default: m.NewSpacePage })),
+);
+const SpacePage = lazy(() =>
+  import("./pages/SpacePage.js").then((m) => ({ default: m.SpacePage })),
+);
+const InvitePage = lazy(() =>
+  import("./pages/InvitePage.js").then((m) => ({ default: m.InvitePage })),
+);
+const NewSkillPage = lazy(() =>
+  import("./pages/NewSkillPage.js").then((m) => ({ default: m.NewSkillPage })),
+);
+const SkillsPage = lazy(() =>
+  import("./pages/SkillsPage.js").then((m) => ({ default: m.SkillsPage })),
+);
+const SkillPage = lazy(() =>
+  import("./pages/SkillPage.js").then((m) => ({ default: m.SkillPage })),
+);
+const NewPostPage = lazy(() =>
+  import("./pages/NewPostPage.js").then((m) => ({ default: m.NewPostPage })),
+);
+const FeedPage = lazy(() => import("./pages/FeedPage.js").then((m) => ({ default: m.FeedPage })));
+const PostPage = lazy(() => import("./pages/PostPage.js").then((m) => ({ default: m.PostPage })));
+const NewProjectPage = lazy(() =>
+  import("./pages/NewProjectPage.js").then((m) => ({ default: m.NewProjectPage })),
+);
+const ProjectsPage = lazy(() =>
+  import("./pages/ProjectsPage.js").then((m) => ({ default: m.ProjectsPage })),
+);
+const NewHelpRequestPage = lazy(() =>
+  import("./pages/NewHelpRequestPage.js").then((m) => ({ default: m.NewHelpRequestPage })),
+);
+const ProjectPage = lazy(() =>
+  import("./pages/ProjectPage.js").then((m) => ({ default: m.ProjectPage })),
+);
+const NewCompetitionPage = lazy(() =>
+  import("./pages/NewCompetitionPage.js").then((m) => ({ default: m.NewCompetitionPage })),
+);
+const CompetitionsPage = lazy(() =>
+  import("./pages/CompetitionsPage.js").then((m) => ({ default: m.CompetitionsPage })),
+);
+const SubmitProjectPage = lazy(() =>
+  import("./pages/SubmitProjectPage.js").then((m) => ({ default: m.SubmitProjectPage })),
+);
+const CompetitionPage = lazy(() =>
+  import("./pages/CompetitionPage.js").then((m) => ({ default: m.CompetitionPage })),
+);
+const ProPage = lazy(() => import("./pages/ProPage.js").then((m) => ({ default: m.ProPage })));
+const ModerationPage = lazy(() =>
+  import("./pages/ModerationPage.js").then((m) => ({ default: m.ModerationPage })),
+);
+const LoginPage = lazy(() =>
+  import("./pages/LoginPage.js").then((m) => ({ default: m.LoginPage })),
+);
+const SignupPage = lazy(() =>
+  import("./pages/SignupPage.js").then((m) => ({ default: m.SignupPage })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("./pages/ForgotPasswordPage.js").then((m) => ({ default: m.ForgotPasswordPage })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("./pages/ResetPasswordPage.js").then((m) => ({ default: m.ResetPasswordPage })),
+);
+const CompleteProfilePage = lazy(() =>
+  import("./pages/CompleteProfilePage.js").then((m) => ({ default: m.CompleteProfilePage })),
+);
+const RolePage = lazy(() => import("./pages/RolePage.js").then((m) => ({ default: m.RolePage })));
+const SettingsPage = lazy(() =>
+  import("./pages/SettingsPage.js").then((m) => ({ default: m.SettingsPage })),
+);
+const UserPage = lazy(() => import("./pages/UserPage.js").then((m) => ({ default: m.UserPage })));
 
 const STATUS_LABELS: Record<ServiceStatus, string> = {
   verification: "vérification…",
@@ -32,8 +96,8 @@ const STATUS_LABELS: Record<ServiceStatus, string> = {
 };
 
 function StatusPage() {
-  const [statuses, setStatuses] = useState<Record<string, ServiceStatus>>(
-    () => Object.fromEntries(SERVICE_CHECKS.map((service) => [service.name, "verification"])),
+  const [statuses, setStatuses] = useState<Record<string, ServiceStatus>>(() =>
+    Object.fromEntries(SERVICE_CHECKS.map((service) => [service.name, "verification"])),
   );
 
   useEffect(() => {
@@ -63,24 +127,51 @@ function StatusPage() {
   );
 }
 
+/**
+ * Affiché le temps que le fichier de la page arrive, depuis que chaque écran
+ * est chargé à la demande. Reprend la forme commune à tous les écrans (rail,
+ * en-tête, contenu) plutôt qu'une page blanche, comme le demande DESIGN.md.
+ */
+function PageFallback() {
+  return (
+    <div className="flex min-h-screen w-full bg-bg" aria-busy="true">
+      <div className="hidden w-rail shrink-0 border-r border-border-strong bg-surface lg:block" />
+      <div className="mx-auto flex w-full max-w-reading flex-col gap-6 px-4 py-8">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    </div>
+  );
+}
+
 function resolvePage(pathname: string) {
-  if (pathname === "/") return <HomePage />;
   if (pathname === "/connexion") return <LoginPage />;
   if (pathname === "/inscription") return <SignupPage />;
   if (pathname === "/mot-de-passe-oublie") return <ForgotPasswordPage />;
   if (pathname === "/reinitialiser-mot-de-passe") return <ResetPasswordPage />;
   if (pathname === "/completer-profil") return <CompleteProfilePage />;
+  if (pathname === "/ton-role") return <RolePage />;
+  if (pathname === "/parametres") return <SettingsPage />;
   if (pathname === "/statut") return <StatusPage />;
   if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
+  if (pathname === "/salons/nouveau") return <NewSpacePage />;
   if (pathname.startsWith("/salons")) return <SpacePage />;
   if (pathname === "/skills" || pathname === "/skills/") return <SkillsPage />;
+  if (pathname === "/skills/nouveau") return <NewSkillPage />;
   if (pathname.startsWith("/skills/")) return <SkillPage />;
-  if (pathname === "/fil" || pathname === "/fil/") return <FeedPage />;
+  if (pathname === "/" || pathname === "/fil" || pathname === "/fil/") return <FeedPage />;
+  if (pathname === "/fil/nouveau") return <NewPostPage />;
   if (pathname.startsWith("/fil/")) return <PostPage />;
   if (pathname === "/projets" || pathname === "/projets/") return <ProjectsPage />;
+  if (pathname === "/projets/nouveau") return <NewProjectPage />;
+  if (/^\/projets\/[^/]+\/demandes\/nouvelle$/.test(pathname)) return <NewHelpRequestPage />;
   if (pathname.startsWith("/projets/")) return <ProjectPage />;
   if (pathname === "/competitions" || pathname === "/competitions/") return <CompetitionsPage />;
+  if (pathname === "/competitions/nouvelle") return <NewCompetitionPage />;
+  if (/^\/competitions\/[^/]+\/soumettre$/.test(pathname)) return <SubmitProjectPage />;
   if (pathname.startsWith("/competitions/")) return <CompetitionPage />;
+  if (pathname.startsWith("/u/")) return <UserPage />;
   if (pathname === "/pro") return <ProPage />;
   if (pathname === "/moderation") return <ModerationPage />;
   if (import.meta.env.DEV) {
@@ -95,7 +186,9 @@ export function App() {
     <ThemeProvider>
       <ToastProvider>
         <TooltipProvider>
-          <SessionProvider>{resolvePage(window.location.pathname)}</SessionProvider>
+          <SessionProvider>
+            <Suspense fallback={<PageFallback />}>{resolvePage(window.location.pathname)}</Suspense>
+          </SessionProvider>
         </TooltipProvider>
       </ToastProvider>
     </ThemeProvider>

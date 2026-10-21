@@ -15,7 +15,9 @@ async function findVerificationUrl(email: string): Promise<string> {
       candidate.To.some((recipient) => recipient.Address === email),
     );
     if (message) {
-      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) => response.json());
+      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) =>
+        response.json(),
+      );
       const match = (detail.HTML as string).match(/href="([^"]+)"/);
       if (match) return match[1]!;
     }
@@ -24,8 +26,14 @@ async function findVerificationUrl(email: string): Promise<string> {
   throw new Error(`Email de vérification introuvable pour ${email}.`);
 }
 
-async function signUpVerifyAndSignIn(request: APIRequestContext, email: string, handle: string): Promise<void> {
-  await request.post("/api/auth/sign-up/email", { data: { email, password: PASSWORD, name: handle } });
+async function signUpVerifyAndSignIn(
+  request: APIRequestContext,
+  email: string,
+  handle: string,
+): Promise<void> {
+  await request.post("/api/auth/sign-up/email", {
+    data: { email, password: PASSWORD, name: handle },
+  });
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
@@ -57,11 +65,17 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
   await page.getByRole("option", { name: "Sénégal" }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
+  await expect(page).toHaveURL(/\/ton-role/);
+  await page.getByRole("link", { name: "Passer cette étape" }).click();
+
   await expect(page).toHaveURL(/\/fil/);
   await expect(page.getByRole("button", { name: name, exact: false })).toBeVisible();
 });
 
-test("un visiteur sans session parcourt un espace public et le fil sans composeur", async ({ page, request }) => {
+test("un visiteur sans session parcourt un espace public et le fil sans composeur", async ({
+  page,
+  request,
+}) => {
   // `request` est un contexte API indépendant du navigateur de `page` : les
   // cookies de session du propriétaire de l'espace n'atteignent jamais
   // `page`, qui reste le visiteur anonyme de ce test.
@@ -75,7 +89,9 @@ test("un visiteur sans session parcourt un espace public et le fil sans composeu
   });
   const space = (await createSpace.json()).space as { id: string };
   const channels = await request.get(`/api/spaces/${space.id}/channels`);
-  const general = (await channels.json()).items.find((channel: { slug: string }) => channel.slug === "general");
+  const general = (await channels.json()).items.find(
+    (channel: { slug: string }) => channel.slug === "general",
+  );
   await request.post(`/api/channels/${general.id}/messages`, {
     data: { clientId: crypto.randomUUID(), body: "Visible sans compte, mode visiteur" },
   });

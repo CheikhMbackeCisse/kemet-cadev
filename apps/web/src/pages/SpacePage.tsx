@@ -1,11 +1,22 @@
-import { Download, FolderGit2, Hash, MessageSquare, Paperclip, Plus, Rss, Send, Sparkles, Star, Trophy, UserPlus, X } from "lucide-react";
+import {
+  Download,
+  Hash,
+  MessageSquare,
+  Paperclip,
+  Plus,
+  Send,
+  Star,
+  UserPlus,
+  Users,
+  UserX,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   addSpaceMember,
   attachmentUrl,
   ChatApiError,
   createInvite,
-  createSpace,
   listChannels,
   listSpaceMembers,
   listSpaces,
@@ -18,31 +29,69 @@ import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { AppShell } from "../components/shell/AppShell.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
+import { MOBILE_TABS, mobileTabHref } from "../components/shell/mobileTabs.js";
 import { ReportMenu } from "../components/moderation/ReportMenu.js";
-import type { ChannelItem, MobileTabItem, SpaceItem } from "../components/shell/types.js";
+import type { ChannelItem, SpaceItem } from "../components/shell/types.js";
 import { useSession } from "../session/SessionProvider.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Button } from "../components/ui/Button.js";
-import { Dialog } from "../components/ui/Dialog.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { IconButton } from "../components/ui/IconButton.js";
 import { Input } from "../components/ui/Input.js";
-import { Select } from "../components/ui/Select.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
+import { Textarea } from "../components/ui/Textarea.js";
+import { Tooltip } from "../components/ui/Tooltip.js";
 import { useToast } from "../components/ui/Toast.js";
 import { UserName } from "../components/ui/UserName.js";
-import { ThemeToggle } from "../theme/ThemeToggle.js";
+import { formatCount } from "../lib/formatCount.js";
 import { fr } from "../i18n/fr.js";
-import { KEMET_HANDLE, type Attachment, type Channel, type Space, type SpaceMember } from "@kemet/shared";
+import {
+  KEMET_HANDLE,
+  type Attachment,
+  type Channel,
+  type Message,
+  type Space,
+  type SpaceMember,
+} from "@kemet/shared";
 
-const MOBILE_TABS: MobileTabItem[] = [
-  { id: "fil", label: "Fil", icon: Rss },
-  { id: "salons", label: "Salons", icon: Hash },
-  { id: "projets", label: "Projets", icon: FolderGit2 },
-  { id: "competitions", label: "Compétitions", icon: Trophy },
-];
-const DIACRITICS_PATTERN = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");
+const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
+interface MessageGroup {
+  authorId: string;
+  authorHandle: string;
+  authorDisplayName: string;
+  authorAvatarUrl: string | null;
+  authorCountry: string | null;
+  messages: Message[];
+}
+
+/** Regroupe les messages consécutifs d'une même personne sous un seul avatar (DESIGN.md, « Message »). */
+function groupMessages(messages: Message[]): MessageGroup[] {
+  const groups: MessageGroup[] = [];
+  for (const message of messages) {
+    const last = groups[groups.length - 1];
+    const lastMessage = last?.messages[last.messages.length - 1];
+    const withinWindow = lastMessage
+      ? new Date(message.createdAt).getTime() - new Date(lastMessage.createdAt).getTime() <
+        MESSAGE_GROUP_WINDOW_MS
+      : false;
+    const assistantInvolved =
+      message.authorHandle === KEMET_HANDLE || last?.authorHandle === KEMET_HANDLE;
+    if (last && last.authorId === message.authorId && withinWindow && !assistantInvolved) {
+      last.messages.push(message);
+    } else {
+      groups.push({
+        authorId: message.authorId,
+        authorHandle: message.authorHandle,
+        authorDisplayName: message.authorDisplayName,
+        authorAvatarUrl: message.authorAvatarUrl,
+        authorCountry: message.authorCountry,
+        messages: [message],
+      });
+    }
+  }
+  return groups;
+}
 
 function readParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
@@ -56,15 +105,6 @@ function writeParams(params: Record<string, string>) {
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-}
-
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(DIACRITICS_PATTERN, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 export function SpacePage() {
@@ -86,6 +126,8 @@ export function SpacePage() {
   const [activeChannelId, setActiveChannelId] = useState<string | null>(readParam("channel"));
 
   const [members, setMembers] = useState<SpaceMember[]>([]);
+  const [membersNextCursor, setMembersNextCursor] = useState<string | null>(null);
+  const [membersLoadingMore, setMembersLoadingMore] = useState(false);
   const [draft, setDraft] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
@@ -105,10 +147,6 @@ export function SpacePage() {
     setPendingAttachments([]);
     setActiveChannelId(channelId);
   }
-
-  const [createSpaceOpen, setCreateSpaceOpen] = useState(false);
-  const [newSpaceName, setNewSpaceName] = useState("");
-  const [newSpaceVisibility, setNewSpaceVisibility] = useState<"public" | "private">("public");
 
   const refreshSpaces = useCallback(async () => {
     setSpacesLoading(true);
@@ -149,11 +187,29 @@ export function SpacePage() {
   useEffect(() => {
     // Réservé aux membres connectés : un visiteur n'a pas accès à
     // GET /api/spaces/:id/members (voir apps/server/src/api/routes/spaces.ts).
-    if (activeSpaceId && canInteract) void listSpaceMembers(activeSpaceId).then((page) => setMembers(page.items));
+    if (activeSpaceId && canInteract) {
+      void listSpaceMembers(activeSpaceId).then((page) => {
+        setMembers(page.items);
+        setMembersNextCursor(page.nextCursor);
+      });
+    }
   }, [activeSpaceId, canInteract]);
 
+  async function loadMoreMembers() {
+    if (!activeSpaceId || !membersNextCursor) return;
+    setMembersLoadingMore(true);
+    try {
+      const page = await listSpaceMembers(activeSpaceId, membersNextCursor);
+      setMembers((current) => [...current, ...page.items]);
+      setMembersNextCursor(page.nextCursor);
+    } finally {
+      setMembersLoadingMore(false);
+    }
+  }
+
   useEffect(() => {
-    if (activeSpaceId && activeChannelId) writeParams({ space: activeSpaceId, channel: activeChannelId });
+    if (activeSpaceId && activeChannelId)
+      writeParams({ space: activeSpaceId, channel: activeChannelId });
   }, [activeSpaceId, activeChannelId]);
 
   const {
@@ -169,41 +225,45 @@ export function SpacePage() {
   } = useChannelMessages(activeChannelId, canInteract);
 
   const spaceItems: SpaceItem[] = useMemo(
-    () => spaces.map((space) => ({ id: space.id, name: space.name, icon: Hash })),
+    () => spaces.map((space) => ({ id: space.id, name: space.name })),
     [spaces],
   );
 
   const channelItems: ChannelItem[] = useMemo(
-    () => channels.map((channel) => ({ id: channel.id, name: channel.name, unreadCount: channel.unreadCount })),
+    () =>
+      channels.map((channel) => ({
+        id: channel.id,
+        name: channel.name,
+        unreadCount: channel.unreadCount,
+      })),
     [channels],
   );
 
-  const activeSpace = spaces.find((space) => space.id === activeSpaceId) ?? null;
+  // Ne résout que les membres déjà chargés dans le panneau de droite : une personne qui
+  // a réagi mais n'est pas (encore) dans la page de membres chargée reste anonyme dans
+  // l'infobulle, qui retombe alors sur le simple compte.
+  const memberNameById = useMemo(
+    () => new Map(members.map((member) => [member.profileId, member.displayName])),
+    [members],
+  );
 
-  async function handleCreateSpace() {
-    if (!newSpaceName.trim()) return;
-    try {
-      const { space } = await createSpace({
-        name: newSpaceName.trim(),
-        slug: slugify(newSpaceName),
-        visibility: newSpaceVisibility,
-      });
-      setCreateSpaceOpen(false);
-      setNewSpaceName("");
-      setNewSpaceVisibility("public");
-      await refreshSpaces();
-      setActiveSpaceId(space.id);
-      setActiveChannelId(null);
-    } catch {
-      toast.show(fr.spaces.actionError, "danger");
-    }
-  }
+  const messageGroups = useMemo(() => groupMessages(messages), [messages]);
+
+  const activeSpace = spaces.find((space) => space.id === activeSpaceId) ?? null;
+  // Le serveur refuse deja ces actions aux simples membres : la condition ne
+  // fait qu'eviter de leur montrer des boutons qui echoueront.
+  const canManageMembers =
+    canWrite && (activeSpace?.role === "owner" || activeSpace?.role === "admin");
 
   async function handleSend() {
     const body = draft.trim();
     if (!body && pendingAttachments.length === 0) return;
     try {
-      await send(body, null, pendingAttachments.map((attachment) => attachment.id));
+      await send(
+        body,
+        null,
+        pendingAttachments.map((attachment) => attachment.id),
+      );
       setDraft("");
       setPendingAttachments([]);
     } catch {
@@ -220,14 +280,19 @@ export function SpacePage() {
       const attachment = await uploadAttachment(activeChannelId, file);
       setPendingAttachments((current) => [...current, attachment]);
     } catch (error) {
-      toast.show(error instanceof ChatApiError ? error.message : fr.chat.attachmentUploadError, "danger");
+      toast.show(
+        error instanceof ChatApiError ? error.message : fr.chat.attachmentUploadError,
+        "danger",
+      );
     } finally {
       setUploadingAttachment(false);
     }
   }
 
   function removePendingAttachment(attachmentId: string) {
-    setPendingAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId));
+    setPendingAttachments((current) =>
+      current.filter((attachment) => attachment.id !== attachmentId),
+    );
   }
 
   async function handleAddMember() {
@@ -275,9 +340,13 @@ export function SpacePage() {
             setActiveSpaceId(id);
             setActiveChannelId(null);
           },
+          activeSection: "salons",
+          onCreateSpace: canWrite ? () => (window.location.href = "/salons/nouveau") : undefined,
         }}
         channelList={{
-          spaceName: activeSpace?.name ?? "",
+          spaceName: activeSpace
+            ? `${activeSpace.name} · ${fr.spaces.memberCountBadge(formatCount(activeSpace.memberCount))}`
+            : "",
           channels: channelItems,
           activeChannelId: activeChannelId ?? "",
           onSelect: switchChannel,
@@ -285,23 +354,14 @@ export function SpacePage() {
         mobileTabs={MOBILE_TABS}
         activeMobileTabId="salons"
         onSelectMobileTab={(id) => {
-          if (id === "fil") window.location.href = "/fil";
-          if (id === "projets") window.location.href = "/projets";
-          if (id === "competitions") window.location.href = "/competitions";
+          if (id !== "salons") window.location.href = mobileTabHref(id, profile?.handle ?? null);
         }}
         topBarExtra={
           <>
-            <ThemeToggle />
-            {/* Fil, Projets et Compétitions ont déjà leur icône dans la
-                barre d'onglets mobile (MOBILE_TABS) : inutile de les
-                répéter ici sur mobile, où la place manque. Skills n'a pas
-                d'onglet mobile, son icône reste donc le seul accès. */}
-            <a
-              href="/fil"
-              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
-            >
-              {fr.feed.title}
-            </a>
+            {/* La navigation entre sections vit dans le rail de gauche
+                (RAIL_NAV) sur grand ecran et dans la barre d'onglets sur
+                mobile. Skills n'a pas d'onglet mobile : son icone reste
+                donc le seul acces a cette taille. */}
             <a
               href="/skills"
               aria-label={fr.skills.title}
@@ -309,50 +369,14 @@ export function SpacePage() {
             >
               <Star className="size-5" aria-hidden="true" />
             </a>
-            <a
-              href="/skills"
-              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
-            >
-              {fr.skills.title}
-            </a>
-            <a
-              href="/projets"
-              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
-            >
-              {fr.projects.title}
-            </a>
-            <a
-              href="/competitions"
-              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
-            >
-              {fr.competitions.title}
-            </a>
-            <a
-              href="/pro"
-              aria-label={fr.pro.title}
-              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
-            >
-              <Sparkles className="size-5" aria-hidden="true" />
-            </a>
-            <a
-              href="/pro"
-              className="hidden h-control items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text transition-colors duration-150 hover:bg-surface-2 lg:inline-flex"
-            >
-              {fr.pro.title}
-            </a>
             {canWrite && (
-              <>
-                <IconButton
-                  aria-label={fr.spaces.createTitle}
-                  className="lg:hidden"
-                  onClick={() => setCreateSpaceOpen(true)}
-                >
-                  <Plus className="size-5" aria-hidden="true" />
-                </IconButton>
-                <Button variant="secondary" className="hidden lg:inline-flex" onClick={() => setCreateSpaceOpen(true)}>
-                  {fr.spaces.createTitle}
-                </Button>
-              </>
+              <a
+                href="/salons/nouveau"
+                aria-label={fr.spaces.createTitle}
+                className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 hover:bg-surface-2 hover:text-text lg:hidden"
+              >
+                <Plus className="size-5" aria-hidden="true" />
+              </a>
             )}
             <AccountMenu />
           </>
@@ -361,36 +385,84 @@ export function SpacePage() {
           !canInteract
             ? undefined
             : {
-          title: fr.spaces.members,
-          content: (
-            <div className="flex flex-col gap-4 text-sm">
-              <div className="flex flex-col gap-2">
-                {members.map((member) => (
-                  <div key={member.profileId} className="flex items-center justify-between gap-2">
-                    <UserName name={member.displayName} />
-                    <Button variant="ghost" onClick={() => handleRemoveMember(member.profileId)}>
-                      {fr.spaces.removeMember}
-                    </Button>
+                title: activeSpace
+                  ? fr.spaces.membersWithCount(formatCount(activeSpace.memberCount))
+                  : fr.spaces.members,
+                content: (
+                  <div className="flex flex-col gap-4 text-sm">
+                    <div className="flex flex-col gap-1">
+                      {members.length === 0 ? (
+                        <EmptyState icon={Users} message={fr.spaces.noMembers} className="py-6" />
+                      ) : (
+                        members.map((member) => (
+                          <div
+                            key={member.profileId}
+                            className="group flex items-center justify-between gap-2 rounded-control px-1 py-1 hover:bg-surface-2"
+                          >
+                            <a
+                              href={`/u/${member.handle}`}
+                              className="flex min-w-0 items-center gap-2"
+                              aria-label={fr.profile.viewProfile(member.displayName)}
+                            >
+                              <Avatar
+                                name={member.displayName}
+                                src={member.avatarUrl ?? undefined}
+                                size={32}
+                                countryCode={member.country}
+                              />
+                              <span className="flex min-w-0 flex-col">
+                                <UserName name={member.displayName} className="truncate" />
+                                <span className="truncate text-xs text-subtle">
+                                  @{member.handle}
+                                </span>
+                              </span>
+                            </a>
+                            {canManageMembers && member.role !== "owner" && (
+                              <IconButton
+                                aria-label={fr.spaces.removeMember}
+                                // Toujours visible sous lg : le panneau y devient une
+                                // feuille tactile, ou le survol n'existe pas.
+                                className="transition-opacity max-lg:opacity-100 lg:opacity-0 lg:group-focus-within:opacity-100 lg:group-hover:opacity-100"
+                                onClick={() => handleRemoveMember(member.profileId)}
+                              >
+                                <UserX className="size-4" aria-hidden="true" />
+                              </IconButton>
+                            )}
+                          </div>
+                        ))
+                      )}
+                      {membersNextCursor && (
+                        <Button
+                          variant="secondary"
+                          className="mt-2 self-start text-xs"
+                          onClick={loadMoreMembers}
+                          disabled={membersLoadingMore}
+                        >
+                          {fr.spaces.loadMoreMembers}
+                        </Button>
+                      )}
+                    </div>
+                    {canManageMembers && (
+                      <div className="flex flex-col gap-2 border-t border-border pt-4">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder={fr.spaces.memberHandlePlaceholder}
+                            aria-label={fr.spaces.memberHandlePlaceholder}
+                            value={memberHandle}
+                            onChange={(event) => setMemberHandle(event.target.value)}
+                          />
+                          <Button onClick={handleAddMember} aria-label={fr.spaces.addMember}>
+                            <UserPlus className="size-4" aria-hidden="true" />
+                          </Button>
+                        </div>
+                        <Button variant="secondary" onClick={handleCreateInvite}>
+                          {fr.invites.createTitle}
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder={fr.spaces.memberHandlePlaceholder}
-                  aria-label={fr.spaces.memberHandlePlaceholder}
-                  value={memberHandle}
-                  onChange={(event) => setMemberHandle(event.target.value)}
-                />
-                <Button onClick={handleAddMember} aria-label={fr.spaces.addMember}>
-                  <UserPlus className="size-4" aria-hidden="true" />
-                </Button>
-              </div>
-              <Button variant="secondary" onClick={handleCreateInvite}>
-                {fr.invites.createTitle}
-              </Button>
-            </div>
-          ),
-        }
+                ),
+              }
         }
       >
         <div className="flex h-full flex-col">
@@ -401,12 +473,18 @@ export function SpacePage() {
                 <Skeleton className="h-12 w-1/2" />
               </div>
             ) : spacesError ? (
-              <ErrorState message={fr.spaces.loadingSpacesError} retry={{ label: fr.chat.retry, onClick: refreshSpaces }} />
+              <ErrorState
+                message={fr.spaces.loadingSpacesError}
+                retry={{ label: fr.chat.retry, onClick: refreshSpaces }}
+              />
             ) : spaces.length === 0 ? (
               <EmptyState
                 icon={Hash}
                 message={fr.spaces.noSpaces}
-                action={{ label: fr.spaces.createTitle, onClick: () => setCreateSpaceOpen(true) }}
+                action={{
+                  label: fr.spaces.createTitle,
+                  onClick: () => (window.location.href = "/salons/nouveau"),
+                }}
               />
             ) : channelsLoading ? (
               <div className="flex flex-col gap-4">
@@ -417,7 +495,10 @@ export function SpacePage() {
             ) : channelsError ? (
               <ErrorState
                 message={fr.spaces.loadingChannelsError}
-                retry={{ label: fr.chat.retry, onClick: () => activeSpaceId && refreshChannels(activeSpaceId) }}
+                retry={{
+                  label: fr.chat.retry,
+                  onClick: () => activeSpaceId && refreshChannels(activeSpaceId),
+                }}
               />
             ) : channels.length === 0 ? (
               <EmptyState icon={MessageSquare} message={fr.spaces.noChannels} />
@@ -430,107 +511,175 @@ export function SpacePage() {
                 <Skeleton className="h-12 w-3/4" />
               </div>
             ) : messagesError ? (
-              <ErrorState message={fr.chat.loadingMessagesError} retry={{ label: fr.chat.retry, onClick: reloadMessages }} />
+              <ErrorState
+                message={fr.chat.loadingMessagesError}
+                retry={{ label: fr.chat.retry, onClick: reloadMessages }}
+              />
             ) : messages.length === 0 ? (
               <EmptyState icon={MessageSquare} message={fr.chat.noMessages} />
             ) : (
               <div className="flex flex-col gap-4">
-                {messages.map((message) =>
-                  message.authorHandle === KEMET_HANDLE ? (
+                {messageGroups.map((group) =>
+                  group.authorHandle === KEMET_HANDLE ? (
                     <AssistantMessage
-                      key={message.id}
-                      content={message.deletedAt ? fr.chat.messageDeleted : message.body}
+                      key={group.messages[0]!.id}
+                      content={
+                        group.messages[0]!.deletedAt
+                          ? fr.chat.messageDeleted
+                          : group.messages[0]!.body
+                      }
                       skill={
-                        assistantMetaByMessageId[message.id]?.skill
+                        assistantMetaByMessageId[group.messages[0]!.id]?.skill
                           ? {
-                              skillName: assistantMetaByMessageId[message.id]!.skill!.name,
-                              skillHref: `/skills/${assistantMetaByMessageId[message.id]!.skill!.slug}`,
-                              authorName: assistantMetaByMessageId[message.id]!.skill!.authorDisplayName,
-                              authorHref: `/u/${assistantMetaByMessageId[message.id]!.skill!.authorHandle}`,
+                              skillName:
+                                assistantMetaByMessageId[group.messages[0]!.id]!.skill!.name,
+                              skillHref: `/skills/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.slug}`,
+                              authorName:
+                                assistantMetaByMessageId[group.messages[0]!.id]!.skill!
+                                  .authorDisplayName,
+                              authorHref: `/u/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.authorHandle}`,
                             }
                           : undefined
                       }
                       initialFeedback={
-                        assistantMetaByMessageId[message.id]?.helpful === true
+                        assistantMetaByMessageId[group.messages[0]!.id]?.helpful === true
                           ? "helpful"
-                          : assistantMetaByMessageId[message.id]?.helpful === false
+                          : assistantMetaByMessageId[group.messages[0]!.id]?.helpful === false
                             ? "not-helpful"
                             : null
                       }
-                      onFeedback={(helpful) => void giveAssistantFeedback(message.id, helpful)}
+                      onFeedback={(helpful) =>
+                        void giveAssistantFeedback(group.messages[0]!.id, helpful)
+                      }
                     />
                   ) : (
-                  <div key={message.id} className="flex gap-3">
-                    <Avatar name={message.authorDisplayName} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2">
-                        <UserName name={message.authorDisplayName} />
-                        <span className="text-xs text-subtle">{formatTime(message.createdAt)}</span>
-                        {message.editedAt && <span className="text-xs text-subtle">({fr.chat.edited})</span>}
-                      </div>
-                      {message.body && (
-                        <p className="mt-0.5 text-base text-text">
-                          {message.deletedAt ? fr.chat.messageDeleted : message.body}
-                        </p>
-                      )}
-                      {!message.deletedAt && message.attachments.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-2">
-                          {message.attachments.map((attachment) =>
-                            attachment.kind === "image" ? (
-                              <img
-                                key={attachment.id}
-                                src={attachmentUrl(attachment.id)}
-                                alt={attachment.originalName}
-                                className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
-                              />
-                            ) : (
+                    <div key={group.messages[0]!.id} className="flex flex-col gap-1">
+                      {group.messages.map((message, index) => (
+                        <div key={message.id} className="flex gap-3">
+                          <div className="flex w-8 shrink-0 items-start justify-center">
+                            {index === 0 ? (
                               <a
-                                key={attachment.id}
-                                href={attachmentUrl(attachment.id)}
-                                aria-label={fr.chat.downloadFile(attachment.originalName)}
-                                className="inline-flex h-control-mobile items-center gap-2 rounded-card border border-border px-3 text-sm text-text hover:bg-surface-2 md:h-control"
+                                href={`/u/${group.authorHandle}`}
+                                aria-label={fr.profile.viewProfile(group.authorDisplayName)}
                               >
-                                <Download className="size-4" aria-hidden="true" />
-                                {attachment.originalName}
+                                <Avatar
+                                  name={group.authorDisplayName}
+                                  src={group.authorAvatarUrl ?? undefined}
+                                  countryCode={group.authorCountry ?? undefined}
+                                />
                               </a>
-                            ),
-                          )}
+                            ) : (
+                              <span className="pt-1 text-xs leading-none text-subtle">
+                                {formatTime(message.createdAt)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            {index === 0 && (
+                              <div className="flex items-baseline gap-2">
+                                <a href={`/u/${group.authorHandle}`} className="hover:underline">
+                                  <UserName name={group.authorDisplayName} />
+                                </a>
+                                <span className="text-xs text-subtle">
+                                  {formatTime(message.createdAt)}
+                                </span>
+                              </div>
+                            )}
+                            {message.body && (
+                              <p className="mt-0.5 text-base text-text">
+                                {message.deletedAt ? fr.chat.messageDeleted : message.body}
+                                {message.editedAt && (
+                                  <span className="text-xs text-subtle"> ({fr.chat.edited})</span>
+                                )}
+                              </p>
+                            )}
+                            {!message.deletedAt && message.attachments.length > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-2">
+                                {message.attachments.map((attachment) =>
+                                  attachment.kind === "image" ? (
+                                    <img
+                                      key={attachment.id}
+                                      src={attachmentUrl(attachment.id)}
+                                      alt={attachment.originalName}
+                                      className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
+                                    />
+                                  ) : (
+                                    <a
+                                      key={attachment.id}
+                                      href={attachmentUrl(attachment.id)}
+                                      aria-label={fr.chat.downloadFile(attachment.originalName)}
+                                      className="inline-flex h-control-mobile items-center gap-2 rounded-card border border-border px-3 text-sm text-text hover:bg-surface-2 md:h-control"
+                                    >
+                                      <Download className="size-4" aria-hidden="true" />
+                                      {attachment.originalName}
+                                    </a>
+                                  ),
+                                )}
+                              </div>
+                            )}
+                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                              {message.reactions.map((reaction) => {
+                                const names = reaction.profileIds
+                                  .map((profileId) => memberNameById.get(profileId))
+                                  .filter((name): name is string => Boolean(name));
+                                // Une liste tronquée (un des réacteurs pas encore chargé dans le
+                                // panneau des membres) induirait en erreur : on ne l'affiche que
+                                // si elle est complète, sinon on retombe sur le simple compte.
+                                const tooltipLabel =
+                                  names.length === reaction.profileIds.length
+                                    ? names.join(", ")
+                                    : fr.chat.reactionLabel(
+                                        reaction.emoji,
+                                        reaction.profileIds.length,
+                                      );
+                                return canWrite ? (
+                                  <Tooltip key={reaction.emoji} label={tooltipLabel}>
+                                    <button
+                                      type="button"
+                                      onClick={() => react(message.id, reaction.emoji)}
+                                      aria-label={fr.chat.reactionLabel(
+                                        reaction.emoji,
+                                        reaction.profileIds.length,
+                                      )}
+                                      className="rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-2"
+                                    >
+                                      {reaction.emoji} {reaction.profileIds.length}
+                                    </button>
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip key={reaction.emoji} label={tooltipLabel}>
+                                    <span className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle">
+                                      {reaction.emoji} {reaction.profileIds.length}
+                                    </span>
+                                  </Tooltip>
+                                );
+                              })}
+                              {canWrite && (
+                                <button
+                                  type="button"
+                                  onClick={() => react(message.id, "👍")}
+                                  aria-label={fr.chat.addReaction}
+                                  className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-subtle hover:bg-surface-2"
+                                >
+                                  <Plus className="size-4" aria-hidden="true" />
+                                </button>
+                              )}
+                              {canWrite &&
+                                !message.deletedAt &&
+                                profile &&
+                                profile.id !== message.authorId && (
+                                  <ReportMenu
+                                    contentType="message"
+                                    contentId={message.id}
+                                    authorId={message.authorId}
+                                    authorHandle={message.authorHandle}
+                                  />
+                                )}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      <div className="mt-1 flex flex-wrap items-center gap-1">
-                        {message.reactions.map((reaction) =>
-                          canWrite ? (
-                            <button
-                              key={reaction.emoji}
-                              type="button"
-                              onClick={() => react(message.id, reaction.emoji)}
-                              aria-label={fr.chat.reactionLabel(reaction.emoji, reaction.profileIds.length)}
-                              className="rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-2"
-                            >
-                              {reaction.emoji} {reaction.profileIds.length}
-                            </button>
-                          ) : (
-                            <span key={reaction.emoji} className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle">
-                              {reaction.emoji} {reaction.profileIds.length}
-                            </span>
-                          ),
-                        )}
-                        {canWrite && (
-                          <button
-                            type="button"
-                            onClick={() => react(message.id, "👍")}
-                            aria-label={fr.chat.addReaction}
-                            className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-subtle hover:bg-surface-2"
-                          >
-                            <Plus className="size-3" aria-hidden="true" />
-                          </button>
-                        )}
-                        {canWrite && !message.deletedAt && profile && profile.id !== message.authorId && (
-                          <ReportMenu contentType="message" contentId={message.id} authorId={message.authorId} authorHandle={message.authorHandle} />
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  </div>
                   ),
                 )}
                 {assistantStream && (
@@ -554,78 +703,68 @@ export function SpacePage() {
             </div>
           )}
           {canWrite && (
-          <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
-            {pendingAttachments.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {pendingAttachments.map((attachment) => (
-                  <span
-                    key={attachment.id}
-                    className="inline-flex items-center gap-1 rounded-card border border-border pl-2 text-xs text-text"
-                  >
-                    {attachment.originalName}
-                    <IconButton
-                      aria-label={fr.chat.removeAttachment(attachment.originalName)}
-                      onClick={() => removePendingAttachment(attachment.id)}
-                      className="size-control-compact max-md:size-control-mobile"
+            <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
+              {pendingAttachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {pendingAttachments.map((attachment) => (
+                    <span
+                      key={attachment.id}
+                      className="inline-flex items-center gap-1 rounded-card border border-border pl-2 text-xs text-text"
                     >
-                      <X className="size-3" aria-hidden="true" />
-                    </IconButton>
-                  </span>
-                ))}
+                      {attachment.originalName}
+                      <IconButton
+                        aria-label={fr.chat.removeAttachment(attachment.originalName)}
+                        onClick={() => removePendingAttachment(attachment.id)}
+                        className="size-control-compact max-md:size-control-mobile"
+                      >
+                        <X className="size-4" aria-hidden="true" />
+                      </IconButton>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileSelected}
+                />
+                <IconButton
+                  aria-label={fr.chat.attachFile}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!activeChannelId}
+                  loading={uploadingAttachment}
+                >
+                  <Paperclip className="size-4" aria-hidden="true" />
+                </IconButton>
+                <Textarea
+                  placeholder={fr.chat.composerPlaceholder}
+                  aria-label={fr.chat.composerPlaceholder}
+                  value={draft}
+                  disabled={!activeChannelId}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  maxHeight={144}
+                  className="min-h-9 max-md:min-h-11 flex-1 py-2"
+                />
+                <Button
+                  onClick={handleSend}
+                  aria-label={fr.chat.send}
+                  disabled={!activeChannelId || uploadingAttachment}
+                >
+                  <Send className="size-4" aria-hidden="true" />
+                </Button>
               </div>
-            )}
-            <div className="flex gap-2">
-              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
-              <IconButton
-                aria-label={fr.chat.attachFile}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!activeChannelId}
-                loading={uploadingAttachment}
-              >
-                <Paperclip className="size-4" aria-hidden="true" />
-              </IconButton>
-              <Input
-                placeholder={fr.chat.composerPlaceholder}
-                aria-label={fr.chat.composerPlaceholder}
-                value={draft}
-                disabled={!activeChannelId}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") void handleSend();
-                }}
-              />
-              <Button onClick={handleSend} aria-label={fr.chat.send} disabled={!activeChannelId || uploadingAttachment}>
-                <Send className="size-4" aria-hidden="true" />
-              </Button>
             </div>
-          </div>
           )}
         </div>
       </AppShell>
-
-      <Dialog open={createSpaceOpen} onOpenChange={setCreateSpaceOpen} title={fr.spaces.createTitle}>
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.spaces.nameLabel}
-            <Input value={newSpaceName} onChange={(event) => setNewSpaceName(event.target.value)} autoFocus />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.spaces.visibilityLabel}
-            <Select
-              aria-label={fr.spaces.visibilityLabel}
-              value={newSpaceVisibility}
-              onValueChange={(value) => setNewSpaceVisibility(value as "public" | "private")}
-              options={[
-                { value: "public", label: fr.spaces.visibilityPublic },
-                { value: "private", label: fr.spaces.visibilityPrivate },
-              ]}
-            />
-          </label>
-          <Button onClick={handleCreateSpace} disabled={!newSpaceName.trim()}>
-            {fr.spaces.create}
-          </Button>
-        </div>
-      </Dialog>
     </>
   );
 }

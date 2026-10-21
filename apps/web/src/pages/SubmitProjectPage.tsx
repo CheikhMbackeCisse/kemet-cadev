@@ -1,0 +1,160 @@
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import type { ProjectSummary, Submission } from "@kemet/shared";
+import { Input } from "../components/ui/Input.js";
+import { Select } from "../components/ui/Select.js";
+import { Textarea } from "../components/ui/Textarea.js";
+import { FormPage } from "../components/layout/FormPage.js";
+import {
+  ChatApiError,
+  createSubmission,
+  getMe,
+  listProjects,
+  listSubmissions,
+  updateSubmission,
+} from "../lib/chat/api.js";
+import { useSession } from "../session/SessionProvider.js";
+import { fr } from "../i18n/fr.js";
+
+/**
+ * Soumettre un projet a une competition, ou modifier une soumission existante
+ * quand l'URL porte `?modifier=<id>`. Les deux cas partagent le meme
+ * formulaire : seul le choix du projet disparait en modification, le projet
+ * d'une soumission ne pouvant plus changer.
+ */
+export function SubmitProjectPage() {
+  const { status } = useSession();
+  // /competitions/:slug/soumettre
+  const slug = window.location.pathname.split("/")[2] ?? "";
+  const editingId = new URLSearchParams(window.location.search).get("modifier");
+
+  const [myProjects, setMyProjects] = useState<ProjectSummary[]>([]);
+  const [editing, setEditing] = useState<Submission | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [projectId, setProjectId] = useState("");
+  const [title, setTitle] = useState("");
+  const [pitch, setPitch] = useState("");
+  const [description, setDescription] = useState("");
+  const [repoUrl, setRepoUrl] = useState("");
+  const [demoUrl, setDemoUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === "visitor") window.location.href = "/connexion";
+  }, [status]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    if (editingId) {
+      const result = await listSubmissions(slug);
+      const found = result.items.find((item) => item.id === editingId) ?? null;
+      if (found) {
+        setEditing(found);
+        setTitle(found.title);
+        setPitch(found.pitch);
+        setDescription(found.description ?? "");
+        setRepoUrl(found.repoUrl ?? "");
+        setDemoUrl(found.demoUrl ?? "");
+      }
+    } else {
+      const me = await getMe();
+      if (me.profile) {
+        const page = await listProjects();
+        setMyProjects(page.items.filter((project) => project.ownerId === me.profile!.id));
+      }
+    }
+    setLoading(false);
+  }, [slug, editingId]);
+
+  useEffect(() => {
+    load().catch(() => setLoading(false));
+  }, [load]);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      if (editing) {
+        await updateSubmission(editing.id, {
+          title,
+          pitch,
+          description,
+          repoUrl,
+          demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
+        });
+      } else {
+        await createSubmission(slug, {
+          projectId,
+          title,
+          pitch,
+          description,
+          repoUrl,
+          demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
+        });
+      }
+      window.location.href = `/competitions/${slug}`;
+    } catch (err) {
+      setError(err instanceof ChatApiError ? err.message : fr.competitions.submitProjectError);
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <FormPage
+      title={editingId ? fr.competitions.editSubmissionTitle : fr.competitions.submitProjectTitle}
+      subtitle={fr.competitions.submitProjectSubtitle}
+      activeSection="competitions"
+      backHref={`/competitions/${slug}`}
+      submitLabel={
+        editingId ? fr.competitions.editSubmissionSubmit : fr.competitions.submitProjectSubmit
+      }
+      submitting={submitting}
+      submitDisabled={
+        loading || (!editingId && !projectId) || !title.trim() || !pitch.trim() || !repoUrl.trim()
+      }
+      error={error}
+      onSubmit={handleSubmit}
+    >
+      {!editingId &&
+        (loading ? null : myProjects.length === 0 ? (
+          <p className="text-sm text-subtle">{fr.competitions.noOwnProjects}</p>
+        ) : (
+          <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+            {fr.competitions.projectLabel}
+            <Select
+              aria-label={fr.competitions.projectLabel}
+              value={projectId}
+              onValueChange={setProjectId}
+              options={myProjects.map((project) => ({ value: project.id, label: project.name }))}
+            />
+          </label>
+        ))}
+      <label className="flex flex-col gap-1 text-sm text-text-2">
+        {fr.competitions.titleLabel}
+        <Input value={title} onChange={(event) => setTitle(event.target.value)} />
+      </label>
+      <label className="flex flex-col gap-1 text-sm text-text-2">
+        {fr.competitions.pitchLabel}
+        <Input value={pitch} onChange={(event) => setPitch(event.target.value)} />
+      </label>
+      <label className="flex flex-col gap-1 text-sm text-text-2">
+        {fr.competitions.descriptionLabel}
+        <Textarea
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          maxHeight={400}
+          className="min-h-32"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm text-text-2">
+        {fr.competitions.repoUrlLabel}
+        <Input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
+      </label>
+      <label className="flex flex-col gap-1 text-sm text-text-2">
+        {fr.competitions.demoUrlLabel}
+        <Input value={demoUrl} onChange={(event) => setDemoUrl(event.target.value)} />
+      </label>
+    </FormPage>
+  );
+}

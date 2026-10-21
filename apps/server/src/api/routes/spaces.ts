@@ -4,6 +4,8 @@ import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   addSpaceMember,
+  countSpaceMembers,
+  countSpaceMembersBatch,
   createSpaceWithDefaults,
   findSpaceById,
   findSpaceBySlug,
@@ -61,7 +63,7 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
         visibility: input.visibility,
         creatorProfileId: profile.id,
       });
-      return { space: serializeSpace(space, "owner") };
+      return { space: serializeSpace(space, "owner", 1) };
     },
   );
 
@@ -70,8 +72,9 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     const profile = await findOwnProfile(db, userId);
     const query = paginationQuerySchema.parse(request.query);
     const page = await listSpacesForViewer(db, profile?.id ?? null, query.cursor, query.limit);
+    const memberCounts = await countSpaceMembersBatch(db, page.items.map((row) => row.id));
     return {
-      items: page.items.map((row) => serializeSpace(row, row.role)),
+      items: page.items.map((row) => serializeSpace(row, row.role, memberCounts.get(row.id) ?? 0)),
       nextCursor: page.nextCursor,
     };
   });
@@ -80,16 +83,21 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     const userId = await getSessionUserId(auth, request);
     const profile = await findOwnProfile(db, userId);
     const { space, membership } = await requireVisibleSpace(db, request.params.id, profile?.id ?? null);
-    return { space: serializeSpace(space, membership?.role ?? null) };
+    const memberCount = await countSpaceMembers(db, space.id);
+    return { space: serializeSpace(space, membership?.role ?? null, memberCount) };
   });
 
-  app.get<{ Params: { id: string } }>("/api/spaces/:id/members", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    await requireVisibleSpace(db, request.params.id, profile.id);
-    const members = await listSpaceMembers(db, request.params.id);
-    return { items: members.map(serializeSpaceMember) };
-  });
+  app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
+    "/api/spaces/:id/members",
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      await requireVisibleSpace(db, request.params.id, profile.id);
+      const query = paginationQuerySchema.parse(request.query);
+      const page = await listSpaceMembers(db, request.params.id, query.cursor, query.limit);
+      return { items: page.items.map(serializeSpaceMember), nextCursor: page.nextCursor };
+    },
+  );
 
   app.post<{ Params: { id: string } }>(
     "/api/spaces/:id/members",

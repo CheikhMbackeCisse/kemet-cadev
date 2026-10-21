@@ -15,7 +15,9 @@ async function findVerificationUrl(email: string): Promise<string> {
       candidate.To.some((recipient) => recipient.Address === email),
     );
     if (message) {
-      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) => response.json());
+      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) =>
+        response.json(),
+      );
       const match = (detail.HTML as string).match(/href="([^"]+)"/);
       if (match) return match[1]!;
     }
@@ -24,7 +26,11 @@ async function findVerificationUrl(email: string): Promise<string> {
   throw new Error(`Email de vérification introuvable pour ${email}.`);
 }
 
-async function signUpVerifyAndSignIn(request: APIRequestContext, email: string, handle: string): Promise<void> {
+async function signUpVerifyAndSignIn(
+  request: APIRequestContext,
+  email: string,
+  handle: string,
+): Promise<void> {
   await request.post("/api/auth/sign-up/email", {
     data: { email, password: PASSWORD, name: handle },
   });
@@ -52,23 +58,25 @@ test("envoie un message dans un salon et le voit apparaître", async ({ page, re
   await signInBrowser(page, email);
 
   await page.goto("/salons");
-  // Trois boutons partagent le nom accessible « Créer un espace » : l'icône
-  // mobile et le bouton texte bureau dans l'en-tête, plus le raccourci de
-  // l'état vide dans le contenu principal. On vise explicitement celui de
-  // l'en-tête (rôle banner), puis celui des deux qui est visible selon le
-  // projet Playwright en cours.
+  // « Créer un espace » est un bouton dans le rail sur grand écran et un lien
+  // dans l'en-tête sous lg : on prend celui des deux qui est visible. Le
+  // raccourci de l'état vide ne convient pas, la base de démonstration de la
+  // CI fournit déjà des espaces publics.
   await page
-    .getByRole("banner")
     .getByRole("button", { name: "Créer un espace" })
+    .or(page.getByRole("link", { name: "Créer un espace" }))
     .filter({ visible: true })
+    .first()
     .click();
+  await expect(page).toHaveURL(/\/salons\/nouveau$/);
   await page.getByLabel("Nom").fill(`Espace ${handle}`);
   await page.getByRole("button", { name: "Créer", exact: true }).click();
 
   const composer = page.getByPlaceholder("Écrire un message…");
   await composer.waitFor();
-  await composer.fill("Bonjour depuis le test bout en bout");
+  const message = `Bonjour depuis le test bout en bout ${handle}`;
+  await composer.fill(message);
   await page.getByRole("button", { name: "Envoyer" }).click();
 
-  await expect(page.getByText("Bonjour depuis le test bout en bout")).toBeVisible();
+  await expect(page.getByText(message)).toBeVisible();
 });

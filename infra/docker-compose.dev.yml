@@ -1,0 +1,64 @@
+# Surcouche de développement : ne démarre que les services d'infrastructure
+# (postgres, valkey, mailpit) et publie leurs ports sur la machine hôte, pour
+# lancer api, realtime, worker et web nativement avec `pnpm dev` et garder le
+# rechargement à chaud. La pile complète d'infra/docker-compose.yml reste la
+# référence pour la production et pour le job CI.
+#
+#   docker compose -f infra/docker-compose.dev.yml --env-file .env up -d
+#
+# `name` est posé explicitement, et le volume porte un nom distinct : sans ça,
+# Compose déduit le nom de projet du dossier (`infra`) pour les deux fichiers,
+# et cette surcouche remplacerait les conteneurs de production en s'attachant à
+# leur volume de données.
+#
+# Tous les ports sont publiés sur 127.0.0.1 seulement. Valkey n'a pas de mot de
+# passe (la production compte sur l'isolation réseau) et l'interface Mailpit
+# contient les liens de vérification d'email : rien de tout ça ne doit être
+# joignable depuis le réseau local.
+#
+# Postgres est publié sur 5433 et non 5432, et Valkey sur 6380 et non 6379 :
+# un PostgreSQL ou un Redis natif peut déjà occuper les ports habituels, et
+# "localhost:5432" partirait alors silencieusement vers lui plutôt que vers ce
+# conteneur. Les URL correspondantes sont dans .env.example.
+name: kemet-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
+volumes:
+  postgres_data_dev:

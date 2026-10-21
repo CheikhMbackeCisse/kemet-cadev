@@ -5,7 +5,6 @@ import {
   ChatApiError,
   closeHelpRequest,
   createApplication,
-  createHelpRequest,
   decideApplication,
   deleteProject,
   getMe,
@@ -18,14 +17,12 @@ import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
-import { Input } from "../components/ui/Input.js";
-import { Select } from "../components/ui/Select.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
-import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { fr } from "../i18n/fr.js";
+import { RailPage } from "../components/layout/RailPage.js";
 
 const KIND_LABELS: Record<HelpRequestKind, string> = {
   help: fr.projects.kindHelp,
@@ -37,13 +34,6 @@ const APPLICATION_STATUS_LABELS = {
   accepted: fr.projects.applicationStatusAccepted,
   declined: fr.projects.applicationStatusDeclined,
 };
-
-function parseStack(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
 
 function readSlug(pathname: string): string {
   return pathname.replace(/^\/projets\//, "");
@@ -61,13 +51,6 @@ export function ProjectPage() {
 
   const [helpRequests, setHelpRequests] = useState<HelpRequest[]>([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
-
-  const [createHrOpen, setCreateHrOpen] = useState(false);
-  const [hrKind, setHrKind] = useState<HelpRequestKind>("help");
-  const [hrTitle, setHrTitle] = useState("");
-  const [hrDescription, setHrDescription] = useState("");
-  const [hrStack, setHrStack] = useState("");
-  const [hrError, setHrError] = useState<string | null>(null);
 
   const [applyFor, setApplyFor] = useState<HelpRequest | null>(null);
   const [applyMessage, setApplyMessage] = useState("");
@@ -99,7 +82,9 @@ export function ProjectPage() {
   useEffect(() => {
     loadProject();
     loadHelpRequests();
-    getMe().then((me) => setMyProfileId(me.profile?.id ?? null)).catch(() => {});
+    getMe()
+      .then((me) => setMyProfileId(me.profile?.id ?? null))
+      .catch(() => {});
   }, [loadProject, loadHelpRequests]);
 
   const isOwner = myProfileId !== null && project !== null && myProfileId === project.ownerId;
@@ -112,26 +97,6 @@ export function ProjectPage() {
       window.location.href = "/projets";
     } catch {
       toast.show(fr.projects.loadingError, "danger");
-    }
-  }
-
-  async function handleCreateHelpRequest() {
-    setHrError(null);
-    try {
-      const { helpRequest } = await createHelpRequest(slug, {
-        kind: hrKind,
-        title: hrTitle,
-        description: hrDescription,
-        stack: parseStack(hrStack),
-      });
-      setHelpRequests((current) => [helpRequest, ...current]);
-      setCreateHrOpen(false);
-      setHrKind("help");
-      setHrTitle("");
-      setHrDescription("");
-      setHrStack("");
-    } catch {
-      setHrError(fr.projects.helpRequestCreateError);
     }
   }
 
@@ -153,7 +118,11 @@ export function ProjectPage() {
       setApplyMessage("");
       toast.show(fr.projects.applySent, "success");
     } catch (err) {
-      setApplyError(err instanceof ChatApiError && err.statusCode === 409 ? fr.projects.applyAlready : fr.projects.applyError);
+      setApplyError(
+        err instanceof ChatApiError && err.statusCode === 409
+          ? fr.projects.applyAlready
+          : fr.projects.applyError,
+      );
     }
   }
 
@@ -169,7 +138,9 @@ export function ProjectPage() {
   async function handleDecision(application: Application, accepted: boolean) {
     try {
       const { application: decided } = await decideApplication(application.id, accepted);
-      setApplications((current) => current.map((item) => (item.id === decided.id ? decided : item)));
+      setApplications((current) =>
+        current.map((item) => (item.id === decided.id ? decided : item)),
+      );
       loadHelpRequests();
     } catch {
       toast.show(fr.projects.decisionError, "danger");
@@ -178,37 +149,45 @@ export function ProjectPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
+      <RailPage activeSection="projets" className="gap-4 px-4 py-8">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-32 w-full" />
-      </main>
+      </RailPage>
     );
   }
 
   if (notFound) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
-        <ErrorState message={fr.projects.projectNotFound} retry={{ label: fr.projects.back, onClick: () => (window.location.href = "/projets") }} />
-      </main>
+      <RailPage activeSection="projets" className="gap-4 px-4 py-8">
+        <ErrorState
+          message={fr.projects.projectNotFound}
+          retry={{ label: fr.projects.back, onClick: () => (window.location.href = "/projets") }}
+        />
+      </RailPage>
     );
   }
 
   if (error || !project) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
-        <ErrorState message={fr.projects.loadingError} retry={{ label: fr.chat.retry, onClick: loadProject }} />
-      </main>
+      <RailPage activeSection="projets" className="gap-4 px-4 py-8">
+        <ErrorState
+          message={fr.projects.loadingError}
+          retry={{ label: fr.chat.retry, onClick: loadProject }}
+        />
+      </RailPage>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-6 px-4 py-8">
+    <RailPage activeSection="projets" className="gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
-        <a href="/projets" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
+        <a
+          href="/projets"
+          className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
+        >
           <ArrowLeft className="size-4" aria-hidden="true" />
           {fr.projects.back}
         </a>
-        <ThemeToggle />
       </div>
 
       <div className="flex flex-col gap-3">
@@ -218,19 +197,32 @@ export function ProjectPage() {
             <p className="mt-1 text-sm text-text-2">{project.pitch}</p>
           </div>
           {isOwner && (
-            <Button variant="ghost" className="px-2 text-xs text-danger" onClick={() => setDeleteOpen(true)}>
+            <Button
+              variant="ghost"
+              className="px-2 text-xs text-danger"
+              onClick={() => setDeleteOpen(true)}
+            >
               <Trash2 className="size-4" aria-hidden="true" />
               {fr.projects.delete}
             </Button>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Avatar name={project.ownerDisplayName} />
+        <a
+          href={`/u/${project.ownerHandle}`}
+          className="flex w-fit items-center gap-2 hover:underline"
+        >
+          <Avatar
+            name={project.ownerDisplayName}
+            src={project.ownerAvatarUrl ?? undefined}
+            countryCode={project.ownerCountry}
+          />
           <UserName name={project.ownerDisplayName} />
-        </div>
+        </a>
 
-        {project.description && <p className="whitespace-pre-wrap text-sm text-text">{project.description}</p>}
+        {project.description && (
+          <p className="whitespace-pre-wrap text-sm text-text">{project.description}</p>
+        )}
 
         {project.stack.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
@@ -241,12 +233,22 @@ export function ProjectPage() {
         )}
 
         <div className="flex flex-wrap items-center gap-2">
-          <a href={project.repoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
+          <a
+            href={project.repoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
+          >
             <ExternalLink className="size-4" aria-hidden="true" />
             {fr.projects.repoUrlLabel}
           </a>
           {project.demoUrl && (
-            <a href={project.demoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
+            <a
+              href={project.demoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
+            >
               <ExternalLink className="size-4" aria-hidden="true" />
               {fr.projects.demoUrlLinkText}
             </a>
@@ -268,7 +270,14 @@ export function ProjectPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-text">{fr.projects.helpRequestsTitle}</p>
-          {isOwner && <Button onClick={() => setCreateHrOpen(true)}>{fr.projects.createHelpRequestTitle}</Button>}
+          {isOwner && (
+            <a
+              href={`/projets/${slug}/demandes/nouvelle`}
+              className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+            >
+              {fr.projects.createHelpRequestTitle}
+            </a>
+          )}
         </div>
 
         {helpRequests.length === 0 ? (
@@ -281,7 +290,9 @@ export function ProjectPage() {
                   <span className="text-sm font-medium text-text">{helpRequest.title}</span>
                   <Badge>{KIND_LABELS[helpRequest.kind]}</Badge>
                   <Badge tone={helpRequest.status === "open" ? "success" : "neutral"}>
-                    {helpRequest.status === "open" ? fr.projects.statusOpen : fr.projects.statusClosed}
+                    {helpRequest.status === "open"
+                      ? fr.projects.statusOpen
+                      : fr.projects.statusClosed}
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm text-text-2">{helpRequest.description}</p>
@@ -295,11 +306,19 @@ export function ProjectPage() {
                 <div className="mt-3 flex items-center gap-2">
                   {isOwner ? (
                     <>
-                      <Button variant="secondary" className="text-xs" onClick={() => openApplications(helpRequest)}>
+                      <Button
+                        variant="secondary"
+                        className="text-xs"
+                        onClick={() => openApplications(helpRequest)}
+                      >
                         {fr.projects.viewApplications} ({helpRequest.applicationCount})
                       </Button>
                       {helpRequest.status === "open" && (
-                        <Button variant="ghost" className="text-xs" onClick={() => handleCloseHelpRequest(helpRequest)}>
+                        <Button
+                          variant="ghost"
+                          className="text-xs"
+                          onClick={() => handleCloseHelpRequest(helpRequest)}
+                        >
                           {fr.projects.close}
                         </Button>
                       )}
@@ -318,48 +337,20 @@ export function ProjectPage() {
         )}
       </div>
 
-      <Dialog open={createHrOpen} onOpenChange={setCreateHrOpen} title={fr.projects.createHelpRequestTitle}>
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.projects.kindLabel}
-            <Select
-              aria-label={fr.projects.kindLabel}
-              value={hrKind}
-              onValueChange={(value) => setHrKind(value as HelpRequestKind)}
-              options={[
-                { value: "help", label: fr.projects.kindHelp },
-                { value: "collaboration", label: fr.projects.kindCollaboration },
-              ]}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.projects.titleLabel}
-            <Input value={hrTitle} onChange={(event) => setHrTitle(event.target.value)} autoFocus />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.projects.descriptionLabel}
-            <Textarea value={hrDescription} onChange={(event) => setHrDescription(event.target.value)} className="min-h-24" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.projects.stackLabel}
-            <Input value={hrStack} onChange={(event) => setHrStack(event.target.value)} />
-          </label>
-          {hrError && (
-            <p className="text-sm text-danger" role="alert">
-              {hrError}
-            </p>
-          )}
-          <Button onClick={handleCreateHelpRequest} disabled={!hrTitle.trim() || !hrDescription.trim()}>
-            {fr.projects.create}
-          </Button>
-        </div>
-      </Dialog>
-
-      <Dialog open={applyFor !== null} onOpenChange={(open) => !open && setApplyFor(null)} title={fr.projects.applyTitle}>
+      <Dialog
+        open={applyFor !== null}
+        onOpenChange={(open) => !open && setApplyFor(null)}
+        title={fr.projects.applyTitle}
+      >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm text-text-2">
             {fr.projects.applyMessageLabel}
-            <Textarea value={applyMessage} onChange={(event) => setApplyMessage(event.target.value)} className="min-h-24" autoFocus />
+            <Textarea
+              value={applyMessage}
+              onChange={(event) => setApplyMessage(event.target.value)}
+              className="min-h-24"
+              autoFocus
+            />
           </label>
           {applyError && (
             <p className="text-sm text-danger" role="alert">
@@ -372,7 +363,11 @@ export function ProjectPage() {
         </div>
       </Dialog>
 
-      <Dialog open={applicationsFor !== null} onOpenChange={(open) => !open && setApplicationsFor(null)} title={fr.projects.applicationsTitle}>
+      <Dialog
+        open={applicationsFor !== null}
+        onOpenChange={(open) => !open && setApplicationsFor(null)}
+        title={fr.projects.applicationsTitle}
+      >
         <div className="flex flex-col gap-3">
           {applicationsLoading ? (
             <Skeleton className="h-16 w-full" />
@@ -380,21 +375,40 @@ export function ProjectPage() {
             <p className="text-sm text-subtle">{fr.projects.noApplications}</p>
           ) : (
             applications.map((application) => (
-              <div key={application.id} className="flex flex-col gap-1 rounded-card border border-border p-3">
+              <div
+                key={application.id}
+                className="flex flex-col gap-1 rounded-card border border-border p-3"
+              >
                 <div className="flex items-baseline justify-between gap-2">
                   <UserName name={application.applicantDisplayName} />
-                  <Badge tone={application.status === "accepted" ? "success" : application.status === "declined" ? "danger" : "neutral"}>
+                  <Badge
+                    tone={
+                      application.status === "accepted"
+                        ? "success"
+                        : application.status === "declined"
+                          ? "danger"
+                          : "neutral"
+                    }
+                  >
                     {APPLICATION_STATUS_LABELS[application.status]}
                   </Badge>
                 </div>
                 <p className="text-sm text-text-2">{application.message}</p>
                 {application.status === "pending" && (
                   <div className="mt-1 flex gap-2">
-                    <Button variant="secondary" className="text-xs" onClick={() => handleDecision(application, true)}>
+                    <Button
+                      variant="secondary"
+                      className="text-xs"
+                      onClick={() => handleDecision(application, true)}
+                    >
                       <Check className="size-4" aria-hidden="true" />
                       {fr.projects.accept}
                     </Button>
-                    <Button variant="ghost" className="text-xs text-danger" onClick={() => handleDecision(application, false)}>
+                    <Button
+                      variant="ghost"
+                      className="text-xs text-danger"
+                      onClick={() => handleDecision(application, false)}
+                    >
                       <X className="size-4" aria-hidden="true" />
                       {fr.projects.decline}
                     </Button>
@@ -406,7 +420,12 @@ export function ProjectPage() {
         </div>
       </Dialog>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen} title={fr.projects.delete} description={fr.projects.deleteConfirm}>
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={fr.projects.delete}
+        description={fr.projects.deleteConfirm}
+      >
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setDeleteOpen(false)}>
             {fr.projects.cancel}
@@ -416,6 +435,6 @@ export function ProjectPage() {
           </Button>
         </div>
       </Dialog>
-    </main>
+    </RailPage>
   );
 }

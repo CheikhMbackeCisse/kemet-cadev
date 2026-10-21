@@ -13,6 +13,7 @@ export interface SelectProps {
   onValueChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
+  disabled?: boolean;
   "aria-label"?: string;
   className?: string;
 }
@@ -22,17 +23,19 @@ export function Select({
   onValueChange,
   options,
   placeholder,
+  disabled,
   className,
   ...aria
 }: SelectProps) {
   return (
-    <RadixSelect.Root value={value} onValueChange={onValueChange}>
+    <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
       <RadixSelect.Trigger
         aria-label={aria["aria-label"]}
         className={cn(
           "flex h-control max-md:h-control-mobile w-full items-center justify-between gap-2 rounded-control border border-border-strong bg-bg px-3 text-sm text-text",
           "focus-visible:border-primary",
           "data-[placeholder]:text-subtle",
+          "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
           className,
         )}
       >

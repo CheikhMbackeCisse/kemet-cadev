@@ -106,3 +106,58 @@
   --danger: #f07856;
   --danger-soft: #3a1b14;
 }
+
+/**
+ * Fond de marque des écrans de compte (connexion, inscription, mot de passe).
+ * Dégradé et halos : seule exception à la liste « Ce qui est interdit » de
+ * DESIGN.md, levée le 20/10/2026, voir
+ * docs/adr/0019-fond-des-ecrans-de-compte.md. Ne pas réutiliser ailleurs.
+ */
+:root {
+  --auth-bg-from: #0b2f78;
+  --auth-bg-to: #061b47;
+  --auth-glow-a: #1f6fe5;
+  --auth-glow-b: #0f9b6c;
+  --auth-grid: rgba(255, 255, 255, 0.05);
+  --auth-tile: #15306b;
+  --auth-text: #ffffff;
+  --auth-text-muted: rgba(255, 255, 255, 0.72);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --auth-bg-from: #0a1f4c;
+    --auth-bg-to: #050e22;
+    --auth-tile: #11264f;
+  }
+}
+
+:root[data-theme="dark"] {
+  --auth-bg-from: #0a1f4c;
+  --auth-bg-to: #050e22;
+  --auth-tile: #11264f;
+}
+
+/**
+ * Logo pose sur un fond toujours sombre (ecrans de compte) : on force la
+ * version sombre quel que soit le theme choisi, sinon le logo bleu fonce du
+ * theme clair devient illisible sur le degrade.
+ */
+.kemet-on-dark .kemet-symbol-light,
+.kemet-on-dark .kemet-wordmark-light {
+  display: none;
+}
+
+.kemet-on-dark .kemet-symbol-dark,
+.kemet-on-dark .kemet-wordmark-dark {
+  display: inline;
+}
+
+/**
+ * Contour de focus sur le fond sombre des ecrans de compte : le bleu
+ * --primary du contour par defaut n'a pas assez de contraste sur ce fond.
+ */
+.auth-on-dark :focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}

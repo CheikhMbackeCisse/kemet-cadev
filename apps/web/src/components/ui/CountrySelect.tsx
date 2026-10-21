@@ -6,6 +6,7 @@ export interface CountrySelectProps {
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
+  disabled?: boolean;
   "aria-label"?: string;
 }
 
@@ -19,6 +20,15 @@ const OPTIONS = COUNTRIES.map((country) => ({
   ),
 }));
 
-export function CountrySelect({ value, onValueChange, placeholder, ...aria }: CountrySelectProps) {
-  return <Select value={value} onValueChange={onValueChange} options={OPTIONS} placeholder={placeholder} {...aria} />;
+export function CountrySelect({ value, onValueChange, placeholder, disabled, ...aria }: CountrySelectProps) {
+  return (
+    <Select
+      value={value}
+      onValueChange={onValueChange}
+      options={OPTIONS}
+      placeholder={placeholder}
+      disabled={disabled}
+      {...aria}
+    />
+  );
 }

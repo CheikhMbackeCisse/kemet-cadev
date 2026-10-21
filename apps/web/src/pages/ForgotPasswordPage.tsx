@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
@@ -10,7 +10,8 @@ export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit() {
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     setSubmitting(true);
     try {
       await forgotPassword(email, "/reinitialiser-mot-de-passe");
@@ -32,15 +33,15 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthLayout title={fr.auth.forgotPasswordTitle} subtitle={fr.auth.forgotPasswordSubtitle}>
-      <div className="flex flex-col gap-3">
+      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.emailLabel}
           <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} autoFocus />
         </label>
-        <Button onClick={handleSubmit} loading={submitting} disabled={!email.trim()}>
+        <Button type="submit" loading={submitting} disabled={!email.trim()}>
           {fr.auth.forgotPasswordSubmit}
         </Button>
-      </div>
+      </form>
     </AuthLayout>
   );
 }

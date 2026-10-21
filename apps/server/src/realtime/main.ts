@@ -28,11 +28,18 @@ const emailSender = new SmtpEmailSender({
   from: process.env.EMAIL_FROM ?? "kemet@example.com",
 });
 
+const webAppUrl = process.env.WEB_APP_URL ?? "http://localhost:5173";
+const additionalTrustedOrigins = (process.env.EXTRA_TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const auth = createAuth({
   db,
   emailSender,
   baseUrl: process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
-  webAppUrl: process.env.WEB_APP_URL ?? "http://localhost:5173",
+  webAppUrl,
+  additionalTrustedOrigins,
   secret: process.env.BETTER_AUTH_SECRET,
 });
 
@@ -58,7 +65,7 @@ app
   .then((address) => {
     const httpServer = app.server;
     const io = new Server(httpServer, {
-      cors: { origin: process.env.WEB_APP_URL ?? "http://localhost:5173", credentials: true },
+      cors: { origin: [webAppUrl, ...additionalTrustedOrigins], credentials: true },
     });
 
     const socketsByProfile = new Map<string, Set<Socket>>();

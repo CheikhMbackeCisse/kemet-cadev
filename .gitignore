@@ -9,3 +9,4 @@ build/
 coverage/
 playwright-report/
 test-results/
+.local-redis/

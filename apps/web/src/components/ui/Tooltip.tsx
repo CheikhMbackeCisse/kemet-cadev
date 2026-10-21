@@ -4,14 +4,16 @@ import type { ReactNode } from "react";
 export interface TooltipProps {
   label: string;
   children: ReactNode;
+  side?: "top" | "right" | "bottom" | "left";
 }
 
-export function Tooltip({ label, children }: TooltipProps) {
+export function Tooltip({ label, children, side }: TooltipProps) {
   return (
     <RadixTooltip.Root delayDuration={300}>
       <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>
       <RadixTooltip.Portal>
         <RadixTooltip.Content
+          side={side}
           sideOffset={6}
           className="z-50 rounded-control bg-text px-2 py-1 text-xs font-medium text-bg shadow-floating"
         >

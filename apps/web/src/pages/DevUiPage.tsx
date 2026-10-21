@@ -147,8 +147,8 @@ export function DevUiPage() {
             <Flag countryCode="NG" />
           </Row>
           <Row>
-            <UserName name="Fatou Diop" countryCode="SN" level="artisan" />
-            <UserName name="Jean Kouassi" countryCode="CI" level="legende" />
+            <UserName name="Fatou Diop" level="artisan" />
+            <UserName name="Jean Kouassi" level="legende" />
           </Row>
         </Section>
 

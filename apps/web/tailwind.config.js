@@ -31,6 +31,10 @@ export default {
           hover: "var(--primary-hover)",
         },
         link: "var(--link)",
+        // Texte posé sur le fond de marque des écrans de compte, toujours
+        // sombre quel que soit le thème (voir docs/adr/0019).
+        "auth-text": "var(--auth-text)",
+        "auth-text-muted": "var(--auth-text-muted)",
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
         "assistant-bg": "var(--assistant-bg)",

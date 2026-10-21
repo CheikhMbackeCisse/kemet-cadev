@@ -1,24 +1,24 @@
-import { PanelRightClose } from "lucide-react";
 import type { ReactNode } from "react";
-import { IconButton } from "../ui/IconButton.js";
 
 export interface RightPanelProps {
   title: string;
-  onClose: () => void;
   children: ReactNode;
 }
 
-export function RightPanel({ title, onClose, children }: RightPanelProps) {
+/**
+ * Colonne de droite sur grand ecran, toujours affichee. Elle n'a plus de
+ * bouton de fermeture : il n'existait aucun moyen de la rouvrir une fois
+ * fermee, et sa bascule encombrait la barre du haut. Sous lg, c'est la feuille
+ * d'AppShell qui prend le relais.
+ */
+export function RightPanel({ title, children }: RightPanelProps) {
   return (
     <aside
       aria-label={title}
-      className="hidden w-panel shrink-0 flex-col border-l border-border bg-surface lg:flex"
+      className="sticky top-0 hidden h-screen w-panel shrink-0 flex-col border-l border-border bg-surface lg:flex"
     >
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
-        <h2 className="text-sm font-semibold text-text">{title}</h2>
-        <IconButton aria-label="Fermer le panneau" onClick={onClose}>
-          <PanelRightClose className="size-4" aria-hidden="true" />
-        </IconButton>
+      <div className="flex h-12 shrink-0 items-center border-b border-border px-3">
+        <h2 className="truncate text-md font-semibold text-text">{title}</h2>
       </div>
       <div className="flex-1 overflow-y-auto p-3">{children}</div>
     </aside>

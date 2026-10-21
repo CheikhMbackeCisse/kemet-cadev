@@ -15,7 +15,9 @@ async function findVerificationUrl(email: string): Promise<string> {
       candidate.To.some((recipient) => recipient.Address === email),
     );
     if (message) {
-      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) => response.json());
+      const detail = await fetch(`${MAILPIT_URL}/api/v1/message/${message.ID}`).then((response) =>
+        response.json(),
+      );
       const match = (detail.HTML as string).match(/href="([^"]+)"/);
       if (match) return match[1]!;
     }
@@ -24,8 +26,14 @@ async function findVerificationUrl(email: string): Promise<string> {
   throw new Error(`Email de vérification introuvable pour ${email}.`);
 }
 
-async function signUpVerifyAndSignIn(request: APIRequestContext, email: string, handle: string): Promise<void> {
-  await request.post("/api/auth/sign-up/email", { data: { email, password: PASSWORD, name: handle } });
+async function signUpVerifyAndSignIn(
+  request: APIRequestContext,
+  email: string,
+  handle: string,
+): Promise<void> {
+  await request.post("/api/auth/sign-up/email", {
+    data: { email, password: PASSWORD, name: handle },
+  });
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
@@ -49,19 +57,18 @@ test("publie un projet et le retrouve sur sa page", async ({ page, request }) =>
   await signInBrowser(page, email);
 
   await page.goto("/projets");
-  // Sur une liste vide, l'en-tête et l'état vide affichent chacun un bouton
-  // "Publier un projet" : les deux ouvrent le même formulaire.
-  await page.getByRole("button", { name: "Publier un projet" }).first().click();
+  // Sur une liste vide, l'en-tête porte un lien "Publier" et l'état vide un
+  // bouton "Publier un projet" : les deux mènent à la même page.
+  await page.getByRole("link", { name: "Publier", exact: true }).click();
+  await expect(page).toHaveURL(/\/projets\/nouveau$/);
   await page.getByLabel("Nom").fill(name);
-  await page.getByLabel("Présentation en une phrase").fill("Un projet créé par le test de bout en bout des projets.");
+  await page
+    .getByLabel("Présentation en une phrase")
+    .fill("Un projet créé par le test de bout en bout des projets.");
   await page.getByLabel("Lien du dépôt").fill("https://github.com/exemple/projet-e2e");
   await page.getByRole("button", { name: "Publier", exact: true }).click();
 
-  // La création referme le dialogue et recharge la liste sans y naviguer
-  // automatiquement (même convention que la création d'un skill) : on
-  // retrouve le projet dans la liste, puis on ouvre sa page.
-  await page.getByRole("link", { name: new RegExp(name) }).click();
-
+  // La page de création renvoie directement sur la page du projet.
   await expect(page).toHaveURL(new RegExp(`/projets/${slug}`));
   await expect(page.getByRole("heading", { name })).toBeVisible();
 });

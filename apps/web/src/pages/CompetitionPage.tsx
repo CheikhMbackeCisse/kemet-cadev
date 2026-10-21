@@ -1,20 +1,17 @@
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { CompetitionDetail, ProjectSummary, Submission, SubmissionResult, Team } from "@kemet/shared";
+import type { CompetitionDetail, Submission, SubmissionResult, Team } from "@kemet/shared";
 import {
   ChatApiError,
-  createSubmission,
   createTeam,
   getCompetition,
   getCompetitionResults,
   getMe,
   getMyVote,
   joinTeam,
-  listProjects,
   listSubmissions,
   listTeams,
   submitJuryScore,
-  updateSubmission,
   voteForSubmission,
 } from "../lib/chat/api.js";
 import { Badge } from "../components/ui/Badge.js";
@@ -22,13 +19,11 @@ import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { Input } from "../components/ui/Input.js";
-import { Select } from "../components/ui/Select.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { Tabs } from "../components/ui/Tabs.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
-import { ThemeToggle } from "../theme/ThemeToggle.js";
 import { fr } from "../i18n/fr.js";
+import { RailPage } from "../components/layout/RailPage.js";
 
 const PHASE_LABELS = {
   registration: fr.competitions.phaseRegistration,
@@ -50,7 +45,6 @@ export function CompetitionPage() {
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState(false);
   const [myProfileId, setMyProfileId] = useState<string | null>(null);
-  const [myProjects, setMyProjects] = useState<ProjectSummary[]>([]);
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -62,16 +56,6 @@ export function CompetitionPage() {
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [teamError, setTeamError] = useState<string | null>(null);
-
-  const [submitOpen, setSubmitOpen] = useState(false);
-  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null);
-  const [projectId, setProjectId] = useState("");
-  const [submissionTitle, setSubmissionTitle] = useState("");
-  const [submissionPitch, setSubmissionPitch] = useState("");
-  const [submissionDescription, setSubmissionDescription] = useState("");
-  const [repoUrl, setRepoUrl] = useState("");
-  const [demoUrl, setDemoUrl] = useState("");
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [scoreDrafts, setScoreDrafts] = useState<Record<string, string>>({});
 
@@ -89,30 +73,35 @@ export function CompetitionPage() {
   }, [slug]);
 
   const loadTeams = useCallback(() => {
-    listTeams(slug).then((result) => setTeams(result.items)).catch(() => {});
+    listTeams(slug)
+      .then((result) => setTeams(result.items))
+      .catch(() => {});
   }, [slug]);
 
   const loadSubmissions = useCallback(() => {
-    listSubmissions(slug).then((result) => setSubmissions(result.items)).catch(() => {});
+    listSubmissions(slug)
+      .then((result) => setSubmissions(result.items))
+      .catch(() => {});
   }, [slug]);
 
   useEffect(() => {
     loadCompetition();
     loadTeams();
     loadSubmissions();
-    getMe().then((me) => {
-      setMyProfileId(me.profile?.id ?? null);
-      if (me.profile) listProjects().then((page) => setMyProjects(page.items.filter((project) => project.ownerId === me.profile!.id)));
-    });
+    getMe().then((me) => setMyProfileId(me.profile?.id ?? null));
   }, [loadCompetition, loadTeams, loadSubmissions]);
 
   useEffect(() => {
     if (!competition) return;
     if (competition.phase === "voting" || competition.phase === "closed") {
-      getMyVote(slug).then((result) => setMyVote(result.submissionId)).catch(() => {});
+      getMyVote(slug)
+        .then((result) => setMyVote(result.submissionId))
+        .catch(() => {});
     }
     if (competition.phase === "closed") {
-      getCompetitionResults(slug).then((result) => setResults(result.items)).catch(() => {});
+      getCompetitionResults(slug)
+        .then((result) => setResults(result.items))
+        .catch(() => {});
     }
   }, [competition, slug]);
 
@@ -139,56 +128,6 @@ export function CompetitionPage() {
     }
   }
 
-  function closeSubmitDialog() {
-    setSubmitOpen(false);
-    setEditingSubmission(null);
-    setProjectId("");
-    setSubmissionTitle("");
-    setSubmissionPitch("");
-    setSubmissionDescription("");
-    setRepoUrl("");
-    setDemoUrl("");
-  }
-
-  function openEditSubmission(submission: Submission) {
-    setEditingSubmission(submission);
-    setSubmissionTitle(submission.title);
-    setSubmissionPitch(submission.pitch);
-    setSubmissionDescription(submission.description ?? "");
-    setRepoUrl(submission.repoUrl ?? "");
-    setDemoUrl(submission.demoUrl ?? "");
-    setSubmitOpen(true);
-  }
-
-  async function handleSubmit() {
-    setSubmitError(null);
-    try {
-      if (editingSubmission) {
-        await updateSubmission(editingSubmission.id, {
-          title: submissionTitle,
-          pitch: submissionPitch,
-          description: submissionDescription,
-          repoUrl,
-          demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
-        });
-      } else {
-        await createSubmission(slug, {
-          projectId,
-          title: submissionTitle,
-          pitch: submissionPitch,
-          description: submissionDescription,
-          repoUrl,
-          demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
-        });
-      }
-      closeSubmitDialog();
-      loadSubmissions();
-      loadTeams();
-    } catch (err) {
-      setSubmitError(err instanceof ChatApiError ? err.message : fr.competitions.submitProjectError);
-    }
-  }
-
   async function handleVote(submissionId: string) {
     try {
       const result = await voteForSubmission(submissionId);
@@ -212,37 +151,48 @@ export function CompetitionPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
+      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-32 w-full" />
-      </main>
+      </RailPage>
     );
   }
 
   if (notFound) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
-        <ErrorState message={fr.competitions.competitionNotFound} retry={{ label: fr.competitions.back, onClick: () => (window.location.href = "/competitions") }} />
-      </main>
+      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+        <ErrorState
+          message={fr.competitions.competitionNotFound}
+          retry={{
+            label: fr.competitions.back,
+            onClick: () => (window.location.href = "/competitions"),
+          }}
+        />
+      </RailPage>
     );
   }
 
   if (error || !competition) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-4 px-4 py-8">
-        <ErrorState message={fr.competitions.loadingError} retry={{ label: fr.chat.retry, onClick: loadCompetition }} />
-      </main>
+      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+        <ErrorState
+          message={fr.competitions.loadingError}
+          retry={{ label: fr.chat.retry, onClick: loadCompetition }}
+        />
+      </RailPage>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-reading flex-col gap-6 px-4 py-8">
+    <RailPage activeSection="competitions" className="gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
-        <a href="/competitions" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
+        <a
+          href="/competitions"
+          className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
+        >
           <ArrowLeft className="size-4" aria-hidden="true" />
           {fr.competitions.back}
         </a>
-        <ThemeToggle />
       </div>
 
       <div className="flex flex-col gap-3">
@@ -252,16 +202,28 @@ export function CompetitionPage() {
             <p className="mt-1 text-sm text-text-2">{competition.pitch}</p>
           </div>
           {competition.status === "published" ? (
-            <Badge tone={competition.phase === "closed" ? "neutral" : "success"}>{PHASE_LABELS[competition.phase]}</Badge>
+            <Badge tone={competition.phase === "closed" ? "neutral" : "success"}>
+              {PHASE_LABELS[competition.phase]}
+            </Badge>
           ) : (
             <Badge tone={competition.status === "rejected" ? "danger" : "neutral"}>
-              {competition.status === "rejected" ? fr.competitions.statusRejected : fr.competitions.statusPendingReview}
+              {competition.status === "rejected"
+                ? fr.competitions.statusRejected
+                : fr.competitions.statusPendingReview}
             </Badge>
           )}
         </div>
-        {competition.description && <p className="whitespace-pre-wrap text-sm text-text">{competition.description}</p>}
-        <p className="text-xs text-subtle">{fr.competitions.createdBy(competition.createdByHandle)}</p>
-        {competition.reviewNote && <p className="text-xs text-subtle">{fr.competitions.reviewNote(competition.reviewNote)}</p>}
+        {competition.description && (
+          <p className="whitespace-pre-wrap text-sm text-text">{competition.description}</p>
+        )}
+        <p className="text-xs text-subtle">
+          {fr.competitions.createdBy(competition.createdByHandle)}
+        </p>
+        {competition.reviewNote && (
+          <p className="text-xs text-subtle">
+            {fr.competitions.reviewNote(competition.reviewNote)}
+          </p>
+        )}
       </div>
 
       <Tabs
@@ -274,7 +236,9 @@ export function CompetitionPage() {
             content: (
               <div className="flex flex-col gap-3">
                 {myProfileId && !myTeam && competition.phase === "registration" && (
-                  <Button onClick={() => setCreateTeamOpen(true)}>{fr.competitions.createTeamTitle}</Button>
+                  <Button onClick={() => setCreateTeamOpen(true)}>
+                    {fr.competitions.createTeamTitle}
+                  </Button>
                 )}
                 {teams.length === 0 ? (
                   <p className="text-sm text-subtle">{fr.competitions.noTeams}</p>
@@ -284,17 +248,29 @@ export function CompetitionPage() {
                       <li key={team.id} className="rounded-card border border-border p-4">
                         <div className="flex items-baseline justify-between gap-2">
                           <span className="text-sm font-medium text-text">{team.name}</span>
-                          {team.viewerIsMember && <Badge tone="success">{fr.competitions.yourTeam}</Badge>}
+                          {team.viewerIsMember && (
+                            <Badge tone="success">{fr.competitions.yourTeam}</Badge>
+                          )}
                         </div>
-                        <p className="mt-1 text-xs text-subtle">{fr.competitions.captain(team.captainHandle)}</p>
-                        <p className="text-xs text-subtle">{fr.competitions.members(team.memberHandles)}</p>
+                        <p className="mt-1 text-xs text-subtle">
+                          {fr.competitions.captain(team.captainHandle)}
+                        </p>
+                        <p className="text-xs text-subtle">
+                          {fr.competitions.members(team.memberHandles)}
+                        </p>
                         <div className="mt-2 flex items-center gap-2">
                           {team.hasSubmission && <Badge>{fr.competitions.hasSubmission}</Badge>}
-                          {!team.viewerIsMember && !myTeam && competition.phase === "registration" && (
-                            <Button variant="secondary" className="text-xs" onClick={() => handleJoinTeam(team.id)}>
-                              {fr.competitions.joinTeam}
-                            </Button>
-                          )}
+                          {!team.viewerIsMember &&
+                            !myTeam &&
+                            competition.phase === "registration" && (
+                              <Button
+                                variant="secondary"
+                                className="text-xs"
+                                onClick={() => handleJoinTeam(team.id)}
+                              >
+                                {fr.competitions.joinTeam}
+                              </Button>
+                            )}
                         </div>
                       </li>
                     ))}
@@ -309,7 +285,12 @@ export function CompetitionPage() {
             content: (
               <div className="flex flex-col gap-3">
                 {myTeam && !myTeam.hasSubmission && competition.phase === "submission" && (
-                  <Button onClick={() => setSubmitOpen(true)}>{fr.competitions.submitProjectTitle}</Button>
+                  <a
+                    href={`/competitions/${slug}/soumettre`}
+                    className="inline-flex h-control max-md:h-control-mobile w-fit items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+                  >
+                    {fr.competitions.submitProjectTitle}
+                  </a>
                 )}
                 {submissions.length === 0 ? (
                   <p className="text-sm text-subtle">{fr.competitions.noSubmissions}</p>
@@ -323,23 +304,41 @@ export function CompetitionPage() {
                         </div>
                         <p className="mt-1 text-sm text-text-2">{submission.pitch}</p>
                         {submission.viewerIsTeamMember && competition.phase === "submission" && (
-                          <Button variant="secondary" className="mt-2 text-xs" onClick={() => openEditSubmission(submission)}>
+                          <Button
+                            variant="secondary"
+                            className="mt-2 text-xs"
+                            onClick={() =>
+                              (window.location.href = `/competitions/${slug}/soumettre?modifier=${submission.id}`)
+                            }
+                          >
                             {fr.competitions.editSubmission}
                           </Button>
                         )}
                         {submission.repoUrl ? (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <a href={submission.repoUrl} target="_blank" rel="noreferrer" className="text-xs text-link hover:underline">
+                            <a
+                              href={submission.repoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-link hover:underline"
+                            >
                               {fr.competitions.repoUrlLabel}
                             </a>
                             {submission.demoUrl && (
-                              <a href={submission.demoUrl} target="_blank" rel="noreferrer" className="text-xs text-link hover:underline">
+                              <a
+                                href={submission.demoUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs text-link hover:underline"
+                              >
                                 {fr.competitions.demoUrlLabel}
                               </a>
                             )}
                           </div>
                         ) : (
-                          <p className="mt-2 text-xs text-subtle">{fr.competitions.detailsHiddenDuringSubmission}</p>
+                          <p className="mt-2 text-xs text-subtle">
+                            {fr.competitions.detailsHiddenDuringSubmission}
+                          </p>
                         )}
                         {competition.phase === "voting" && !submission.viewerIsTeamMember && (
                           <div className="mt-2">
@@ -348,28 +347,41 @@ export function CompetitionPage() {
                               className="text-xs"
                               onClick={() => handleVote(submission.id)}
                             >
-                              {myVote === submission.id ? fr.competitions.votedFor : fr.competitions.voteButton}
+                              {myVote === submission.id
+                                ? fr.competitions.votedFor
+                                : fr.competitions.voteButton}
                             </Button>
                           </div>
                         )}
-                        {competition.phase === "voting" && competition.viewerIsJuror && !submission.viewerIsTeamMember && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <label className="flex items-center gap-1.5 text-xs text-text-2">
-                              {fr.competitions.jurorScoreLabel}
-                              <Input
-                                type="number"
-                                min={0}
-                                max={20}
-                                className="w-16"
-                                value={scoreDrafts[submission.id] ?? ""}
-                                onChange={(event) => setScoreDrafts((current) => ({ ...current, [submission.id]: event.target.value }))}
-                              />
-                            </label>
-                            <Button variant="secondary" className="text-xs" onClick={() => handleScore(submission.id)}>
-                              {fr.competitions.jurorScoreSubmit}
-                            </Button>
-                          </div>
-                        )}
+                        {competition.phase === "voting" &&
+                          competition.viewerIsJuror &&
+                          !submission.viewerIsTeamMember && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <label className="flex items-center gap-1.5 text-xs text-text-2">
+                                {fr.competitions.jurorScoreLabel}
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={20}
+                                  className="w-16"
+                                  value={scoreDrafts[submission.id] ?? ""}
+                                  onChange={(event) =>
+                                    setScoreDrafts((current) => ({
+                                      ...current,
+                                      [submission.id]: event.target.value,
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <Button
+                                variant="secondary"
+                                className="text-xs"
+                                onClick={() => handleScore(submission.id)}
+                              >
+                                {fr.competitions.jurorScoreSubmit}
+                              </Button>
+                            </div>
+                          )}
                       </li>
                     ))}
                   </ul>
@@ -388,14 +400,19 @@ export function CompetitionPage() {
               ) : (
                 <ul className="flex flex-col gap-3">
                   {results.map((result) => (
-                    <li key={result.submissionId} className="flex items-center justify-between rounded-card border border-border p-4">
+                    <li
+                      key={result.submissionId}
+                      className="flex items-center justify-between rounded-card border border-border p-4"
+                    >
                       <div>
                         <span className="text-sm font-medium text-text">
                           {fr.competitions.rank(result.rank)} {result.teamName}
                         </span>
                         <p className="text-xs text-subtle">
-                          {result.juryAverage === null ? fr.competitions.noJuryScore : fr.competitions.juryAverage(result.juryAverage)} ·{" "}
-                          {fr.competitions.voteCount(result.voteCount)}
+                          {result.juryAverage === null
+                            ? fr.competitions.noJuryScore
+                            : fr.competitions.juryAverage(result.juryAverage)}{" "}
+                          · {fr.competitions.voteCount(result.voteCount)}
                         </p>
                       </div>
                     </li>
@@ -406,11 +423,19 @@ export function CompetitionPage() {
         ]}
       />
 
-      <Dialog open={createTeamOpen} onOpenChange={setCreateTeamOpen} title={fr.competitions.createTeamTitle}>
+      <Dialog
+        open={createTeamOpen}
+        onOpenChange={setCreateTeamOpen}
+        title={fr.competitions.createTeamTitle}
+      >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1 text-sm text-text-2">
             {fr.competitions.teamNameLabel}
-            <Input value={teamName} onChange={(event) => setTeamName(event.target.value)} autoFocus />
+            <Input
+              value={teamName}
+              onChange={(event) => setTeamName(event.target.value)}
+              autoFocus
+            />
           </label>
           {teamError && (
             <p className="text-sm text-danger" role="alert">
@@ -422,60 +447,6 @@ export function CompetitionPage() {
           </Button>
         </div>
       </Dialog>
-
-      <Dialog
-        open={submitOpen}
-        onOpenChange={(open) => (open ? setSubmitOpen(true) : closeSubmitDialog())}
-        title={editingSubmission ? fr.competitions.editSubmissionTitle : fr.competitions.submitProjectTitle}
-      >
-        <div className="flex flex-col gap-3">
-          {!editingSubmission &&
-            (myProjects.length === 0 ? (
-              <p className="text-sm text-subtle">{fr.competitions.noOwnProjects}</p>
-            ) : (
-              <label className="flex flex-col gap-1 text-sm text-text-2">
-                {fr.competitions.projectLabel}
-                <Select
-                  aria-label={fr.competitions.projectLabel}
-                  value={projectId}
-                  onValueChange={setProjectId}
-                  options={myProjects.map((project) => ({ value: project.id, label: project.name }))}
-                />
-              </label>
-            ))}
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.competitions.titleLabel}
-            <Input value={submissionTitle} onChange={(event) => setSubmissionTitle(event.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.competitions.pitchLabel}
-            <Input value={submissionPitch} onChange={(event) => setSubmissionPitch(event.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.competitions.descriptionLabel}
-            <Textarea value={submissionDescription} onChange={(event) => setSubmissionDescription(event.target.value)} className="min-h-24" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.competitions.repoUrlLabel}
-            <Input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.competitions.demoUrlLabel}
-            <Input value={demoUrl} onChange={(event) => setDemoUrl(event.target.value)} />
-          </label>
-          {submitError && (
-            <p className="text-sm text-danger" role="alert">
-              {submitError}
-            </p>
-          )}
-          <Button
-            onClick={handleSubmit}
-            disabled={(!editingSubmission && !projectId) || !submissionTitle.trim() || !submissionPitch.trim() || !repoUrl.trim()}
-          >
-            {editingSubmission ? fr.competitions.editSubmissionSubmit : fr.competitions.submitProjectSubmit}
-          </Button>
-        </div>
-      </Dialog>
-    </main>
+    </RailPage>
   );
 }

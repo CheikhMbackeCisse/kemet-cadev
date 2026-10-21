@@ -42,11 +42,6 @@ describe.skipIf(!databaseUrl)("contraintes du schéma", () => {
     await expect(db.insert(follows).values({ followerId: a.id, followeeId: b.id })).rejects.toThrow();
   });
 
-  it("refuse un post sans texte qui n'est pas un partage", async () => {
-    const author = await createProfile("post-empty");
-    await expect(db.insert(posts).values({ authorId: author.id, body: "" })).rejects.toThrow();
-  });
-
   it("accepte un partage sans texte", async () => {
     const author = await createProfile("post-share-empty");
     const [original] = await db.insert(posts).values({ authorId: author.id, body: "Un post original." }).returning();

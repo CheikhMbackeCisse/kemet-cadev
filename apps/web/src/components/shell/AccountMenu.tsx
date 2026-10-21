@@ -24,17 +24,19 @@ export function AccountMenu() {
     <Menu
       trigger={
         <Button variant="ghost" className="gap-2 px-2">
-          <Avatar name={profile.displayName} size={24} />
+          <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={24} />
           <span title={profile.displayName} className="max-w-24 truncate text-sm font-medium text-text">
             {profile.displayName}
           </span>
         </Button>
       }
       items={[
+        { value: "settings", label: fr.settings.navLink },
         ...(isPlatformAdmin ? [{ value: "moderation", label: fr.moderation.navLink }] : []),
         { value: "sign-out", label: fr.auth.signOut, danger: true },
       ]}
       onSelect={(value) => {
+        if (value === "settings") window.location.href = "/parametres";
         if (value === "moderation") window.location.href = "/moderation";
         if (value === "sign-out") void signOut();
       }}

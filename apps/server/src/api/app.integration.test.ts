@@ -104,6 +104,46 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
     expect(me.json().profile.handle).toBe("amina");
   });
 
+  it("enregistre le rôle et la spécialité choisis à l'étape /ton-role", async () => {
+    const cookie = await signUpAndVerify("fatou@test.kemet", "Fatou");
+    await app.inject({
+      method: "PATCH",
+      url: "/api/me/profile",
+      headers: { cookie },
+      payload: { handle: "fatou", displayName: "Fatou", country: "SN" },
+    });
+
+    const patch = await app.inject({
+      method: "PATCH",
+      url: "/api/me/profile",
+      headers: { cookie },
+      payload: { role: "developer", title: "Backend Go" },
+    });
+    expect(patch.statusCode).toBe(200);
+
+    const me = await app.inject({ method: "GET", url: "/api/me", headers: { cookie } });
+    expect(me.json().profile.role).toBe("developer");
+    expect(me.json().profile.title).toBe("Backend Go");
+  });
+
+  it("refuse un rôle hors de la liste autorisée", async () => {
+    const cookie = await signUpAndVerify("awa@test.kemet", "Awa");
+    await app.inject({
+      method: "PATCH",
+      url: "/api/me/profile",
+      headers: { cookie },
+      payload: { handle: "awa", displayName: "Awa", country: "SN" },
+    });
+
+    const response = await app.inject({
+      method: "PATCH",
+      url: "/api/me/profile",
+      headers: { cookie },
+      payload: { role: "admin" },
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
   it("refuse un identifiant déjà pris par un autre compte", async () => {
     const cookieA = await signUpAndVerify("a@test.kemet", "A");
     await app.inject({

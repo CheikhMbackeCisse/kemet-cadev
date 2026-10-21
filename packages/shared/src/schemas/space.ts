@@ -29,6 +29,7 @@ export const spaceSchema = z.object({
   description: z.string().nullable(),
   visibility: spaceVisibilitySchema,
   role: spaceMemberRoleSchema.nullable(),
+  memberCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
 });
 
@@ -38,6 +39,8 @@ export const spaceMemberSchema = z.object({
   profileId: z.string().uuid(),
   handle: z.string(),
   displayName: z.string(),
+  avatarUrl: z.string().nullable(),
+  country: z.string(),
   role: spaceMemberRoleSchema,
   joinedAt: z.string().datetime(),
 });

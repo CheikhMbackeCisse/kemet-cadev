@@ -29,14 +29,30 @@ describe("App", () => {
     expect(await screen.findAllByText("indisponible")).toHaveLength(2);
   });
 
-  it("affiche la page d'accueil visiteur sur /", async () => {
+  it("ouvre le fil sur /, y compris pour un visiteur", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
     window.history.pushState({}, "", "/");
     render(<App />);
-    expect(await screen.findByText("Se connecter")).toBeInTheDocument();
+    // Les pages sont chargees a la demande (React.lazy) : le delai par defaut
+    // d'1 s de findBy ne suffit pas a transformer le module dans Vitest.
+    expect(
+      await screen.findByRole("heading", { name: "Fil" }, { timeout: 10000 }),
+    ).toBeInTheDocument();
+  });
+
+  it("garde la page de connexion sur /connexion", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 401 })),
+    );
+    window.history.pushState({}, "", "/connexion");
+    render(<App />);
+    expect(
+      await screen.findByRole("heading", { name: "Connexion" }, { timeout: 10000 }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Créer un compte")).toBeInTheDocument();
   });
 });

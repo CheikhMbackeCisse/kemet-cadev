@@ -1,9 +1,12 @@
 import { cn } from "../../lib/cn.js";
+import { Flag } from "./Flag.js";
 
 export interface AvatarProps {
   name: string;
   src?: string;
   size?: 24 | 32 | 40;
+  /** Drapeau du pays, affiché en badge sur la photo. Réservé aux tailles 32 et 40 : à 24 px, le badge ne laisse plus voir la photo. */
+  countryCode?: string;
   className?: string;
 }
 
@@ -21,18 +24,10 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps["size"]>, string> = {
   40: "size-10 text-sm",
 };
 
-export function Avatar({ name, src, size = 32, className }: AvatarProps) {
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt=""
-        className={cn("rounded-full object-cover", SIZE_CLASSES[size], className)}
-      />
-    );
-  }
-
-  return (
+export function Avatar({ name, src, size = 32, countryCode, className }: AvatarProps) {
+  const photo = src ? (
+    <img src={src} alt="" className={cn("rounded-full object-cover", SIZE_CLASSES[size], className)} />
+  ) : (
     <span
       role="img"
       aria-label={name}
@@ -43,6 +38,15 @@ export function Avatar({ name, src, size = 32, className }: AvatarProps) {
       )}
     >
       {initialsOf(name)}
+    </span>
+  );
+
+  if (!countryCode || size === 24) return photo;
+
+  return (
+    <span className="relative inline-flex shrink-0">
+      {photo}
+      <Flag countryCode={countryCode} className="absolute -bottom-0.5 -right-1 ring-2 ring-surface" />
     </span>
   );
 }

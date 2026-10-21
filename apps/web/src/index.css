@@ -32,6 +32,35 @@
     font-family: "Geist Mono Variable", monospace;
   }
 
+  /* Barres de defilement discretes : la barre native de Windows est large,
+     opaque et blanche, et coupait le rail et la liste des salons en deux. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
