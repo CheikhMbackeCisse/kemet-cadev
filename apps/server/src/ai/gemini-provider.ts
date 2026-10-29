@@ -1,10 +1,13 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText } from "ai";
-import { LlmProviderError, extractHttpStatusCode, type LlmMessage, type LlmProvider } from "./llm-provider.js";
+import {
+  LlmProviderError,
+  extractHttpStatusCode,
+  type LlmMessage,
+  type LlmProvider,
+} from "./llm-provider.js";
 
-const MODEL = "gemini-2.0-flash";
-
-export function createGeminiProvider(apiKey: string): LlmProvider {
+export function createGeminiProvider(apiKey: string, model: string): LlmProvider {
   const google = createGoogleGenerativeAI({ apiKey });
 
   return {
@@ -12,7 +15,7 @@ export function createGeminiProvider(apiKey: string): LlmProvider {
     async *streamResponse(messages: LlmMessage[]) {
       let result: ReturnType<typeof streamText>;
       try {
-        result = streamText({ model: google(MODEL), messages });
+        result = streamText({ model: google(model), messages });
       } catch (error) {
         throw toProviderError(error);
       }

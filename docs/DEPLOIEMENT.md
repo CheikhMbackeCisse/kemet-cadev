@@ -163,7 +163,13 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    - `BETTER_AUTH_URL` et `WEB_APP_URL` : `https://<PUBLIC_HOST>`.
    - `KEMET_IMAGE_PREFIX=ghcr.io/cheikhmbackecisse/kemet`.
    - `BACKUP_AGE_RECIPIENT` : voir "Sauvegardes" plus bas.
-   - les identifiants OAuth, SMTP et les clés d'IA.
+   - les identifiants OAuth, SMTP et les clés d'IA
+     (`GOOGLE_GENERATIVE_AI_API_KEY`, `OPENROUTER_API_KEY`). `GEMINI_MODEL`
+     et `OPENROUTER_MODEL` peuvent rester vides : le serveur prend alors
+     `gemini-flash-latest` et `meta-llama/llama-3.3-70b-instruct:free`. Les
+     renseigner seulement si un modèle est arrêté ou si son quota gratuit ne
+     suffit plus, sans reconstruire les images : un redémarrage de `api`
+     suffit.
 
 5. Depuis le poste de l'administrateur (pas depuis le serveur), lancer le premier
    déploiement :

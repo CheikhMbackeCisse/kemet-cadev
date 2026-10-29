@@ -1,14 +1,18 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
-import { LlmProviderError, extractHttpStatusCode, type LlmMessage, type LlmProvider } from "./llm-provider.js";
+import {
+  LlmProviderError,
+  extractHttpStatusCode,
+  type LlmMessage,
+  type LlmProvider,
+} from "./llm-provider.js";
 
-// Modèle gratuit OpenRouter, voir docs/CONTEXTE.md section IA. OpenRouter
-// expose une API compatible OpenAI : pas de dépendance supplémentaire à
-// auditer pour les licences, @ai-sdk/openai suffit avec une base URL différente.
-const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
+// OpenRouter expose une API compatible OpenAI : pas de dépendance
+// supplémentaire à auditer pour les licences, @ai-sdk/openai suffit avec une
+// base URL différente.
 const BASE_URL = "https://openrouter.ai/api/v1";
 
-export function createOpenRouterProvider(apiKey: string): LlmProvider {
+export function createOpenRouterProvider(apiKey: string, model: string): LlmProvider {
   const openrouter = createOpenAI({ apiKey, baseURL: BASE_URL });
 
   return {
@@ -16,7 +20,7 @@ export function createOpenRouterProvider(apiKey: string): LlmProvider {
     async *streamResponse(messages: LlmMessage[]) {
       let result: ReturnType<typeof streamText>;
       try {
-        result = streamText({ model: openrouter(MODEL), messages });
+        result = streamText({ model: openrouter(model), messages });
       } catch (error) {
         throw toProviderError(error);
       }

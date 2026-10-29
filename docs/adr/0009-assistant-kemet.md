@@ -100,3 +100,8 @@ vers quelqu'un qui n'y a pas accès.
   (`apps/server/src/ai/assistant-orchestrator.integration.test.ts`)
   injectent un faux fournisseur sans construire de vrais clients Gemini ou
   OpenRouter, tout en exerçant une vraie base Postgres pour le reste.
+- Les modèles se choisissent par `GEMINI_MODEL` et `OPENROUTER_MODEL`
+  (par défaut `gemini-flash-latest` et
+  `meta-llama/llama-3.3-70b-instruct:free`) : l'arrêt de
+  `gemini-2.0-flash` par Google le 1er juin 2026 se règle ainsi par une
+  variable d'environnement, sans nouvelle image.

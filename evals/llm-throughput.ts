@@ -6,7 +6,14 @@
  *
  * Usage :
  *   GOOGLE_GENERATIVE_AI_API_KEY=... OPENROUTER_API_KEY=... pnpm tsx evals/llm-throughput.ts
+ *
+ * GEMINI_MODEL et OPENROUTER_MODEL choisissent les modèles testés, avec les
+ * mêmes valeurs par défaut que le serveur.
  */
+
+import { resolveLlmModels } from "../apps/server/src/ai/create-llm-provider.js";
+
+const models = resolveLlmModels(process.env);
 
 const INTERVALS_MS = [2000, 1000, 500, 250, 100];
 
@@ -22,10 +29,10 @@ const providers: Provider[] = [
     apiKeyEnvVar: "GOOGLE_GENERATIVE_AI_API_KEY",
     ping: (apiKey) =>
       fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models.gemini)}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }),
         },
       ),
@@ -41,7 +48,7 @@ const providers: Provider[] = [
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "meta-llama/llama-3.3-70b-instruct:free",
+          model: models.openrouter,
           messages: [{ role: "user", content: "ping" }],
           max_tokens: 1,
         }),
@@ -57,7 +64,9 @@ async function ping(provider: Provider, apiKey: string, intervalMs: number): Pro
     return false;
   }
   if (!response.ok) {
-    console.error(`${provider.name} : erreur inattendue (${response.status}) à l'intervalle ${intervalMs} ms.`);
+    console.error(
+      `${provider.name} : erreur inattendue (${response.status}) à l'intervalle ${intervalMs} ms.`,
+    );
     return false;
   }
   return true;
