@@ -87,22 +87,64 @@ exemple pour déboguer un échec de ce job.
    données (base PostgreSQL, fichiers envoyés, certificats Caddy) : à
    utiliser avec prudence, surtout en production.
 
-## Production : premier déploiement sur le serveur Datacloud
+## Production : vue d'ensemble
 
-Cette section suppose un serveur Ubuntu tout neuf fourni par Datacloud,
-avec Docker déjà installé.
+Rien n'est construit sur le serveur. À chaque commit de `main` dont la CI
+est verte, le workflow `Images` (`.github/workflows/images.yml`) publie
+quatre images sur GitHub Container Registry, étiquetées par le SHA du
+commit : `ghcr.io/cheikhmbackecisse/kemet-web`, `-api`, `-realtime`,
+`-worker`. `infra/deploy.sh` demande au serveur de télécharger celles d'un
+commit précis et de redémarrer dessus. Les migrations Drizzle tournent au
+démarrage de l'api.
 
-1. Se connecter en SSH au serveur et cloner le dépôt au même endroit que
-   celui attendu par `infra/deploy.sh` :
+Voir `docs/adr/0020-deploiement-production.md` pour le pourquoi.
+
+Ce document n'a pas encore été déroulé sur le vrai serveur Datacloud : les
+étapes ci-dessous seront corrigées là où la réalité diffère (version
+d'Ubuntu, ports ouverts par Systalink, WebSockets).
+
+## Production : premier déploiement
+
+Cette section suppose un serveur Ubuntu tout neuf fourni par Datacloud, un
+compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur posée dans
+`~/.ssh/authorized_keys` de ce compte.
+
+1. Se connecter au serveur et cloner le dépôt :
 
    ```
    ssh <utilisateur>@<hôte>
-   sudo mkdir -p /opt/kemet && sudo chown $USER /opt/kemet
+   git clone <url du dépôt> /tmp/kemet-setup
+   sudo /tmp/kemet-setup/infra/server/setup.sh
+   ```
+
+   `setup.sh` installe Docker (dépôt officiel) et `age`, ferme tous les
+   ports entrants sauf 22, 80 et 443 avec ufw, désactive la connexion SSH
+   par mot de passe, et crée `/opt/kemet` et `/var/backups/kemet`. Il
+   refuse de tourner si aucune clé SSH n'est posée, pour ne pas enfermer
+   dehors l'utilisateur. Se déconnecter puis se reconnecter ensuite.
+
+2. Cloner le dépôt à son emplacement définitif :
+
+   ```
    git clone <url du dépôt> /opt/kemet
    cd /opt/kemet
    ```
 
-2. Créer le fichier `.env` directement sur le serveur (ne jamais le
+   Tant que le dépôt est privé, le clone demande un jeton GitHub (ou une
+   clé de déploiement en lecture seule).
+
+3. Autoriser le serveur à télécharger les images. Tant que les paquets
+   GHCR sont privés, se connecter avec un jeton GitHub qui n'a que la
+   permission `read:packages` :
+
+   ```
+   docker login ghcr.io -u <compte GitHub>
+   ```
+
+   Une fois le dépôt et les paquets rendus publics pour le jury, cette
+   étape n'est plus nécessaire.
+
+4. Créer le fichier `.env` directement sur le serveur (ne jamais le
    commiter ni l'envoyer par un canal non chiffré) :
 
    ```
@@ -111,53 +153,142 @@ avec Docker déjà installé.
    ```
 
    Remplir en particulier :
-   - `POSTGRES_PASSWORD` : un mot de passe fort, généré par exemple avec
-     `openssl rand -base64 24`.
+   - `POSTGRES_PASSWORD` et `BETTER_AUTH_SECRET` : générés par exemple avec
+     `openssl rand -base64 32`.
    - `PUBLIC_HOST` : le sous-domaine fourni par Datacloud, ou un nom
-     `sslip.io` si aucun domaine n'est encore disponible (il encode l'IP du
+     `sslip.io` si aucun domaine n'est disponible (il encode l'IP du
      serveur, par exemple `203-0-113-10.sslip.io` pour l'IP
      `203.0.113.10`). Ne pas mettre `:80` ici : ce réglage n'est que pour le
      test en local.
+   - `BETTER_AUTH_URL` et `WEB_APP_URL` : `https://<PUBLIC_HOST>`.
+   - `KEMET_IMAGE_PREFIX=ghcr.io/cheikhmbackecisse/kemet`.
+   - `BACKUP_AGE_RECIPIENT` : voir "Sauvegardes" plus bas.
+   - les identifiants OAuth, SMTP et les clés d'IA.
 
-3. S'assurer que les ports 80 et 443 sont ouverts dans le pare-feu du
-   serveur (le panneau Datacloud, ou `ufw allow 80,443/tcp` sur Ubuntu).
-
-4. Démarrer les services, comme en local :
+5. Depuis le poste de l'administrateur (pas depuis le serveur), lancer le premier
+   déploiement :
 
    ```
-   docker compose -f infra/docker-compose.yml --env-file .env up -d --build
-   docker compose -f infra/docker-compose.yml --env-file .env ps
+   infra/deploy.sh <utilisateur>@<hôte> https://<PUBLIC_HOST>
    ```
 
-5. Visiter `https://<PUBLIC_HOST>` : Caddy doit avoir obtenu seul un
+6. Visiter `https://<PUBLIC_HOST>` : Caddy doit avoir obtenu seul un
    certificat Let's Encrypt (peut prendre une minute la première fois). Si
    la page ne charge pas, lire les journaux de Caddy :
 
    ```
-   docker compose -f infra/docker-compose.yml --env-file .env logs caddy
+   docker compose -f infra/docker-compose.yml --env-file .env --env-file .env.deployed logs caddy
    ```
 
    Les causes les plus courantes : le port 80 ou 443 est bloqué par le
-   pare-feu, ou `PUBLIC_HOST` ne pointe pas réellement vers l'IP du
-   serveur (vérifier avec `dig <PUBLIC_HOST>` ou `nslookup`).
+   pare-feu du panneau Datacloud, ou `PUBLIC_HOST` ne pointe pas réellement
+   vers l'IP du serveur (vérifier avec `nslookup <PUBLIC_HOST>`).
 
 ## Déploiements suivants
 
-Une fois le premier déploiement fait, chaque mise à jour se fait avec le
-script `infra/deploy.sh`, lancé depuis un poste qui a accès SSH au
-serveur (pas besoin d'être connecté au serveur lui-même) :
+Depuis le poste de l'administrateur, à la racine du dépôt, une fois le workflow
+`Images` du commit voulu terminé :
 
 ```
-infra/deploy.sh <utilisateur>@<hôte>
+infra/deploy.sh <utilisateur>@<hôte> https://<PUBLIC_HOST>
 ```
 
-Le script se connecte en SSH, récupère la dernière version de `main`,
-reconstruit et redémarre les services, puis nettoie les images Docker
-devenues inutiles. Il affiche l'état des services à la fin : vérifier que
-tout est `healthy` avant de considérer le déploiement terminé.
+Sans troisième argument, le script déploie le dernier commit de
+`origin/main`. Pour un commit précis, passer son SHA complet en troisième
+argument. Dans l'ordre, le script :
 
-Si le chemin du dépôt sur le serveur n'est pas `/opt/kemet`, le donner en
-second argument : `infra/deploy.sh <utilisateur>@<hôte> /chemin/vers/kemet`.
+1. aligne le dépôt du serveur sur ce commit et écrit son SHA dans
+   `.env.deployed` ;
+2. télécharge les images (si ça échoue, les services en place continuent
+   de tourner) ;
+3. redémarre la pile et attend que chaque service soit `healthy` ;
+4. lance le test de fumée Playwright `apps/web/e2e/prod-smoke.spec.ts`
+   contre l'adresse publique (lecture seule : rien n'est écrit en base).
+   `SKIP_SMOKE=1` le saute. Il demande Chromium pour Playwright sur le poste,
+   installé une fois avec
+   `pnpm --filter @kemet/web exec playwright install chromium`.
+
+Si l'étape 3 ou 4 échoue, le script revient au commit déployé juste avant,
+noté dans `.deploy-history` sur le serveur, et sort en erreur. Une
+migration n'est jamais annulée par ce retour arrière : les migrations
+restent additives pour que l'ancienne version tourne sur le nouveau schéma.
+
+Sur le serveur, toute commande `docker compose` lancée à la main doit
+inclure `--env-file .env.deployed` après `--env-file .env`, sinon elle
+cherche des images `kemet-<service>:local` qui n'y existent pas.
+
+Si le dépôt n'est pas dans `/opt/kemet` sur le serveur, le préciser avec
+`KEMET_REMOTE_PATH=/chemin/vers/kemet`.
+
+Une fois l'adresse connue, une sonde UptimeRobot gratuite vérifie `/` et
+`/api/health` toutes les cinq minutes et prévient par email.
+
+## Sauvegardes
+
+Chaque nuit à 2h30 (heure de Dakar), le workflow `Backup`
+(`.github/workflows/backup.yml`) se connecte au serveur, lance
+`infra/server/backup.sh`, récupère les deux fichiers produits et les garde
+14 jours en artefact GitHub :
+
+- `kemet-<date>.dump.age` : la base, `pg_dump` au format custom ;
+- `kemet-<date>.uploads.tar.age` : les fichiers envoyés.
+
+Les deux sont chiffrés avec `age` sur le serveur, avant d'en sortir. Le
+serveur n'a que la clé publique : un fichier volé, sur le serveur ou chez
+GitHub, est illisible sans la clé privée, qui reste chez l'administrateur.
+
+Mise en place, une seule fois :
+
+1. Sur le poste de l'administrateur : `age-keygen -o kemet-backup.key`. Garder ce
+   fichier hors du dépôt, en deux exemplaires (sans lui, aucune sauvegarde
+   ne peut être restaurée). Sa ligne `# public key: age1...` est la valeur
+   de `BACKUP_AGE_RECIPIENT` dans le `.env` du serveur.
+2. Créer une paire de clés SSH dédiée au workflow (`ssh-keygen -t ed25519
+-f kemet-backup-ssh`), distincte de la clé de déploiement de l'administrateur. Le
+   compte de déploiement est dans le groupe `docker`, donc équivalent à
+   root : cette clé, stockée chez GitHub, ne doit ouvrir aucun shell. Poser
+   sa clé publique dans `~/.ssh/authorized_keys` du serveur avec ce
+   préfixe, sur la même ligne :
+
+   ```
+   restrict,command="/opt/kemet/infra/server/backup-gate.sh" ssh-ed25519 AAAA...
+   ```
+
+   `infra/server/backup-gate.sh` n'accepte alors que deux commandes :
+   lancer une sauvegarde, et lire un fichier de `/var/backups/kemet`.
+
+3. Dans les réglages du dépôt GitHub :
+   - variables `DEPLOY_HOST` et `DEPLOY_USER` (le workflow ne tourne pas
+     tant que `DEPLOY_HOST` n'existe pas) ;
+   - un environnement `production`, limité à la branche `main` ("Deployment
+     branches and tags"), pour qu'un workflow modifié sur une autre branche
+     ne puisse pas lire ses secrets ;
+   - dans cet environnement, les secrets `BACKUP_SSH_KEY` (clé privée créée
+     à l'étape 2) et `DEPLOY_KNOWN_HOSTS` (sortie de `ssh-keyscan <hôte>`,
+     comparée une fois à l'empreinte affichée sur le serveur par
+     `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`).
+
+Une fois le dépôt public, les artefacts sont téléchargeables par tout
+compte GitHub. Leur contenu reste illisible sans la clé privée, mais leur
+nom (la date) et leur taille sont visibles.
+
+Restauration, à ne lancer en production qu'avec l'accord de l'administrateur. Le
+déchiffrement se fait sur le poste de l'administrateur et le flux part par SSH : la
+clé privée ne va jamais sur le serveur, et aucun fichier en clair n'y est
+écrit hors du volume concerné.
+
+```
+age -d -i kemet-backup.key kemet-<date>.dump.age   | ssh <utilisateur>@<hôte> 'cd /opt/kemet && infra/server/restore.sh --confirm database'
+age -d -i kemet-backup.key kemet-<date>.uploads.tar.age   | ssh <utilisateur>@<hôte> 'cd /opt/kemet && infra/server/restore.sh --confirm uploads'
+```
+
+Le script arrête api, realtime et worker, remplace la base ou les fichiers,
+puis redémarre la pile, y compris en cas d'échec. La base est restaurée
+dans une seule transaction : un flux tronqué (mauvaise clé, coupure) ne
+change rien. Les fichiers sont extraits à côté des fichiers en place, qui
+ne sont remplacés qu'une fois l'extraction réussie, et une archive qui
+contient un chemin absolu ou `..` est refusée. Le job CI `backup-restore`
+joue cet aller-retour pour de vrai à chaque pull request.
 
 ## Problèmes courants
 

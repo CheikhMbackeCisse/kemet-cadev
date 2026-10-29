@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -218,6 +221,87 @@ jobs:
 
       - name: Vérifier la santé des services et le plafond mémoire (3,2 Go)
         run: node .github/scripts/check-infra-smoke.mjs
+
+      - name: Afficher les journaux des services en cas d'échec
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml --env-file .env logs
+
+      - name: Arrêter et nettoyer la pile
+        if: always()
+        run: docker compose -f infra/docker-compose.yml --env-file .env down -v
+
+  # Restauration testée pour de vrai : sauvegarde de la pile complète par
+  # infra/server/backup.sh, modification des données, puis
+  # infra/server/restore.sh, qui doit ramener exactement l'état sauvegardé.
+  backup-restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer age
+        run: sudo apt-get update -q && sudo apt-get install -y -q age
+
+      - name: Générer une clé age et un fichier d'environnement de CI
+        run: |
+          set -euo pipefail
+          age-keygen -o "$RUNNER_TEMP/backup-key.txt" 2> /dev/null
+          recipient=$(age-keygen -y "$RUNNER_TEMP/backup-key.txt")
+          cat > .env <<ENV
+          PUBLIC_HOST=:80
+          POSTGRES_USER=kemet
+          POSTGRES_PASSWORD=$(openssl rand -hex 16)
+          POSTGRES_DB=kemet
+          UPLOADS_DIR=/data/uploads
+          BETTER_AUTH_SECRET=$(openssl rand -hex 32)
+          BETTER_AUTH_URL=http://localhost
+          WEB_APP_URL=http://localhost
+          EMAIL_FROM=Kemet <kemet@example.com>
+          BACKUP_AGE_RECIPIENT=$recipient
+          ENV
+
+      - name: Construire et démarrer la pile
+        run: >
+          docker compose -f infra/docker-compose.yml --env-file .env
+          up -d --build --wait --wait-timeout 180
+
+      - name: Poser des données témoins
+        run: |
+          set -euo pipefail
+          docker compose -f infra/docker-compose.yml --env-file .env exec -T postgres \
+            sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE TABLE backup_probe (value text); INSERT INTO backup_probe VALUES ('"'"'before'"'"');"'
+          docker compose -f infra/docker-compose.yml --env-file .env exec -T api \
+            sh -c 'echo before > "$UPLOADS_DIR/probe.txt"'
+
+      - name: Sauvegarder
+        run: |
+          set -euo pipefail
+          BACKUP_DIR=$RUNNER_TEMP/backups infra/server/backup.sh | tee "$RUNNER_TEMP/backup-files"
+          test "$(wc -l < "$RUNNER_TEMP/backup-files")" = 2
+          # L'archive des fichiers envoyés contiendrait "before" en clair si
+          # age n'avait pas chiffré. Pas de "! grep" : set -e l'ignore.
+          if grep -q before $(cat "$RUNNER_TEMP/backup-files"); then exit 1; fi
+
+      - name: Modifier les données après la sauvegarde
+        run: |
+          set -euo pipefail
+          docker compose -f infra/docker-compose.yml --env-file .env exec -T postgres \
+            sh -c 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "UPDATE backup_probe SET value = '"'"'after'"'"';"'
+          docker compose -f infra/docker-compose.yml --env-file .env exec -T api \
+            sh -c 'rm "$UPLOADS_DIR/probe.txt" && echo stray > "$UPLOADS_DIR/stray.txt"'
+
+      - name: Restaurer et vérifier
+        run: |
+          set -euo pipefail
+          dump=$(grep '\.dump\.age$' "$RUNNER_TEMP/backup-files")
+          uploads=$(grep '\.uploads\.tar\.age$' "$RUNNER_TEMP/backup-files")
+          age -d -i "$RUNNER_TEMP/backup-key.txt" "$dump" | infra/server/restore.sh --confirm database
+          age -d -i "$RUNNER_TEMP/backup-key.txt" "$uploads" | infra/server/restore.sh --confirm uploads
+          value=$(docker compose -f infra/docker-compose.yml --env-file .env exec -T postgres \
+            sh -c 'psql -tA -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT value FROM backup_probe;"')
+          test "$value" = before
+          docker compose -f infra/docker-compose.yml --env-file .env exec -T api \
+            sh -c 'test "$(cat "$UPLOADS_DIR/probe.txt")" = before && test ! -e "$UPLOADS_DIR/stray.txt"'
+          curl --fail --silent --show-error http://localhost/api/health
 
       - name: Afficher les journaux des services en cas d'échec
         if: failure()

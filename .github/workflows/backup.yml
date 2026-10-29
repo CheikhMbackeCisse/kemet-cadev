@@ -1,0 +1,69 @@
+name: Backup
+
+# Sauvegarde nocturne de la production, copiée hors du serveur : le runner
+# lance infra/server/backup.sh par SSH, récupère les deux fichiers chiffrés
+# et les garde en artefact. Les fichiers sont chiffrés avant de quitter le
+# serveur (age), GitHub ne voit jamais la base en clair.
+#
+# Variables du dépôt : DEPLOY_HOST, DEPLOY_USER (le workflow ne tourne pas
+# tant que DEPLOY_HOST n'est pas défini).
+# Secrets de l'environnement "production" : BACKUP_SSH_KEY (clé dédiée,
+# limitée côté serveur par infra/server/backup-gate.sh, distincte de la clé
+# de déploiement) et DEPLOY_KNOWN_HOSTS (sortie de ssh-keyscan contre le
+# serveur, vérifiée à la main une fois).
+on:
+  schedule:
+    # 2h30 à Dakar (UTC+0), heure creuse.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    if: vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    # Réservé à main dans les réglages de l'environnement : un workflow
+    # modifié sur une autre branche ne lit pas la clé.
+    environment: production
+    steps:
+      - name: Configurer SSH
+        env:
+          BACKUP_SSH_KEY: ${{ secrets.BACKUP_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$BACKUP_SSH_KEY" > ~/.ssh/id_backup
+          chmod 600 ~/.ssh/id_backup
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Sauvegarder sur le serveur et rapatrier
+        env:
+          REMOTE: ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          ssh_backup() {
+            ssh -i ~/.ssh/id_backup -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "$REMOTE" "$@"
+          }
+          mkdir backup
+          ssh_backup backup > backup-files
+          count=0
+          while IFS= read -r file; do
+            if [[ ! $file =~ ^/var/backups/kemet/kemet-[0-9]{8}T[0-9]{6}Z\.(dump|uploads\.tar)\.age$ ]]; then
+              echo "Chemin inattendu : $file" >&2
+              exit 1
+            fi
+            ssh_backup fetch "$file" > "backup/$(basename "$file")"
+            count=$((count + 1))
+          done < backup-files
+          test "$count" = 2
+          ls -l backup
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: kemet-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 14
+          if-no-files-found: error

@@ -1,0 +1,3 @@
+# Les scripts shell tournent sur Linux (serveur, CI) et dans Git Bash :
+# une fin de ligne CRLF les casse.
+*.sh text eol=lf
