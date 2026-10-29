@@ -25,6 +25,7 @@ import { Textarea } from "../components/ui/Textarea.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
+import { RichText } from "../components/content/RichText.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
@@ -264,7 +265,7 @@ export function PostPage() {
                   />
                   <UserName name={entry.authorDisplayName} />
                 </a>
-                <p className="text-sm text-text-2">{entry.body}</p>
+                <RichText source={entry.body} className="text-sm text-text-2" />
               </div>
             ))}
           </Card>
@@ -295,9 +296,11 @@ export function PostPage() {
                     <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
                     {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
                   </div>
-                  <p className="mt-0.5 text-sm text-text">
-                    {reply.deletedAt ? fr.chat.messageDeleted : reply.body}
-                  </p>
+                  {reply.deletedAt ? (
+                    <p className="mt-0.5 text-sm text-text">{fr.chat.messageDeleted}</p>
+                  ) : (
+                    <RichText source={reply.body} className="mt-0.5 text-sm text-text" />
+                  )}
                   <div className="mt-1 flex items-center gap-2">
                     {isOwnPost && post.format === "question" && !reply.deletedAt && (
                       <button

@@ -41,17 +41,14 @@ export function AssistantMessage({
 
   return (
     <div
-      className={cn(
-        "rounded-panel border border-assistant-border bg-assistant-bg p-4",
-        className,
-      )}
+      className={cn("rounded-panel border border-assistant-border bg-assistant-bg p-4", className)}
     >
       <div className="flex items-center gap-2">
         <KemetSymbol className="size-5" />
         <span className="text-sm font-semibold text-text">kemet</span>
       </div>
 
-      <div className="mt-3 text-sm leading-relaxed text-text">{content}</div>
+      <div className="mt-3 min-w-0 text-sm leading-relaxed text-text">{content}</div>
 
       {readSummary && <p className="mt-3 text-xs text-muted">{readSummary}</p>}
 

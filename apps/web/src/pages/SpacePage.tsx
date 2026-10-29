@@ -25,6 +25,7 @@ import {
 } from "../lib/chat/api.js";
 import { useChannelMessages } from "../lib/chat/useChannelMessages.js";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
+import { RichText } from "../components/content/RichText.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { AppShell } from "../components/shell/AppShell.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
@@ -524,9 +525,11 @@ export function SpacePage() {
                     <AssistantMessage
                       key={group.messages[0]!.id}
                       content={
-                        group.messages[0]!.deletedAt
-                          ? fr.chat.messageDeleted
-                          : group.messages[0]!.body
+                        group.messages[0]!.deletedAt ? (
+                          fr.chat.messageDeleted
+                        ) : (
+                          <RichText source={group.messages[0]!.body} />
+                        )
                       }
                       skill={
                         assistantMetaByMessageId[group.messages[0]!.id]?.skill
@@ -585,14 +588,22 @@ export function SpacePage() {
                                 </span>
                               </div>
                             )}
-                            {message.body && (
-                              <p className="mt-0.5 text-base text-text">
-                                {message.deletedAt ? fr.chat.messageDeleted : message.body}
-                                {message.editedAt && (
-                                  <span className="text-xs text-subtle"> ({fr.chat.edited})</span>
-                                )}
-                              </p>
-                            )}
+                            {message.body &&
+                              (message.deletedAt ? (
+                                <p className="mt-0.5 text-base text-text">
+                                  {fr.chat.messageDeleted}
+                                </p>
+                              ) : (
+                                <RichText
+                                  source={message.body}
+                                  className="mt-0.5 text-base text-text"
+                                  suffix={
+                                    message.editedAt && (
+                                      <span className="text-xs text-subtle">({fr.chat.edited})</span>
+                                    )
+                                  }
+                                />
+                              ))}
                             {!message.deletedAt && message.attachments.length > 0 && (
                               <div className="mt-1 flex flex-wrap gap-2">
                                 {message.attachments.map((attachment) =>
@@ -684,7 +695,7 @@ export function SpacePage() {
                 )}
                 {assistantStream && (
                   <AssistantMessage
-                    content={assistantStream.text || "…"}
+                    content={assistantStream.text ? <RichText source={assistantStream.text} /> : "…"}
                     hideFeedback
                     readSummary={assistantStream.failed ? fr.chat.assistantUnavailable : undefined}
                   />

@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { CheckCircle2, MessageSquare, Share2, Sparkles, Trash2 } from "lucide-react";
 import type { PostFormat, PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
@@ -9,6 +10,7 @@ import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
 import { ReportMenu } from "../moderation/ReportMenu.js";
 import { PostImages } from "./PostImages.js";
+import { RichText } from "../content/RichText.js";
 import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
 
@@ -90,7 +92,19 @@ export function PostCard({
   onDelete,
   onReply,
 }: PostCardProps) {
-  const body = post.deletedAt ? fr.feed.postDeleted : post.body;
+  // Le corps contient ses propres liens (mentions, adresses) : il ne peut
+  // pas être lui-même un lien. La date sert de lien vers le post, au clavier
+  // comme à la souris ; un clic ailleurs dans le texte y mène aussi.
+  function openPostFromBody(event: MouseEvent<HTMLDivElement>) {
+    if (!bodyHref) return;
+    if ((event.target as HTMLElement).closest("a, button")) return;
+    if (window.getSelection()?.toString()) return;
+    if (event.ctrlKey || event.metaKey) {
+      window.open(bodyHref, "_blank", "noopener");
+      return;
+    }
+    window.location.href = bodyHref;
+  }
   const replyLabel = fr.feed.replyAriaLabel(post.replyCount);
   const replyClassName =
     "inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted hover:bg-surface-2 hover:text-text";
@@ -113,15 +127,25 @@ export function PostCard({
             <a href={`/u/${post.authorHandle}`} className="hover:underline">
               <UserName name={post.authorDisplayName} />
             </a>
-            <span className="text-xs text-subtle">{formatTime(post.createdAt)}</span>
+            {bodyHref ? (
+              <a
+                href={bodyHref}
+                aria-label={fr.feed.openPost(post.authorDisplayName, formatTime(post.createdAt))}
+                className="text-xs text-subtle hover:underline"
+              >
+                {formatTime(post.createdAt)}
+              </a>
+            ) : (
+              <span className="text-xs text-subtle">{formatTime(post.createdAt)}</span>
+            )}
             {post.format && <Badge>{FORMAT_LABELS[post.format]}</Badge>}
           </div>
-          {bodyHref ? (
-            <a href={bodyHref} className="mt-1 block text-sm text-text hover:underline">
-              {body}
-            </a>
+          {post.deletedAt ? (
+            <p className="mt-1 text-sm text-text">{fr.feed.postDeleted}</p>
           ) : (
-            <p className="mt-1 text-sm text-text">{body}</p>
+            <div onClick={openPostFromBody} className={cn(bodyHref && "cursor-pointer")}>
+              <RichText source={post.body} className="mt-1 text-base text-text" />
+            </div>
           )}
           {!post.deletedAt && <PostImages attachments={post.attachments} />}
           {!post.deletedAt && <SharedPostPreview post={post.sharedPost} />}

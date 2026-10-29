@@ -68,7 +68,7 @@ test("publie un post et le retrouve dans le fil", async ({ page, request }) => {
   await page.getByRole("button", { name: "Publier", exact: true }).click();
 
   await expect(page).toHaveURL(/\/fil$/);
-  await expect(page.getByRole("link", { name: body })).toBeVisible();
+  await expect(page.getByText(body)).toBeVisible();
 });
 
 test("publie un post avec une image et la voit affichée dans le fil", async ({ page, request }) => {

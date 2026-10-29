@@ -10,6 +10,7 @@ import { Skeleton } from "../components/ui/Skeleton.js";
 import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { RichText } from "../components/content/RichText.js";
 
 function readSlug(pathname: string): string {
   return pathname.replace(/^\/skills\//, "");
@@ -116,9 +117,10 @@ export function SkillPage() {
         </div>
       </div>
 
-      <pre className="whitespace-pre-wrap rounded-card border border-border bg-surface-2 p-4 text-sm text-text">
-        {skill.content}
-      </pre>
+      <RichText
+        source={skill.content}
+        className="rounded-card border border-border bg-surface p-4 text-base text-text"
+      />
 
       <div className="flex items-center gap-3">
         <span className="text-sm text-text-2">

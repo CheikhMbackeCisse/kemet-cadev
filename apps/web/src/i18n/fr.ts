@@ -3,6 +3,17 @@ export const fr = {
     back: "Retour",
     cancel: "Annuler",
   },
+  content: {
+    copy: "Copier",
+    copied: "Copié",
+    copyFailed: "Copie impossible",
+    copyCode: (language: string) => `Copier le code ${language}`,
+    codeRegion: (language: string) => `Code ${language}`,
+    plainText: "texte",
+    externalImage: "Image externe",
+    newTab: "(nouvel onglet)",
+    table: "Tableau",
+  },
   auth: {
     signInCta: "Se connecter",
     signOut: "Se déconnecter",
@@ -176,6 +187,7 @@ export const fr = {
     cancel: "Annuler",
   },
   feed: {
+    openPost: (authorName: string, time: string) => `Ouvrir le post de ${authorName}, ${time}`,
     title: "Fil",
     tabAbonnements: "Abonnements",
     tabPourToi: "Pour toi",

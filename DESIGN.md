@@ -156,3 +156,4 @@ halo. Aucun autre écran du produit ne bénéficie de cette exception.
   - Zone de protection autour du logo : au moins la largeur du bras du "k". Hauteur minimale du mot-symbole : 16 px.
   - Sur fond sombre, le bleu du logo est #3B82F0.
 - Exception à la règle "aucune couleur écrite en dur" : les logos des fournisseurs de connexion sociale (Google, LinkedIn, GitHub) dans `apps/web/src/components/auth/SocialProviderIcon.tsx` gardent leurs couleurs de marque officielles, hors de notre contrôle, identiques dans les deux thèmes.
+- Exception à la même règle : les couleurs de la coloration syntaxique viennent des thèmes Shiki `github-light-high-contrast` et `github-dark-default` (`apps/web/src/components/content/highlighter.ts`), choisis pour leur contraste sur `--surface-2` (au moins 4,5:1). Elles passent quand même par des variables CSS (`--shiki-light`, `--shiki-dark`) pour suivre le thème actif.
