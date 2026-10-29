@@ -21,9 +21,9 @@ Dans l'écriture hiéroglyphique du mot, un signe représente la ville : un cerc
 - **Thème :** "Construire la plateforme d'échange africaine, pour les devs, par les devs. Livrez un projet utilisable et hébergé en ligne."
 - **Livrables :** dépôt git et démo en ligne.
 - **Équipe :** Kemet Labs, quatre membres.
-- **Clôture des soumissions :** 25 octobre 2026 à 17h00, heure de Dakar. Objectif interne : soumettre le 24.
-- **Vote des pairs :** du 25 octobre 18h au 26 octobre 23h59. Chaque membre reçoit jusqu'à 10 projets de son pays et vote pour un seul. Les 3 premiers de chaque pays passent devant le jury. **Les 4 membres doivent voter, sinon le projet est exclu.**
-- **Jury :** 31 octobre et 1er novembre. Résultats le 2 novembre.
+- **Clôture des soumissions :** repoussée au 12 novembre 2026 (confirmé le 29/10). Gel des fonctionnalités le 9 novembre. L'ancienne date était le 25 octobre.
+- **Vote des pairs :** dates à confirmer. Chaque membre reçoit jusqu'à 10 projets de son pays et vote pour un seul. Les 3 premiers de chaque pays passent devant le jury. **Chaque membre de l'équipe doit voter, sinon le projet est exclu.**
+- **Jury :** dates à confirmer.
 
 **Grille du jury :**
 
@@ -179,25 +179,23 @@ Les fichiers envoyés (images, mèmes) sont stockés sur un volume disque du ser
 
 ## Équipe et méthode
 
-| Membre | Module |
-| --- | --- |
-| Cheikh | Produit, design, interface |
-| Membre 2 | Temps réel, salons, appels |
-| Membre 3 | IA : assistant, skills, recherche dans les notes, MCP |
-| Membre 4 | Points, compétitions, DevOps, sécurité |
+Quatre membres. Chacun doit pouvoir expliquer chaque module devant le jury : produit et interface, temps réel, IA, points et DevOps.
 
-Chaque membre doit pouvoir expliquer seul son module devant le jury. Le code est relu par un autre membre, et l'intégration continue doit passer avant toute fusion.
+Chaque modification est relue sous l'angle de la sécurité et, si elle touche l'interface, de `DESIGN.md`, avant d'être fusionnée. L'intégration continue doit passer avant toute fusion.
 
 ## Planning
 
+Le calendrier à partir du 29 octobre :
+
 | Dates | Étape |
 | --- | --- |
-| 6 et 7 octobre | Vérifications techniques, dépôt, intégration continue, premier déploiement |
-| 8 au 18 octobre | Développement des P0 en parallèle, puis des P1 |
-| 19 octobre | Gel des fonctionnalités P0 |
-| 19 au 22 octobre | Sécurité, tests, audit des licences, données de démo |
-| 23 et 24 octobre | Finitions, vidéo, README, déclarations, soumission |
-| 25 et 26 octobre | Vote des pairs : les 4 membres votent |
+| 6 au 22 octobre | Développement des P0, audit de sécurité, données de démo (fait) |
+| 29 octobre au 8 novembre | Déploiement sur Datacloud, puis finitions par ordre d'impact |
+| 9 novembre | Gel des fonctionnalités |
+| 9 au 11 novembre | Finitions, vidéo, README, déclarations |
+| 12 novembre | Soumission |
+| À confirmer | Vote des pairs (vote obligatoire) |
+| À confirmer | Jury et résultats |
 
 ## Vérifications à faire tout de suite
 
