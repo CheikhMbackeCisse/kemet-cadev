@@ -11,9 +11,7 @@ import type { DemoAccountIds } from "./accounts.js";
 import { writeSeedPostImage } from "./post-image.js";
 import { hoursAgo } from "./time.js";
 
-// Fil de posts (lot 7) : de quoi remplir /fil pour la démonstration, avec
-// les trois formats, des réponses (dont une solution), des réactions
-// "Utile" et des partages.
+// Les trois formats de post, des réponses dont une solution, des "Utile" et des partages.
 export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promise<void> {
   const [
     fastifyPoolPost,
@@ -126,9 +124,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
           "sur du matériel qu'on ne peut pas aller recharger facilement ?",
         createdAt: hoursAgo(8),
       },
-      // docs/CONTEXTE.md decrit le fil comme un espace d'entraide et de bonne
-      // humeur autant que de technique. Les posts ci-dessous existent pour
-      // que la demonstration ne ressemble pas a une documentation.
+      // Le fil est aussi un lieu de bonne humeur, pas seulement de technique.
       {
         authorId: ids.kwameAsante,
         body:

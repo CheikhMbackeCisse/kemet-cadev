@@ -20,25 +20,21 @@ export const profiles = pgTable("profiles", {
   handle: text("handle").notNull().unique(),
   displayName: text("display_name").notNull(),
   country: text("country").notNull(),
-  // Rôle (lot « parle-nous de toi »), facultatif : l'étape qui le propose
-  // est skippable. title sert de champ libre pour la spécialité associée.
+  // Facultatif, l'étape qui le propose se passe. title porte la spécialité.
   role: profileRoleEnum("role"),
   title: text("title"),
   bio: text("bio"),
   stack: text("stack").array().notNull().default([]),
   githubUrl: text("github_url"),
-  // URL ou chemin absolu d'une image d'avatar. Pas d'upload depuis
-  // l'interface pour l'instant : seuls les comptes de démonstration en ont
-  // une, posée directement en base par packages/db/src/seed.ts.
+  // Jamais accepté du client : seul le seed en pose un.
   avatarUrl: text("avatar_url"),
   openToOpportunities: boolean("open_to_opportunities").notNull().default(false),
   isDemo: boolean("is_demo").notNull().default(false),
   // Validation des compétitions et modération. Attribué seulement par
   // `pnpm db:promote-admin`, jamais par l'interface ni par le seed.
   isPlatformAdmin: boolean("is_platform_admin").notNull().default(false),
-  // Un compte suspendu (lot 7 bis) ne peut plus écrire (poster, réagir,
-  // rejoindre...) mais garde l'accès en lecture, comme un visiteur : voir
-  // requireOwnProfile dans chaque fichier de routes concerné.
+  // Un compte suspendu garde la lecture, perd l'écriture : vérifié par
+  // requireOwnProfile dans chaque module de routes.
   suspendedAt: timestamp("suspended_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

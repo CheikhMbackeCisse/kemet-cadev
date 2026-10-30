@@ -36,9 +36,7 @@ export const reports = pgTable(
   ],
 );
 
-// Journal d'audit en ajout seul, même esprit que points_ledger
-// (packages/db/src/schema/points.ts) : jamais modifié ni supprimé après
-// écriture.
+// Journal d'audit en ajout seul : jamais modifié ni supprimé.
 export const moderationActions = pgTable(
   "moderation_actions",
   {

@@ -3,12 +3,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { deflateSync } from "node:zlib";
 
-// Image de démonstration pour les posts du fil, générée plutôt que livrée en
-// binaire dans le dépôt. Même principe que les avatars de seed/avatar.ts : un
-// motif abstrait aux couleurs de Kemet, jamais une photo ni une capture
-// d'écran d'un vrai produit. Encodeur PNG écrit à la main : la seule
-// alternative aurait été d'ajouter une dépendance de traitement d'image, et
-// les plus courantes dépendent de sharp, interdit par nos règles de licence.
+// Image de démonstration générée plutôt que livrée en binaire. Encodeur PNG
+// écrit à la main : les bibliothèques d'image courantes dépendent de sharp,
+// dont les binaires libvips sont sous LGPL.
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 

@@ -24,10 +24,9 @@ export const assistantInvocationStatusEnum = pgEnum("assistant_invocation_status
 ]);
 export const llmProviderNameEnum = pgEnum("llm_provider_name", ["gemini", "openrouter"]);
 
-// Maintenu par un trigger PostgreSQL (voir la migration), pas par une colonne
-// générée : on combine deux configurations de recherche (french, english)
-// avec des poids différents selon le champ, ce que `generatedAlwaysAs` ne
-// représente pas lisiblement. Voir docs/adr/0007-recherche-skills.md.
+// Tenu à jour par un trigger plutôt qu'une colonne générée : deux
+// configurations (french, english) pondérées par champ, illisibles en
+// `generatedAlwaysAs`.
 const tsvector = customType<{ data: string }>({
   dataType() {
     return "tsvector";

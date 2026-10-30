@@ -3,13 +3,9 @@ import { check, index, integer, pgEnum, pgTable, text, timestamp, uniqueIndex, u
 import { profiles } from "./profiles.js";
 import { projects } from "./projects.js";
 
-// "pending_review" : en attente de validation par un admin (docs/CONTEXTE.md,
-// "Compétitions : inscription, soumission, vote, jury, résultats" ; la
-// validation elle-même n'est précisée dans aucun document produit, posée au
-// lot 10). "rejected" porte sa raison dans reviewNote. Une compétition
-// publiée n'a pas d'état "en cours" ou "terminée" stocké : sa phase se
-// dérive des trois échéances ci-dessous comparées à l'instant présent,
-// comme tout le reste de ce schéma (voir computeCompetitionPhase).
+// "pending_review" attend la validation d'un admin ; "rejected" porte sa
+// raison dans reviewNote. La phase d'une compétition publiée n'est jamais
+// stockée : elle se dérive des trois échéances (computeCompetitionPhase).
 export const competitionStatusEnum = pgEnum("competition_status", ["pending_review", "rejected", "published"]);
 
 export const competitions = pgTable(
@@ -92,10 +88,8 @@ export const submissions = pgTable(
     competitionId: uuid("competition_id")
       .notNull()
       .references(() => competitions.id, { onDelete: "cascade" }),
-    // Le projet reste la propriété de son auteur (lot 9) : la compétition ne
-    // fait qu'y pointer. Le contenu ci-dessous est rédigé à part, pas copié
-    // automatiquement, pour que l'auteur du projet choisisse ce qu'il donne
-    // à cette soumission précise.
+    // Le projet reste à son auteur, la soumission y pointe. Son contenu est
+    // rédigé à part : l'auteur choisit ce qu'il montre à cette compétition.
     projectId: uuid("project_id")
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),

@@ -91,8 +91,7 @@ export type CompetitionSummary = z.infer<typeof competitionSummarySchema>;
 export const competitionDetailSchema = competitionSummarySchema.extend({
   description: z.string(),
   createdByHandle: z.string(),
-  // Visible seulement par le créateur et les admins (apps/server/src/api/routes/competitions.ts) ;
-  // nulle pour tout autre lecteur, y compris sur une compétition publiée.
+  // Nulle pour tout lecteur autre que le créateur et les admins.
   reviewNote: z.string().nullable(),
   viewerIsCreator: z.boolean(),
   viewerIsJuror: z.boolean(),
@@ -122,10 +121,7 @@ export const submissionSchema = z.object({
   authorHandle: z.string(),
   title: z.string(),
   pitch: z.string(),
-  // Nuls pendant la phase de soumission pour une équipe rivale (lien de
-  // dépôt, de démo et description détaillée) : voir
-  // apps/server/src/api/routes/competitions.ts, listSubmissions. Visibles
-  // pour tout le monde dès la phase de vote.
+  // Nuls pour une équipe rivale pendant la phase de soumission, visibles dès le vote.
   description: z.string().nullable(),
   repoUrl: z.string().nullable(),
   demoUrl: z.string().nullable(),

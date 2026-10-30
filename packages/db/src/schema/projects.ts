@@ -2,11 +2,8 @@ import { relations } from "drizzle-orm";
 import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
 
-// Une demande d'aide (ponctuelle, ex. "revoir un PR") et une demande de
-// collaboration (durable, ex. "cherche un dev front pour la suite") vivent
-// dans la même table : docs/CONTEXTE.md ne liste qu'une table
-// `help_requests` pour les deux, distinguées par ce champ plutôt que par
-// deux tables quasi identiques.
+// Aide ponctuelle et collaboration durable partagent la table
+// `help_requests`, plutôt que deux tables presque identiques.
 export const helpRequestKindEnum = pgEnum("help_request_kind", ["help", "collaboration"]);
 export const helpRequestStatusEnum = pgEnum("help_request_status", ["open", "closed"]);
 export const applicationStatusEnum = pgEnum("application_status", ["pending", "accepted", "declined"]);

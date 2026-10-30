@@ -3,9 +3,8 @@ import { z } from "zod";
 export const ATTACHMENT_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
 
 /**
- * Types non-image acceptés en téléchargement : jamais affichés en page,
- * voir docs/adr/0008-fichiers-messages.md. `image/svg+xml` est ici et pas
- * dans ATTACHMENT_IMAGE_MIME_TYPES car un SVG peut contenir du script.
+ * Types proposés en téléchargement, jamais affichés en page. Le SVG en fait
+ * partie : il peut contenir du script.
  */
 export const ATTACHMENT_FILE_MIME_TYPES = ["application/pdf", "application/zip", "image/svg+xml", "text/plain"] as const;
 

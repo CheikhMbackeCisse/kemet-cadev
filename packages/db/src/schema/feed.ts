@@ -23,9 +23,8 @@ export const posts = pgTable(
     authorId: uuid("author_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    // Un partage est un post ordinaire qui pointe vers l'original : pas de
-    // table dédiée, conforme à la liste des quatre tables de ce lot dans
-        // docs/CONTEXTE.md. Il disparaît avec son auteur ou avec l'original.
+    // Un partage est un post ordinaire qui pointe vers l'original, sans table
+    // dédiée. Il disparaît avec son auteur ou avec l'original.
     sharedPostId: uuid("shared_post_id").references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
     body: text("body").notNull().default(""),
     format: postFormatEnum("format"),
@@ -38,10 +37,8 @@ export const posts = pgTable(
   (table) => [
     index("posts_author_created_idx").on(table.authorId, table.createdAt),
     index("posts_shared_post_idx").on(table.sharedPostId),
-    // Pas de CHECK "texte ou pièce jointe" ici : un post peut maintenant
-    // n'avoir que des images (post_attachments), une autre table qu'un
-    // CHECK ne peut pas voir. Cette règle reste appliquée par
-    // createPostSchema, comme pour les messages (createMessageSchema).
+    // Pas de CHECK "texte ou image" : les images vivent dans une autre table.
+    // La règle est appliquée par createPostSchema.
     // Écrit avec coalesce pour éviter le piège des CHECK Postgres : une
     // comparaison à NULL (format non renseigné) vaut NULL, pas faux, et un
     // CHECK qui vaut NULL est considéré respecté. Sans le coalesce, un post
@@ -57,9 +54,7 @@ export const postAttachments = pgTable(
   "post_attachments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    // Nul tant que l'image n'est pas rattachée à un post publié : voir le
-    // nettoyage des fichiers orphelins dans
-    // apps/server/src/feed/post-attachments-cleanup.ts.
+    // Nul tant que l'image n'est pas rattachée à un post publié.
     postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }),
     authorId: uuid("author_id")
       .notNull()
@@ -87,10 +82,7 @@ export const postReplies = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
-    // Un seul "marqué comme solution" par post, sur les posts de format
-    // Question (docs/CONTEXTE.md). Appliqué par setPostReplySolution
-    // (apps/server/src/api/repositories/posts.ts), pas par un index partiel :
-    // aucun autre index partiel n'existe encore dans ce schéma.
+    // Une seule solution par post Question, garantie par setPostReplySolution.
     isSolution: boolean("is_solution").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),

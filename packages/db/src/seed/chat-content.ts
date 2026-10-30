@@ -28,8 +28,7 @@ export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): 
     })),
   );
 
-  // Mêmes salons par défaut qu'un espace créé depuis l'interface (lot 5,
-  // DEFAULT_CHANNELS dans apps/server/src/api/repositories/chat.ts).
+  // Mêmes salons que DEFAULT_CHANNELS, côté serveur.
   const [generalChannel, memesChannel] = await db
     .insert(channels)
     .values([

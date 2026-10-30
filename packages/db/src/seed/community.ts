@@ -14,11 +14,8 @@ interface CommunitySpaceSeed {
   memberCount: number;
 }
 
-// Huit espaces publics au-delà de CADEV 2026, chacun avec un effectif
-// différent : de quoi montrer des communautés de tailles variées plutôt
-// qu'un seul espace de démonstration. "Carrière & Freelance Tech" reprend
-// tout le bassin de profils de remplissage, les sept autres en reprennent
-// des parts différentes.
+// Huit espaces publics d'effectifs variés, pris dans le bassin de profils
+// de remplissage.
 const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
   {
     name: "Flutter Afrique",

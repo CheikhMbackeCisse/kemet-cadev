@@ -26,10 +26,8 @@ export const pointsLedger = pgTable(
     // donnés, et empêche d'en redonner deux fois pour le même événement.
     sourceId: uuid("source_id").notNull(),
     amount: integer("amount").notNull(),
-    // Nulle pour un gain déclenché par sa propre action (retour structuré) ;
-    // renseignée quand une autre personne est à l'origine du gain (solution
-    // marquée, réponse de l'assistant jugée utile), pour appliquer le
-    // plafond quotidien par donneur (docs/CONTEXTE.md, section niveaux).
+    // Renseignée quand une autre personne est à l'origine du gain, pour le
+    // plafond quotidien par donneur ; nulle pour sa propre action.
     givenByProfileId: uuid("given_by_profile_id").references(() => profiles.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },

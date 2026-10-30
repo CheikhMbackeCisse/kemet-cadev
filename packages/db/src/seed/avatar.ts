@@ -1,7 +1,5 @@
-// Avatar abstrait généré à partir du handle (motif géométrique propre à
-// Kemet, jamais une photo), encodé en data URI pour ne dépendre d'aucun
-// fichier statique : utile pour les comptes de démonstration nommés comme
-// pour les milliers de profils de remplissage de seed/community.ts.
+// Avatar abstrait généré à partir du handle, jamais une photo, en data URI
+// pour ne dépendre d'aucun fichier statique.
 
 function hashSeed(handle: string): number {
   let h = 2166136261;

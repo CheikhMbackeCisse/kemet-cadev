@@ -112,9 +112,7 @@ export const messageAttachments = pgTable(
   "message_attachments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    // Nul tant que le fichier n'est pas rattaché à un message envoyé : voir
-    // le nettoyage des fichiers orphelins dans apps/server/src/chat/
-    // attachments-cleanup.ts.
+    // Nul tant que le fichier n'est pas rattaché à un message envoyé.
     messageId: uuid("message_id").references(() => messages.id, { onDelete: "cascade" }),
     channelId: uuid("channel_id")
       .notNull()

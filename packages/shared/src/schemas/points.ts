@@ -6,8 +6,7 @@ export const levelSchema = z.enum(LEVELS);
 
 export type Level = z.infer<typeof levelSchema>;
 
-// Seuils cumulés en points (docs/CONTEXTE.md, section "Points et niveaux").
-// Le parcours seul (plafonné à 1 500) permet d'atteindre Scribe ; seule
+// Seuils cumulés. Le parcours seul (plafonné à 1 500) permet d'atteindre Scribe ; seule
 // l'entraide, non plafonnée, fait franchir Architecte puis Légende.
 export const LEVEL_THRESHOLDS: ReadonlyArray<{ level: Level; minPoints: number }> = [
   { level: "apprenti", minPoints: 0 },

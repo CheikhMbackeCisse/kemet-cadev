@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-// Voir docs/adr/0007-recherche-skills.md : le contenu intégral d'un skill est
-// envoyé au modèle sans découpage, cette limite borne le coût d'un appel.
+// Le skill retenu part en entier au modèle : cette limite borne le coût d'un appel.
 export const MAX_SKILL_CONTENT_LENGTH = 20_000;
 export const MAX_SKILL_TAGS = 8;
 
