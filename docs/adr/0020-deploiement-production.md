@@ -19,13 +19,17 @@ restauration est prouvée, pas seulement supposée.
 
 **Images construites par la CI.** Le workflow `Images` ne se déclenche
 qu'après un workflow `CI` vert sur un push de `main`, et publie quatre
-images sur GHCR, étiquetées par le SHA du commit. GHCR est gratuit sans
-limite pour les paquets publics. Pour un dépôt privé, l'offre gratuite
-plafonne le stockage partagé entre paquets et artefacts à 500 Mo, que
-quelques dizaines de commits d'images dépassent : le dépôt et ses paquets
-doivent devenir publics avant le premier déploiement (le dépôt est de toute
-façon un livrable lu par le jury), sinon il faut supprimer les anciennes
-étiquettes à la main.
+images sur GHCR, étiquetées par le SHA du commit. Le dépôt et ses paquets
+restent privés. Le Container registry est aujourd'hui gratuit chez GitHub,
+paquets privés compris : le plafond de 500 Mo de l'offre gratuite ne
+s'applique qu'aux artefacts et aux autres registres de paquets. Le
+workflow purge quand même les anciennes versions (job `prune`, par l'API
+GitHub et le `GITHUB_TOKEN`, sans action tierce), au cas où cette gratuité
+changerait : une version étiquetée n'est supprimée que hors des 10 plus
+récentes et sans mise à jour depuis 30 jours, jamais celle de `main`. Les
+images sont publiées sans attestation de provenance (`provenance: false`),
+une seule version par commit : on perd la preuve signée du workflow qui a
+construit l'image, acceptable pour des paquets privés.
 `infra/docker-compose.yml` garde `build` pour le local et la CI, et gagne
 `image` : `KEMET_IMAGE_PREFIX` et `KEMET_IMAGE_TAG` choisissent l'image
 téléchargée en production.
@@ -64,8 +68,16 @@ de 4 Go.
 - Une commande `docker compose` lancée à la main sur le serveur doit lire
   `.env.deployed`, qui porte le commit déployé. `infra/server/compose.sh`
   le fait pour les scripts du serveur.
-- Tant que le dépôt est privé, le serveur doit se connecter à GHCR avec un
-  jeton en lecture seule.
+- Le serveur se connecte à GHCR avec un jeton en lecture seule
+  (`read:packages`), et clone le dépôt avec une clé de déploiement en
+  lecture seule.
+- Un retour arrière vers un commit de plus de 30 jours, hors des 10
+  derniers, peut ne plus trouver son image. Le point de terminaison
+  `/users/` de la purge devra devenir `/orgs/` si le dépôt passe dans une
+  organisation.
+- Les artefacts, eux, comptent dans les 500 Mo : rapports Playwright gardés
+  7 jours, sauvegardes 14 jours (environ 4 Mo chacune avec les données de
+  démonstration).
 - La clé SSH du workflow `Backup` est limitée par une commande forcée
   (`infra/server/backup-gate.sh`) et ses secrets vivent dans un environnement
   GitHub réservé à `main` : le compte de déploiement est dans le groupe

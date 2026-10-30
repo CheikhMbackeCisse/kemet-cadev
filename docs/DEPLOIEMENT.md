@@ -130,19 +130,19 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    cd /opt/kemet
    ```
 
-   Tant que le dépôt est privé, le clone demande un jeton GitHub (ou une
-   clé de déploiement en lecture seule).
+   Le dépôt est privé : le clone demande une clé de déploiement en lecture
+   seule (ou un jeton GitHub).
 
-3. Autoriser le serveur à télécharger les images. Tant que les paquets
-   GHCR sont privés, se connecter avec un jeton GitHub qui n'a que la
-   permission `read:packages` :
+3. Autoriser le serveur à télécharger les images, privées elles aussi :
+   se connecter avec un jeton GitHub (classique) qui n'a que la permission
+   `read:packages`, saisi quand `docker login` demande le mot de passe :
 
    ```
    docker login ghcr.io -u <compte GitHub>
    ```
 
-   Une fois le dépôt et les paquets rendus publics pour le jury, cette
-   étape n'est plus nécessaire.
+   GHCR garde les 10 dernières versions de chaque image et toutes celles de
+   moins de 30 jours : un commit plus ancien peut ne plus être déployable.
 
 4. Créer le fichier `.env` directement sur le serveur (ne jamais le
    commiter ni l'envoyer par un canal non chiffré) :
@@ -308,9 +308,8 @@ Mise en place, une seule fois :
      comparée une fois à l'empreinte affichée sur le serveur par
      `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`).
 
-Une fois le dépôt public, les artefacts sont téléchargeables par tout
-compte GitHub. Leur contenu reste illisible sans la clé privée, mais leur
-nom (la date) et leur taille sont visibles.
+Les artefacts ne sont téléchargeables que par les comptes qui ont accès au
+dépôt privé. Leur contenu reste de toute façon illisible sans la clé privée.
 
 Restauration, à ne lancer en production qu'avec l'accord de l'administrateur. Le
 déchiffrement se fait sur le poste de l'administrateur et le flux part par SSH : la

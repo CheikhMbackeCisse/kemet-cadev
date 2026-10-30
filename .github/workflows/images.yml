@@ -61,3 +61,44 @@ jobs:
             ${{ steps.image.outputs.name }}:main
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          # Une seule version par commit sur GHCR : sans attestation, pas de
+          # manifestes enfants sans étiquette qui s'accumulent hors de la purge.
+          provenance: false
+
+  prune:
+    needs: publish
+    runs-on: ubuntu-latest
+    concurrency: ghcr-prune
+    permissions:
+      packages: write
+    steps:
+      # Une version étiquetée n'est supprimée que hors des 10 plus récentes ET
+      # sans mise à jour depuis 30 jours : le commit en production et celui
+      # d'un retour arrière restent téléchargeables. `main` n'est jamais
+      # supprimée. Les versions sans étiquette ne sont pas touchées : une
+      # ancienne liste de manifestes encore gardée peut y pointer.
+      - name: Supprimer les anciennes versions de chaque image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KEEP: 10
+          MAX_AGE_DAYS: 30
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          limit="$(date -u -d "-${MAX_AGE_DAYS} days" +%Y-%m-%dT%H:%M:%SZ)"
+          for service in web api realtime worker; do
+            package="${repo,,}-${service}"
+            endpoint="/users/${owner}/packages/container/${package}/versions"
+            gh api --paginate "$endpoint" \
+              --jq '.[] | select(.metadata.container.tags | length > 0)
+                    | [.id, .updated_at, (.metadata.container.tags | index("main") != null)] | @tsv' \
+              | sort -t $'\t' -k2,2r > versions.tsv
+            awk -F '\t' -v keep="$KEEP" -v limit="$limit" \
+              '++n > keep && $2 < limit && $3 == "false" { print $1 }' versions.tsv > obsolete.txt
+            echo "${package} : $(wc -l < obsolete.txt) versions supprimées."
+            while read -r id; do
+              [[ $id =~ ^[0-9]+$ ]] || { echo "Identifiant inattendu : ${id}" >&2; exit 1; }
+              gh api --silent -X DELETE "${endpoint}/${id}"
+            done < obsolete.txt
+          done
