@@ -82,12 +82,8 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     try {
       await markInvocationStreaming(this.db, invocation.id);
       const resolvedSkills = await this.resolveSkills(requestedSlugs, question, input.requestedBy);
-      // Le préfixe par salon est nécessaire, pas seulement une précaution :
-      // le message système inclut l'historique du salon courant (voir
-      // buildMessages ci-dessous), donc une réponse mise en cache peut en
-      // porter la trace. Sans ce préfixe, une question reformulée de façon
-      // équivalente dans un autre salon — y compris un salon privé auquel
-      // son auteur n'a pas accès — recevrait cette réponse telle quelle.
+      // La réponse dépend de l'historique du salon : sans ce préfixe, elle
+      // pourrait ressortir dans un autre salon, y compris privé.
       const cacheKey = `${input.channelId}:${buildCacheKey(question, resolvedSkills.map((skill) => skill.id))}`;
       const cached = await this.cache.get(cacheKey);
 
@@ -182,12 +178,8 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     return selectedId ? findSkillsByIds(this.db, [selectedId]) : [];
   }
 
-  /**
-   * Étape 2 de docs/adr/0007-recherche-skills.md : un appel court, sans
-   * streaming côté utilisateur, qui ne voit que le nom et la description des
-   * candidats (jamais leur contenu, chargé seulement à l'étape suivante pour
-   * le seul skill retenu).
-   */
+  // Appel court, sans streaming, qui ne voit que le nom et la description
+  // des candidats : seul le skill retenu est chargé en entier ensuite.
   private async selectSkillId(candidates: SkillCandidate[], question: string): Promise<string | null> {
     if (candidates.length === 0) return null;
     const list = candidates.map((candidate) => `${candidate.slug} — ${candidate.description}`).join("\n");
@@ -224,11 +216,8 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
       ? skills.map((skill) => `<skill nom="${skill.name}">\n${skill.content}\n</skill>`).join("\n\n")
       : "Aucun skill retenu pour cette question.";
 
-    // L'historique et le contenu des skills viennent d'utilisateurs de la
-    // plateforme : jamais dans le message système, réservé à la consigne de
-    // rôle, pour qu'ils restent structurellement des données plutôt que des
-    // instructions (docs/CONTEXTE.md, "protection contre l'injection de
-    // prompt").
+    // Historique et skills viennent des utilisateurs : jamais dans le message
+    // système, pour qu'ils restent des données et pas des instructions.
     const context = [
       `<historique>\n${historyText || "Aucun message précédent."}\n</historique>`,
       `<skill>\n${skillsText}\n</skill>`,

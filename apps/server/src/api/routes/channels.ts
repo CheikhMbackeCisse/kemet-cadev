@@ -22,7 +22,7 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-// `null` pour un visiteur (pas de session, mode visiteur du lot 11a).
+// `null` pour un visiteur, sans session.
 async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
   return userId ? findProfileByUserId(db, userId) : null;
 }

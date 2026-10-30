@@ -4,11 +4,8 @@ import type { CreatePostInput } from "@kemet/shared";
 import { findProfileById } from "./chat.js";
 import { listAttachmentsForPosts } from "./post-attachments.js";
 
-// Fenêtre du classement "Pour toi" : sans les niveaux (lot 8, pas encore
-// posé), pondérer par le niveau de ceux qui réagissent comme le prévoit
-// docs/CONTEXTE.md est impossible. En attendant, un classement simple par
-// "Utile" et retours de test sur les posts récents, revu une fois le lot 8
-// posé (voir docs/adr/0010-fil-de-posts.md).
+// Fenêtre du classement "Pour toi" : "Utile" et retours de test sur les
+// posts récents, sans pondération par niveau (docs/adr/0010-fil-de-posts.md).
 const POUR_TOI_WINDOW_DAYS = 14;
 
 function toPage<T extends { createdAt: Date }>(rows: T[], limit: number) {
@@ -73,10 +70,8 @@ export async function listAbonnementsFeed(db: Db, viewerProfileId: string, curso
 }
 
 /**
- * Pas de pagination par curseur ici : le classement par score n'est pas
- * monotone avec la date, un curseur stable demanderait de figer le score au
- * premier chargement. Une liste bornée, sans page suivante, comme le quota
- * quotidien provisoire du lot 6 : une simplification à revoir plus tard.
+ * Liste bornée, sans curseur : le score n'est pas monotone avec la date, un
+ * curseur stable demanderait de figer le score au premier chargement.
  */
 export async function listPourToiFeed(db: Db, limit: number) {
   const since = new Date(Date.now() - POUR_TOI_WINDOW_DAYS * 24 * 60 * 60 * 1000);
@@ -99,10 +94,8 @@ export async function countPostReactions(db: DbOrTx, postId: string) {
 }
 
 // Exclut les réponses supprimées, à la différence de countReplies côté
-// messages (apps/server/src/api/repositories/chat.ts) : un compteur affiché
-// sur une carte de post, jamais recalculé à l'ouverture d'un fil complet
-// comme pour un message, ne doit pas annoncer des réponses qui n'existent
-// plus pour qui les ouvre.
+// messages : le compteur d'une carte ne doit pas annoncer des réponses
+// absentes de la page du post.
 export async function countPostReplies(db: DbOrTx, postId: string) {
   const rows = await db
     .select({ id: postReplies.id })
@@ -135,8 +128,7 @@ export async function togglePostReaction(db: Db, postId: string, profileId: stri
   return { utileCount, reactedByMe: !existing };
 }
 
-// `viewerProfileId` est `null` pour un visiteur (mode visiteur, lot 11a) :
-// jamais réagi, sans requête.
+// `viewerProfileId` est `null` pour un visiteur : jamais réagi, sans requête.
 export async function hydratePost(db: Db, row: typeof posts.$inferSelect, viewerProfileId: string | null) {
   const [author, utileCount, reactedByMe, replyCount, feedbackCount, sharedPost, attachments] = await Promise.all([
     findProfileById(db, row.authorId),
@@ -209,10 +201,8 @@ export async function setPostReplySolution(db: Db, postId: string, replyId: stri
 }
 
 /**
- * `null` si la contrainte unique (post_feedback_post_author_idx) a rejeté
- * l'insertion : deux requêtes concurrentes de la même personne peuvent
- * toutes deux franchir la vérification préalable côté route
- * (hasProfileGivenFeedback), seule celle-ci tranche de façon fiable.
+ * `null` si l'index unique a rejeté l'insertion : deux requêtes simultanées
+ * passent toutes deux la vérification de la route, seul l'index tranche.
  */
 export async function insertPostFeedback(db: Db, input: { postId: string; authorId: string; body: string }) {
   const [feedback] = await db

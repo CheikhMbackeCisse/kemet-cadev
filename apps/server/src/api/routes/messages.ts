@@ -39,8 +39,7 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-// `null` pour un visiteur (pas de session, mode visiteur du lot 11a) : les
-// deux routes de lecture ci-dessous l'acceptent, jamais les routes d'écriture.
+// `null` pour un visiteur : accepté par les routes de lecture, jamais d'écriture.
 async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
   return userId ? findProfileByUserId(db, userId) : null;
 }
@@ -118,11 +117,8 @@ export function registerMessageRoutes(
         }
       }
 
-      // Transaction : si la validation des fichiers échoue, l'insertion du
-      // message est annulée avec elle. Sans ça, une relance réseau avec le
-      // même clientId retomberait sur un message déjà créé mais sans ses
-      // fichiers, sans jamais pouvoir les rattacher (voir message:new et la
-      // déduplication par clientId dans docs/adr/0006-temps-reel.md).
+      // Transaction : sinon un renvoi avec le même clientId retomberait sur
+      // un message créé sans ses fichiers, sans pouvoir les rattacher.
       const { message, created } = await db.transaction(async (tx) => {
         const result = await insertMessage(tx, {
           channelId: channel.id,
@@ -153,11 +149,8 @@ export function registerMessageRoutes(
       if (created) {
         await chat.publish({ type: "message:new", channelId: channel.id, message: serialized });
         if (mentionsAssistant(input.body)) {
-          // Volontairement non attendu : la réponse HTTP ne doit pas attendre
-          // la fin du flux de l'assistant, diffusé à part par Socket.IO
-          // (voir apps/server/src/ai/assistant-orchestrator.ts). Une erreur
-          // ici est déjà transformée en événement assistant:failed par
-          // l'orchestrateur, donc seulement journalisée si elle s'en échappe.
+          // Non attendu : la réponse de l'assistant part par Socket.IO, et
+          // l'orchestrateur traduit déjà ses erreurs en assistant:failed.
           assistant
             .handleMention({
               channelId: channel.id,

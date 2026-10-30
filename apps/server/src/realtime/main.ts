@@ -70,10 +70,8 @@ app
 
     const socketsByProfile = new Map<string, Set<Socket>>();
 
-    // Mode visiteur (lot 11a) : sans session, la connexion est acceptée avec
-    // `profileId = null` plutôt que refusée — seuls les salons d'un espace
-    // public lui seront ensuite ouverts par canAccessChannel. Une session
-    // valide sans profil associé reste refusée, comportement inchangé.
+    // Sans session, connexion acceptée en visiteur (`profileId = null`). Une
+    // session sans profil reste refusée.
     io.use(async (socket, next) => {
       const session = await auth.api.getSession({ headers: fromNodeHeaders(socket.handshake.headers) });
       if (!session) {

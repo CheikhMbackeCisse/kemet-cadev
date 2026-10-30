@@ -20,9 +20,8 @@ export interface AssistantRequest {
 }
 
 /**
- * Deux formes acceptées (voir docs/CONTEXTE.md, section assistant) :
- * "@kemet avec wave-paiements, comment…" pour demander un skill précis, ou
- * une simple mention pour laisser l'assistant choisir.
+ * "@kemet avec wave-paiements, comment…" demande un skill précis ; une
+ * simple mention laisse l'assistant choisir.
  */
 export function parseAssistantRequest(body: string): AssistantRequest {
   const withSkill = body.match(MENTION_WITH_SKILL_PATTERN);

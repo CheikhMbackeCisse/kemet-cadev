@@ -56,10 +56,7 @@ export function registerAttachmentRoutes(
       try {
         buffer = await part.toBuffer();
       } catch (error) {
-        // @fastify/multipart rejette avec FST_REQ_FILE_TOO_LARGE dès que le
-        // flux dépasse `limits.fileSize` (apps/server/src/api/app.ts),
-        // plutôt que de renvoyer un buffer tronqué : il n'y a rien d'autre à
-        // faire que de traduire cette erreur en réponse 400 lisible.
+        // @fastify/multipart lève FST_REQ_FILE_TOO_LARGE au-delà de `limits.fileSize`.
         if ((error as { code?: string }).code === "FST_REQ_FILE_TOO_LARGE") {
           throw badRequest(
             `Le fichier dépasse la taille maximale autorisée (${attachmentLimits.maxAttachmentBytes} octets).`,

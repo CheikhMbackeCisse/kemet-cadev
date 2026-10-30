@@ -25,8 +25,7 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-// `null` pour un visiteur (pas de session, mode visiteur du lot 11a) : les
-// routes de lecture appellent ceci au lieu de requireOwnProfile.
+// `null` pour un visiteur : les routes de lecture l'appellent au lieu de requireOwnProfile.
 async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
   return userId ? findProfileByUserId(db, userId) : null;
 }

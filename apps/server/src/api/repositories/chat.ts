@@ -79,8 +79,7 @@ export async function findSpaceMembership(db: Db, spaceId: string, profileId: st
   return member ?? null;
 }
 
-// `profileId` est `null` pour un visiteur (mode visiteur, lot 11a) : seuls
-// les espaces publics sont alors visibles, sans jointure d'appartenance.
+// `profileId` est `null` pour un visiteur : seuls les espaces publics sont visibles.
 export async function listSpacesForViewer(db: Db, profileId: string | null, cursor: string | undefined, limit: number) {
   const memberIds = profileId
     ? (await db.select({ id: spaceMembers.spaceId }).from(spaceMembers).where(eq(spaceMembers.profileId, profileId))).map(
@@ -234,11 +233,9 @@ export async function softDeleteMessage(db: Db, messageId: string) {
 }
 
 /**
- * Du plus récent au plus ancien. Le curseur est l'identifiant du dernier
- * message de la page précédente, comparé sur (created_at, id) en base : une
- * date seule, arrondie à la milliseconde côté JavaScript alors que Postgres
- * garde la microseconde, faisait sauter des messages en bord de page, et deux
- * messages de même horodatage n'avaient pas d'ordre stable.
+ * Du plus récent au plus ancien. Le curseur est un identifiant de message,
+ * comparé sur (created_at, id) : une date seule, arrondie à la milliseconde
+ * en JavaScript, faisait sauter des messages en bord de page.
  */
 export async function listChannelMessages(db: Db, channelId: string, cursor: string | undefined, limit: number) {
   const topLevelInChannel = and(eq(messages.channelId, channelId), isNull(messages.parentMessageId));
@@ -412,11 +409,8 @@ export async function hydrateMessage(db: Db, row: typeof messages.$inferSelect) 
 
 export async function redeemInvite(db: Db, code: string, profileId: string): Promise<InviteRedemptionResult> {
   return db.transaction(async (tx) => {
-    // Mise à jour conditionnelle en une seule requête : sous charge concurrente, le
-    // verrou de ligne pris par cet UPDATE sérialise les tentatives sur le même code,
-    // chacune réévaluant la clause WHERE sur l'état déjà incrémenté par la précédente.
-    // Un simple SELECT puis UPDATE laisserait deux requêtes concurrentes lire le même
-    // use_count et dépasser max_uses.
+    // Un seul UPDATE conditionnel : le verrou de ligne sérialise les essais
+    // concurrents. Un SELECT puis UPDATE pourrait dépasser max_uses.
     const [updated] = await tx
       .update(spaceInvites)
       .set({ useCount: sql`${spaceInvites.useCount} + 1` })

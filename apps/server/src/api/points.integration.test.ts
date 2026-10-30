@@ -91,10 +91,8 @@ describe.skipIf(!databaseUrl)("Points et niveaux (base Postgres réelle)", () =>
     const author = await createMember("cap-author@test.kemet", "capauthor");
     const replier = await createMember("cap-replier@test.kemet", "capreplier");
 
-    // Six questions d'affilée dépassent la limite anti-spam réduite d'un
-    // compte flambant neuf (lot 11, apps/server/src/moderation/) : l'auteur
-    // est vieilli pour tester le plafond de points, pas l'anti-spam, déjà
-    // couvert par ses propres tests.
+    // Six questions d'affilée dépassent la limite d'un compte neuf : l'auteur
+    // est vieilli, ce test porte sur le plafond de points.
     await db.update(profiles).set({ createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000) }).where(eq(profiles.id, author.profileId));
 
     // Plafond à 50, +10 par solution marquée : la 6e des 6 questions ne

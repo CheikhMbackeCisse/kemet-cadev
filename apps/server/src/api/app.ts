@@ -59,14 +59,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   void app.register(rateLimit, { global: false });
   void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
-  // API JSON pure, jamais de page HTML servie : une politique stricte ne
-  // coûte rien et vaut mieux que l'absence totale d'en-têtes de sécurité
-  // qui prévalait jusqu'ici en dehors de la route de fichiers
-  // (apps/server/src/api/routes/attachments.ts, qui pose déjà la même
-  // valeur à la main sur sa propre route). `useDefaults: false` est
-  // nécessaire : sans lui, helmet fusionne ses directives par défaut
-  // (font-src/style-src plus permissifs, frame-ancestors 'self') avec
-  // celle posée ici au lieu de la remplacer.
+  // API JSON seulement : default-src 'none' ne coûte rien. Sans
+  // `useDefaults: false`, helmet fusionnerait ses directives par défaut,
+  // plus permissives, au lieu de les remplacer.
   void app.register(helmet, {
     contentSecurityPolicy: { useDefaults: false, directives: { defaultSrc: ["'none'"] } },
   });
@@ -76,18 +71,14 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       reply.status(error.statusCode).send({ error: { code: error.code, message: error.message } });
       return;
     }
-    // Une route invalide un corps de requête avec schema.parse(), jamais
-    // schema.safeParse() : sans ce cas, une entrée refusée par une règle
-    // Zod (plutôt qu'une vérification explicite via badRequest()) tombait
-    // dans la branche 500 ci-dessous.
+    // Les routes valident avec schema.parse() : une entrée refusée par Zod
+    // tomberait sinon dans la branche 500.
     if (error instanceof ZodError) {
       reply.status(400).send({ error: { code: "invalid_input", message: "Les données envoyées ne sont pas valides." } });
       return;
     }
-    // @fastify/rate-limit (429) et d'autres erreurs internes à Fastify posent
-    // un statusCode 4xx explicite sur l'erreur qu'elles lèvent : le
-    // respecter plutôt que de toujours répondre 500 évite de masquer, par
-    // exemple, une limite de débit dépassée derrière une erreur interne.
+    // @fastify/rate-limit (429) et Fastify posent un statusCode 4xx sur
+    // leurs erreurs : le garder évite de masquer une limite derrière un 500.
     if (error instanceof Error) {
       const statusCode = (error as { statusCode?: unknown }).statusCode;
       if (typeof statusCode === "number" && statusCode >= 400 && statusCode < 500) {
@@ -99,22 +90,15 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     reply.status(500).send({ error: { code: "internal_error", message: "Erreur interne." } });
   });
 
-  // `register()` met en file d'attente le chargement de rateLimit et de
-  // multipart : sans ce `after()`, les routes ci-dessous seraient déclarées
-  // avant que ces deux plugins n'aient fini de charger, et le hook `onRoute`
-  // posé par rateLimit sur `config.rateLimit` ne s'appliquerait jamais (les
-  // limites configurées par route resteraient silencieusement sans effet).
+  // Sans `after()`, les routes seraient déclarées avant le chargement de
+  // rateLimit, et `config.rateLimit` resterait sans effet, sans erreur.
   app.after(() => {
     const health = async () => healthcheckResponseSchema.parse({ status: "ok", service: "api" });
     app.get("/health", health);
-    // Caddy ne tronque plus le préfixe /api (voir infra/Caddyfile) : toutes les
-    // routes atteintes depuis le navigateur le gardent, y compris celle-ci.
-    // /health reste accessible sans préfixe pour le healthcheck Docker, qui
-    // interroge le conteneur directement.
+    // /health sans préfixe sert au healthcheck Docker, qui ne passe pas par Caddy.
     app.get("/api/health", health);
 
-    // Public, sans session : la page de connexion s'en sert pour savoir si
-    // elle doit proposer le bouton GitHub (voir docs/adr/0014-comptes-et-visiteur.md).
+    // Public : la page de connexion y lit les fournisseurs sociaux à proposer.
     app.get("/api/auth-config", async () => authConfig);
 
     const authHandler = toNodeHandler(deps.auth);

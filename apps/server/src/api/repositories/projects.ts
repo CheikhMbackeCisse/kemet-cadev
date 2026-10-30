@@ -102,12 +102,7 @@ export async function countApplications(db: DbOrTx, helpRequestId: string) {
   return row?.value ?? 0;
 }
 
-/**
- * `null` si la contrainte unique (applications_help_request_applicant_idx) a
- * rejeté l'insertion : une personne ne postule qu'une fois par demande,
- * même mécanisme que `insertPostFeedback`
- * (apps/server/src/api/repositories/posts.ts).
- */
+/** `null` si l'index unique a rejeté l'insertion : une candidature par personne et par demande. */
 export async function insertApplication(db: Db, input: { helpRequestId: string; applicantId: string; message: string }) {
   const [application] = await db
     .insert(applications)
@@ -132,11 +127,8 @@ export async function listApplicationsForHelpRequest(db: Db, helpRequestId: stri
 }
 
 /**
- * Accepter une candidature ferme la demande d'aide et refuse automatiquement
- * les autres candidatures encore en attente : une seule personne confirmée
- * par demande. Le tout dans une transaction pour ne jamais laisser deux
- * candidatures acceptées sous une écriture concurrente, même précaution que
- * `setPostReplySolution` (apps/server/src/api/repositories/posts.ts).
+ * Accepter une candidature ferme la demande et refuse les autres en
+ * attente, dans une transaction : jamais deux candidatures acceptées.
  */
 export async function decideApplication(db: Db, applicationId: string, accepted: boolean) {
   return db.transaction(async (tx) => {

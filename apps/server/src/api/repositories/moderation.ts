@@ -16,15 +16,10 @@ export interface ReportTargetInfo {
 }
 
 /**
- * Point d'entrée pour la création d'un signalement (jamais pour l'affichage
- * de la file ou du journal, voir describeReportTarget ci-dessous) : `null`
- * si la cible n'existe plus, est déjà supprimée, ou si `viewerProfileId` ne
- * peut pas la voir. Pour un message, reprend la même règle de visibilité que
- * `requireChannelAccess` (apps/server/src/api/routes/channels.ts) : sans
- * cette vérification, n'importe qui pourrait signaler un message dont il a
- * deviné l'identifiant pour en récupérer un extrait, même dans un espace
- * privé dont il n'est pas membre. Retourne aussi l'auteur, pour refuser
- * l'auto-signalement.
+ * Pour créer un signalement : `null` si la cible n'existe plus ou si
+ * `viewerProfileId` ne peut pas la voir (même règle que
+ * `requireChannelAccess`). Sinon, signaler un identifiant deviné révélerait
+ * un extrait d'un espace privé. L'auteur sert à refuser l'auto-signalement.
  */
 export async function resolveReportTarget(
   db: Db,
@@ -53,14 +48,9 @@ export async function resolveReportTarget(
 }
 
 /**
- * Résumé d'affichage pour la file et le journal, réservés aux admins
- * (requireAdmin dans apps/server/src/api/routes/moderation.ts) : à la
- * différence de resolveReportTarget, ignore volontairement la visibilité
- * par espace. Un admin doit pouvoir juger un signalement même sur un espace
- * privé dont il n'est pas membre ; sans ça, le signalement d'un message
- * privé serait impossible à instruire. Tolérant à une cible déjà masquée
- * ou supprimée (le cas courant pour un signalement déjà traité), et ne sert
- * jamais à valider une création de signalement.
+ * Résumé pour la file et le journal, réservés aux admins. Ignore la
+ * visibilité par espace : un signalement dans un espace privé doit pouvoir
+ * être jugé. Accepte une cible déjà masquée ou supprimée.
  */
 export async function describeReportTarget(db: Db, targetType: ReportTarget, targetId: string): Promise<string> {
   if (targetType === "message") {

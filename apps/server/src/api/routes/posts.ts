@@ -49,8 +49,7 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-// `null` pour un visiteur (pas de session, mode visiteur du lot 11a) :
-// seule la lecture du fil "Pour toi" lui est accessible.
+// `null` pour un visiteur : seule la lecture du fil "Pour toi" lui est ouverte.
 async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
   return userId ? findProfileByUserId(db, userId) : null;
 }
@@ -95,9 +94,7 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const input = createPostSchema.parse(request.body);
-      // Transaction : si une image envoyée n'est plus disponible, la
-      // création du post est annulée avec elle, comme pour les fichiers
-      // joints à un message (routes/messages.ts).
+      // Transaction : une image qui n'est plus disponible annule le post.
       const post = await db.transaction(async (tx) => {
         const attachmentIds = input.attachmentIds ?? [];
         for (const attachmentId of attachmentIds) {

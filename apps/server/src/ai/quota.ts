@@ -7,9 +7,8 @@ export const DEFAULT_DAILY_QUOTA = 30;
 const ELEVATED_DAILY_QUOTA = 60;
 const MAX_DAILY_QUOTA = 150;
 
-// Valeurs non chiffrées par docs/CONTEXTE.md, qui ne fixe que Scribe
-// ("quota d'IA plus élevé") et Légende ("quota d'IA maximal") : Artisan et
-// Architecte restent au quota de base, à ajuster si besoin.
+// Seuls Scribe (plus élevé) et Légende (maximal) ont un quota propre :
+// Artisan et Architecte restent au quota de base.
 const LEVEL_DAILY_QUOTA: Record<Level, number> = {
   apprenti: DEFAULT_DAILY_QUOTA,
   artisan: DEFAULT_DAILY_QUOTA,
@@ -19,12 +18,8 @@ const LEVEL_DAILY_QUOTA: Record<Level, number> = {
 };
 
 /**
- * Quota quotidien par utilisateur, selon son niveau (docs/CONTEXTE.md,
- * section niveaux), maintenant que le lot 8 (points et niveaux) est posé.
- * `limitOverride` sert aux tests, qui ont besoin d'une limite fixe pour
- * rester déterministes. Compter les invocations plutôt que tenir un
- * registre à part garde l'usage dérivé, dans le même esprit que les soldes
- * jamais stockés.
+ * Quota quotidien selon le niveau, calculé en comptant les invocations du
+ * jour plutôt que stocké. `limitOverride` fixe la limite pour les tests.
  */
 export async function checkDailyQuota(
   db: Db,

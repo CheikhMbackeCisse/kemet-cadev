@@ -238,9 +238,7 @@ describe.skipIf(!databaseUrl)("Projets (base Postgres réelle)", () => {
       payload: { message: "Je suis aussi intéressé pour rejoindre ce projet." },
     });
 
-    // Accepter la candidature choisie refuse automatiquement les autres
-    // candidatures encore en attente (decideApplication, dans une
-    // transaction) : inutile de décider aussi pour `rejectedApplication`.
+    // Accepter une candidature refuse les autres en attente.
     await app.inject({
       method: "PUT",
       url: `/api/applications/${chosenApplication.json().application.id}/decision`,

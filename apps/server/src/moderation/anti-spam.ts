@@ -10,13 +10,9 @@ export function isNewAccount(createdAt: Date, config: AntiSpamConfig, now: Date 
 }
 
 /**
- * Limite dynamique pour `config.rateLimit.max` (@fastify/rate-limit) : un
- * compte créé depuis moins de `newAccountWindowHours` reçoit une fraction
- * (`newAccountFactor`) de la limite normale, pour ralentir un compte flambant
- * neuf qui spammerait sans pénaliser les comptes établis. Sans session ou
- * sans profil, la limite normale s'applique : la route elle-même refusera la
- * requête juste après pour absence de session, le préhandler de limite de
- * débit n'a pas à anticiper cette erreur.
+ * Limite pour `config.rateLimit.max` : un compte de moins de
+ * `newAccountWindowHours` n'a droit qu'à `newAccountFactor` fois la limite.
+ * Sans session, limite normale : la route refusera la requête ensuite.
  */
 export function antiSpamMax(db: Db, auth: Auth, config: AntiSpamConfig, baseMax: number) {
   return async (request: FastifyRequest): Promise<number> => {

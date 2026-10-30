@@ -31,22 +31,16 @@ export interface LlmProvider {
   streamResponse(messages: LlmMessage[]): AsyncIterable<string>;
 }
 
-/**
- * Ce que l'orchestrateur attend réellement (voir assistant-orchestrator.ts) :
- * un flux de morceaux déjà attribués à un fournisseur. Découplé de la classe
- * concrète `FallbackLlmProvider` pour accepter un faux fournisseur dans les
- * tests sans construire de vrais clients Gemini ou OpenRouter.
- */
+/** Séparé de `FallbackLlmProvider` pour accepter un faux fournisseur dans les tests. */
 export interface StreamingLlmProvider {
   streamResponse(messages: LlmMessage[]): AsyncIterable<LlmStreamChunk>;
 }
 
 /**
  * Bascule automatique du principal vers le secours en cas d'erreur de
- * quota (429) ou d'indisponibilité, voir docs/CONTEXTE.md section IA. Le
- * flux du principal n'est utilisé que si son premier morceau arrive sans
- * erreur : un échec après le début du flux n'est pas rejoué, pour ne pas
- * envoyer une réponse à moitié écrite deux fois à l'utilisateur.
+ * quota (429) ou d'indisponibilité. Un échec après le premier morceau n'est
+ * pas rejoué : l'utilisateur recevrait une réponse à moitié écrite, puis une
+ * autre.
  */
 export class FallbackLlmProvider {
   constructor(
@@ -63,9 +57,6 @@ export class FallbackLlmProvider {
       }
       return;
     } catch (error) {
-      // Un échec après que des morceaux ont déjà été diffusés n'est jamais
-      // rejoué sur le secours : l'utilisateur recevrait une réponse à
-      // moitié écrite suivie d'une réponse complète distincte.
       if (started || !(error instanceof LlmProviderError)) throw error;
     }
 

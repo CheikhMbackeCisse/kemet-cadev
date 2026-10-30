@@ -304,9 +304,7 @@ export interface SubmissionStanding {
   officialScore: number;
 }
 
-// Pondération arbitraire (docs/CONTEXTE.md ne tranche pas entre jury et
-// vote public) : 70 % jury, 30 % vote, comme docs/adr/0013-competitions.md
-// l'explique. À ajuster si l'usage réel la montre mal calibrée.
+// Pondération arbitraire, expliquée dans docs/adr/0013-competitions.md.
 const JURY_WEIGHT = 0.7;
 const VOTE_WEIGHT = 0.3;
 

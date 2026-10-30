@@ -17,12 +17,7 @@ export async function findSkillsByIds(db: DbOrTx, skillIds: string[]) {
   return db.select().from(skills).where(inArray(skills.id, skillIds));
 }
 
-/**
- * Un skill privé n'est visible que par son auteur, un skill d'espace que par
- * les membres de cet espace, un skill public par tout le monde. Même règle
- * que `FullTextRetriever` (voir apps/server/src/ai/skill-retriever.ts), ici
- * appliquée après coup à une ligne déjà chargée plutôt que dans la requête.
- */
+/** Même règle que `FullTextRetriever`, appliquée à une ligne déjà chargée. */
 export async function canViewSkill(db: Db, skill: typeof skills.$inferSelect, profileId: string): Promise<boolean> {
   if (skill.visibility === "public") return true;
   if (skill.visibility === "private") return skill.authorId === profileId;

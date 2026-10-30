@@ -6,12 +6,8 @@ export interface AttachmentLimits {
 const DEFAULT_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 const DEFAULT_MAX_USER_STORAGE_BYTES = 500 * 1024 * 1024;
 
-/**
- * docker-compose substitue une chaîne vide, pas une variable absente, pour
- * tout `${VAR}` non défini dans `.env` (voir infra/docker-compose.yml) :
- * `??` ne suffit pas, une chaîne vide n'est pas nullish mais donnerait
- * `Number("") === 0` si on la convertissait quand même.
- */
+// docker-compose transmet une chaîne vide pour une variable non définie :
+// `??` ne suffit pas, et Number("") vaut 0.
 function readPositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const parsed = Number(value);

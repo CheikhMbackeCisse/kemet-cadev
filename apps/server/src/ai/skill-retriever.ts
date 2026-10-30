@@ -11,23 +11,16 @@ export interface SkillCandidate {
 }
 
 /**
- * Présélectionne les skills pertinents pour une question, parmi ceux que
- * l'utilisateur a le droit d'utiliser. Voir
- * docs/adr/0007-recherche-skills.md : l'implémentation (recherche plein
- * texte aujourd'hui, peut-être des embeddings plus tard) ne doit jamais être
- * supposée par les étapes suivantes (choix du skill par le modèle,
- * chargement intégral).
+ * Présélectionne les skills pertinents parmi ceux que l'utilisateur a le
+ * droit d'utiliser. Les étapes suivantes ne supposent rien de la méthode.
  */
 export interface SkillRetriever {
   findCandidates(query: string, profileId: string, limit?: number): Promise<SkillCandidate[]>;
 }
 
 /**
- * Recherche plein texte PostgreSQL sur `skills.search_vector` (configurations
- * french et english, voir la migration qui maintient cette colonne par
- * trigger). Filtre les droits directement dans la requête : un skill privé
- * n'est candidat que pour son auteur, un skill d'espace que pour les membres
- * de cet espace.
+ * Recherche plein texte sur `skills.search_vector` (french et english,
+ * tenue à jour par trigger). Les droits sont filtrés dans la requête.
  */
 export class FullTextRetriever implements SkillRetriever {
   constructor(private readonly db: Db) {}

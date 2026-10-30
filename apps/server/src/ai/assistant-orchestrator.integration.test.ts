@@ -227,9 +227,8 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     const { cookie: reactorCookie, profileId: reactorId } = await createMember("utile-reactor@test.kemet", "utilereactor");
     const { channelId } = await createSpaceAndChannel(askerCookie);
 
-    // Un compte flambant neuf ne rapporte rien (docs/CONTEXTE.md : "créer de
-    // faux comptes ne rapporte rien") : on le vieillit pour tester le cas
-    // normal séparément du garde-fou de fraîcheur, déjà couvert plus bas.
+    // Un compte flambant neuf ne rapporte rien : on le vieillit pour tester
+    // le cas normal, le garde-fou de fraîcheur est couvert plus bas.
     await db.update(profiles).set({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }).where(eq(profiles.id, reactorId));
 
     const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";

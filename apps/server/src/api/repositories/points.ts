@@ -11,13 +11,10 @@ export const POINTS_COMPETITION_PARTICIPATION = 10;
 // récompensé.
 export const POINTS_COMPETITION_VICTORY_BY_RANK: ReadonlyArray<number> = [200, 100, 50];
 
-// Valeur non spécifiée par docs/CONTEXTE.md ("plafond de points qu'une même
-// personne peut te donner par jour") : choisie arbitrairement, à ajuster
-// si elle se révèle trop basse ou trop haute en usage réel.
+// Plafond quotidien de points qu'une même personne peut donner : valeur arbitraire.
 export const POINTS_DAILY_GIVER_CAP = 50;
 
-// Réservé au parcours vérifié (lot 3) : aucune action ne verse encore dans
-// cette catégorie, faute d'écran de vérification des crédentials.
+// Réservé au parcours vérifié, qui n'a pas encore d'écran.
 export const POINTS_PARCOURS_CAP = 1500;
 
 export const POINTS_REGULARITE_CAP = 500;
@@ -41,11 +38,8 @@ export const UTILE_LEVEL_MULTIPLIER: Record<Level, number> = {
 type PointsLedgerRow = typeof pointsLedger.$inferSelect;
 export type PointsSource = PointsLedgerRow["source"];
 
-// Toutes les sources actuelles relèvent de l'entraide (docs/CONTEXTE.md),
-// sans plafond. Le parcours vérifié et la régularité n'ont pas de source
-// dans le registre : le premier attend l'écran de vérification des
-// crédentials, la seconde se calcule directement à partir des dates des
-// lignes existantes (voir countActiveDays ci-dessous), jamais stockée.
+// Toutes les sources actuelles relèvent de l'entraide. La régularité n'a
+// pas de source : elle se déduit des dates du registre (countActiveDays).
 const ENTRAIDE_SOURCES: ReadonlySet<PointsSource> = new Set([
   "post_reply_solution",
   "post_feedback_given",
@@ -64,20 +58,14 @@ export interface AwardPointsInput {
 }
 
 /**
- * Ajoute une ligne au registre, jamais ne la modifie. Idempotent par
- * construction : un deuxième appel avec le même (source, sourceId,
- * profileId) ne redonne rien, grâce à l'index unique de la table — même
- * mécanisme que les réactions et les retours structurés du fil (lot 7).
- * Refuse de se donner des points à soi-même et applique le plafond
- * quotidien par donneur en réduisant le montant plutôt qu'en le refusant
- * en bloc, pour ne pas perdre les points encore disponibles ce jour-là.
+ * Ajoute une ligne au registre, jamais ne la modifie. Idempotent grâce à
+ * l'index unique (source, sourceId, profileId). Refuse les points donnés à
+ * soi-même ; au-delà du plafond quotidien, le montant est réduit plutôt
+ * que refusé.
  *
- * La lecture du plafond puis l'écriture se font sous un verrou consultatif
- * Postgres posé sur le binôme (donneur, receveur) : sans lui, deux requêtes
- * concurrentes avec des sourceId distincts (donc jamais bloquées par
- * l'index unique) peuvent chacune lire le même total avant qu'aucune n'ait
- * écrit, et dépasser le plafond — exactement le scénario que deux comptes
- * complices scripteraient pour le contourner.
+ * Plafond lu puis écrit sous un verrou consultatif sur (donneur, receveur) :
+ * deux comptes complices pourraient sinon le dépasser par des requêtes
+ * simultanées.
  */
 export async function awardPoints(db: DbOrTx, input: AwardPointsInput): Promise<void> {
   if (input.amount <= 0) return;
@@ -145,12 +133,9 @@ export interface ProfilePoints {
 }
 
 /**
- * Jamais stocké : recalculé à chaque lecture à partir du registre, comme le
- * recommande docs/CONTEXTE.md pour pouvoir toujours expliquer un total.
- * La régularité (+5 par jour avec une action utile, sur 90 jours, plafond
- * 500) se déduit des dates déjà présentes dans le registre plutôt que
- * d'ajouter une ligne par jour : si une ligne de gain est un jour annulée,
- * le bonus de régularité se corrige tout seul au prochain calcul.
+ * Recalculé à chaque lecture, pour qu'un total s'explique toujours. La
+ * régularité (+5 par jour actif sur 90 jours, plafond 500) se déduit des
+ * dates du registre : un gain annulé corrige le bonus tout seul.
  */
 export async function computeProfilePoints(db: DbOrTx, profileId: string): Promise<ProfilePoints> {
   const bySource = await db
@@ -173,12 +158,7 @@ export async function computeProfilePoints(db: DbOrTx, profileId: string): Promi
   return { totalPoints, level: levelForPoints(totalPoints) };
 }
 
-/**
- * Montant d'un gain déclenché par un "Utile" (docs/CONTEXTE.md : "vaut plus
- * s'il vient d'un niveau élevé, et presque rien s'il vient d'un compte
- * récent"). `giver` est la personne qui clique sur "Utile", jamais celle qui
- * reçoit les points.
- */
+/** Montant d'un "Utile" selon qui le donne (`giver`) : son niveau et l'âge de son compte. */
 export async function computeUtileAwardAmount(
   db: DbOrTx,
   baseAmount: number,

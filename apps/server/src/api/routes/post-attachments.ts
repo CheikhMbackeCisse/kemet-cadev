@@ -69,9 +69,7 @@ export function registerPostAttachmentRoutes(
 
       const storageKey = randomUUID();
       const attachment = await db.transaction(async (tx) => {
-        // Même verrou que pour les fichiers de salon : un seul quota de
-        // stockage par utilisateur, fichiers de salon et images de post
-        // confondus (voir docs/adr/0017-images-sur-les-posts.md).
+        // Même verrou que les fichiers de salon : un seul quota par utilisateur.
         await lockUserStorageQuota(tx, profile.id);
         const alreadyStored =
           (await sumUserStorageBytes(tx, profile.id)) + (await sumUserPostAttachmentBytes(tx, profile.id));
@@ -98,10 +96,8 @@ export function registerPostAttachmentRoutes(
     // jamais servie, comme pour les fichiers de salon.
     if (!attachment || !attachment.postId) throw notFound("Cette image n'existe pas.");
     const post = await findPostById(db, attachment.postId);
-    // Un post supprimé masque déjà ses images côté client (serializePostSummary) ;
-    // sans ce contrôle, l'URL de l'image restait joignable directement à qui
-    // l'avait conservée. Lecture publique (mode visiteur, lot 11a) : le fil
-    // est lisible sans session, cette route l'est donc aussi.
+    // Sans ce contrôle, l'image d'un post supprimé resterait joignable par son
+    // URL. Route publique, comme le fil.
     if (!post || post.deletedAt) throw notFound("Cette image n'existe pas.");
 
     reply

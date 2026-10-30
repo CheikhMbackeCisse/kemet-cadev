@@ -8,10 +8,7 @@ import { canAccessChannel, findProfileId } from "./access.js";
 
 const databaseUrl = getTestDatabaseUrl();
 
-// `canAccessChannel` et `findProfileId` décident qui peut rejoindre une room
-// Socket.IO (apps/server/src/realtime/main.ts). Testés ici directement
-// contre une vraie base plutôt qu'en pilotant un client Socket.IO, qu'aucun
-// test de ce dépôt n'exerce encore (voir docs/adr/0014-comptes-et-visiteur.md).
+// Testés contre une vraie base plutôt qu'en pilotant un client Socket.IO.
 describe.skipIf(!databaseUrl)("Accès aux salons en temps réel (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
   let db: Db;

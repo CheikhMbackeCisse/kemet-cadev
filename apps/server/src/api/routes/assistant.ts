@@ -38,11 +38,9 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
     return { invocationId: invocation.id, skill, helpful: invocation.helpful };
   });
 
-  // Donnée par qui lit la réponse, pas seulement par qui a posé la question
-  // (voir docs/CONTEXTE.md, section assistant : "les lecteurs peuvent
-  // marquer la réponse Utile", ce qui rapporte des points à l'auteur du
-  // skill cité). Pas de retrait de points si la marque est retirée ensuite :
-  // simplification acceptée, voir docs/adr/0011-points-et-niveaux.md.
+  // Tout lecteur peut marquer la réponse Utile, ce qui rapporte des points à
+  // l'auteur du skill. Retirer la marque ne retire pas les points
+  // (docs/adr/0011-points-et-niveaux.md).
   app.put<{ Params: { id: string } }>(
     "/api/assistant-invocations/:id/feedback",
     { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },

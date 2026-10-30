@@ -113,9 +113,7 @@ describe.skipIf(!databaseUrl)("Anti-spam : limite réduite pour un compte récen
     const { cookie, profileId } = await createMember("established-account@test.kemet", "established");
     const channelId = await createChannel(cookie);
 
-    // Même mécanisme que le vieillissement utilisé pour la fraîcheur des
-    // points (lot 8, apps/server/src/ai/assistant-orchestrator.integration.test.ts) :
-    // on recule la date de création du profil au-delà de la fenêtre de 24h.
+    // On recule la date de création du profil au-delà de la fenêtre de 24h.
     await db.update(profiles).set({ createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000) }).where(eq(profiles.id, profileId));
 
     const results = [];

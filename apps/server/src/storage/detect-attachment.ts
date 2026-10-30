@@ -17,12 +17,9 @@ function hasTextExtension(originalName: string): boolean {
 }
 
 /**
- * Un fichier texte ou code n'a pas de signature binaire : file-type ne peut
- * rien y détecter. On accepte ce cas précis seulement si le contenu est de
- * l'UTF-8 valide sans octet nul (donc pas un binaire déguisé en .txt) et que
- * l'extension figure dans la liste blanche. C'est le seul endroit où
- * l'extension compte, faute de mieux pour ce format : voir
- * docs/adr/0008-fichiers-messages.md.
+ * Un fichier texte n'a pas de signature : accepté seulement en UTF-8 valide
+ * sans octet nul et avec une extension de la liste blanche. Seul cas où
+ * l'extension compte.
  */
 function isPlainText(data: Buffer): boolean {
   if (data.includes(0)) return false;
@@ -46,13 +43,9 @@ function isSvg(text: string): boolean {
 }
 
 /**
- * Détecte le type réel d'un fichier par son contenu, jamais par son
- * extension ni par l'en-tête Content-Type envoyé par le client (les deux
- * sont falsifiables). Seule exception, inévitable : les formats texte sans
- * aucune signature (code source, texte brut) ne se distinguent pas les uns
- * des autres par le contenu, l'extension y participe donc en plus de la
- * vérification d'encodage. Voir docs/adr/0008-fichiers-messages.md. Renvoie
- * `null` si le type n'est pas autorisé.
+ * Type réel d'un fichier d'après son contenu, jamais d'après l'extension ou
+ * le Content-Type du client (sauf pour le texte, voir plus haut). `null` si
+ * le type n'est pas autorisé.
  */
 export async function detectAttachment(data: Buffer, originalName: string): Promise<DetectedAttachment | null> {
   const sniffed = await fileTypeFromBuffer(data);
