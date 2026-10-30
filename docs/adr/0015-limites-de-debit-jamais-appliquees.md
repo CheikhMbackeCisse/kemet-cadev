@@ -79,3 +79,31 @@ que de les masquer toutes derrière une erreur serveur générique.
 - À surveiller : si un futur lot ajoute un test qui enchaîne plus
   d'une poignée de requêtes sur une route déjà limitée, la limite
   s'applique désormais pour de vrai.
+
+## Complément : l'adresse du client derrière Caddy
+
+Les limites sont comptées par adresse IP. Sans réglage, Fastify prend
+l'adresse de la connexion, qui est celle de Caddy pour toute requête venue
+d'Internet : un seul compteur pour tous les utilisateurs, et une démo à
+plusieurs se serait bloquée en quelques secondes.
+
+- `trustProxy` limité aux plages `loopback` et `uniquelocal` (10/8,
+  172.16/12, 192.168/16, fc00::/7). L'API n'est publiée sur aucun port de
+  l'hôte : seules les adresses du réseau Docker l'atteignent. Un
+  `X-Forwarded-For` reçu d'une adresse publique est ignoré. Un appelant
+  d'une adresse privée peut poser le sien : sans conséquence tant que
+  l'API reste hors de tout port publié. Restreindre au sous-réseau Docker
+  exact demanderait de le fixer dans le compose.
+- Caddy, sans `trusted_proxies`, remplace le `X-Forwarded-For` reçu du
+  navigateur par la seule adresse du client : un client ne peut pas se
+  faire passer pour un autre.
+- Better Auth lit ses propres en-têtes, pas `request.ip`. L'API lui
+  transmet l'adresse résolue par Fastify dans `x-kemet-client-ip`, écrasé à
+  chaque requête, et Better Auth ne lit que cet en-tête. Les deux limites
+  (routes et connexion) partent donc de la même adresse. Une nuance : en
+  IPv6, Better Auth regroupe les adresses par /64, `@fastify/rate-limit`
+  compte l'adresse complète.
+
+Couvert par `apps/server/src/api/client-ip.integration.test.ts`, avec deux
+adresses de client derrière une adresse de proxy, et un client qui change
+d'en-tête à chaque tentative.

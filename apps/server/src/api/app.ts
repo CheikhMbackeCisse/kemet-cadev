@@ -6,7 +6,7 @@ import { toNodeHandler } from "better-auth/node";
 import { ZodError } from "zod";
 import { healthcheckResponseSchema } from "@kemet/shared";
 import type { Db } from "@kemet/db";
-import type { Auth } from "../auth/auth.js";
+import { CLIENT_IP_HEADER, type Auth } from "../auth/auth.js";
 import { createNoopChatPublisher, type ChatPublisher } from "../chat/pubsub.js";
 import { AppError } from "../errors.js";
 import { loadAuthConfig, type AuthConfig } from "../config/auth-config.js";
@@ -41,8 +41,15 @@ export interface AppDeps {
   antiSpamConfig?: AntiSpamConfig;
 }
 
+const TRUSTED_PROXY_RANGES = ["loopback", "uniquelocal"];
+
 export function buildApp(deps: AppDeps): FastifyInstance {
-  const app = Fastify({ logger: true });
+  // L'API n'est jamais publiée hors du réseau Docker : en production, seul
+  // Caddy lui parle. Sans ce réglage, request.ip vaut l'adresse de Caddy et
+  // toutes les limites de débit sont partagées entre tous les utilisateurs.
+  // Tout appelant d'une adresse privée peut poser son X-Forwarded-For (un
+  // autre conteneur, ou le réseau local en développement).
+  const app = Fastify({ logger: true, trustProxy: TRUSTED_PROXY_RANGES });
   const chat = deps.chat ?? createNoopChatPublisher();
   const storage = deps.storage ?? new InMemoryStorage();
   const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
@@ -118,6 +125,10 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       scope.addContentTypeParser("application/json", (_request, _payload, done) => done(null));
       scope.all("/api/auth/*", async (request, reply) => {
         reply.hijack();
+        // Better Auth ne voit que les en-têtes bruts : on lui transmet
+        // l'adresse déjà résolue par Fastify, en écrasant toute valeur
+        // envoyée par le client.
+        request.raw.headers[CLIENT_IP_HEADER] = request.ip;
         await authHandler(request.raw, reply.raw);
       });
     });

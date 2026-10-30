@@ -19,6 +19,9 @@ export interface AuthConfig {
   rateLimitEnabled?: boolean;
 }
 
+/** En-tête posé par l'API (jamais par le client) avec l'adresse résolue par Fastify. */
+export const CLIENT_IP_HEADER = "x-kemet-client-ip";
+
 export function createAuth(config: AuthConfig) {
   return betterAuth({
     database: drizzleAdapter(config.db, { provider: "pg" }),
@@ -62,6 +65,9 @@ export function createAuth(config: AuthConfig) {
       ...(config.github && { github: config.github }),
       ...(config.google && { google: config.google }),
       ...(config.linkedin && { linkedin: config.linkedin }),
+    },
+    advanced: {
+      ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
     },
     rateLimit: {
       enabled: config.rateLimitEnabled ?? true,
