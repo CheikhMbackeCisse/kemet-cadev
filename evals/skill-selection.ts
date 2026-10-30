@@ -1,9 +1,8 @@
 /**
  * Vérifie que l'assistant choisit le bon skill, ou aucun, pour une série de
- * questions types (voir docs/adr/0007-recherche-skills.md, étape 2 : le
- * modèle choisit parmi les candidats présélectionnés à partir de leur nom et
- * de leur description seulement). Lancé à la main, jamais en CI : dépend
- * d'un vrai appel au modèle.
+ * questions types, à partir du nom et de la description des candidats
+ * présélectionnés. Lancé à la main, jamais en CI : dépend d'un vrai appel
+ * au modèle.
  *
  * Usage :
  *   GOOGLE_GENERATIVE_AI_API_KEY=... OPENROUTER_API_KEY=... pnpm tsx evals/skill-selection.ts

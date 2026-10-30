@@ -4,10 +4,7 @@ import { matchesTarget, readPlatformPackages, splitKey } from "./lockfile-platfo
 
 const FORBIDDEN = ["GPL", "AGPL", "LGPL"];
 
-/**
- * OFL-1.1 n'est autorisée que pour ces paquets de polices (fichiers de
- * police eux-mêmes, pas du code) : voir docs/adr/ du lot 4.
- */
+// OFL-1.1 n'est acceptée que pour ces polices : des fichiers de police, pas du code.
 const OFL_ALLOWED_PACKAGES = new Set([
   "@fontsource/plus-jakarta-sans",
   "@fontsource-variable/geist-mono",
@@ -32,15 +29,9 @@ function isForbidden(pkg: PackageLicense): boolean {
   return license.includes("OFL") && !OFL_ALLOWED_PACKAGES.has(pkg.name);
 }
 
-/**
- * `license-checker` ne suit pas correctement la structure de node_modules de
- * pnpm (dépendances dans le store .pnpm) et ne voit qu'une fraction des
- * paquets. `pnpm licenses list` est pensé pour pnpm et couvre tout le
- * workspace, y compris les dépendances de chaque app et package.
- *
- * shell: true est nécessaire sur Windows pour résoudre pnpm.cmd ; sans danger
- * ici, les arguments sont une liste fixe du script, jamais une entrée externe.
- */
+// `license-checker` ne voit qu'une partie du store pnpm ; `pnpm licenses list`
+// couvre tout le workspace. shell: true résout pnpm.cmd sous Windows, sans
+// risque : les arguments sont fixes.
 function listInstalledPackages(): PackageLicense[] {
   const raw = execFileSync("pnpm", ["licenses", "list", "--json"], {
     encoding: "utf-8",

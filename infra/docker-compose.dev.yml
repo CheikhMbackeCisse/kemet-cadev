@@ -1,25 +1,17 @@
-# Surcouche de développement : ne démarre que les services d'infrastructure
-# (postgres, valkey, mailpit) et publie leurs ports sur la machine hôte, pour
-# lancer api, realtime, worker et web nativement avec `pnpm dev` et garder le
-# rechargement à chaud. La pile complète d'infra/docker-compose.yml reste la
-# référence pour la production et pour le job CI.
+# Développement : postgres, valkey et mailpit seulement, ports publiés sur
+# l'hôte, pour lancer les applications avec `pnpm dev`.
 #
 #   docker compose -f infra/docker-compose.dev.yml --env-file .env up -d
 #
-# `name` est posé explicitement, et le volume porte un nom distinct : sans ça,
-# Compose déduit le nom de projet du dossier (`infra`) pour les deux fichiers,
-# et cette surcouche remplacerait les conteneurs de production en s'attachant à
-# leur volume de données.
+# `name` et le nom du volume sont explicites : sinon Compose déduit le projet
+# du dossier (`infra`) et cette pile prendrait les conteneurs et le volume de
+# la pile complète.
 #
-# Tous les ports sont publiés sur 127.0.0.1 seulement. Valkey n'a pas de mot de
-# passe (la production compte sur l'isolation réseau) et l'interface Mailpit
-# contient les liens de vérification d'email : rien de tout ça ne doit être
-# joignable depuis le réseau local.
+# Ports sur 127.0.0.1 seulement : Valkey n'a pas de mot de passe et Mailpit
+# affiche les liens de vérification d'email.
 #
-# Postgres est publié sur 5433 et non 5432, et Valkey sur 6380 et non 6379 :
-# un PostgreSQL ou un Redis natif peut déjà occuper les ports habituels, et
-# "localhost:5432" partirait alors silencieusement vers lui plutôt que vers ce
-# conteneur. Les URL correspondantes sont dans .env.example.
+# 5433 et 6380 plutôt que 5432 et 6379 : un PostgreSQL ou un Redis natif
+# capterait sinon les connexions sans erreur.
 name: kemet-dev
 
 services:

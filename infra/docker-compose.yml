@@ -2,16 +2,13 @@
 #   docker compose -f infra/docker-compose.yml --env-file .env up -d --build
 # Voir docs/DEPLOIEMENT.md pour le détail complet, local et production.
 #
-# Budget mémoire du serveur Datacloud visé : 4 Go au total, 3,2 Go maximum
-# pour les sept services ci-dessous, le reste pour le système. Les limites
-# posées (voir deploy.resources.limits.memory de chaque service) totalisent
-# 2,496 Go : marge volontaire sous le plafond plutôt qu'un remplissage exact.
+# Serveur de 4 Go : 3,2 Go au plus pour les services. Les limites mémoire
+# posées totalisent 2,496 Go, marge volontaire.
 #
-# web, api, realtime et worker portent à la fois `build` et `image` : en
-# local et en CI, `up --build` construit et nomme l'image kemet-<service>:local ;
-# en production, infra/deploy.sh pose KEMET_IMAGE_PREFIX et KEMET_IMAGE_TAG
-# pour télécharger depuis GHCR l'image construite par la CI pour ce commit,
-# sans rien construire sur le serveur.
+# web, api, realtime et worker portent `build` et `image` : `up --build`
+# construit kemet-<service>:local en local et en CI ; en production,
+# infra/deploy.sh pose KEMET_IMAGE_PREFIX et KEMET_IMAGE_TAG pour
+# télécharger depuis GHCR l'image de ce commit.
 
 services:
   caddy:
@@ -184,9 +181,7 @@ services:
         limits:
           memory: 1024M
 
-  # Capture les emails envoyés en développement local au lieu de les livrer
-  # réellement. Démarré uniquement avec --profile dev (jamais en production,
-  # où SMTP_HOST pointe vers Brevo ou Resend). Interface web sur
+  # Capture les emails en développement (--profile dev), interface sur
   # http://localhost:8025.
   mailpit:
     image: axllent/mailpit:latest

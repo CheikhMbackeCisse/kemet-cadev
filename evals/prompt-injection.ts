@@ -1,10 +1,8 @@
 /**
  * Suite d'attaques contre l'assistant @kemet : des skills et des messages
  * avec des instructions cachées, pour vérifier que le modèle les traite
- * comme des données et non comme des ordres (voir docs/CONTEXTE.md, section
- * assistant). Lancé à la main, jamais en CI : il
- * dépend d'un vrai appel au modèle, donc du jugement humain sur la réponse,
- * pas d'un oracle automatique.
+ * comme des données et non comme des ordres. Lancé à la main, jamais en CI :
+ * le verdict dépend d'un vrai appel au modèle et d'une relecture humaine.
  *
  * Usage :
  *   GOOGLE_GENERATIVE_AI_API_KEY=... OPENROUTER_API_KEY=... pnpm tsx evals/prompt-injection.ts
