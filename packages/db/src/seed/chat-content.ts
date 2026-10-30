@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { channels, messages, spaceMembers, spaces } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { hoursAgo } from "./time.js";
@@ -7,7 +7,7 @@ import { hoursAgo } from "./time.js";
 // Espace officiel de la compétition, public et
 // ouvert à tous les comptes de démonstration, pour que la plateforme ne
 // paraisse pas vide à la première visite.
-export async function createCadevSpace(db: Db, accountIds: DemoAccountIds): Promise<void> {
+export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): Promise<void> {
   const [cadevSpace] = await db
     .insert(spaces)
     .values({

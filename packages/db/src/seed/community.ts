@@ -1,4 +1,4 @@
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { channels, spaceMembers, spaces } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { chunk } from "./chunk.js";
@@ -127,7 +127,7 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
 
 const MEMBER_CHUNK_SIZE = 5000;
 
-export async function createCommunitySpaces(db: Db, accountIds: DemoAccountIds, fillerProfileIds: string[]): Promise<void> {
+export async function createCommunitySpaces(db: DbOrTx, accountIds: DemoAccountIds, fillerProfileIds: string[]): Promise<void> {
   for (const spaceSeed of COMMUNITY_SPACES) {
     const ownerId = accountIds[spaceSeed.ownerKey];
     const [space] = await db

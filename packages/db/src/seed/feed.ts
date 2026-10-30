@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import {
   postAttachments,
   postFeedback,
@@ -14,7 +14,7 @@ import { hoursAgo } from "./time.js";
 // Fil de posts (lot 7) : de quoi remplir /fil pour la démonstration, avec
 // les trois formats, des réponses (dont une solution), des réactions
 // "Utile" et des partages.
-export async function createFeedContent(db: Db, ids: DemoAccountIds): Promise<void> {
+export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promise<void> {
   const [
     fastifyPoolPost,
     flutterSyncQuestion,
@@ -281,7 +281,7 @@ export async function createFeedContent(db: Db, ids: DemoAccountIds): Promise<vo
  * `UPLOADS_DIR`, la meme racine que celle servie par la route
  * `GET /api/post-attachments/:id/content`.
  */
-async function attachDemoImage(db: Db, ids: DemoAccountIds, postId: string): Promise<void> {
+async function attachDemoImage(db: DbOrTx, ids: DemoAccountIds, postId: string): Promise<void> {
   const uploadsDir = process.env.UPLOADS_DIR;
   if (!uploadsDir) {
     console.warn("UPLOADS_DIR non definie : le post de demonstration reste sans image.");

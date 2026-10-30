@@ -1,4 +1,4 @@
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { applications, helpRequests, projects } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { daysAgo } from "./time.js";
@@ -14,7 +14,7 @@ export interface DemoProjectIds {
   saharaRun: string;
 }
 
-export async function createDemoProjects(db: Db, ids: DemoAccountIds): Promise<DemoProjectIds> {
+export async function createDemoProjects(db: DbOrTx, ids: DemoAccountIds): Promise<DemoProjectIds> {
   const [
     waveLedger,
     offliBank,

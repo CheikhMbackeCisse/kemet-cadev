@@ -190,6 +190,40 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    pare-feu du panneau Datacloud, ou `PUBLIC_HOST` ne pointe pas réellement
    vers l'IP du serveur (vérifier avec `nslookup <PUBLIC_HOST>`).
 
+## Comptes de démonstration et administrateur
+
+Les comptes de démonstration ont un mot de passe public (`demonstration`)
+pour que le jury puisse s'y connecter. Aucun n'est administrateur : un
+mot de passe public ne doit jamais ouvrir la modération ni la validation
+des compétitions.
+
+Sur le serveur, dans le dossier où vivent `infra/docker-compose.yml`,
+`.env` et `.env.deployed` :
+
+```
+docker compose -f infra/docker-compose.yml --env-file .env --env-file .env.deployed   exec api node node_modules/@kemet/db/dist/seed.js
+```
+
+Ce seed est sans risque à relancer : s'il trouve déjà les dix comptes de
+démonstration, il ne fait rien, sauf échouer si l'un d'eux est
+administrateur (base remplie par une ancienne version). Tout est créé dans une seule transaction,
+et il échoue sans rien écrire s'il trouve une base où il ne reste qu'une
+partie de ces comptes, ou si un compte de démonstration se retrouvait
+administrateur.
+
+Pour donner le rôle administrateur, créer d'abord un compte normal par la
+page d'inscription (adresse vérifiée et profil complété), avec un mot de
+passe qui n'est écrit nulle part ailleurs, puis :
+
+```
+docker compose -f infra/docker-compose.yml --env-file .env --env-file .env.deployed   exec api node node_modules/@kemet/db/dist/promote-admin.js <email>
+```
+
+La commande ne prend que l'adresse, jamais de mot de passe. Elle refuse une
+adresse non vérifiée, un compte suspendu et un compte de démonstration. En local, les mêmes commandes s'écrivent
+`pnpm db:seed:demo` (ou `pnpm db:seed`, identique) et
+`pnpm db:promote-admin <email>`.
+
 ## Déploiements suivants
 
 Depuis le poste de l'administrateur, à la racine du dépôt, une fois le workflow

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { account, credentials, profiles, user } from "../schema/index.js";
 import { avatarDataUri } from "./avatar.js";
 
@@ -238,7 +238,7 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
   },
 ];
 
-export async function createDemoAccounts(db: Db, passwordHash: string): Promise<DemoAccountIds> {
+export async function createDemoAccounts(db: DbOrTx, passwordHash: string): Promise<DemoAccountIds> {
   const ids = {} as DemoAccountIds;
 
   for (const demoAccount of DEMO_ACCOUNTS) {
@@ -270,10 +270,6 @@ export async function createDemoAccounts(db: Db, passwordHash: string): Promise<
         avatarUrl: avatarDataUri(demoAccount.handle),
         openToOpportunities: demoAccount.openToOpportunities,
         isDemo: true,
-        // Un seul compte de démonstration porte le rôle admin (validation
-        // des compétitions, lot 10) : aucune interface ne permet encore de
-        // l'attribuer, voir packages/db/src/schema/profiles.ts.
-        isPlatformAdmin: demoAccount.handle === "amina-diallo",
       })
       .returning({ id: profiles.id });
     ids[demoAccount.key] = profile!.id;

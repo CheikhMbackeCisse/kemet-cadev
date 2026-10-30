@@ -1,8 +1,8 @@
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { skills } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 
-export async function createDemoSkills(db: Db, ids: DemoAccountIds): Promise<void> {
+export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise<void> {
   await db.insert(skills).values([
     {
       authorId: ids.aminaDiallo,

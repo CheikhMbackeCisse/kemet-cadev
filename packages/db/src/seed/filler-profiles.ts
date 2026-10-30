@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { profiles, user } from "../schema/index.js";
 import { avatarDataUri } from "./avatar.js";
 import { chunk } from "./chunk.js";
@@ -137,7 +137,7 @@ export function seededShuffle<T>(items: T[], seed: string): T[] {
 
 const INSERT_CHUNK_SIZE = 1000;
 
-export async function insertFillerProfiles(db: Db, seeds: FillerProfileSeed[]): Promise<string[]> {
+export async function insertFillerProfiles(db: DbOrTx, seeds: FillerProfileSeed[]): Promise<string[]> {
   const profileIds: string[] = [];
   for (const batch of chunk(seeds, INSERT_CHUNK_SIZE)) {
     const userRows = batch.map((seed) => ({

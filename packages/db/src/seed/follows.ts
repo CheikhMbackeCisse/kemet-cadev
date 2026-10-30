@@ -1,4 +1,4 @@
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { follows } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { chunk } from "./chunk.js";
@@ -22,7 +22,7 @@ const FOLLOWER_COUNTS: Record<keyof DemoAccountIds, number> = {
 
 const FOLLOW_CHUNK_SIZE = 10000;
 
-export async function createCommunityFollows(db: Db, accountIds: DemoAccountIds, fillerProfileIds: string[]): Promise<void> {
+export async function createCommunityFollows(db: DbOrTx, accountIds: DemoAccountIds, fillerProfileIds: string[]): Promise<void> {
   const entries = Object.entries(FOLLOWER_COUNTS) as [keyof DemoAccountIds, number][];
   for (const [key, count] of entries) {
     const followeeId = accountIds[key];

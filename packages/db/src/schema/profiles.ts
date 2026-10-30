@@ -33,11 +33,8 @@ export const profiles = pgTable("profiles", {
   avatarUrl: text("avatar_url"),
   openToOpportunities: boolean("open_to_opportunities").notNull().default(false),
   isDemo: boolean("is_demo").notNull().default(false),
-  // Première brique d'un rôle admin sur la plateforme (lot 10, validation
-  // des demandes de création de compétition), réutilisée par la modération
-  // (lot 7 bis) pour réserver la file de signalements et le journal
-  // d'audit. Aucune interface ne permet encore de le changer : affecté
-  // directement en base, comme le parcours vérifié avant son écran.
+  // Validation des compétitions et modération. Attribué seulement par
+  // `pnpm db:promote-admin`, jamais par l'interface ni par le seed.
   isPlatformAdmin: boolean("is_platform_admin").notNull().default(false),
   // Un compte suspendu (lot 7 bis) ne peut plus écrire (poster, réagir,
   // rejoindre...) mais garde l'accès en lecture, comme un visiteur : voir

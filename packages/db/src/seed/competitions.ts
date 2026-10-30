@@ -1,4 +1,4 @@
-import type { Db } from "../client.js";
+import type { DbOrTx } from "../client.js";
 import { competitions, juryScores, submissions, teamMembers, teams, votes } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { chunk } from "./chunk.js";
@@ -9,7 +9,7 @@ import { daysAgo, daysFromNow } from "./time.js";
 const VOTE_CHUNK_SIZE = 5000;
 
 export async function createDemoCompetitions(
-  db: Db,
+  db: DbOrTx,
   ids: DemoAccountIds,
   projectIds: DemoProjectIds,
   fillerProfileIds: string[],
@@ -263,7 +263,7 @@ export async function createDemoCompetitions(
 }
 
 async function castBulkVotes(
-  db: Db,
+  db: DbOrTx,
   competitionId: string,
   allocations: { submissionId: string; count: number }[],
   fillerProfileIds: string[],

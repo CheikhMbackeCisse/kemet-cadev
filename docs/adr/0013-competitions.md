@@ -104,6 +104,7 @@ liste ait un sens). Visibles pour tout le monde dès la phase de vote.
   tests d'intégration qui passent par les vraies routes HTTP
   (`apps/server/src/api/competitions.integration.test.ts`) : création,
   validation admin, équipes, soumission, vote, notation du jury et
-  résultats, y compris les refus d'auto-évaluation. Un compte de
-  démonstration (`amina-diallo`, `pnpm db:seed`) porte le rôle admin pour
-  les essais manuels et ceux du jury.
+  résultats, y compris les refus d'auto-évaluation. Aucun compte de
+  démonstration n'est administrateur (leur mot de passe est public) : le
+  rôle se donne à un compte normal par `pnpm db:promote-admin <email>`,
+  voir `docs/DEPLOIEMENT.md`.
