@@ -8,9 +8,8 @@ import { cleanupOrphanPostAttachments } from "../feed/post-attachments-cleanup.j
 import { LocalDiskStorage } from "../storage/file-storage.js";
 
 const databaseUrl = process.env.DATABASE_URL ?? "postgres://kemet:kemet@localhost:5432/kemet";
-// Premier accès du worker à la base (le nettoyage des pièces jointes) :
-// jusqu'ici seuls api et realtime appliquaient les migrations au démarrage
-// le worker n'en avait pas besoin.
+// Le worker peut démarrer avant api : il applique lui-même les migrations
+// avant de lire la base.
 await runMigrations(databaseUrl);
 const db = createDb(databaseUrl);
 const storage = new LocalDiskStorage(process.env.UPLOADS_DIR ?? "/data/uploads");

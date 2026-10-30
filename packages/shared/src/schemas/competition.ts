@@ -135,9 +135,8 @@ export const submissionSchema = z.object({
 
 export type Submission = z.infer<typeof submissionSchema>;
 
-// Combine jury et vote public : la pondération est
-// arbitraire, faute de valeur dans docs/CONTEXTE.md, documentée et
-// ajustable dans apps/server/src/api/repositories/competitions.ts.
+// Combine jury et vote public. La pondération, arbitraire, vit dans
+// apps/server/src/api/repositories/competitions.ts.
 export const submissionResultSchema = z.object({
   submissionId: z.string().uuid(),
   teamName: z.string(),

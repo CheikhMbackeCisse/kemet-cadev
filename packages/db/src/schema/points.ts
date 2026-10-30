@@ -2,9 +2,8 @@ import { relations } from "drizzle-orm";
 import { index, integer, pgEnum, pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
 
-// Chaque lot qui attribue des points ajoute sa propre valeur ici au moment où
-// il est codé : le parcours vérifié (lot 3, pas encore
-// d'écran de vérification) n'existe pas encore.
+// Une valeur par source réellement câblée : le parcours vérifié n'a pas
+// encore d'écran, donc pas de source.
 export const pointsSourceEnum = pgEnum("points_source", [
   "post_reply_solution",
   "post_feedback_given",

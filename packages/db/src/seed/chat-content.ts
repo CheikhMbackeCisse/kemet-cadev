@@ -4,9 +4,8 @@ import { channels, messages, spaceMembers, spaces } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { hoursAgo } from "./time.js";
 
-// Espace officiel de la compétition, public et
-// ouvert à tous les comptes de démonstration, pour que la plateforme ne
-// paraisse pas vide à la première visite.
+// Public et rempli de messages, pour que la plateforme ne paraisse pas vide
+// à la première visite.
 export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): Promise<void> {
   const [cadevSpace] = await db
     .insert(spaces)
