@@ -110,6 +110,7 @@ export const fr = {
     themeDark: "Sombre",
   },
   chat: {
+    messageList: "Messages du salon",
     composerPlaceholder: "Écrire un message…",
     send: "Envoyer",
     noMessages: "Aucun message pour l'instant.",

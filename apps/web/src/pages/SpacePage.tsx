@@ -467,7 +467,15 @@ export function SpacePage() {
         }
       >
         <div className="flex h-full flex-col">
-          <div className="flex-1 overflow-y-auto px-4 py-4 lg:px-6">
+          <div
+            role="log"
+            aria-label={fr.chat.messageList}
+            // Seuls les nouveaux messages sont lus : sans aria-relevant, chaque
+            // réaction ajoutée serait aussi annoncée.
+            aria-relevant="additions"
+            tabIndex={0}
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 lg:px-6"
+          >
             {spacesLoading ? (
               <div className="flex flex-col gap-4">
                 <Skeleton className="h-12 w-2/3" />
@@ -599,7 +607,9 @@ export function SpacePage() {
                                   className="mt-0.5 text-base text-text"
                                   suffix={
                                     message.editedAt && (
-                                      <span className="text-xs text-subtle">({fr.chat.edited})</span>
+                                      <span className="text-xs text-subtle">
+                                        ({fr.chat.edited})
+                                      </span>
                                     )
                                   }
                                 />
@@ -694,11 +704,19 @@ export function SpacePage() {
                   ),
                 )}
                 {assistantStream && (
-                  <AssistantMessage
-                    content={assistantStream.text ? <RichText source={assistantStream.text} /> : "…"}
-                    hideFeedback
-                    readSummary={assistantStream.failed ? fr.chat.assistantUnavailable : undefined}
-                  />
+                  // aria-busy : la réponse arrive morceau par morceau, les lecteurs
+                  // d'écran attendent le message final au lieu de lire chaque morceau.
+                  <div aria-busy="true">
+                    <AssistantMessage
+                      content={
+                        assistantStream.text ? <RichText source={assistantStream.text} /> : "…"
+                      }
+                      hideFeedback
+                      readSummary={
+                        assistantStream.failed ? fr.chat.assistantUnavailable : undefined
+                      }
+                    />
+                  </div>
                 )}
               </div>
             )}

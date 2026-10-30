@@ -113,7 +113,7 @@ export function SpaceRail({
   return (
     <nav
       aria-label="Navigation"
-      className="sticky top-0 hidden h-screen w-rail shrink-0 flex-col items-center border-r border-border-strong bg-surface py-3 lg:flex"
+      className="sticky top-0 hidden h-viewport w-rail shrink-0 flex-col items-center border-r border-border-strong bg-surface py-3 lg:flex"
     >
       <Tooltip label="Accueil" side="right">
         <a href="/fil" aria-label="Accueil" className="mb-3">

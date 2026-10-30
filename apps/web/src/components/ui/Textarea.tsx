@@ -56,7 +56,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         onInput?.(event);
       }}
       className={cn(
-        "w-full resize-none rounded-control border border-border-strong bg-bg px-3 py-2 text-sm text-text placeholder:text-subtle",
+        "w-full resize-none rounded-control border border-border-strong bg-bg px-3 py-2 text-sm max-md:text-md text-text placeholder:text-subtle",
         "focus-visible:border-primary",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,

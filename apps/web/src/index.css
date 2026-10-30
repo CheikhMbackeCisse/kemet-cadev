@@ -79,6 +79,15 @@
 }
 
 @layer utilities {
+  /* 100vh compte la barre d'adresse mobile comme visible : la page dépassait
+     de l'écran et défilait en entier. 100dvh suit la hauteur réellement
+     visible, clavier compris ; 100vh reste le repli des navigateurs qui ne
+     la connaissent pas. */
+  .h-viewport {
+    height: 100vh;
+    height: 100dvh;
+  }
+
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }

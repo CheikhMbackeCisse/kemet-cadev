@@ -78,7 +78,8 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 
 - Barre d'onglets en bas : Fil, Salons, Projets, Compétitions, Moi.
 - La liste des salons s'ouvre en tiroir depuis la gauche. Le panneau de détails devient une feuille qui monte du bas.
-- Le champ de message reste collé en bas, au-dessus du clavier.
+- Le champ de message reste collé en bas, au-dessus du clavier et de la barre d'onglets. Dans un salon, la page fait la hauteur réellement visible (`100dvh`, repli `100vh`) et ne défile jamais en entier : seule la liste des messages défile. Le clavier réduit la page (`interactive-widget=resizes-content`) au lieu de la recouvrir.
+- Les champs de saisie (`Input`, `Textarea`, `Select`) font 16 px de texte sur mobile : en dessous, Safari iOS zoome au focus et décale la page.
 - Aucun survol nécessaire pour accéder à une action : tout ce qui apparaît au survol sur bureau est accessible par un appui long ou un menu sur mobile.
 
 ## Composants clés

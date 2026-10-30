@@ -37,7 +37,7 @@ export function AppShell({
   )?.name;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-bg">
+    <div className="flex h-viewport w-full overflow-hidden overscroll-none bg-bg">
       <SpaceRail {...spaceRail} />
 
       <div className="hidden w-channel-list shrink-0 flex-col border-r border-border-strong bg-surface lg:flex">
@@ -84,7 +84,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto pb-[calc(44px+env(safe-area-inset-bottom))] lg:pb-0">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(44px+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
         </main>
       </div>

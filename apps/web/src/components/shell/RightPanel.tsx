@@ -15,7 +15,7 @@ export function RightPanel({ title, children }: RightPanelProps) {
   return (
     <aside
       aria-label={title}
-      className="sticky top-0 hidden h-screen w-panel shrink-0 flex-col border-l border-border bg-surface lg:flex"
+      className="sticky top-0 hidden h-viewport w-panel shrink-0 flex-col border-l border-border bg-surface lg:flex"
     >
       <div className="flex h-12 shrink-0 items-center border-b border-border px-3">
         <h2 className="truncate text-md font-semibold text-text">{title}</h2>

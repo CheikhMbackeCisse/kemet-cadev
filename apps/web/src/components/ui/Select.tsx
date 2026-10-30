@@ -32,7 +32,7 @@ export function Select({
       <RadixSelect.Trigger
         aria-label={aria["aria-label"]}
         className={cn(
-          "flex h-control max-md:h-control-mobile w-full items-center justify-between gap-2 rounded-control border border-border-strong bg-bg px-3 text-sm text-text",
+          "flex h-control max-md:h-control-mobile w-full items-center justify-between gap-2 rounded-control border border-border-strong bg-bg px-3 text-sm max-md:text-md text-text",
           "focus-visible:border-primary",
           "data-[placeholder]:text-subtle",
           "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
