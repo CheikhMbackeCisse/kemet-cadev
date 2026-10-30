@@ -2,6 +2,7 @@
   "name": "@kemet/server",
   "version": "0.0.0",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"tsx watch --env-file-if-exists=../../.env src/api/main.ts\" \"tsx watch --env-file-if-exists=../../.env src/realtime/main.ts\" \"tsx watch --env-file-if-exists=../../.env src/worker/main.ts\"",

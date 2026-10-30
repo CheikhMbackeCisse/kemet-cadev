@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { matchesTarget, readPlatformPackages, splitKey } from "./lockfile-platforms.js";
 
 const FORBIDDEN = ["GPL", "AGPL", "LGPL"];
@@ -14,6 +14,25 @@ const OFL_ALLOWED_PACKAGES = new Set([
 // (Ubuntu, glibc).
 const TARGET = { os: "linux", cpu: "x64" };
 const REGISTRY_TIMEOUT_MS = 10_000;
+
+// Les paquets du dépôt (tous droits réservés) ne sont pas des dépendances
+// tierces. Un homonyme publié sur npm sous une autre licence reste contrôlé.
+const WORKSPACE_DIRECTORIES = ["apps", "packages"];
+const WORKSPACE_LICENSE = "UNLICENSED";
+
+function readWorkspacePackageNames(): Set<string> {
+  const manifests = [
+    "package.json",
+    ...WORKSPACE_DIRECTORIES.flatMap((directory) =>
+      readdirSync(directory, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => `${directory}/${entry.name}/package.json`),
+    ),
+  ];
+  return new Set(
+    manifests.map((path) => (JSON.parse(readFileSync(path, "utf-8")) as { name: string }).name),
+  );
+}
 
 interface PackageLicense {
   name: string;
@@ -72,8 +91,11 @@ async function fetchRegistryLicense(name: string, version: string): Promise<stri
  */
 async function collectTargetPackages(): Promise<PackageLicense[]> {
   const platformPackages = readPlatformPackages(readFileSync("pnpm-lock.yaml", "utf-8"));
+  const workspacePackages = readWorkspacePackageNames();
   const portable = listInstalledPackages().filter(
-    (pkg) => !platformPackages.has(`${pkg.name}@${pkg.version}`),
+    (pkg) =>
+      !(workspacePackages.has(pkg.name) && pkg.license === WORKSPACE_LICENSE) &&
+      !platformPackages.has(`${pkg.name}@${pkg.version}`),
   );
   const platformSpecific = await Promise.all(
     [...platformPackages]
