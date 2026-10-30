@@ -2,7 +2,7 @@ import { Braces, Code2, GitBranch, Hash, Sparkles, Terminal } from "lucide-react
 
 /**
  * Fond de marque des ecrans de compte. Degrade et halos : seule exception a la
- * liste « Ce qui est interdit » de DESIGN.md, levee le 20/10/2026
+ * liste « Ce qui est interdit » de DESIGN.md
  * (docs/adr/0019-fond-des-ecrans-de-compte.md). Ne pas reutiliser ailleurs.
  *
  * Purement decoratif : aucun texte, aucune cible de clic, aria-hidden, et pose

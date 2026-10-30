@@ -44,13 +44,9 @@ async function signInBrowser(page: Page, email: string): Promise<void> {
   await page.request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
 }
 
-// L'appel réel du modèle (Gemini ou OpenRouter) n'est jamais fait en CI :
-// voir docs/CONTEXTE.md, section IA, et evals/llm-throughput.ts. Sans les
-// deux clés, le serveur démarre avec NoopAssistantOrchestrator (voir
-// apps/server/src/api/app.ts) : la mention part normalement, mais aucune
-// réponse n'arrive. Ce test couvre toujours le parcours utilisateur ; la
-// vérification de la réponse elle-même s'active seulement si les clés sont
-// présentes dans l'environnement qui lance Playwright.
+// Jamais d'appel réel au modèle en CI : sans les deux clés, la mention part
+// mais aucune réponse n'arrive. La réponse n'est vérifiée que si les clés
+// sont présentes.
 const hasLiveAssistant = Boolean(
   process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.OPENROUTER_API_KEY,
 );

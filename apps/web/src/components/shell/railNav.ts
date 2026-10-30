@@ -9,10 +9,8 @@ export interface RailNavItem {
 }
 
 /**
- * Navigation entre les grandes sections du produit. Elle vit dans le rail de
- * gauche et nulle part ailleurs : chaque page la posait avant dans sa propre
- * barre du haut, ce qui mettait des liens vers d'autres pages au meme niveau
- * que le contenu de la page ouverte.
+ * Navigation entre les grandes sections, dans le rail seulement : jamais dans
+ * la barre du haut d'une page, au niveau de son contenu.
  */
 export const RAIL_NAV: RailNavItem[] = [
   { id: "fil", label: "Fil", href: "/fil", icon: Rss },

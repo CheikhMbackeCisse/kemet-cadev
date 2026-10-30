@@ -21,9 +21,8 @@ export interface FormPageProps {
 }
 
 /**
- * Gabarit des formulaires de creation. Ces formulaires vivaient dans des
- * boites de dialogue, ou un formulaire de six champs tenait mal et poussait
- * le bouton d'envoi hors de l'ecran sur un telephone.
+ * Gabarit des formulaires de creation, en page plutot qu'en boite de
+ * dialogue, ou le bouton d'envoi sortait de l'ecran sur un telephone.
  */
 export function FormPage({
   title,

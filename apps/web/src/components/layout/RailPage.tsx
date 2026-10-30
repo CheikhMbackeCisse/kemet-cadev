@@ -16,11 +16,8 @@ export interface RailPageProps {
 
 /**
  * Pages pleines qui ne sont ni un salon ni une page de lecture (skills,
- * projets, compétitions, paramètres…). Elles posaient chacune leur propre
- * `<main>` centré, sans rail : la navigation disparaissait dès qu'on y entrait.
- *
- * Le rail est masqué sous `lg` : la barre d'onglets prend le relais, sans quoi
- * ces écrans n'auraient aucune sortie sur téléphone.
+ * projets, compétitions, paramètres…), avec le rail. Sous `lg`, la barre
+ * d'onglets le remplace.
  */
 export function RailPage({ activeSection, activeMobileTab, className, children }: RailPageProps) {
   const { profile } = useSession();

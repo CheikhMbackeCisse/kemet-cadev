@@ -110,8 +110,8 @@
 /**
  * Fond de marque des écrans de compte (connexion, inscription, mot de passe).
  * Dégradé et halos : seule exception à la liste « Ce qui est interdit » de
- * DESIGN.md, levée le 20/10/2026, voir
- * docs/adr/0019-fond-des-ecrans-de-compte.md. Ne pas réutiliser ailleurs.
+ * DESIGN.md, voir docs/adr/0019-fond-des-ecrans-de-compte.md. Ne pas
+ * réutiliser ailleurs.
  */
 :root {
   --auth-bg-from: #0b2f78;

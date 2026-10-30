@@ -6,11 +6,8 @@ import { ThemeProvider } from "./theme/theme-context.js";
 import { ToastProvider } from "./components/ui/Toast.js";
 import { TooltipProvider } from "./components/ui/Tooltip.js";
 
-/**
- * Chaque page est chargée à la demande : sans ce découpage, les vingt-deux
- * écrans partaient dans un seul fichier de 610 ko, téléchargé en entier avant
- * le premier affichage, y compris sur un téléphone en 3G.
- */
+// Chaque page est chargée à la demande : un seul fichier pour tous les écrans
+// pesait 610 ko avant le premier affichage.
 const DevUiPage = lazy(() =>
   import("./pages/DevUiPage.js").then((m) => ({ default: m.DevUiPage })),
 );
@@ -127,11 +124,7 @@ function StatusPage() {
   );
 }
 
-/**
- * Affiché le temps que le fichier de la page arrive, depuis que chaque écran
- * est chargé à la demande. Reprend la forme commune à tous les écrans (rail,
- * en-tête, contenu) plutôt qu'une page blanche, comme le demande DESIGN.md.
- */
+/** Le temps que la page arrive : la forme commune des écrans plutôt qu'une page blanche. */
 function PageFallback() {
   return (
     <div className="flex min-h-screen w-full bg-bg" aria-busy="true">

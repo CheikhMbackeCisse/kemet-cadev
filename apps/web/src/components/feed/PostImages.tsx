@@ -21,10 +21,8 @@ function image(attachment: Attachment, className: string) {
 export function PostImages({ attachments, className }: PostImagesProps) {
   if (attachments.length === 0) return null;
 
-  // Pas de grille à 2 colonnes pour 3 images : le placement automatique CSS
-  // laisserait une case vide à côté de la troisième. Une rangée pleine
-  // largeur puis deux colonnes évite le trou sans copier la mosaïque de X ou
-  // LinkedIn (DESIGN.md, principe 6).
+  // Pas de grille à 2 colonnes pour 3 images : la troisième laisserait une
+  // case vide. Une rangée pleine largeur, puis deux colonnes.
   const layout =
     attachments.length === 3 ? (
       <div className="flex flex-col gap-1">

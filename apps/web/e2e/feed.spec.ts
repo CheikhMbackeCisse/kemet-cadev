@@ -60,7 +60,6 @@ test("publie un post et le retrouve dans le fil", async ({ page, request }) => {
   await signInBrowser(page, email);
 
   await page.goto("/fil");
-  // Le composeur en ligne a laissé la place à une page dédiée.
   await page.getByRole("link", { name: "Publier", exact: true }).click();
   await expect(page).toHaveURL(/\/fil\/nouveau$/);
 

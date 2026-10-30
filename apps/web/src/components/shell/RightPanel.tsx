@@ -6,10 +6,8 @@ export interface RightPanelProps {
 }
 
 /**
- * Colonne de droite sur grand ecran, toujours affichee. Elle n'a plus de
- * bouton de fermeture : il n'existait aucun moyen de la rouvrir une fois
- * fermee, et sa bascule encombrait la barre du haut. Sous lg, c'est la feuille
- * d'AppShell qui prend le relais.
+ * Colonne de droite sur grand ecran, toujours affichee, sans bouton de
+ * fermeture. Sous lg, la feuille d'AppShell prend le relais.
  */
 export function RightPanel({ title, children }: RightPanelProps) {
   return (

@@ -224,8 +224,7 @@ export function UserPage() {
           )}
         </div>
 
-        {/* Kemet Pro ne vit plus que sur son propre profil : il etait pose dans
-            le rail et dans l'en-tete de plusieurs ecrans, ou il revenait trop. */}
+        {/* Kemet Pro ne vit que sur son propre profil, nulle part ailleurs. */}
         {isOwnProfile && (
           <Card className="flex flex-wrap items-center justify-between gap-3 bg-surface">
             <div className="flex min-w-0 items-start gap-3">

@@ -15,12 +15,8 @@ const MIME_TYPES = {
   ".webmanifest": "application/manifest+json",
 };
 
-/**
- * Pas de routeur côté client en dehors de la page unique pour l'instant : si
- * le fichier demandé n'existe pas, on retombe sur index.html plutôt que de
- * renvoyer 404, pour que les futures routes de la PWA fonctionnent au
- * rafraîchissement de la page.
- */
+// Un fichier absent renvoie index.html : les routes de l'app sont gérées côté
+// client et doivent survivre à un rechargement.
 async function resolveFile(pathname) {
   // pathname vient toujours d'une URL (préfixe "/"), donc normalize() résout
   // déjà tout "../" vers la racine : pas besoin de les retirer nous-mêmes.

@@ -40,9 +40,8 @@ export function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Un visiteur garde l'acces a cette page : le choix de theme y vit desormais
-  // et DESIGN.md le veut atteignable sans compte. Seul le formulaire de profil
-  // lui est masque.
+  // Un visiteur garde l'acces a cette page pour le choix du theme ; seul le
+  // formulaire de profil lui est masque.
   useEffect(() => {
     if (status === "incomplete") window.location.href = "/completer-profil";
   }, [status]);

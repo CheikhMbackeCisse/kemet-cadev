@@ -72,10 +72,8 @@ test("envoie une image dans un salon et la voit affichée en ligne", async ({ pa
   await page.getByRole("button", { name: "Créer", exact: true }).click();
 
   const composer = page.getByPlaceholder("Écrire un message…");
-  // Le composeur existe dès le montage mais reste désactivé tant qu'aucun
-  // salon n'est actif (voir le lot 5) : le champ de fichier n'a pas ce
-  // garde-fou, donc attendre seulement sa présence laisserait
-  // handleFileSelected ignorer silencieusement la sélection.
+  // Le champ de fichier existe avant qu'un salon soit actif : attendre sa
+  // seule présence laisserait handleFileSelected ignorer la sélection.
   await expect(composer).toBeEnabled();
 
   await page.locator('input[type="file"]').setInputFiles({

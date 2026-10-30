@@ -25,13 +25,9 @@ export interface ReadingPageProps {
 }
 
 /**
- * Patron partagé par les pages de lecture (profil, post, projet…) : rail de navigation
- * à gauche sur grand écran, conteneur de lecture à largeur 960px, en-tête propre à chaque
- * écran, et les trois états chargement/introuvable/erreur qui étaient copiés presque à
- * l'identique sur chacune de ces pages.
- *
- * Le rail est masqué sous `lg` : la barre d'onglets prend le relais, sans quoi ces
- * écrans n'auraient aucune sortie sur téléphone.
+ * Pages de lecture (profil, post, projet…) : rail, conteneur de 960px,
+ * en-tête propre à chaque écran et états chargement, introuvable et erreur.
+ * Sous `lg`, la barre d'onglets remplace le rail.
  */
 export function ReadingPage({
   header,

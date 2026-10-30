@@ -113,11 +113,8 @@ export function SpacePage() {
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
   function switchChannel(channelId: string) {
-    // Une pièce jointe envoyée appartient au salon où elle a été envoyée
-    // (requireChannelAccess côté serveur la rejetterait dans un autre
-    // salon) : elle ne doit pas survivre à un changement de salon sans
-    // message envoyé. Le brouillon de texte, lui, reste attaché à son salon
-    // (useChannelDraft) et revient quand on y retourne.
+    // Une pièce jointe appartient à son salon (le serveur la refuserait
+    // ailleurs) ; le brouillon de texte, lui, reste gardé par salon.
     setPendingAttachments([]);
     setActiveChannelId(channelId);
   }
@@ -173,8 +170,7 @@ export function SpacePage() {
   }, []);
 
   useEffect(() => {
-    // Réservé aux membres connectés : un visiteur n'a pas accès à
-    // GET /api/spaces/:id/members (voir apps/server/src/api/routes/spaces.ts).
+    // Un visiteur n'a pas accès à la liste des membres.
     if (activeSpaceId && canInteract) void refreshMembers(activeSpaceId);
   }, [activeSpaceId, canInteract, refreshMembers]);
 
@@ -796,9 +792,8 @@ export function SpacePage() {
                               )}
                             </div>
                             {canWrite && (
-                              // Actions hors du flux du texte : visibles au survol et au
-                              // focus sur bureau, à l'appui sur écran tactile. Elles ne
-                              // s'affichent plus en permanence sous chaque message.
+                              // Actions hors du flux du texte : au survol et au focus sur
+                              // bureau, à l'appui sur écran tactile.
                               <div
                                 role="toolbar"
                                 aria-label={fr.chat.messageActions}

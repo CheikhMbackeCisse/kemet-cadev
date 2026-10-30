@@ -5,10 +5,7 @@ export interface ServiceCheck {
   path: string;
 }
 
-/**
- * worker n'a pas de route accessible depuis le navigateur (voir
- * infra/Caddyfile) : son état n'est vérifié que par le healthcheck Docker.
- */
+// worker n'est pas joignable depuis le navigateur : seul le healthcheck Docker le vérifie.
 export const SERVICE_CHECKS: ServiceCheck[] = [
   { name: "api", path: "/api/health" },
   { name: "realtime", path: "/realtime/health" },
