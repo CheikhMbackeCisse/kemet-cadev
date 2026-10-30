@@ -55,4 +55,3 @@ l'écran reste correct en thème clair comme en thème sombre.
   ailleurs sans s'en rendre compte.
 - Une relecture d'interface qui signale un dégradé hors des écrans de compte
   reste un signalement valable : l'exception ne vaut pas blanc-seing.
-
