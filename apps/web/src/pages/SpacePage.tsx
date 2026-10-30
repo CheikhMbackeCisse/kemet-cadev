@@ -1,10 +1,12 @@
 import {
+  ArrowDown,
   Download,
   Hash,
   MessageSquare,
   Paperclip,
   Plus,
   Send,
+  SmilePlus,
   Star,
   UserPlus,
   Users,
@@ -24,6 +26,12 @@ import {
   uploadAttachment,
 } from "../lib/chat/api.js";
 import { useChannelMessages } from "../lib/chat/useChannelMessages.js";
+import { buildTimeline } from "../lib/chat/timeline.js";
+import { useChannelDraft } from "../lib/chat/useChannelDraft.js";
+import {
+  UNREAD_SEPARATOR_ATTRIBUTE,
+  useMessageListScroll,
+} from "../lib/chat/useMessageListScroll.js";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { RichText } from "../components/content/RichText.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
@@ -46,53 +54,15 @@ import { Tooltip } from "../components/ui/Tooltip.js";
 import { useToast } from "../components/ui/Toast.js";
 import { UserName } from "../components/ui/UserName.js";
 import { formatCount } from "../lib/formatCount.js";
+import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
 import {
   KEMET_HANDLE,
   type Attachment,
   type Channel,
-  type Message,
   type Space,
   type SpaceMember,
 } from "@kemet/shared";
-
-const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
-interface MessageGroup {
-  authorId: string;
-  authorHandle: string;
-  authorDisplayName: string;
-  authorAvatarUrl: string | null;
-  authorCountry: string | null;
-  messages: Message[];
-}
-
-/** Regroupe les messages consécutifs d'une même personne sous un seul avatar (DESIGN.md, « Message »). */
-function groupMessages(messages: Message[]): MessageGroup[] {
-  const groups: MessageGroup[] = [];
-  for (const message of messages) {
-    const last = groups[groups.length - 1];
-    const lastMessage = last?.messages[last.messages.length - 1];
-    const withinWindow = lastMessage
-      ? new Date(message.createdAt).getTime() - new Date(lastMessage.createdAt).getTime() <
-        MESSAGE_GROUP_WINDOW_MS
-      : false;
-    const assistantInvolved =
-      message.authorHandle === KEMET_HANDLE || last?.authorHandle === KEMET_HANDLE;
-    if (last && last.authorId === message.authorId && withinWindow && !assistantInvolved) {
-      last.messages.push(message);
-    } else {
-      groups.push({
-        authorId: message.authorId,
-        authorHandle: message.authorHandle,
-        authorDisplayName: message.authorDisplayName,
-        authorAvatarUrl: message.authorAvatarUrl,
-        authorCountry: message.authorCountry,
-        messages: [message],
-      });
-    }
-  }
-  return groups;
-}
 
 function readParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
@@ -129,22 +99,25 @@ export function SpacePage() {
   const [members, setMembers] = useState<SpaceMember[]>([]);
   const [membersNextCursor, setMembersNextCursor] = useState<string | null>(null);
   const [membersLoadingMore, setMembersLoadingMore] = useState(false);
-  const [draft, setDraft] = useState("");
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState(false);
+  const [draft, setDraft] = useChannelDraft(activeChannelId);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [memberHandle, setMemberHandle] = useState("");
+  // Sur écran tactile, sans survol : un appui sur un message montre ses
+  // actions, un second appui les cache.
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   function switchChannel(channelId: string) {
     // Une pièce jointe envoyée appartient au salon où elle a été envoyée
     // (requireChannelAccess côté serveur la rejetterait dans un autre
     // salon) : elle ne doit pas survivre à un changement de salon sans
-    // message envoyé. Nettoyage au clic plutôt que dans un effet réactif
-    // à `activeChannelId` : cet effet se redéclenchait aussi à la
-    // sélection automatique du premier salon d'un espace (refreshChannels
-    // ci-dessous), effaçant un brouillon en cours de frappe si cette
-    // sélection arrivait après coup.
-    setDraft("");
+    // message envoyé. Le brouillon de texte, lui, reste attaché à son salon
+    // (useChannelDraft) et revient quand on y retourne.
     setPendingAttachments([]);
     setActiveChannelId(channelId);
   }
@@ -185,16 +158,25 @@ export function SpacePage() {
     if (activeSpaceId) void refreshChannels(activeSpaceId);
   }, [activeSpaceId, refreshChannels]);
 
+  const refreshMembers = useCallback(async (spaceId: string) => {
+    setMembersLoading(true);
+    setMembersError(false);
+    try {
+      const page = await listSpaceMembers(spaceId);
+      setMembers(page.items);
+      setMembersNextCursor(page.nextCursor);
+    } catch {
+      setMembersError(true);
+    } finally {
+      setMembersLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     // Réservé aux membres connectés : un visiteur n'a pas accès à
     // GET /api/spaces/:id/members (voir apps/server/src/api/routes/spaces.ts).
-    if (activeSpaceId && canInteract) {
-      void listSpaceMembers(activeSpaceId).then((page) => {
-        setMembers(page.items);
-        setMembersNextCursor(page.nextCursor);
-      });
-    }
-  }, [activeSpaceId, canInteract]);
+    if (activeSpaceId && canInteract) void refreshMembers(activeSpaceId);
+  }, [activeSpaceId, canInteract, refreshMembers]);
 
   async function loadMoreMembers() {
     if (!activeSpaceId || !membersNextCursor) return;
@@ -217,6 +199,11 @@ export function SpacePage() {
     messages,
     loading,
     error: messagesError,
+    firstUnreadMessageId,
+    hasOlder,
+    loadingOlder,
+    olderError,
+    loadOlder,
     assistantStream,
     assistantMetaByMessageId,
     reload: reloadMessages,
@@ -248,9 +235,33 @@ export function SpacePage() {
     [members],
   );
 
-  const messageGroups = useMemo(() => groupMessages(messages), [messages]);
+  const timeline = useMemo(
+    () => buildTimeline(messages, new Date(), { firstUnreadMessageId, hasOlder }),
+    [messages, firstUnreadMessageId, hasOlder],
+  );
+
+  const { newMessagesBelow, prependingOlder, onScroll, jumpToLatest, requestOlder } =
+    useMessageListScroll({
+      listRef: messageListRef,
+      channelId: activeChannelId,
+      loading,
+      messages,
+      hasOlder,
+      loadingOlder,
+      olderError,
+      loadOlder,
+      ownProfileId: profile?.id ?? null,
+      streamingText: assistantStream?.text ?? null,
+    });
 
   const activeSpace = spaces.find((space) => space.id === activeSpaceId) ?? null;
+  // Le bouton cède la place au squelette pendant le chargement : le focus passe
+  // à la liste plutôt que de retomber sur le document.
+  function requestOlderFromButton() {
+    messageListRef.current?.focus();
+    requestOlder();
+  }
+  const activeChannelName = channels.find((channel) => channel.id === activeChannelId)?.name;
   // Le serveur refuse deja ces actions aux simples membres : la condition ne
   // fait qu'eviter de leur montrer des boutons qui echoueront.
   const canManageMembers =
@@ -258,16 +269,23 @@ export function SpacePage() {
 
   async function handleSend() {
     const body = draft.trim();
-    if (!body && pendingAttachments.length === 0) return;
+    const attachments = pendingAttachments;
+    if (!body && attachments.length === 0) return;
+    // Vidé avant la réponse du serveur : le message revient souvent par le
+    // temps réel avant elle, et ne doit pas rester affiché aussi dans le
+    // composeur. Rendu tel quel si l'envoi échoue.
+    setDraft("");
+    setPendingAttachments([]);
+    composerRef.current?.focus();
     try {
       await send(
         body,
         null,
-        pendingAttachments.map((attachment) => attachment.id),
+        attachments.map((attachment) => attachment.id),
       );
-      setDraft("");
-      setPendingAttachments([]);
     } catch {
+      setDraft(draft);
+      setPendingAttachments(attachments);
       toast.show(fr.chat.sendError, "danger");
     }
   }
@@ -345,9 +363,8 @@ export function SpacePage() {
           onCreateSpace: canWrite ? () => (window.location.href = "/salons/nouveau") : undefined,
         }}
         channelList={{
-          spaceName: activeSpace
-            ? `${activeSpace.name} · ${fr.spaces.memberCountBadge(formatCount(activeSpace.memberCount))}`
-            : "",
+          // Le nombre de membres est déjà dans le titre du panneau de droite.
+          spaceName: activeSpace?.name ?? "",
           channels: channelItems,
           activeChannelId: activeChannelId ?? "",
           onSelect: switchChannel,
@@ -392,7 +409,28 @@ export function SpacePage() {
                 content: (
                   <div className="flex flex-col gap-4 text-sm">
                     <div className="flex flex-col gap-1">
-                      {members.length === 0 ? (
+                      {membersLoading ? (
+                        <div className="flex flex-col gap-2" aria-busy="true">
+                          <span className="sr-only">{fr.spaces.loadingMembers}</span>
+                          {[0, 1, 2, 3].map((index) => (
+                            <div key={index} className="flex items-center gap-2 px-1 py-1">
+                              <Skeleton className="size-8 rounded-full" />
+                              <div className="flex flex-1 flex-col gap-1">
+                                <Skeleton className="h-3 w-2/3" />
+                                <Skeleton className="h-3 w-1/3" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : membersError ? (
+                        <ErrorState
+                          message={fr.spaces.loadingMembersError}
+                          retry={{
+                            label: fr.chat.retry,
+                            onClick: () => activeSpaceId && refreshMembers(activeSpaceId),
+                          }}
+                        />
+                      ) : members.length === 0 ? (
                         <EmptyState icon={Users} message={fr.spaces.noMembers} className="py-6" />
                       ) : (
                         members.map((member) => (
@@ -467,258 +505,370 @@ export function SpacePage() {
         }
       >
         <div className="flex h-full flex-col">
-          <div
-            role="log"
-            aria-label={fr.chat.messageList}
-            // Seuls les nouveaux messages sont lus : sans aria-relevant, chaque
-            // réaction ajoutée serait aussi annoncée.
-            aria-relevant="additions"
-            tabIndex={0}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 lg:px-6"
-          >
-            {spacesLoading ? (
-              <div className="flex flex-col gap-4">
-                <Skeleton className="h-12 w-2/3" />
-                <Skeleton className="h-12 w-1/2" />
-              </div>
-            ) : spacesError ? (
-              <ErrorState
-                message={fr.spaces.loadingSpacesError}
-                retry={{ label: fr.chat.retry, onClick: refreshSpaces }}
-              />
-            ) : spaces.length === 0 ? (
-              <EmptyState
-                icon={Hash}
-                message={fr.spaces.noSpaces}
-                action={{
-                  label: fr.spaces.createTitle,
-                  onClick: () => (window.location.href = "/salons/nouveau"),
-                }}
-              />
-            ) : channelsLoading ? (
-              <div className="flex flex-col gap-4">
-                <Skeleton className="h-12 w-2/3" />
-                <Skeleton className="h-12 w-1/2" />
-                <Skeleton className="h-12 w-3/4" />
-              </div>
-            ) : channelsError ? (
-              <ErrorState
-                message={fr.spaces.loadingChannelsError}
-                retry={{
-                  label: fr.chat.retry,
-                  onClick: () => activeSpaceId && refreshChannels(activeSpaceId),
-                }}
-              />
-            ) : channels.length === 0 ? (
-              <EmptyState icon={MessageSquare} message={fr.spaces.noChannels} />
-            ) : !activeChannelId ? (
-              <EmptyState icon={MessageSquare} message={fr.chat.noChannelSelected} />
-            ) : loading ? (
-              <div className="flex flex-col gap-4">
-                <Skeleton className="h-12 w-2/3" />
-                <Skeleton className="h-12 w-1/2" />
-                <Skeleton className="h-12 w-3/4" />
-              </div>
-            ) : messagesError ? (
-              <ErrorState
-                message={fr.chat.loadingMessagesError}
-                retry={{ label: fr.chat.retry, onClick: reloadMessages }}
-              />
-            ) : messages.length === 0 ? (
-              <EmptyState icon={MessageSquare} message={fr.chat.noMessages} />
-            ) : (
-              <div className="flex flex-col gap-4">
-                {messageGroups.map((group) =>
-                  group.authorHandle === KEMET_HANDLE ? (
-                    <AssistantMessage
-                      key={group.messages[0]!.id}
-                      content={
-                        group.messages[0]!.deletedAt ? (
-                          fr.chat.messageDeleted
-                        ) : (
-                          <RichText source={group.messages[0]!.body} />
-                        )
-                      }
-                      skill={
-                        assistantMetaByMessageId[group.messages[0]!.id]?.skill
-                          ? {
-                              skillName:
-                                assistantMetaByMessageId[group.messages[0]!.id]!.skill!.name,
-                              skillHref: `/skills/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.slug}`,
-                              authorName:
-                                assistantMetaByMessageId[group.messages[0]!.id]!.skill!
-                                  .authorDisplayName,
-                              authorHref: `/u/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.authorHandle}`,
-                            }
-                          : undefined
-                      }
-                      initialFeedback={
-                        assistantMetaByMessageId[group.messages[0]!.id]?.helpful === true
-                          ? "helpful"
-                          : assistantMetaByMessageId[group.messages[0]!.id]?.helpful === false
-                            ? "not-helpful"
-                            : null
-                      }
-                      onFeedback={(helpful) =>
-                        void giveAssistantFeedback(group.messages[0]!.id, helpful)
-                      }
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <div
+              ref={messageListRef}
+              onScroll={onScroll}
+              role="log"
+              aria-label={fr.chat.messageList}
+              // Seuls les nouveaux messages sont lus : sans aria-relevant, chaque
+              // réaction ajoutée serait aussi annoncée.
+              aria-relevant="additions"
+              aria-live={prependingOlder ? "off" : undefined}
+              tabIndex={0}
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 lg:px-6"
+            >
+              {spacesLoading ? (
+                <div className="flex flex-col gap-4">
+                  <Skeleton className="h-12 w-2/3" />
+                  <Skeleton className="h-12 w-1/2" />
+                </div>
+              ) : spacesError ? (
+                <ErrorState
+                  message={fr.spaces.loadingSpacesError}
+                  retry={{ label: fr.chat.retry, onClick: refreshSpaces }}
+                />
+              ) : spaces.length === 0 ? (
+                <EmptyState
+                  icon={Hash}
+                  message={fr.spaces.noSpaces}
+                  action={{
+                    label: fr.spaces.createTitle,
+                    onClick: () => (window.location.href = "/salons/nouveau"),
+                  }}
+                />
+              ) : channelsLoading ? (
+                <div className="flex flex-col gap-4">
+                  <Skeleton className="h-12 w-2/3" />
+                  <Skeleton className="h-12 w-1/2" />
+                  <Skeleton className="h-12 w-3/4" />
+                </div>
+              ) : channelsError ? (
+                <ErrorState
+                  message={fr.spaces.loadingChannelsError}
+                  retry={{
+                    label: fr.chat.retry,
+                    onClick: () => activeSpaceId && refreshChannels(activeSpaceId),
+                  }}
+                />
+              ) : channels.length === 0 ? (
+                <EmptyState icon={MessageSquare} message={fr.spaces.noChannels} />
+              ) : !activeChannelId ? (
+                <EmptyState icon={MessageSquare} message={fr.chat.noChannelSelected} />
+              ) : loading ? (
+                <div className="flex flex-col gap-4">
+                  <Skeleton className="h-12 w-2/3" />
+                  <Skeleton className="h-12 w-1/2" />
+                  <Skeleton className="h-12 w-3/4" />
+                </div>
+              ) : messagesError ? (
+                <ErrorState
+                  message={fr.chat.loadingMessagesError}
+                  retry={{ label: fr.chat.retry, onClick: reloadMessages }}
+                />
+              ) : messages.length === 0 ? (
+                <EmptyState icon={MessageSquare} message={fr.chat.noMessages} />
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {loadingOlder ? (
+                    <div className="flex flex-col gap-4" aria-hidden="true">
+                      <Skeleton className="h-12 w-2/3" />
+                      <Skeleton className="h-12 w-1/2" />
+                    </div>
+                  ) : olderError ? (
+                    <ErrorState
+                      message={fr.chat.loadOlderError}
+                      retry={{ label: fr.chat.retry, onClick: requestOlderFromButton }}
                     />
+                  ) : hasOlder ? (
+                    <Button
+                      variant="ghost"
+                      onClick={requestOlderFromButton}
+                      className="self-center"
+                    >
+                      {fr.chat.loadOlder}
+                    </Button>
                   ) : (
-                    <div key={group.messages[0]!.id} className="flex flex-col gap-1">
-                      {group.messages.map((message, index) => (
-                        <div key={message.id} className="flex gap-3">
-                          <div className="flex w-8 shrink-0 items-start justify-center">
-                            {index === 0 ? (
-                              <a
-                                href={`/u/${group.authorHandle}`}
-                                aria-label={fr.profile.viewProfile(group.authorDisplayName)}
-                              >
-                                <Avatar
-                                  name={group.authorDisplayName}
-                                  src={group.authorAvatarUrl ?? undefined}
-                                  countryCode={group.authorCountry ?? undefined}
-                                />
-                              </a>
-                            ) : (
-                              <span className="pt-1 text-xs leading-none text-subtle">
-                                {formatTime(message.createdAt)}
-                              </span>
+                    activeChannelName && (
+                      <p className="text-center text-xs text-subtle">
+                        {fr.chat.channelStart(activeChannelName)}
+                      </p>
+                    )
+                  )}
+                  {timeline.map((item) => {
+                    if (item.type === "unread") {
+                      return (
+                        <div
+                          key={item.key}
+                          {...{ [UNREAD_SEPARATOR_ATTRIBUTE]: "" }}
+                          role="separator"
+                          aria-label={fr.chat.newMessages}
+                          className="flex items-center gap-3 text-xs font-semibold"
+                        >
+                          <span className="h-px flex-1 bg-primary" aria-hidden="true" />
+                          {/* --link plutôt que --primary : même teinte en clair, plus
+                              claire en sombre où --primary n'atteint pas 4,5:1 sur --bg. */}
+                          <span className="text-link" aria-hidden="true">
+                            {fr.chat.newMessages}
+                          </span>
+                          <span className="h-px flex-1 bg-primary" aria-hidden="true" />
+                        </div>
+                      );
+                    }
+                    if (item.type === "day") {
+                      return (
+                        <div
+                          key={item.key}
+                          role="separator"
+                          aria-label={item.label}
+                          className="flex items-center gap-3 text-xs font-medium text-subtle"
+                        >
+                          <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                          <span aria-hidden="true">{item.label}</span>
+                          <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                        </div>
+                      );
+                    }
+                    const { group } = item;
+                    return group.authorHandle === KEMET_HANDLE ? (
+                      <AssistantMessage
+                        key={group.messages[0]!.id}
+                        content={
+                          group.messages[0]!.deletedAt ? (
+                            fr.chat.messageDeleted
+                          ) : (
+                            <RichText source={group.messages[0]!.body} />
+                          )
+                        }
+                        skill={
+                          assistantMetaByMessageId[group.messages[0]!.id]?.skill
+                            ? {
+                                skillName:
+                                  assistantMetaByMessageId[group.messages[0]!.id]!.skill!.name,
+                                skillHref: `/skills/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.slug}`,
+                                authorName:
+                                  assistantMetaByMessageId[group.messages[0]!.id]!.skill!
+                                    .authorDisplayName,
+                                authorHref: `/u/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.authorHandle}`,
+                              }
+                            : undefined
+                        }
+                        initialFeedback={
+                          assistantMetaByMessageId[group.messages[0]!.id]?.helpful === true
+                            ? "helpful"
+                            : assistantMetaByMessageId[group.messages[0]!.id]?.helpful === false
+                              ? "not-helpful"
+                              : null
+                        }
+                        onFeedback={(helpful) =>
+                          void giveAssistantFeedback(group.messages[0]!.id, helpful)
+                        }
+                      />
+                    ) : (
+                      <div key={group.messages[0]!.id} className="flex flex-col gap-1">
+                        {group.messages.map((message, index) => (
+                          <div
+                            key={message.id}
+                            onClick={(event) => {
+                              if (
+                                (event.target as HTMLElement).closest("a, button, input, textarea")
+                              )
+                                return;
+                              setSelectedMessageId((current) =>
+                                current === message.id ? null : message.id,
+                              );
+                            }}
+                            className={cn(
+                              "group/message relative -mx-2 flex gap-3 rounded-control px-2 py-0.5 lg:hover:bg-surface-2",
+                              selectedMessageId === message.id && "bg-surface-2",
                             )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            {index === 0 && (
-                              <div className="flex items-baseline gap-2">
-                                <a href={`/u/${group.authorHandle}`} className="hover:underline">
-                                  <UserName name={group.authorDisplayName} />
+                          >
+                            <div className="flex w-8 shrink-0 items-start justify-center">
+                              {index === 0 ? (
+                                <a
+                                  href={`/u/${group.authorHandle}`}
+                                  aria-label={fr.profile.viewProfile(group.authorDisplayName)}
+                                >
+                                  <Avatar
+                                    name={group.authorDisplayName}
+                                    src={group.authorAvatarUrl ?? undefined}
+                                    countryCode={group.authorCountry ?? undefined}
+                                  />
                                 </a>
-                                <span className="text-xs text-subtle">
+                              ) : (
+                                <span className="pt-1 text-xs leading-none text-subtle">
                                   {formatTime(message.createdAt)}
                                 </span>
-                              </div>
-                            )}
-                            {message.body &&
-                              (message.deletedAt ? (
-                                <p className="mt-0.5 text-base text-text">
-                                  {fr.chat.messageDeleted}
-                                </p>
-                              ) : (
-                                <RichText
-                                  source={message.body}
-                                  className="mt-0.5 text-base text-text"
-                                  suffix={
-                                    message.editedAt && (
-                                      <span className="text-xs text-subtle">
-                                        ({fr.chat.edited})
-                                      </span>
-                                    )
-                                  }
-                                />
-                              ))}
-                            {!message.deletedAt && message.attachments.length > 0 && (
-                              <div className="mt-1 flex flex-wrap gap-2">
-                                {message.attachments.map((attachment) =>
-                                  attachment.kind === "image" ? (
-                                    <img
-                                      key={attachment.id}
-                                      src={attachmentUrl(attachment.id)}
-                                      alt={attachment.originalName}
-                                      className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
-                                    />
-                                  ) : (
-                                    <a
-                                      key={attachment.id}
-                                      href={attachmentUrl(attachment.id)}
-                                      aria-label={fr.chat.downloadFile(attachment.originalName)}
-                                      className="inline-flex h-control-mobile items-center gap-2 rounded-card border border-border px-3 text-sm text-text hover:bg-surface-2 md:h-control"
-                                    >
-                                      <Download className="size-4" aria-hidden="true" />
-                                      {attachment.originalName}
-                                    </a>
-                                  ),
-                                )}
-                              </div>
-                            )}
-                            <div className="mt-1 flex flex-wrap items-center gap-1">
-                              {message.reactions.map((reaction) => {
-                                const names = reaction.profileIds
-                                  .map((profileId) => memberNameById.get(profileId))
-                                  .filter((name): name is string => Boolean(name));
-                                // Une liste tronquée (un des réacteurs pas encore chargé dans le
-                                // panneau des membres) induirait en erreur : on ne l'affiche que
-                                // si elle est complète, sinon on retombe sur le simple compte.
-                                const tooltipLabel =
-                                  names.length === reaction.profileIds.length
-                                    ? names.join(", ")
-                                    : fr.chat.reactionLabel(
-                                        reaction.emoji,
-                                        reaction.profileIds.length,
-                                      );
-                                return canWrite ? (
-                                  <Tooltip key={reaction.emoji} label={tooltipLabel}>
-                                    <button
-                                      type="button"
-                                      onClick={() => react(message.id, reaction.emoji)}
-                                      aria-label={fr.chat.reactionLabel(
-                                        reaction.emoji,
-                                        reaction.profileIds.length,
-                                      )}
-                                      className="rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-2"
-                                    >
-                                      {reaction.emoji} {reaction.profileIds.length}
-                                    </button>
-                                  </Tooltip>
-                                ) : (
-                                  <Tooltip key={reaction.emoji} label={tooltipLabel}>
-                                    <span className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle">
-                                      {reaction.emoji} {reaction.profileIds.length}
-                                    </span>
-                                  </Tooltip>
-                                );
-                              })}
-                              {canWrite && (
-                                <button
-                                  type="button"
-                                  onClick={() => react(message.id, "👍")}
-                                  aria-label={fr.chat.addReaction}
-                                  className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-subtle hover:bg-surface-2"
-                                >
-                                  <Plus className="size-4" aria-hidden="true" />
-                                </button>
                               )}
-                              {canWrite &&
-                                !message.deletedAt &&
-                                profile &&
-                                profile.id !== message.authorId && (
-                                  <ReportMenu
-                                    contentType="message"
-                                    contentId={message.id}
-                                    authorId={message.authorId}
-                                    authorHandle={message.authorHandle}
-                                  />
-                                )}
                             </div>
+                            <div className="min-w-0 flex-1">
+                              {index === 0 && (
+                                <div className="flex items-baseline gap-2">
+                                  <a href={`/u/${group.authorHandle}`} className="hover:underline">
+                                    <UserName name={group.authorDisplayName} />
+                                  </a>
+                                  <span className="text-xs text-subtle">
+                                    {formatTime(message.createdAt)}
+                                  </span>
+                                </div>
+                              )}
+                              {message.body &&
+                                (message.deletedAt ? (
+                                  <p className="mt-0.5 text-base text-text">
+                                    {fr.chat.messageDeleted}
+                                  </p>
+                                ) : (
+                                  <RichText
+                                    source={message.body}
+                                    className="mt-0.5 text-base text-text"
+                                    suffix={
+                                      message.editedAt && (
+                                        <span className="text-xs text-subtle">
+                                          ({fr.chat.edited})
+                                        </span>
+                                      )
+                                    }
+                                  />
+                                ))}
+                              {!message.deletedAt && message.attachments.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-2">
+                                  {message.attachments.map((attachment) =>
+                                    attachment.kind === "image" ? (
+                                      <img
+                                        key={attachment.id}
+                                        src={attachmentUrl(attachment.id)}
+                                        alt={attachment.originalName}
+                                        className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
+                                      />
+                                    ) : (
+                                      <a
+                                        key={attachment.id}
+                                        href={attachmentUrl(attachment.id)}
+                                        aria-label={fr.chat.downloadFile(attachment.originalName)}
+                                        className="inline-flex h-control-mobile items-center gap-2 rounded-card border border-border px-3 text-sm text-text hover:bg-surface-2 md:h-control"
+                                      >
+                                        <Download className="size-4" aria-hidden="true" />
+                                        {attachment.originalName}
+                                      </a>
+                                    ),
+                                  )}
+                                </div>
+                              )}
+                              {message.reactions.length > 0 && (
+                                <div className="mt-1 flex flex-wrap items-center gap-1">
+                                  {message.reactions.map((reaction) => {
+                                    const names = reaction.profileIds
+                                      .map((profileId) => memberNameById.get(profileId))
+                                      .filter((name): name is string => Boolean(name));
+                                    // Une liste tronquée (un des réacteurs pas encore chargé dans le
+                                    // panneau des membres) induirait en erreur : on ne l'affiche que
+                                    // si elle est complète, sinon on retombe sur le simple compte.
+                                    const tooltipLabel =
+                                      names.length === reaction.profileIds.length
+                                        ? names.join(", ")
+                                        : fr.chat.reactionLabel(
+                                            reaction.emoji,
+                                            reaction.profileIds.length,
+                                          );
+                                    return canWrite ? (
+                                      <Tooltip key={reaction.emoji} label={tooltipLabel}>
+                                        <button
+                                          type="button"
+                                          onClick={() => react(message.id, reaction.emoji)}
+                                          aria-label={fr.chat.reactionLabel(
+                                            reaction.emoji,
+                                            reaction.profileIds.length,
+                                          )}
+                                          className="rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-2"
+                                        >
+                                          {reaction.emoji} {reaction.profileIds.length}
+                                        </button>
+                                      </Tooltip>
+                                    ) : (
+                                      <Tooltip key={reaction.emoji} label={tooltipLabel}>
+                                        <span className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle">
+                                          {reaction.emoji} {reaction.profileIds.length}
+                                        </span>
+                                      </Tooltip>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                            {canWrite && (
+                              // Actions hors du flux du texte : visibles au survol et au
+                              // focus sur bureau, à l'appui sur écran tactile. Elles ne
+                              // s'affichent plus en permanence sous chaque message.
+                              <div
+                                role="toolbar"
+                                aria-label={fr.chat.messageActions}
+                                className={cn(
+                                  "pointer-events-none absolute -top-3 right-2 flex items-center gap-0.5 rounded-control border border-border bg-surface p-0.5 opacity-0 transition-opacity duration-150",
+                                  "focus-within:pointer-events-auto focus-within:opacity-100 group-hover/message:pointer-events-auto group-hover/message:opacity-100",
+                                  selectedMessageId === message.id &&
+                                    "pointer-events-auto opacity-100",
+                                )}
+                              >
+                                <IconButton
+                                  aria-label={fr.chat.addReaction}
+                                  onClick={() => react(message.id, "👍")}
+                                >
+                                  <SmilePlus className="size-4" aria-hidden="true" />
+                                </IconButton>
+                                {!message.deletedAt &&
+                                  profile &&
+                                  profile.id !== message.authorId && (
+                                    <ReportMenu
+                                      contentType="message"
+                                      contentId={message.id}
+                                      authorId={message.authorId}
+                                      authorHandle={message.authorHandle}
+                                    />
+                                  )}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    );
+                  })}
+                  {assistantStream && (
+                    // aria-busy : la réponse arrive morceau par morceau, les lecteurs
+                    // d'écran attendent le message final au lieu de lire chaque morceau.
+                    <div aria-busy="true">
+                      <AssistantMessage
+                        content={
+                          assistantStream.text ? <RichText source={assistantStream.text} /> : "…"
+                        }
+                        hideFeedback
+                        readSummary={
+                          assistantStream.failed ? fr.chat.assistantUnavailable : undefined
+                        }
+                      />
                     </div>
-                  ),
-                )}
-                {assistantStream && (
-                  // aria-busy : la réponse arrive morceau par morceau, les lecteurs
-                  // d'écran attendent le message final au lieu de lire chaque morceau.
-                  <div aria-busy="true">
-                    <AssistantMessage
-                      content={
-                        assistantStream.text ? <RichText source={assistantStream.text} /> : "…"
-                      }
-                      hideFeedback
-                      readSummary={
-                        assistantStream.failed ? fr.chat.assistantUnavailable : undefined
-                      }
-                    />
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <p role="status" className="sr-only">
+              {loadingOlder ? fr.chat.loadingOlder : ""}
+            </p>
+            {newMessagesBelow > 0 && (
+              <Button
+                variant="secondary"
+                onClick={(event) => {
+                  jumpToLatest();
+                  // Le bouton disparaît : le focus irait sinon sur le document.
+                  // Au toucher, le composeur ouvrirait le clavier virtuel par-dessus
+                  // les messages qu'on vient d'atteindre (detail vaut 0 au clavier).
+                  if (canWrite && event.detail === 0) composerRef.current?.focus();
+                  else messageListRef.current?.focus();
+                }}
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-surface shadow-floating"
+              >
+                <ArrowDown className="size-4" aria-hidden="true" />
+                {fr.chat.jumpToLatest}
+              </Button>
             )}
           </div>
           {status === "visitor" && (
@@ -768,6 +918,7 @@ export function SpacePage() {
                   <Paperclip className="size-4" aria-hidden="true" />
                 </IconButton>
                 <Textarea
+                  ref={composerRef}
                   placeholder={fr.chat.composerPlaceholder}
                   aria-label={fr.chat.composerPlaceholder}
                   value={draft}
@@ -784,8 +935,11 @@ export function SpacePage() {
                 />
                 <Button
                   onClick={handleSend}
+                  // Garde le focus (et le clavier mobile ouvert) dans le composeur.
+                  onPointerDown={(event) => event.preventDefault()}
                   aria-label={fr.chat.send}
                   disabled={!activeChannelId || uploadingAttachment}
+                  className="max-md:size-control-mobile max-md:px-0"
                 >
                   <Send className="size-4" aria-hidden="true" />
                 </Button>

@@ -233,11 +233,47 @@ export async function softDeleteMessage(db: Db, messageId: string) {
   return message!;
 }
 
+/**
+ * Du plus récent au plus ancien. Le curseur est l'identifiant du dernier
+ * message de la page précédente, comparé sur (created_at, id) en base : une
+ * date seule, arrondie à la milliseconde côté JavaScript alors que Postgres
+ * garde la microseconde, faisait sauter des messages en bord de page, et deux
+ * messages de même horodatage n'avaient pas d'ordre stable.
+ */
 export async function listChannelMessages(db: Db, channelId: string, cursor: string | undefined, limit: number) {
   const topLevelInChannel = and(eq(messages.channelId, channelId), isNull(messages.parentMessageId));
-  const condition = cursor ? and(topLevelInChannel, lt(messages.createdAt, new Date(cursor))) : topLevelInChannel;
-  const rows = await db.select().from(messages).where(condition).orderBy(desc(messages.createdAt)).limit(limit + 1);
-  return toPage(rows, limit);
+  const condition = cursor
+    ? and(
+        topLevelInChannel,
+        sql`(${messages.createdAt}, ${messages.id}) < (select c.created_at, c.id from messages c where c.id = ${cursor} and c.channel_id = ${channelId})`,
+      )
+    : topLevelInChannel;
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(condition)
+    .orderBy(desc(messages.createdAt), desc(messages.id))
+    .limit(limit + 1);
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  return { items, nextCursor: hasMore ? (items.at(-1)?.id ?? null) : null };
+}
+
+/**
+ * Premier message non lu, avec la même règle que le compteur de non-lus
+ * (countUnreadMessages) : postérieur à la dernière lecture, ou à l'arrivée
+ * dans l'espace pour un salon jamais ouvert.
+ */
+export async function findFirstUnreadMessageId(db: Db, channelId: string, profileId: string, joinedAt: Date) {
+  const state = await getReadState(db, channelId, profileId);
+  const since = state?.lastReadAt ?? joinedAt;
+  const [row] = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .where(and(eq(messages.channelId, channelId), isNull(messages.parentMessageId), gt(messages.createdAt, since)))
+    .orderBy(asc(messages.createdAt), asc(messages.id))
+    .limit(1);
+  return row?.id ?? null;
 }
 
 export async function listThreadReplies(db: Db, parentMessageId: string, cursor: string | undefined, limit: number) {

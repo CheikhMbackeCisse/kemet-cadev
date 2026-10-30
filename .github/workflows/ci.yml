@@ -116,6 +116,11 @@ jobs:
           BETTER_AUTH_URL=http://localhost
           WEB_APP_URL=http://localhost
           AUTH_RATE_LIMIT_ENABLED=false
+          # Tous les parcours passent par la même adresse IP, clé des limites
+          # de débit : à 5 messages par minute pour un compte neuf, les
+          # parcours du salon se gênent entre eux. La limite elle-même est
+          # couverte par les tests d'intégration.
+          ANTI_SPAM_NEW_ACCOUNT_FACTOR=1
           SMTP_HOST=mailpit
           SMTP_PORT=1025
           EOF

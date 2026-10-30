@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { createPublicSpace } from "./support/spaces.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -84,20 +85,17 @@ test("un visiteur sans session parcourt un espace public et le fil sans composeu
   await signUpVerifyAndSignIn(request, ownerEmail, ownerHandle);
 
   const spaceName = `Espace visiteur ${ownerHandle}`;
-  const createSpace = await request.post("/api/spaces", {
-    data: { name: spaceName, slug: `visitor-${ownerHandle}`.toLowerCase(), visibility: "public" },
-  });
-  const space = (await createSpace.json()).space as { id: string };
-  const channels = await request.get(`/api/spaces/${space.id}/channels`);
-  const general = (await channels.json()).items.find(
-    (channel: { slug: string }) => channel.slug === "general",
+  const { spaceId, generalId } = await createPublicSpace(
+    request,
+    spaceName,
+    `visitor-${ownerHandle}`.toLowerCase(),
   );
-  await request.post(`/api/channels/${general.id}/messages`, {
+  await request.post(`/api/channels/${generalId}/messages`, {
     data: { clientId: crypto.randomUUID(), body: "Visible sans compte, mode visiteur" },
   });
 
   // `page` n'a jamais signé en : c'est le visiteur de ce test.
-  await page.goto(`/salons?space=${space.id}&channel=${general.id}`);
+  await page.goto(`/salons?space=${spaceId}&channel=${generalId}`);
   await expect(page.getByText("Tu consultes Kemet sans compte.")).toBeVisible();
   await expect(page.getByText("Visible sans compte, mode visiteur")).toBeVisible();
   await expect(page.getByPlaceholder("Écrire un message…")).toHaveCount(0);

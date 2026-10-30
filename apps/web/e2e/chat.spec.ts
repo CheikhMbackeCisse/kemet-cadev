@@ -80,3 +80,43 @@ test("envoie un message dans un salon et le voit apparaître", async ({ page, re
 
   await expect(page.getByText(message)).toBeVisible();
 });
+
+test("sépare les messages par jour et ne montre leurs actions qu'à la demande", async ({
+  page,
+  request,
+}) => {
+  const email = `e2e-day-${test.info().project.name}-${Date.now()}@test.kemet`;
+  const handle = `e2eday${test.info().project.name}${Date.now()}`;
+
+  await signUpVerifyAndSignIn(request, email, handle);
+  await signInBrowser(page, email);
+
+  await page.goto("/salons/nouveau");
+  await page.getByLabel("Nom").fill(`Espace ${handle}`);
+  await page.getByRole("button", { name: "Créer", exact: true }).click();
+
+  const composer = page.getByPlaceholder("Écrire un message…");
+  await composer.waitFor();
+  const message = `Message du jour ${handle}`;
+  await composer.fill(message);
+  await page.getByRole("button", { name: "Envoyer" }).click();
+  const messageList = page.getByRole("log", { name: "Messages du salon" });
+  await expect(messageList.getByText(message)).toBeVisible();
+
+  await expect(messageList.getByRole("separator", { name: "Aujourd'hui" })).toBeVisible();
+
+  // Pointeur hors du message : sur bureau, le survol suffit à montrer les actions.
+  await page.mouse.move(0, 0);
+  // L'opacité se lit sur la barre : elle ne s'hérite pas, le bouton qu'elle
+  // contient garde toujours la sienne à 1.
+  const actions = messageList.getByRole("toolbar", { name: "Actions du message" });
+  const addReaction = actions.getByRole("button", { name: "Ajouter une réaction" });
+  await expect(actions).toHaveCSS("opacity", "0");
+
+  // Un clic sur le texte montre les actions : c'est le geste du mobile, et
+  // sur bureau le survol qui l'accompagne les montre aussi.
+  await messageList.getByText(message).click();
+  await expect(actions).toHaveCSS("opacity", "1");
+  await addReaction.click();
+  await expect(page.getByRole("button", { name: /👍/ })).toBeVisible();
+});

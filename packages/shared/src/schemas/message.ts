@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { attachmentSchema, MAX_ATTACHMENTS_PER_MESSAGE } from "./attachment.js";
+import { paginationQuerySchema } from "./pagination.js";
 
 export const createMessageSchema = z
   .object({
@@ -62,3 +63,8 @@ export const markReadSchema = z.object({
 });
 
 export type MarkReadInput = z.infer<typeof markReadSchema>;
+
+/** Historique d'un salon : le curseur est l'identifiant du plus ancien message déjà chargé. */
+export const channelMessagesQuerySchema = paginationQuerySchema.extend({
+  cursor: z.string().uuid().optional(),
+});

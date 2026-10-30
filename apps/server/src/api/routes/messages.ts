@@ -1,5 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import { createMessageSchema, editMessageSchema, paginationQuerySchema, toggleReactionSchema } from "@kemet/shared";
+import {
+  channelMessagesQuerySchema,
+  createMessageSchema,
+  editMessageSchema,
+  paginationQuerySchema,
+  toggleReactionSchema,
+} from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { extractMentionHandles } from "../../chat/mentions.js";
@@ -7,6 +13,7 @@ import { mentionsAssistant } from "../../chat/kemet-assistant.js";
 import {
   findMessageById,
   editMessage,
+  findFirstUnreadMessageId,
   hydrateMessage,
   insertMentions,
   insertMessage,
@@ -59,11 +66,17 @@ export function registerMessageRoutes(
     async (request) => {
       const userId = await getSessionUserId(auth, request);
       const profile = await findOwnProfile(db, userId);
-      await requireChannelAccess(db, request.params.id, profile?.id ?? null);
-      const query = paginationQuerySchema.parse(request.query);
+      const { membership } = await requireChannelAccess(db, request.params.id, profile?.id ?? null);
+      const query = channelMessagesQuerySchema.parse(request.query);
       const page = await listChannelMessages(db, request.params.id, query.cursor, query.limit);
       const items = await Promise.all(page.items.map((row) => toSerializedMessage(db, row)));
-      return { items, nextCursor: page.nextCursor };
+      // Seulement à l'ouverture (première page) et pour un membre : un visiteur
+      // ou un non-membre d'un espace public n'a pas d'état de lecture.
+      const firstUnreadMessageId =
+        !query.cursor && profile && membership
+          ? await findFirstUnreadMessageId(db, request.params.id, profile.id, membership.joinedAt)
+          : null;
+      return { items, nextCursor: page.nextCursor, firstUnreadMessageId };
     },
   );
 

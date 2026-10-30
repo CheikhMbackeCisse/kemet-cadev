@@ -1,6 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { MeResponse } from "@kemet/shared";
 import { getMe, signOut as apiSignOut } from "../lib/chat/api.js";
+import { clearChannelDrafts } from "../lib/chat/useChannelDraft.js";
 
 export type SessionStatus = "loading" | "visitor" | "incomplete" | "ready";
 
@@ -43,6 +52,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await apiSignOut();
+    clearChannelDrafts();
     await refresh();
   }, [refresh]);
 
