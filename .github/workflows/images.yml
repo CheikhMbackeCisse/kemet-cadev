@@ -3,15 +3,68 @@ name: Images
 # Publie sur GHCR les images de production d'un commit de main, seulement
 # une fois le workflow CI de ce commit entièrement vert : infra/deploy.sh ne
 # peut donc jamais télécharger une image qui n'a pas passé les tests.
+#
+# Un commit qui ne touche que la documentation (*.md, docs/) n'est pas
+# reconstruit : ses images sont celles du dernier commit qui a changé autre
+# chose, réétiquetées avec son SHA, pour que infra/deploy.sh trouve toujours
+# une image pour le dernier commit de main.
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: SHA complet d'un commit de main dont la CI est verte
+        required: true
+        type: string
+
+permissions: {}
 
 jobs:
+  plan:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    outputs:
+      sha: ${{ steps.plan.outputs.sha }}
+      mode: ${{ steps.plan.outputs.mode }}
+      source: ${{ steps.plan.outputs.source }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # Lecture seule sur GHCR : images-plan.sh vérifie que les images du
+      # commit à réétiqueter existent.
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Choisir entre construire et réétiqueter
+        id: plan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          INPUT_SHA: ${{ inputs.sha }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          IMAGE_PREFIX="ghcr.io/${GITHUB_REPOSITORY,,}" bash .github/scripts/images-plan.sh
+
   publish:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    needs: plan
+    if: needs.plan.outputs.mode == 'build'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,7 +87,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ needs.plan.outputs.sha }}
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
@@ -56,14 +109,51 @@ jobs:
           file: ${{ matrix.dockerfile }}
           target: ${{ matrix.target }}
           push: true
+          # Un commit plus ancien reconstruit à la main ne reprend pas
+          # l'étiquette main, qui protège l'image la plus récente de la purge.
           tags: |
-            ${{ steps.image.outputs.name }}:${{ github.event.workflow_run.head_sha }}
-            ${{ steps.image.outputs.name }}:main
+            ${{ steps.image.outputs.name }}:${{ needs.plan.outputs.sha }}
+            ${{ github.event_name == 'workflow_run' && format('{0}:main', steps.image.outputs.name) || '' }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           # Une seule version par commit sur GHCR : sans attestation, pas de
           # manifestes enfants sans étiquette qui s'accumulent hors de la purge.
           provenance: false
+
+  retag:
+    needs: plan
+    if: needs.plan.outputs.mode == 'retag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Copie de manifeste dans le registre : aucune couche n'est téléchargée
+      # ni reconstruite. Les runs Images ne sont pas sérialisés : l'étiquette
+      # main n'est posée que si ce commit est encore le dernier de main, pour
+      # ne pas la ramener sur une image plus ancienne qu'un build déjà publié.
+      - name: Réétiqueter les images du dernier commit construit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ needs.plan.outputs.sha }}
+          SOURCE: ${{ needs.plan.outputs.source }}
+        run: |
+          set -euo pipefail
+          main=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+          for service in web api realtime worker; do
+            name="ghcr.io/${GITHUB_REPOSITORY,,}-${service}"
+            tags=(--tag "${name}:${SHA}")
+            [ "$main" != "$SHA" ] || tags+=(--tag "${name}:main")
+            docker buildx imagetools create "${tags[@]}" "${name}:${SOURCE}"
+          done
 
   prune:
     needs: publish

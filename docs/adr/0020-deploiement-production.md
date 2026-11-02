@@ -19,7 +19,12 @@ restauration est prouvée, pas seulement supposée.
 
 **Images construites par la CI.** Le workflow `Images` ne se déclenche
 qu'après un workflow `CI` vert sur un push de `main`, et publie quatre
-images sur GHCR, étiquetées par le SHA du commit. Le dépôt et ses paquets
+images sur GHCR, étiquetées par le SHA du commit. Un commit qui ne change
+que la documentation ne reconstruit rien : les images du dernier commit
+construit sont réétiquetées avec son SHA, une copie de manifeste dans le
+registre, pour que chaque commit de `main` reste déployable. Si ces images
+manquent, le commit est reconstruit, à condition que son code ait passé la
+CI complète. Le dépôt et ses paquets
 restent privés. Le Container registry est aujourd'hui gratuit chez GitHub,
 paquets privés compris : le plafond de 500 Mo de l'offre gratuite ne
 s'applique qu'aux artefacts et aux autres registres de paquets. Le

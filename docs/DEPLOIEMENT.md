@@ -93,8 +93,14 @@ Rien n'est construit sur le serveur. À chaque commit de `main` dont la CI
 est verte, le workflow `Images` (`.github/workflows/images.yml`) publie
 quatre images sur GitHub Container Registry, étiquetées par le SHA du
 commit : `ghcr.io/cheikhmbackecisse/kemet-web`, `-api`, `-realtime`,
-`-worker`. `infra/deploy.sh` demande au serveur de télécharger celles d'un
-commit précis et de redémarrer dessus. Les migrations Drizzle tournent au
+`-worker`. Un commit qui ne touche que la documentation (`*.md` de la racine, `docs/`)
+n'est pas reconstruit : il reçoit les images du dernier commit qui a changé
+autre chose, sous son propre SHA, ou il est reconstruit si ces images
+n'existent pas et que son code a passé la CI complète. Pour reconstruire les images d'un commit
+de `main` déjà vert (une image purgée, par exemple) :
+`gh workflow run images.yml -f sha=<SHA complet>`. `infra/deploy.sh`
+demande au serveur de télécharger celles d'un commit précis et de
+redémarrer dessus. Les migrations Drizzle tournent au
 démarrage de l'api.
 
 Voir `docs/adr/0020-deploiement-production.md` pour le pourquoi.
