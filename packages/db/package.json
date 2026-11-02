@@ -18,6 +18,10 @@
     "./migrate": {
       "types": "./dist/migrate.d.ts",
       "default": "./dist/migrate.js"
+    },
+    "./demo-seed": {
+      "types": "./dist/seed/demo-dataset.d.ts",
+      "default": "./dist/seed/demo-dataset.js"
     }
   },
   "scripts": {

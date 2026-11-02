@@ -64,6 +64,11 @@ import { IconButton } from "../components/ui/IconButton.js";
 import { Input } from "../components/ui/Input.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
+import {
+  markAssistantNoticeSeen,
+  mentionsAssistant,
+  shouldShowAssistantNotice,
+} from "../lib/chat/assistantNotice.js";
 import { Tooltip } from "../components/ui/Tooltip.js";
 import { useToast } from "../components/ui/Toast.js";
 import { UserName } from "../components/ui/UserName.js";
@@ -366,6 +371,8 @@ export function SpacePage() {
     }
   }
 
+  const showAssistantNotice = shouldShowAssistantNotice(draft);
+
   function handleSend() {
     const body = draft.trim();
     const attachments = pendingAttachments;
@@ -378,6 +385,7 @@ export function SpacePage() {
       null,
       attachments.map((attachment) => attachment.id),
     );
+    if (mentionsAssistant(body)) markAssistantNoticeSeen();
   }
 
   async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -801,9 +809,9 @@ export function SpacePage() {
                             </div>
                             <div className="min-w-0 flex-1">
                               {index === 0 && (
-                                <div className="flex items-baseline gap-2">
-                                  <a href={`/u/${group.authorHandle}`} className="hover:underline">
-                                    <UserName name={group.authorDisplayName} />
+                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                  <a href={`/u/${group.authorHandle}`} className="min-w-0 max-w-full hover:underline">
+                                    <UserName name={group.authorDisplayName} level={group.authorLevel} />
                                   </a>
                                   <span className="text-xs text-subtle">
                                     {formatTime(message.createdAt)}
@@ -1057,6 +1065,7 @@ export function SpacePage() {
                   ref={composerRef}
                   placeholder={fr.chat.composerPlaceholder}
                   aria-label={fr.chat.composerPlaceholder}
+                  aria-describedby={showAssistantNotice ? "assistant-notice" : undefined}
                   value={draft}
                   disabled={!activeChannelId}
                   onChange={(event) => {
@@ -1100,6 +1109,14 @@ export function SpacePage() {
                   <Send className="size-4" aria-hidden="true" />
                 </Button>
               </div>
+              {showAssistantNotice && (
+                <p id="assistant-notice" className="text-xs text-subtle">
+                  {fr.assistantNotice.text}{" "}
+                  <a href="/confidentialite" className="text-link hover:underline">
+                    {fr.assistantNotice.link}
+                  </a>
+                </p>
+              )}
             </div>
           )}
         </div>

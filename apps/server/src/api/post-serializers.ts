@@ -1,5 +1,5 @@
 import type { postAttachments, postFeedback, postReplies, posts, profiles } from "@kemet/db";
-import type { Attachment, PostFeedbackEntry, PostReply, PostSummary, SharedPostPreview } from "@kemet/shared";
+import type { Attachment, Level, PostFeedbackEntry, PostReply, PostSummary, SharedPostPreview } from "@kemet/shared";
 
 type PostRow = typeof posts.$inferSelect;
 type ProfileRow = typeof profiles.$inferSelect;
@@ -21,6 +21,7 @@ export function serializePostAttachment(row: PostAttachmentRow): Attachment {
 export function serializeSharedPostPreview(
   row: PostRow,
   author: ProfileRow,
+  authorLevel: Level,
   attachments: PostAttachmentRow[],
 ): SharedPostPreview {
   const deleted = row.deletedAt !== null;
@@ -31,6 +32,7 @@ export function serializeSharedPostPreview(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
+    authorLevel,
     body: deleted ? "" : row.body,
     format: deleted ? null : row.format,
     attachments: deleted ? [] : attachments.map(serializePostAttachment),
@@ -42,9 +44,10 @@ export function serializeSharedPostPreview(
 export function serializePostSummary(
   row: PostRow,
   author: ProfileRow,
+  authorLevel: Level,
   counts: { utileCount: number; reactedByMe: boolean; replyCount: number; feedbackCount: number },
   attachments: PostAttachmentRow[],
-  sharedPost: { row: PostRow; author: ProfileRow; attachments: PostAttachmentRow[] } | null,
+  sharedPost: { row: PostRow; author: ProfileRow; authorLevel: Level; attachments: PostAttachmentRow[] } | null,
 ): PostSummary {
   const deleted = row.deletedAt !== null;
   return {
@@ -54,13 +57,14 @@ export function serializePostSummary(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
+    authorLevel,
     body: deleted ? "" : row.body,
     format: row.format,
     testUrl: deleted ? null : row.testUrl,
     testAsk: deleted ? null : row.testAsk,
     attachments: deleted ? [] : attachments.map(serializePostAttachment),
     sharedPost: sharedPost
-      ? serializeSharedPostPreview(sharedPost.row, sharedPost.author, sharedPost.attachments)
+      ? serializeSharedPostPreview(sharedPost.row, sharedPost.author, sharedPost.authorLevel, sharedPost.attachments)
       : null,
     utileCount: counts.utileCount,
     reactedByMe: counts.reactedByMe,
@@ -72,7 +76,7 @@ export function serializePostSummary(
   };
 }
 
-export function serializePostReply(row: PostReplyRow, author: ProfileRow): PostReply {
+export function serializePostReply(row: PostReplyRow, author: ProfileRow, authorLevel: Level): PostReply {
   const deleted = row.deletedAt !== null;
   return {
     id: row.id,
@@ -82,6 +86,7 @@ export function serializePostReply(row: PostReplyRow, author: ProfileRow): PostR
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
+    authorLevel,
     body: deleted ? "" : row.body,
     isSolution: row.isSolution,
     createdAt: row.createdAt.toISOString(),
@@ -90,7 +95,7 @@ export function serializePostReply(row: PostReplyRow, author: ProfileRow): PostR
   };
 }
 
-export function serializePostFeedbackEntry(row: PostFeedbackRow, author: ProfileRow): PostFeedbackEntry {
+export function serializePostFeedbackEntry(row: PostFeedbackRow, author: ProfileRow, authorLevel: Level): PostFeedbackEntry {
   return {
     id: row.id,
     postId: row.postId,
@@ -99,6 +104,7 @@ export function serializePostFeedbackEntry(row: PostFeedbackRow, author: Profile
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
+    authorLevel,
     body: row.body,
     createdAt: row.createdAt.toISOString(),
   };

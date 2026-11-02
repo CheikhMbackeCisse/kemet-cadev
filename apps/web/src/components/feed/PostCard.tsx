@@ -50,7 +50,7 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
           size={32}
           countryCode={post.authorCountry}
         />
-        <UserName name={post.authorDisplayName} />
+        <UserName name={post.authorDisplayName} level={post.authorLevel} />
         <span className="text-xs text-subtle">{formatTime(post.createdAt)}</span>
       </div>
       <p className="mt-1 text-sm text-text-2">{post.body}</p>
@@ -123,9 +123,9 @@ export function PostCard({
           />
         </a>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <a href={`/u/${post.authorHandle}`} className="hover:underline">
-              <UserName name={post.authorDisplayName} />
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <a href={`/u/${post.authorHandle}`} className="min-w-0 max-w-full hover:underline">
+              <UserName name={post.authorDisplayName} level={post.authorLevel} />
             </a>
             {bodyHref ? (
               <a

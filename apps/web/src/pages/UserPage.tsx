@@ -1,10 +1,12 @@
 import { ArrowLeft, ExternalLink, Settings, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type {
-  Credential,
-  CredentialType,
-  ProfileSummary,
-  PublicProfileResponse,
+import {
+  isLevelAtLeast,
+  OPEN_TO_OPPORTUNITIES_MIN_LEVEL,
+  type Credential,
+  type CredentialType,
+  type ProfileSummary,
+  type PublicProfileResponse,
 } from "@kemet/shared";
 import {
   ChatApiError,
@@ -285,7 +287,8 @@ export function UserPage() {
               {fr.profile.githubLink}
             </a>
           )}
-          {profile.openToOpportunities && (
+          {profile.openToOpportunities &&
+            isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL) && (
             <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
           )}
         </div>

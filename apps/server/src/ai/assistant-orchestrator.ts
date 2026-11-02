@@ -4,6 +4,7 @@ import type { ChatPublisher } from "../chat/pubsub.js";
 import { KEMET_ASSISTANT_PROFILE_ID, parseAssistantRequest } from "../chat/kemet-assistant.js";
 import { hydrateMessage, insertMessage, listChannelMessages } from "../api/repositories/chat.js";
 import { serializeMessage } from "../api/chat-serializers.js";
+import { computeProfilePoints } from "../api/repositories/points.js";
 import { canViewSkill, findAuthorProfile, findSkillBySlug, findSkillsByIds } from "../api/repositories/skills.js";
 import { completeInvocation, failInvocation, insertInvocation, markInvocationStreaming } from "../api/repositories/assistant.js";
 import {
@@ -159,6 +160,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
         parentMessageId: null,
       });
       const hydrated = await hydrateMessage(this.db, message);
+      const { level } = await computeProfilePoints(this.db, hydrated.row.authorId);
       const serialized = serializeMessage(
         hydrated.row,
         hydrated.author,
@@ -166,6 +168,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
         hydrated.reactions,
         hydrated.replyCount,
         hydrated.attachments,
+        level,
       );
 
       await completeInvocation(this.db, invocation.id, {

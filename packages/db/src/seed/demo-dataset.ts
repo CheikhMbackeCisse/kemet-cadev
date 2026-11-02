@@ -10,6 +10,8 @@ import { createDemoCompetitions } from "./competitions.js";
 import { createFeedContent } from "./feed.js";
 import { generateFillerProfiles, insertFillerProfiles } from "./filler-profiles.js";
 import { createCommunityFollows } from "./follows.js";
+import { createMentoringHistory } from "./mentoring.js";
+import { recordDemoPoints } from "./points-ledger.js";
 import { createDemoProjects } from "./projects.js";
 import { createDemoSkills } from "./skills.js";
 
@@ -79,6 +81,8 @@ export async function seedDemoDataset(
     await createFeedContent(tx, ids);
     const projectIds = await createDemoProjects(tx, ids);
     await createDemoCompetitions(tx, ids, projectIds, fillerProfileIds);
+    await createMentoringHistory(tx, ids, projectIds, fillerProfileIds);
+    await recordDemoPoints(tx);
 
     await assertNoDemoAdmin(tx);
     return { status: "created", fillerProfileCount: fillerProfileIds.length };

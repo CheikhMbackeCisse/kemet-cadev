@@ -30,7 +30,7 @@ import {
 } from "../repositories/projects.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { findProfileById } from "../repositories/chat.js";
-import { awardPoints, POINTS_PROJECT_HELP_CONFIRMED } from "../repositories/points.js";
+import { awardPoints, computeLevels, computeProfilePoints, POINTS_PROJECT_HELP_CONFIRMED } from "../repositories/points.js";
 import {
   serializeApplication,
   serializeHelpRequest,
@@ -178,7 +178,8 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     // d'autre ne doit voir qui a postulé ni leur message.
     if (project.ownerId !== profile.id) throw forbidden("Seul le propriétaire du projet peut voir ces candidatures.");
     const rows = await listApplicationsForHelpRequest(db, helpRequest.id);
-    return { items: rows.map((row) => serializeApplication(row.application, row.applicant)) };
+    const levels = await computeLevels(db, rows.map((row) => row.applicant.id));
+    return { items: rows.map((row) => serializeApplication(row.application, row.applicant, levels.get(row.applicant.id)!)) };
   });
 
   app.post<{ Params: { id: string } }>(
@@ -196,7 +197,8 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
       const input = createApplicationSchema.parse(request.body);
       const application = await insertApplication(db, { helpRequestId: helpRequest.id, applicantId: profile.id, message: input.message });
       if (!application) throw conflict("Vous avez déjà postulé à cette demande.");
-      return { application: serializeApplication(application, profile) };
+      const { level } = await computeProfilePoints(db, profile.id);
+      return { application: serializeApplication(application, profile, level) };
     },
   );
 
@@ -227,7 +229,8 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
         });
       }
       const applicantProfile = await findProfileById(db, decided.applicantId);
-      return { application: serializeApplication(decided, applicantProfile!) };
+      const { level } = await computeProfilePoints(db, applicantProfile!.id);
+      return { application: serializeApplication(decided, applicantProfile!, level) };
     },
   );
 }

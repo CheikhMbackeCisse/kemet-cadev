@@ -97,6 +97,11 @@ export function LoginPage() {
             {fr.auth.signupLink}
           </a>
         </p>
+        <p className="text-center text-sm text-subtle">
+          <a href="/confidentialite" className="text-link hover:underline">
+            {fr.privacy.title}
+          </a>
+        </p>
       </div>
     </AuthLayout>
   );

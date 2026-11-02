@@ -1,20 +1,20 @@
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { pointsLedger, type DbOrTx } from "@kemet/db";
 import { levelForPoints, type Level } from "@kemet/shared";
 
-export const POINTS_POST_REPLY_SOLUTION = 10;
-export const POINTS_POST_FEEDBACK_GIVEN = 10;
-export const POINTS_ASSISTANT_SKILL_HELPFUL = 5;
-export const POINTS_PROJECT_HELP_CONFIRMED = 20;
-export const POINTS_COMPETITION_PARTICIPATION = 10;
-// Classement : 1er, 2e, 3e (docs/CONTEXTE.md). Un rang au-delà n'est pas
-// récompensé.
-export const POINTS_COMPETITION_VICTORY_BY_RANK: ReadonlyArray<number> = [200, 100, 50];
+export {
+  POINTS_ASSISTANT_SKILL_HELPFUL,
+  POINTS_COMPETITION_PARTICIPATION,
+  POINTS_COMPETITION_VICTORY_BY_RANK,
+  POINTS_POST_FEEDBACK_GIVEN,
+  POINTS_POST_REPLY_SOLUTION,
+  POINTS_PROJECT_HELP_CONFIRMED,
+} from "@kemet/db";
 
 // Plafond quotidien de points qu'une même personne peut donner : valeur arbitraire.
 export const POINTS_DAILY_GIVER_CAP = 50;
 
-// Réservé au parcours vérifié, qui n'a pas encore d'écran.
+// Parcours vérifié : barème dans `credentialPoints` (@kemet/db).
 export const POINTS_PARCOURS_CAP = 1500;
 
 export const POINTS_REGULARITE_CAP = 500;
@@ -38,8 +38,8 @@ export const UTILE_LEVEL_MULTIPLIER: Record<Level, number> = {
 type PointsLedgerRow = typeof pointsLedger.$inferSelect;
 export type PointsSource = PointsLedgerRow["source"];
 
-// Toutes les sources actuelles relèvent de l'entraide. La régularité n'a
-// pas de source : elle se déduit des dates du registre (countActiveDays).
+// Tout ce qui n'est pas de l'entraide relève du parcours, plafonné. La
+// régularité n'a pas de source : elle se déduit des dates du registre.
 const ENTRAIDE_SOURCES: ReadonlySet<PointsSource> = new Set([
   "post_reply_solution",
   "post_feedback_given",
@@ -117,14 +117,26 @@ async function sumGivenToday(db: DbOrTx, giverProfileId: string, receiverProfile
   return row?.total ?? 0;
 }
 
-async function countActiveDays(db: DbOrTx, profileId: string, windowDays: number): Promise<number> {
+async function countActiveDaysByProfile(db: DbOrTx, profileIds: string[], windowDays: number): Promise<Map<string, number>> {
   const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
   const rows = await db
-    .select({ createdAt: pointsLedger.createdAt })
+    .select({ profileId: pointsLedger.profileId, createdAt: pointsLedger.createdAt })
     .from(pointsLedger)
-    .where(and(eq(pointsLedger.profileId, profileId), gte(pointsLedger.createdAt, since)));
-  const days = new Set(rows.map((row) => row.createdAt.toISOString().slice(0, 10)));
-  return days.size;
+    .where(
+      and(
+        inArray(pointsLedger.profileId, profileIds),
+        gte(pointsLedger.createdAt, since),
+        // Une vérification de parcours n'est pas une action de la personne.
+        ne(pointsLedger.source, "credential_verified"),
+      ),
+    );
+  const days = new Map<string, Set<string>>();
+  for (const row of rows) {
+    const profileDays = days.get(row.profileId) ?? new Set<string>();
+    profileDays.add(row.createdAt.toISOString().slice(0, 10));
+    days.set(row.profileId, profileDays);
+  }
+  return new Map([...days].map(([profileId, profileDays]) => [profileId, profileDays.size]));
 }
 
 export interface ProfilePoints {
@@ -135,27 +147,49 @@ export interface ProfilePoints {
 /**
  * Recalculé à chaque lecture, pour qu'un total s'explique toujours. La
  * régularité (+5 par jour actif sur 90 jours, plafond 500) se déduit des
- * dates du registre : un gain annulé corrige le bonus tout seul.
+ * dates du registre : un gain annulé corrige le bonus tout seul. Deux
+ * requêtes quel que soit le nombre de profils, pour les listes.
  */
-export async function computeProfilePoints(db: DbOrTx, profileId: string): Promise<ProfilePoints> {
+export async function computeProfilesPoints(db: DbOrTx, profileIds: string[]): Promise<Map<string, ProfilePoints>> {
+  const uniqueIds = [...new Set(profileIds)];
+  const result = new Map<string, ProfilePoints>();
+  if (uniqueIds.length === 0) return result;
+
   const bySource = await db
-    .select({ source: pointsLedger.source, total: sql<number>`coalesce(sum(${pointsLedger.amount}), 0)::int` })
+    .select({
+      profileId: pointsLedger.profileId,
+      source: pointsLedger.source,
+      total: sql<number>`coalesce(sum(${pointsLedger.amount}), 0)::int`,
+    })
     .from(pointsLedger)
-    .where(eq(pointsLedger.profileId, profileId))
-    .groupBy(pointsLedger.source);
+    .where(inArray(pointsLedger.profileId, uniqueIds))
+    .groupBy(pointsLedger.profileId, pointsLedger.source);
+  const activeDays = await countActiveDaysByProfile(db, uniqueIds, POINTS_REGULARITE_WINDOW_DAYS);
 
-  let parcours = 0;
-  let entraide = 0;
-  for (const row of bySource) {
-    if (ENTRAIDE_SOURCES.has(row.source)) entraide += row.total;
-    else parcours += row.total;
+  for (const profileId of uniqueIds) {
+    let parcours = 0;
+    let entraide = 0;
+    for (const row of bySource) {
+      if (row.profileId !== profileId) continue;
+      if (ENTRAIDE_SOURCES.has(row.source)) entraide += row.total;
+      else parcours += row.total;
+    }
+    const regularite = Math.min(POINTS_REGULARITE_CAP, POINTS_REGULARITE_DAILY_BONUS * (activeDays.get(profileId) ?? 0));
+    const totalPoints = Math.min(parcours, POINTS_PARCOURS_CAP) + entraide + regularite;
+    result.set(profileId, { totalPoints, level: levelForPoints(totalPoints) });
   }
+  return result;
+}
 
-  const activeDays = await countActiveDays(db, profileId, POINTS_REGULARITE_WINDOW_DAYS);
-  const regularite = Math.min(POINTS_REGULARITE_CAP, POINTS_REGULARITE_DAILY_BONUS * activeDays);
+export async function computeProfilePoints(db: DbOrTx, profileId: string): Promise<ProfilePoints> {
+  const points = await computeProfilesPoints(db, [profileId]);
+  return points.get(profileId)!;
+}
 
-  const totalPoints = Math.min(parcours, POINTS_PARCOURS_CAP) + entraide + regularite;
-  return { totalPoints, level: levelForPoints(totalPoints) };
+/** Niveau de chaque profil, pour l'afficher à côté des noms. */
+export async function computeLevels(db: DbOrTx, profileIds: string[]): Promise<Map<string, Level>> {
+  const points = await computeProfilesPoints(db, profileIds);
+  return new Map([...points].map(([profileId, entry]) => [profileId, entry.level]));
 }
 
 /** Montant d'un "Utile" selon qui le donne (`giver`) : son niveau et l'âge de son compte. */

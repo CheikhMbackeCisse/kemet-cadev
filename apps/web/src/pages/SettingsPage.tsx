@@ -6,7 +6,7 @@ import { Input } from "../components/ui/Input.js";
 import { Select } from "../components/ui/Select.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useTheme, type ThemeChoice } from "../theme/theme-context.js";
-import { ChatApiError, updateMyProfile } from "../lib/chat/api.js";
+import { ChatApiError, downloadAccountExport, updateMyProfile } from "../lib/chat/api.js";
 import { useToast } from "../components/ui/Toast.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
@@ -38,6 +38,7 @@ export function SettingsPage() {
   const [role, setRole] = useState("none");
   const [specialty, setSpecialty] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Un visiteur garde l'acces a cette page pour le choix du theme ; seul le
@@ -78,6 +79,24 @@ export function SettingsPage() {
       else setError(fr.settings.saveError);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const { blob, fileName } = await downloadAccountExport();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      const rateLimited = caught instanceof ChatApiError && caught.statusCode === 429;
+      toast.show(rateLimited ? fr.settings.exportRateLimited : fr.settings.exportError, "danger");
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -170,6 +189,21 @@ export function SettingsPage() {
           />
           <span className="text-xs text-subtle">{fr.settings.themeHint}</span>
         </label>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-md font-semibold text-text">{fr.settings.dataSection}</h2>
+        {signedIn && (
+          <div className="flex max-w-sm flex-col items-start gap-1">
+            <Button variant="secondary" loading={exporting} onClick={handleExport}>
+              {fr.settings.exportLink}
+            </Button>
+            <span className="text-xs text-subtle">{fr.settings.exportHint}</span>
+          </div>
+        )}
+        <a href="/confidentialite" className="text-sm text-link hover:underline">
+          {fr.settings.privacyLink}
+        </a>
       </section>
     </RailPage>
   );

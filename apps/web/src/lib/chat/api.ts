@@ -74,6 +74,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/** Fichier JSON de toutes les données du compte connecté, nommé par le serveur. */
+export async function downloadAccountExport(): Promise<{ blob: Blob; fileName: string }> {
+  const response = await fetch("/api/me/export", { credentials: "include" });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "kemet-export.json";
+  return { blob: await response.blob(), fileName };
+}
+
 export interface Page<T> {
   items: T[];
   nextCursor: string | null;
@@ -349,6 +365,11 @@ export function getAuthConfig() {
   return request<{ githubEnabled: boolean; googleEnabled: boolean; linkedinEnabled: boolean }>(
     "/api/auth-config",
   );
+}
+
+/** Responsable des données personnelles, null tant que le serveur ne le configure pas. */
+export function getPrivacyContact() {
+  return request<{ contact: { name: string; email: string } | null }>("/api/privacy-contact");
 }
 
 export function signUp(input: { email: string; password: string; name: string }) {

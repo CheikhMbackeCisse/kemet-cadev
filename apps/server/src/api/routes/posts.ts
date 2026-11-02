@@ -33,7 +33,13 @@ import {
 } from "../repositories/posts.js";
 import { attachToPost, findPendingPostAttachment, listAttachmentsForPosts } from "../repositories/post-attachments.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
-import { awardPoints, POINTS_POST_FEEDBACK_GIVEN, POINTS_POST_REPLY_SOLUTION } from "../repositories/points.js";
+import {
+  awardPoints,
+  computeLevels,
+  computeProfilePoints,
+  POINTS_POST_FEEDBACK_GIVEN,
+  POINTS_POST_REPLY_SOLUTION,
+} from "../repositories/points.js";
 import { serializePostFeedbackEntry, serializePostReply, serializePostSummary } from "../post-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
@@ -54,22 +60,41 @@ async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
   return userId ? findProfileByUserId(db, userId) : null;
 }
 
-async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferSelect, viewerProfileId: string | null) {
-  const hydrated = await hydratePost(db, row, viewerProfileId);
-  return serializePostSummary(
-    hydrated.row,
-    hydrated.author,
-    {
-      utileCount: hydrated.utileCount,
-      reactedByMe: hydrated.reactedByMe,
-      replyCount: hydrated.replyCount,
-      feedbackCount: hydrated.feedbackCount,
-    },
-    hydrated.attachments,
-    hydrated.sharedPost
-      ? { row: hydrated.sharedPost, author: hydrated.sharedAuthor!, attachments: hydrated.sharedAttachments }
-      : null,
+// Niveaux calculés une fois pour toute la page : deux requêtes au lieu de deux par post.
+async function toSerializedPosts(db: ChatAppDeps["db"], rows: (typeof posts.$inferSelect)[], viewerProfileId: string | null) {
+  const hydratedPosts = await Promise.all(rows.map((row) => hydratePost(db, row, viewerProfileId)));
+  const authorIds = hydratedPosts.flatMap((hydrated) => [
+    hydrated.author.id,
+    ...(hydrated.sharedAuthor ? [hydrated.sharedAuthor.id] : []),
+  ]);
+  const levels = await computeLevels(db, [...new Set(authorIds)]);
+  return hydratedPosts.map((hydrated) =>
+    serializePostSummary(
+      hydrated.row,
+      hydrated.author,
+      levels.get(hydrated.author.id)!,
+      {
+        utileCount: hydrated.utileCount,
+        reactedByMe: hydrated.reactedByMe,
+        replyCount: hydrated.replyCount,
+        feedbackCount: hydrated.feedbackCount,
+      },
+      hydrated.attachments,
+      hydrated.sharedPost
+        ? {
+            row: hydrated.sharedPost,
+            author: hydrated.sharedAuthor!,
+            authorLevel: levels.get(hydrated.sharedAuthor!.id)!,
+            attachments: hydrated.sharedAttachments,
+          }
+        : null,
+    ),
   );
+}
+
+async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferSelect, viewerProfileId: string | null) {
+  const [post] = await toSerializedPosts(db, [row], viewerProfileId);
+  return post!;
 }
 
 export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamConfig }: ChatAppDeps): void {
@@ -83,7 +108,7 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       query.tab === "pour-toi" || !profile
         ? await listPourToiFeed(db, query.limit)
         : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
-    const items = await Promise.all(page.items.map((row) => toSerializedPost(db, row, profile?.id ?? null)));
+    const items = await toSerializedPosts(db, page.items, profile?.id ?? null);
     return { items, nextCursor: page.nextCursor };
   });
 
@@ -201,10 +226,11 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       if (!post) throw notFound("Ce post n'existe pas.");
       const query = paginationQuerySchema.parse(request.query);
       const page = await listPostReplies(db, post.id, query.cursor, query.limit);
+      const levels = await computeLevels(db, page.items.map((row) => row.authorId));
       const items = await Promise.all(
         page.items.map(async (row) => {
           const { author } = await hydratePostReply(db, row);
-          return serializePostReply(row, author);
+          return serializePostReply(row, author, levels.get(row.authorId)!);
         }),
       );
       return { items, nextCursor: page.nextCursor };
@@ -221,7 +247,8 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       if (!post || post.deletedAt) throw notFound("Ce post n'existe pas.");
       const input = createPostReplySchema.parse(request.body);
       const reply = await insertPostReply(db, { postId: post.id, authorId: profile.id, body: input.body });
-      return { reply: serializePostReply(reply, profile) };
+      const { level } = await computeProfilePoints(db, profile.id);
+      return { reply: serializePostReply(reply, profile, level) };
     },
   );
 
@@ -267,7 +294,8 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
         });
       }
       const { author } = await hydratePostReply(db, updated);
-      return { reply: serializePostReply(updated, author) };
+      const { level } = await computeProfilePoints(db, author.id);
+      return { reply: serializePostReply(updated, author, level) };
     },
   );
 
@@ -298,7 +326,8 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
         amount: POINTS_POST_FEEDBACK_GIVEN,
         givenByProfileId: null,
       });
-      return { feedback: serializePostFeedbackEntry(feedback, profile) };
+      const { level } = await computeProfilePoints(db, profile.id);
+      return { feedback: serializePostFeedbackEntry(feedback, profile, level) };
     },
   );
 
@@ -308,6 +337,7 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
     const post = await findPostById(db, request.params.id);
     if (!post) throw notFound("Ce post n'existe pas.");
     const rows = await listPostFeedback(db, post.id);
-    return { items: rows.map((row) => serializePostFeedbackEntry(row.feedback, row.author)) };
+    const levels = await computeLevels(db, rows.map((row) => row.author.id));
+    return { items: rows.map((row) => serializePostFeedbackEntry(row.feedback, row.author, levels.get(row.author.id)!)) };
   });
 }

@@ -1,5 +1,6 @@
 import { and, avg, count, desc, eq, lt } from "drizzle-orm";
 import {
+  competitionOfficialScore,
   competitions,
   juryScores,
   profiles,
@@ -304,10 +305,6 @@ export interface SubmissionStanding {
   officialScore: number;
 }
 
-// Pondération arbitraire, expliquée dans docs/adr/0013-competitions.md.
-const JURY_WEIGHT = 0.7;
-const VOTE_WEIGHT = 0.3;
-
 /**
  * Classement combiné, recalculé à chaque appel plutôt que stocké. Le score
  * officiel ramène le jury (sur 20) et le vote (part des voix de la
@@ -340,9 +337,7 @@ export async function computeStandings(db: DbOrTx, competitionId: string): Promi
     const jury = juryBySubmission.get(submission.id);
     const juryAverage = jury ? Number(jury.average) : null;
     const voteCount = votesBySubmission.get(submission.id) ?? 0;
-    const juryShare = juryAverage !== null ? juryAverage / 20 : 0;
-    const voteShare = totalVotes > 0 ? voteCount / totalVotes : 0;
-    const officialScore = (JURY_WEIGHT * juryShare + VOTE_WEIGHT * voteShare) * 100;
+    const officialScore = competitionOfficialScore(juryAverage, voteCount, totalVotes);
     return {
       submissionId: submission.id,
       teamId: team.id,

@@ -131,3 +131,61 @@ les autres, pas pour soi-même.
   compétition, et d'un futur lot « vérification des crédentials » pour le
   parcours. Chacun y ajoute sa propre source dans l'enum et son propre appel
   à `awardPoints`.
+
+## Complément du 30/10/2026 : parcours vérifié et niveaux visibles
+
+**Le parcours vérifié rapporte maintenant des points.** Un administrateur
+confirme un élément de parcours après avoir vu l'attestation, hors de l'app
+(`POST /api/credentials/:id/verification`, motif de vérification obligatoire,
+jamais sur son propre parcours). Le passage de déclaré à vérifié et la ligne
+du registre (`credential_verified`, migration additive) sont écrits dans la
+même transaction ; un second appel ne fait rien et répond 409. Un élément
+seulement déclaré reste affiché et ne rapporte rien. L'administrateur qui a
+vérifié et la date sont gardés sur l'élément (`verified_by_profile_id`,
+`verified_at`), jamais renvoyés par l'API.
+
+Le barème vit dans `packages/db/src/points-rules.ts`, avec les autres
+montants, pour que le seed l'applique à l'identique :
+
+- poste : 100 points par année complète, comptée jusqu'à la fin du poste ou
+  jusqu'à la vérification. Les années accumulées ensuite ne sont pas
+  ajoutées : le registre ne s'écrit qu'une fois par élément ;
+- poste senior ou lead : +300, lu dans l'intitulé du poste (senior, lead,
+  principal, staff, head, CTO, architecte, directeur ou directrice
+  technique), jamais dans le nom de l'employeur ;
+- diplôme obtenu : 150 ; formation en cours (sans fin, ou fin à venir) : 20 ;
+- stage : 30.
+
+Le plafond de 1 500 points reste appliqué à la lecture, sur tout ce qui
+n'est pas de l'entraide. Une vérification n'est pas une action de la
+personne : elle ne compte pas comme jour actif pour la régularité. Pas de
+plafond quotidien par donneur pour le parcours, puisqu'aucun membre ne le
+donne.
+
+La vérification reste réservée aux administrateurs, par cette route seule.
+Pas d'écran d'administration pendant le concours : la route suffit à
+l'administrateur promu à la main. Un écran de vérification des parcours
+est prévu après le concours ; il appellera la même route, sans changer la
+règle.
+
+**Le niveau accompagne chaque nom.** Messages, posts, posts partagés,
+réponses, retours structurés (`authorLevel`) et candidatures
+(`applicantLevel`) portent le niveau de leur auteur, calculé en deux requêtes
+pour toute une liste (`computeProfilesPoints`). `UserName` affiche alors
+`LevelBadge`, comme le prévoit `DESIGN.md`. Les réponses de @kemet gardent
+leur propre rendu, sans badge.
+
+**« Ouvert aux opportunités » se débloque à Artisan.** `PATCH
+/api/me/profile` refuse `openToOpportunities: true` sous ce niveau (403). À
+la lecture, le profil sérialisé le masque aussi si le total est repassé sous
+Artisan, et la page de profil vérifie le niveau avant d'afficher le badge.
+
+**Comptes de démonstration.** Leurs points viennent tous d'une ligne du
+registre dont la source existe : parcours vérifié, solution, retour, aide
+confirmée, participation et podium du mini-défi (même classement que
+`computeStandings`, grâce à `competitionOfficialScore` partagé). Le seed
+inscrit ces lignes après avoir créé le contenu (`seed/points-ledger.ts`),
+jamais un total posé à la main. Amina Diallo, jurée du mini-défi, atteint
+Architecte par son parcours et par un historique d'entraide écrit pour
+l'occasion (`seed/mentoring.ts`). La seconde jurée, Artisan, a été retirée
+du jury : la notation est réservée aux niveaux Architecte et Légende.

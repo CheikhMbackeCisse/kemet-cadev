@@ -2,9 +2,9 @@ import { relations } from "drizzle-orm";
 import { index, integer, pgEnum, pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
 
-// Une valeur par source réellement câblée : le parcours vérifié n'a pas
-// encore d'écran, donc pas de source.
+// Une valeur par source réellement câblée.
 export const pointsSourceEnum = pgEnum("points_source", [
+  "credential_verified",
   "post_reply_solution",
   "post_feedback_given",
   "assistant_skill_helpful",

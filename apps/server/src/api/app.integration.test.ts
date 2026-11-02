@@ -10,6 +10,7 @@ const databaseUrl = getTestDatabaseUrl();
 describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
+  let deps: Parameters<typeof buildApp>[0];
 
   beforeEach(async () => {
     await resetTestDatabase(databaseUrl!);
@@ -26,7 +27,8 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
       // La limite elle-même est vérifiée séparément plus bas.
       rateLimitEnabled: false,
     });
-    app = buildApp({ db, auth });
+    deps = { db, auth };
+    app = buildApp(deps);
   });
 
   function extractVerificationUrl(email: string): string {
@@ -67,6 +69,18 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
     // 'self' https: data:, frame-ancestors 'self', etc.).
     expect(response.headers["content-security-policy"]).toBe("default-src 'none'");
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
+  });
+
+  it("expose le contact de confidentialité seulement s'il est configuré", async () => {
+    const withoutContact = buildApp({ ...deps, privacyContact: null });
+    const empty = await withoutContact.inject({ method: "GET", url: "/api/privacy-contact" });
+    expect(empty.statusCode).toBe(200);
+    expect(empty.json()).toEqual({ contact: null });
+
+    const contact = { name: "Responsable", email: "contact@example.org" };
+    const withContact = buildApp({ ...deps, privacyContact: contact });
+    const response = await withContact.inject({ method: "GET", url: "/api/privacy-contact" });
+    expect(response.json()).toEqual({ contact });
   });
 
   it("refuse la connexion avant la vérification de l'email", async () => {

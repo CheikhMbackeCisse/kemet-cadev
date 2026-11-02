@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { levelSchema } from "./points.js";
 import { attachmentSchema, MAX_POST_ATTACHMENTS } from "./attachment.js";
 import { httpUrlSchema } from "./url.js";
 
@@ -83,6 +84,7 @@ export const sharedPostPreviewSchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
+  authorLevel: levelSchema,
   body: z.string(),
   format: postFormatSchema.nullable(),
   attachments: z.array(attachmentSchema),
@@ -99,6 +101,7 @@ export const postSummarySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
+  authorLevel: levelSchema,
   body: z.string(),
   format: postFormatSchema.nullable(),
   testUrl: z.string().nullable(),
@@ -131,6 +134,7 @@ export const postReplySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
+  authorLevel: levelSchema,
   body: z.string(),
   isSolution: z.boolean(),
   createdAt: z.string().datetime(),
@@ -148,6 +152,7 @@ export const postFeedbackEntrySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
+  authorLevel: levelSchema,
   body: z.string(),
   createdAt: z.string().datetime(),
 });

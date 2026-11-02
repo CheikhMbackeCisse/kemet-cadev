@@ -17,3 +17,9 @@ export const credentialSchema = z.object({
 });
 
 export type Credential = z.infer<typeof credentialSchema>;
+
+export const verifyCredentialSchema = z.object({
+  verificationMethod: z.string().trim().min(3).max(120),
+});
+
+export type VerifyCredentialInput = z.infer<typeof verifyCredentialSchema>;

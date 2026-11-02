@@ -263,7 +263,7 @@ export function PostPage() {
                     size={32}
                     countryCode={entry.authorCountry}
                   />
-                  <UserName name={entry.authorDisplayName} />
+                  <UserName name={entry.authorDisplayName} level={entry.authorLevel} />
                 </a>
                 <RichText source={entry.body} className="text-sm text-text-2" />
               </div>
@@ -289,9 +289,9 @@ export function PostPage() {
                   />
                 </a>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <a href={`/u/${reply.authorHandle}`} className="hover:underline">
-                      <UserName name={reply.authorDisplayName} />
+                  <div className="flex flex-wrap items-baseline gap-x-2">
+                    <a href={`/u/${reply.authorHandle}`} className="min-w-0 max-w-full hover:underline">
+                      <UserName name={reply.authorDisplayName} level={reply.authorLevel} />
                     </a>
                     <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
                     {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}

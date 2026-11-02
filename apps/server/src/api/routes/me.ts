@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { updateProfileSchema } from "@kemet/shared";
+import { isLevelAtLeast, OPEN_TO_OPPORTUNITIES_MIN_LEVEL, updateProfileSchema } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden } from "../../errors.js";
 import {
@@ -10,6 +10,7 @@ import {
   upsertProfile,
 } from "../repositories/profiles.js";
 import { computeProfilePoints } from "../repositories/points.js";
+import { buildAccountExport } from "../repositories/account-export.js";
 import { serializeCredential, serializeProfile } from "../serializers.js";
 import type { AppDeps } from "../app.js";
 
@@ -32,6 +33,22 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
     };
   });
 
+  // Toujours son propre compte : l'identité vient de la session, jamais d'un
+  // paramètre. Débit bas, la réponse lit une trentaine de tables.
+  app.get(
+    "/api/me/export",
+    { config: { rateLimit: { max: 3, timeWindow: "1 hour" } } },
+    async (request, reply) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await findProfileByUserId(db, userId);
+      const data = await buildAccountExport(db, userId, profile?.id ?? null);
+      const fileName = `kemet-${profile?.handle ?? "compte"}-${new Date().toISOString().slice(0, 10)}.json`;
+      reply.header("content-disposition", `attachment; filename="${fileName}"`);
+      reply.header("cache-control", "no-store");
+      return data;
+    },
+  );
+
   app.patch(
     "/api/me/profile",
     { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
@@ -47,6 +64,13 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
 
       if (!existing && (!patch.handle || !patch.country || !patch.displayName)) {
         throw badRequest("L'identifiant, le pays et le nom affiché sont requis à la création du profil.");
+      }
+
+      if (patch.openToOpportunities) {
+        const level = existing ? (await computeProfilePoints(db, existing.id)).level : "apprenti";
+        if (!isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL)) {
+          throw forbidden("« Ouvert aux opportunités » se débloque au niveau Artisan.");
+        }
       }
 
       if (patch.handle) {

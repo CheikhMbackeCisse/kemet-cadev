@@ -17,6 +17,9 @@ export const credentials = pgTable("credentials", {
   endDate: date("end_date"),
   status: credentialStatusEnum("status").notNull().default("declared"),
   verificationMethod: text("verification_method"),
+  // Qui a vérifié et quand : la vérification change le niveau, donc des droits.
+  verifiedByProfileId: uuid("verified_by_profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

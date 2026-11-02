@@ -120,7 +120,8 @@ export async function createDemoCompetitions(
     .returning({ id: submissions.id });
 
   // Compétition close, résultats définitifs : trois équipes, vote public à
-  // l'échelle de la communauté et notation du jury.
+  // l'échelle de la communauté et notation du jury, réservée aux niveaux
+  // Architecte et Légende (Amina Diallo, voir mentoring.ts).
   const [miniChallenge] = await db
     .insert(competitions)
     .values({
@@ -210,14 +211,6 @@ export async function createDemoCompetitions(
     },
     {
       competitionId: miniChallengeId,
-      submissionId: offliCrewSubmission!.id,
-      jurorId: ids.nadiaHassan,
-      score: 16,
-      comment: "Très solide techniquement, la démo aurait mérité plus de mise en situation réelle.",
-      createdAt: daysAgo(41),
-    },
-    {
-      competitionId: miniChallengeId,
       submissionId: banlieueKitSubmission!.id,
       jurorId: ids.aminaDiallo,
       score: 15,
@@ -226,26 +219,10 @@ export async function createDemoCompetitions(
     },
     {
       competitionId: miniChallengeId,
-      submissionId: banlieueKitSubmission!.id,
-      jurorId: ids.nadiaHassan,
-      score: 14,
-      comment: "Bon travail de base, manque un vrai cas d'usage mobile pour juger pleinement.",
-      createdAt: daysAgo(41),
-    },
-    {
-      competitionId: miniChallengeId,
       submissionId: saharaTeamSubmission!.id,
       jurorId: ids.aminaDiallo,
       score: 18,
       comment: "La fluidité sur matériel bas de gamme est nettement au-dessus du reste du lot.",
-      createdAt: daysAgo(41),
-    },
-    {
-      competitionId: miniChallengeId,
-      submissionId: saharaTeamSubmission!.id,
-      jurorId: ids.nadiaHassan,
-      score: 18,
-      comment: "Exécution impeccable, exactement le niveau attendu pour un mini-défi.",
       createdAt: daysAgo(41),
     },
   ]);

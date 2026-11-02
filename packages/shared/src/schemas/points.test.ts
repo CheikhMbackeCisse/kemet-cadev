@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { levelForPoints } from "./points.js";
+import { isLevelAtLeast, levelForPoints } from "./points.js";
 
 describe("levelForPoints", () => {
   it("reste Apprenti sans points", () => {
@@ -19,5 +19,13 @@ describe("levelForPoints", () => {
 
   it("ne redescend jamais sous Apprenti, même négatif", () => {
     expect(levelForPoints(-50)).toBe("apprenti");
+  });
+});
+
+describe("isLevelAtLeast", () => {
+  it("compare les niveaux dans leur ordre", () => {
+    expect(isLevelAtLeast("apprenti", "artisan")).toBe(false);
+    expect(isLevelAtLeast("artisan", "artisan")).toBe(true);
+    expect(isLevelAtLeast("legende", "artisan")).toBe(true);
   });
 });

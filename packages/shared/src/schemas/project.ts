@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { levelSchema } from "./points.js";
 import { httpUrlSchema } from "./url.js";
 
 export const MAX_PROJECT_STACK_ITEMS = 12;
@@ -100,6 +101,7 @@ export const applicationSchema = z.object({
   applicantId: z.string().uuid(),
   applicantHandle: z.string(),
   applicantDisplayName: z.string(),
+  applicantLevel: levelSchema,
   message: z.string(),
   status: applicationStatusSchema,
   createdAt: z.string().datetime(),

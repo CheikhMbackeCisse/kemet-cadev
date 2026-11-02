@@ -380,7 +380,7 @@ export function ProjectPage() {
                 className="flex flex-col gap-1 rounded-card border border-border p-3"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <UserName name={application.applicantDisplayName} />
+                  <UserName name={application.applicantDisplayName} level={application.applicantLevel} />
                   <Badge
                     tone={
                       application.status === "accepted"

@@ -10,8 +10,8 @@ export interface UserNameProps {
 /** Jamais de drapeau ici : il est porté par l'avatar seul. */
 export function UserName({ name, level, className }: UserNameProps) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <span className="font-medium text-text">{name}</span>
+    <span className={cn("inline-flex min-w-0 max-w-full items-center gap-1.5", className)}>
+      <span className="truncate font-medium text-text">{name}</span>
       {level && <LevelBadge level={level} />}
     </span>
   );

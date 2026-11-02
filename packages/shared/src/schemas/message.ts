@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { levelSchema } from "./points.js";
 import { attachmentSchema, MAX_ATTACHMENTS_PER_MESSAGE } from "./attachment.js";
 import { paginationQuerySchema } from "./pagination.js";
 
@@ -46,6 +47,7 @@ export const messageSchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
+  authorLevel: levelSchema,
   body: z.string(),
   mentionedHandles: z.array(z.string()),
   reactions: z.array(reactionSchema),

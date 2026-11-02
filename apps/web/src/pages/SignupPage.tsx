@@ -104,6 +104,12 @@ export function SignupPage() {
             {fr.auth.signupSubmit}
           </Button>
         </form>
+        <p className="text-center text-xs text-subtle">
+          {fr.auth.signupPrivacyNotice}{" "}
+          <a href="/confidentialite" className="text-link hover:underline">
+            {fr.auth.signupPrivacyLink}
+          </a>
+        </p>
         <p className="text-center text-sm text-subtle">
           {fr.auth.alreadyHaveAccount}{" "}
           <a href="/connexion" className="text-link hover:underline">

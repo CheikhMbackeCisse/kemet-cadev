@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { DbOrTx } from "../client.js";
-import { account, credentials, profiles, user } from "../schema/index.js";
+import { credentialPoints } from "../points-rules.js";
+import { account, credentials, pointsLedger, profiles, user } from "../schema/index.js";
 import { avatarDataUri } from "./avatar.js";
+import { daysAgo } from "./time.js";
+
+const CREDENTIALS_VERIFIED_AT = daysAgo(100);
 
 interface DemoAccountSeed {
   key: keyof DemoAccountIds;
@@ -14,15 +18,17 @@ interface DemoAccountSeed {
   stack: string[];
   githubUrl: string;
   openToOpportunities: boolean;
-  credential: {
-    type: "job" | "education" | "internship";
-    organization: string;
-    title: string;
-    startDate: string;
-    endDate?: string;
-    status: "declared" | "verified";
-    verificationMethod?: string;
-  };
+  credentials: CredentialSeed[];
+}
+
+interface CredentialSeed {
+  type: "job" | "education" | "internship";
+  organization: string;
+  title: string;
+  startDate: string;
+  endDate?: string;
+  status: "declared" | "verified";
+  verificationMethod?: string;
 }
 
 export interface DemoAccountIds {
@@ -45,19 +51,48 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     name: "Amina Diallo",
     handle: "amina-diallo",
     country: "SN",
-    title: "Développeuse backend",
+    title: "Lead développeuse backend",
     bio: "Fastify et PostgreSQL au quotidien, passionnée de systèmes distribués.",
     stack: ["TypeScript", "Fastify", "PostgreSQL"],
     githubUrl: "https://github.com/amina-diallo",
     openToOpportunities: true,
-    credential: {
-      type: "job",
-      organization: "Orange Digital Center",
-      title: "Développeuse backend",
-      startDate: "2022-03-01",
-      status: "verified",
-      verificationMethod: "Attestation employeur",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "Orange Digital Center",
+        title: "Lead développeuse backend",
+        startDate: "2022-03-01",
+        status: "verified",
+        verificationMethod: "Attestation employeur",
+      },
+      {
+        type: "job",
+        organization: "Sonatel",
+        title: "Développeuse backend",
+        startDate: "2015-09-01",
+        endDate: "2022-02-28",
+        status: "verified",
+        verificationMethod: "Attestation employeur",
+      },
+      {
+        type: "education",
+        organization: "École supérieure polytechnique de Dakar",
+        title: "Master en génie logiciel",
+        startDate: "2013-09-01",
+        endDate: "2015-07-15",
+        status: "verified",
+        verificationMethod: "Diplôme transmis",
+      },
+      {
+        type: "internship",
+        organization: "Sonatel",
+        title: "Stage développeuse backend",
+        startDate: "2015-02-01",
+        endDate: "2015-07-31",
+        status: "verified",
+        verificationMethod: "Convention de stage",
+      },
+    ],
   },
   {
     key: "kwameAsante",
@@ -70,13 +105,15 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["Flutter", "Dart", "Firebase"],
     githubUrl: "https://github.com/kwame-asante",
     openToOpportunities: false,
-    credential: {
-      type: "job",
-      organization: "Zenith Bank Ghana",
-      title: "Développeur mobile senior",
-      startDate: "2021-06-01",
-      status: "declared",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "Zenith Bank Ghana",
+        title: "Développeur mobile senior",
+        startDate: "2021-06-01",
+        status: "declared",
+      },
+    ],
   },
   {
     key: "fatimaBenali",
@@ -89,14 +126,16 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["Docker", "Kubernetes", "Terraform"],
     githubUrl: "https://github.com/fatima-benali",
     openToOpportunities: true,
-    credential: {
-      type: "job",
-      organization: "OCP Group",
-      title: "Ingénieure DevOps",
-      startDate: "2020-09-01",
-      status: "verified",
-      verificationMethod: "Attestation employeur",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "OCP Group",
+        title: "Ingénieure DevOps",
+        startDate: "2020-09-01",
+        status: "verified",
+        verificationMethod: "Attestation employeur",
+      },
+    ],
   },
   {
     key: "chidiOkafor",
@@ -109,14 +148,16 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["React", "TypeScript", "Tailwind"],
     githubUrl: "https://github.com/chidi-okafor",
     openToOpportunities: false,
-    credential: {
-      type: "education",
-      organization: "Université de Lagos",
-      title: "Licence en informatique",
-      startDate: "2017-09-01",
-      endDate: "2020-07-01",
-      status: "declared",
-    },
+    credentials: [
+      {
+        type: "education",
+        organization: "Université de Lagos",
+        title: "Licence en informatique",
+        startDate: "2017-09-01",
+        endDate: "2020-07-01",
+        status: "declared",
+      },
+    ],
   },
   {
     key: "zaneleMokoena",
@@ -129,13 +170,16 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["Python", "Airflow", "Spark"],
     githubUrl: "https://github.com/zanele-mokoena",
     openToOpportunities: true,
-    credential: {
-      type: "job",
-      organization: "Takealot",
-      title: "Data engineer",
-      startDate: "2021-02-01",
-      status: "declared",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "Takealot",
+        title: "Data engineer",
+        startDate: "2021-02-01",
+        status: "verified",
+        verificationMethod: "Attestation employeur",
+      },
+    ],
   },
   {
     key: "yassineTrabelsi",
@@ -148,14 +192,16 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["Node.js", "Vue", "MySQL"],
     githubUrl: "https://github.com/yassine-trabelsi",
     openToOpportunities: false,
-    credential: {
-      type: "internship",
-      organization: "InstaDeep",
-      title: "Stage développeur full-stack",
-      startDate: "2019-02-01",
-      endDate: "2019-08-01",
-      status: "declared",
-    },
+    credentials: [
+      {
+        type: "internship",
+        organization: "InstaDeep",
+        title: "Stage développeur full-stack",
+        startDate: "2019-02-01",
+        endDate: "2019-08-01",
+        status: "declared",
+      },
+    ],
   },
   {
     key: "aissatouToure",
@@ -168,13 +214,16 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["C++", "Unity", "C#"],
     githubUrl: "https://github.com/aissatou-toure",
     openToOpportunities: true,
-    credential: {
-      type: "job",
-      organization: "Kiro'o Games",
-      title: "Développeuse gameplay",
-      startDate: "2022-11-01",
-      status: "declared",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "Kiro'o Games",
+        title: "Développeuse gameplay",
+        startDate: "2022-11-01",
+        status: "verified",
+        verificationMethod: "Attestation employeur",
+      },
+    ],
   },
   {
     key: "samuelMwangi",
@@ -187,14 +236,16 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["Java", "Spring", "Kafka"],
     githubUrl: "https://github.com/samuel-mwangi",
     openToOpportunities: false,
-    credential: {
-      type: "job",
-      organization: "Safaricom",
-      title: "Architecte logiciel, plateforme M-Pesa",
-      startDate: "2012-04-01",
-      status: "verified",
-      verificationMethod: "Attestation employeur",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "Safaricom",
+        title: "Architecte logiciel, plateforme M-Pesa",
+        startDate: "2012-04-01",
+        status: "verified",
+        verificationMethod: "Attestation employeur",
+      },
+    ],
   },
   {
     key: "nadiaHassan",
@@ -207,15 +258,25 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["Python", "PyTorch", "FastAPI"],
     githubUrl: "https://github.com/nadia-hassan",
     openToOpportunities: true,
-    credential: {
-      type: "education",
-      organization: "Université américaine du Caire",
-      title: "Master en intelligence artificielle",
-      startDate: "2019-09-01",
-      endDate: "2021-06-01",
-      status: "verified",
-      verificationMethod: "Diplôme transmis",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "InstaDeep",
+        title: "Développeuse IA",
+        startDate: "2021-07-01",
+        status: "verified",
+        verificationMethod: "Attestation employeur",
+      },
+      {
+        type: "education",
+        organization: "Université américaine du Caire",
+        title: "Master en intelligence artificielle",
+        startDate: "2019-09-01",
+        endDate: "2021-06-01",
+        status: "verified",
+        verificationMethod: "Diplôme transmis",
+      },
+    ],
   },
   {
     key: "jeanMarcMukendi",
@@ -228,13 +289,15 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     stack: ["C", "Rust", "FreeRTOS"],
     githubUrl: "https://github.com/jean-marc-mukendi",
     openToOpportunities: false,
-    credential: {
-      type: "job",
-      organization: "Gorilla Technology",
-      title: "Développeur firmware",
-      startDate: "2023-01-01",
-      status: "declared",
-    },
+    credentials: [
+      {
+        type: "job",
+        organization: "Gorilla Technology",
+        title: "Développeur firmware",
+        startDate: "2023-01-01",
+        status: "declared",
+      },
+    ],
   },
 ];
 
@@ -274,16 +337,33 @@ export async function createDemoAccounts(db: DbOrTx, passwordHash: string): Prom
       .returning({ id: profiles.id });
     ids[demoAccount.key] = profile!.id;
 
-    await db.insert(credentials).values({
-      profileId: profile!.id,
-      type: demoAccount.credential.type,
-      organization: demoAccount.credential.organization,
-      title: demoAccount.credential.title,
-      startDate: demoAccount.credential.startDate,
-      endDate: demoAccount.credential.endDate ?? null,
-      status: demoAccount.credential.status,
-      verificationMethod: demoAccount.credential.verificationMethod ?? null,
-    });
+    for (const credential of demoAccount.credentials) {
+      const [row] = await db
+        .insert(credentials)
+        .values({
+          profileId: profile!.id,
+          type: credential.type,
+          organization: credential.organization,
+          title: credential.title,
+          startDate: credential.startDate,
+          endDate: credential.endDate ?? null,
+          status: credential.status,
+          verificationMethod: credential.verificationMethod ?? null,
+          // Aucun compte de démonstration n'est administrateur : pas d'auteur.
+          verifiedAt: credential.status === "verified" ? CREDENTIALS_VERIFIED_AT : null,
+        })
+        .returning();
+      // Comme la route de vérification : seul un élément vérifié rapporte des points.
+      if (row!.status === "verified") {
+        await db.insert(pointsLedger).values({
+          profileId: profile!.id,
+          source: "credential_verified",
+          sourceId: row!.id,
+          amount: credentialPoints(row!, CREDENTIALS_VERIFIED_AT),
+          createdAt: CREDENTIALS_VERIFIED_AT,
+        });
+      }
+    }
   }
 
   return ids;

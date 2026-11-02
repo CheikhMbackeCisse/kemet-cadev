@@ -8,11 +8,17 @@ import { TooltipProvider } from "./components/ui/Tooltip.js";
 
 // Chaque page est chargée à la demande : un seul fichier pour tous les écrans
 // pesait 610 ko avant le premier affichage.
-const DevUiPage = lazy(() =>
-  import("./pages/DevUiPage.js").then((m) => ({ default: m.DevUiPage })),
-);
-const ShellPreviewPage = lazy(() =>
-  import("./pages/ShellPreviewPage.js").then((m) => ({ default: m.ShellPreviewPage })),
+// Hors développement, ces deux pages ne sont même pas construites.
+const DevUiPage = import.meta.env.DEV
+  ? lazy(() => import("./pages/DevUiPage.js").then((m) => ({ default: m.DevUiPage })))
+  : null;
+const ShellPreviewPage = import.meta.env.DEV
+  ? lazy(() =>
+      import("./pages/ShellPreviewPage.js").then((m) => ({ default: m.ShellPreviewPage })),
+    )
+  : null;
+const NotFoundPage = lazy(() =>
+  import("./pages/NotFoundPage.js").then((m) => ({ default: m.NotFoundPage })),
 );
 const NewSpacePage = lazy(() =>
   import("./pages/NewSpacePage.js").then((m) => ({ default: m.NewSpacePage })),
@@ -84,6 +90,9 @@ const RolePage = lazy(() => import("./pages/RolePage.js").then((m) => ({ default
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage.js").then((m) => ({ default: m.SettingsPage })),
 );
+const PrivacyPage = lazy(() =>
+  import("./pages/PrivacyPage.js").then((m) => ({ default: m.PrivacyPage })),
+);
 const UserPage = lazy(() => import("./pages/UserPage.js").then((m) => ({ default: m.UserPage })));
 
 const STATUS_LABELS: Record<ServiceStatus, string> = {
@@ -146,7 +155,7 @@ function resolvePage(pathname: string) {
   if (pathname === "/completer-profil") return <CompleteProfilePage />;
   if (pathname === "/ton-role") return <RolePage />;
   if (pathname === "/parametres") return <SettingsPage />;
-  if (pathname === "/statut") return <StatusPage />;
+  if (pathname === "/confidentialite") return <PrivacyPage />;
   if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
   if (pathname === "/salons/nouveau") return <NewSpacePage />;
   if (pathname.startsWith("/salons")) return <SpacePage />;
@@ -167,11 +176,14 @@ function resolvePage(pathname: string) {
   if (pathname.startsWith("/u/")) return <UserPage />;
   if (pathname === "/pro") return <ProPage />;
   if (pathname === "/moderation") return <ModerationPage />;
+  // L'état des services et le catalogue de composants n'ont rien à faire
+  // devant le public : en production, ces adresses sont introuvables.
   if (import.meta.env.DEV) {
-    if (pathname.startsWith("/dev/ui/shell")) return <ShellPreviewPage />;
-    if (pathname.startsWith("/dev/ui")) return <DevUiPage />;
+    if (pathname === "/statut") return <StatusPage />;
+    if (pathname.startsWith("/dev/ui/shell") && ShellPreviewPage) return <ShellPreviewPage />;
+    if (pathname.startsWith("/dev/ui") && DevUiPage) return <DevUiPage />;
   }
-  return <StatusPage />;
+  return <NotFoundPage />;
 }
 
 export function App() {

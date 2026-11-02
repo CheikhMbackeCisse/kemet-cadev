@@ -5,6 +5,7 @@ import {
   editMessageSchema,
   paginationQuerySchema,
   toggleReactionSchema,
+  type Level,
 } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
@@ -25,6 +26,7 @@ import {
 } from "../repositories/chat.js";
 import { attachToMessage, findPendingAttachment } from "../repositories/attachments.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
+import { computeLevels } from "../repositories/points.js";
 import { serializeMessage } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
@@ -44,8 +46,13 @@ async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
   return userId ? findProfileByUserId(db, userId) : null;
 }
 
-async function toSerializedMessage(db: ChatAppDeps["db"], row: Awaited<ReturnType<typeof findMessageById>>) {
+async function toSerializedMessage(
+  db: ChatAppDeps["db"],
+  row: Awaited<ReturnType<typeof findMessageById>>,
+  levels?: Map<string, Level>,
+) {
   const hydrated = await hydrateMessage(db, row!);
+  const authorLevels = levels ?? (await computeLevels(db, [hydrated.row.authorId]));
   return serializeMessage(
     hydrated.row,
     hydrated.author,
@@ -53,7 +60,13 @@ async function toSerializedMessage(db: ChatAppDeps["db"], row: Awaited<ReturnTyp
     hydrated.reactions,
     hydrated.replyCount,
     hydrated.attachments,
+    authorLevels.get(hydrated.row.authorId)!,
   );
+}
+
+async function toSerializedMessages(db: ChatAppDeps["db"], rows: NonNullable<Awaited<ReturnType<typeof findMessageById>>>[]) {
+  const levels = await computeLevels(db, rows.map((row) => row.authorId));
+  return Promise.all(rows.map((row) => toSerializedMessage(db, row, levels)));
 }
 
 export function registerMessageRoutes(
@@ -68,7 +81,7 @@ export function registerMessageRoutes(
       const { membership } = await requireChannelAccess(db, request.params.id, profile?.id ?? null);
       const query = channelMessagesQuerySchema.parse(request.query);
       const page = await listChannelMessages(db, request.params.id, query.cursor, query.limit);
-      const items = await Promise.all(page.items.map((row) => toSerializedMessage(db, row)));
+      const items = await toSerializedMessages(db, page.items);
       // Seulement à l'ouverture (première page) et pour un membre : un visiteur
       // ou un non-membre d'un espace public n'a pas d'état de lecture.
       const firstUnreadMessageId =
@@ -89,7 +102,7 @@ export function registerMessageRoutes(
       await requireChannelAccess(db, parent.channelId, profile?.id ?? null);
       const query = paginationQuerySchema.parse(request.query);
       const page = await listThreadReplies(db, request.params.id, query.cursor, query.limit);
-      const items = await Promise.all(page.items.map((row) => toSerializedMessage(db, row)));
+      const items = await toSerializedMessages(db, page.items);
       return { items, nextCursor: page.nextCursor };
     },
   );

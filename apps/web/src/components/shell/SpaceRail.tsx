@@ -3,7 +3,7 @@ import { cn } from "../../lib/cn.js";
 import { IconButton } from "../ui/IconButton.js";
 import { KemetSymbol } from "../ui/KemetSymbol.js";
 import { Tooltip } from "../ui/Tooltip.js";
-import { RAIL_NAV, type RailNavItem } from "./railNav.js";
+import { RAIL_FOOTER_NAV, RAIL_NAV, type RailNavItem } from "./railNav.js";
 import { fr } from "../../i18n/fr.js";
 import type { SpaceItem } from "./types.js";
 
@@ -166,6 +166,10 @@ export function SpaceRail({
           </ul>
         </>
       )}
+
+      <ul className="mt-auto flex w-full flex-col items-center pt-3">
+        <NavLink item={RAIL_FOOTER_NAV} active={activeSection === RAIL_FOOTER_NAV.id} />
+      </ul>
     </nav>
   );
 }

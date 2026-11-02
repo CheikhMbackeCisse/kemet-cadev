@@ -1,5 +1,5 @@
 import type { credentials, profiles } from "@kemet/db";
-import type { Credential, Level, Profile, ProfileSummary } from "@kemet/shared";
+import { isLevelAtLeast, OPEN_TO_OPPORTUNITIES_MIN_LEVEL, type Credential, type Level, type Profile, type ProfileSummary } from "@kemet/shared";
 
 type ProfileRow = typeof profiles.$inferSelect;
 type CredentialRow = typeof credentials.$inferSelect;
@@ -16,7 +16,8 @@ export function serializeProfile(row: ProfileRow, level: Level): Profile {
     stack: row.stack,
     githubUrl: row.githubUrl,
     avatarUrl: row.avatarUrl,
-    openToOpportunities: row.openToOpportunities,
+    // Masqué aussi à la lecture : un total revu à la baisse le retire.
+    openToOpportunities: row.openToOpportunities && isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL),
     isDemo: row.isDemo,
     level,
     createdAt: row.createdAt.toISOString(),

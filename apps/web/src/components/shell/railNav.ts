@@ -1,4 +1,4 @@
-import { FolderGit2, Hash, Rss, Trophy, Wrench } from "lucide-react";
+import { FolderGit2, Hash, Rss, ShieldCheck, Trophy, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface RailNavItem {
@@ -20,6 +20,14 @@ export const RAIL_NAV: RailNavItem[] = [
   { id: "competitions", label: "Compétitions", href: "/competitions", icon: Trophy },
 ];
 
+/** Au pied du rail, separe des sections : une page a lire, pas un espace de travail. */
+export const RAIL_FOOTER_NAV: RailNavItem = {
+  id: "confidentialite",
+  label: "Confidentialité",
+  href: "/confidentialite",
+  icon: ShieldCheck,
+};
+
 /** Section du rail correspondant a une URL, pour marquer l'icone active. */
 export function activeRailSection(pathname: string): string {
   if (pathname === "/" || pathname.startsWith("/fil")) return "fil";
@@ -27,5 +35,6 @@ export function activeRailSection(pathname: string): string {
   if (pathname.startsWith("/projets")) return "projets";
   if (pathname.startsWith("/competitions")) return "competitions";
   if (pathname.startsWith("/salons")) return "salons";
+  if (pathname === "/confidentialite") return "confidentialite";
   return "";
 }

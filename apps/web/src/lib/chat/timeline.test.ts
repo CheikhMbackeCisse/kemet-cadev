@@ -16,6 +16,7 @@ function message(authorId: string, createdAt: Date, authorHandle = authorId): Me
     authorDisplayName: authorHandle,
     authorAvatarUrl: null,
     authorCountry: "SN",
+    authorLevel: "apprenti",
     body: "Bonjour",
     mentionedHandles: [],
     reactions: [],

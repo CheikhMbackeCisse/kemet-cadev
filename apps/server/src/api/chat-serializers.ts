@@ -1,5 +1,5 @@
 import type { channels, messageAttachments, messages, profiles, spaceInvites, spaceMembers, spaces } from "@kemet/db";
-import type { Attachment, Channel, Invite, Message, Reaction, Space, SpaceMember } from "@kemet/shared";
+import type { Attachment, Channel, Invite, Level, Message, Reaction, Space, SpaceMember } from "@kemet/shared";
 
 type SpaceRow = typeof spaces.$inferSelect;
 type ChannelRow = typeof channels.$inferSelect;
@@ -70,6 +70,7 @@ export function serializeMessage(
   reactions: Reaction[],
   replyCount: number,
   attachments: AttachmentRow[],
+  authorLevel: Level,
 ): Message {
   const deleted = row.deletedAt !== null;
   return {
@@ -82,6 +83,7 @@ export function serializeMessage(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
+    authorLevel,
     body: deleted ? "" : row.body,
     mentionedHandles: deleted ? [] : mentionedHandles,
     reactions,

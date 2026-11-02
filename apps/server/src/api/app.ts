@@ -10,6 +10,7 @@ import { CLIENT_IP_HEADER, type Auth } from "../auth/auth.js";
 import { createNoopChatPublisher, type ChatPublisher } from "../chat/pubsub.js";
 import { AppError } from "../errors.js";
 import { loadAuthConfig, type AuthConfig } from "../config/auth-config.js";
+import { loadPrivacyContact, type PrivacyContact } from "../config/privacy-config.js";
 import { loadAttachmentLimits, type AttachmentLimits } from "../storage/config.js";
 import { InMemoryStorage, type FileStorage } from "../storage/file-storage.js";
 import { loadAntiSpamConfig, type AntiSpamConfig } from "../moderation/anti-spam-config.js";
@@ -28,6 +29,7 @@ import { registerPostAttachmentRoutes } from "./routes/post-attachments.js";
 import { registerProjectRoutes } from "./routes/projects.js";
 import { registerCompetitionRoutes } from "./routes/competitions.js";
 import { registerModerationRoutes } from "./routes/moderation.js";
+import { registerCredentialRoutes } from "./routes/credentials.js";
 import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
 
 export interface AppDeps {
@@ -38,6 +40,7 @@ export interface AppDeps {
   attachmentLimits?: AttachmentLimits;
   assistant?: AssistantOrchestrator;
   authConfig?: AuthConfig;
+  privacyContact?: PrivacyContact | null;
   antiSpamConfig?: AntiSpamConfig;
 }
 
@@ -55,6 +58,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
   const assistant = deps.assistant ?? new NoopAssistantOrchestrator();
   const authConfig = deps.authConfig ?? loadAuthConfig();
+  const privacyContact = deps.privacyContact === undefined ? loadPrivacyContact() : deps.privacyContact;
   const antiSpamConfig = deps.antiSpamConfig ?? loadAntiSpamConfig();
 
   void app.register(rateLimit, { global: false });
@@ -101,6 +105,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     // Public : la page de connexion y lit les fournisseurs sociaux à proposer.
     app.get("/api/auth-config", async () => authConfig);
 
+    // Public : la page de confidentialité est lisible avant l'inscription.
+    app.get("/api/privacy-contact", async () => ({ contact: privacyContact }));
+
     const authHandler = toNodeHandler(deps.auth);
     app.register(async (scope) => {
       // Le handler Better Auth lit lui-même le flux brut de la requête : le
@@ -142,6 +149,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerProjectRoutes(app, chatDeps);
     registerCompetitionRoutes(app, chatDeps);
     registerModerationRoutes(app, chatDeps);
+    registerCredentialRoutes(app, chatDeps);
   });
 
   return app;

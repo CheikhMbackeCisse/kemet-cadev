@@ -1,4 +1,4 @@
-import { KEMET_HANDLE, type Message } from "@kemet/shared";
+import { KEMET_HANDLE, type Level, type Message } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
 
 const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -9,6 +9,7 @@ export interface MessageGroup {
   authorDisplayName: string;
   authorAvatarUrl: string | null;
   authorCountry: string | null;
+  authorLevel: Level;
   messages: Message[];
 }
 
@@ -99,6 +100,7 @@ export function buildTimeline(
       authorDisplayName: message.authorDisplayName,
       authorAvatarUrl: message.authorAvatarUrl,
       authorCountry: message.authorCountry,
+      authorLevel: message.authorLevel,
       messages: [message],
     };
     items.push({ type: "group", key: message.id, group: last });

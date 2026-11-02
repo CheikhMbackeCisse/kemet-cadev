@@ -23,3 +23,10 @@ export function levelForPoints(totalPoints: number): Level {
   }
   return current;
 }
+
+export function isLevelAtLeast(level: Level, minimum: Level): boolean {
+  return LEVELS.indexOf(level) >= LEVELS.indexOf(minimum);
+}
+
+/** "Ouvert aux missions" se débloque à Artisan (docs/CONTEXTE.md). */
+export const OPEN_TO_OPPORTUNITIES_MIN_LEVEL: Level = "artisan";
