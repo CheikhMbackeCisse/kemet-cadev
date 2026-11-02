@@ -123,6 +123,10 @@ export const assistantInvocations = pgTable(
     status: assistantInvocationStatusEnum("status").notNull().default("pending"),
     errorCode: text("error_code"),
     helpful: boolean("helpful"),
+    // Réponse rejouée depuis un enregistrement (données de démonstration, ou
+    // secours quand les deux fournisseurs sont saturés) : toujours affichée
+    // comme telle, jamais comme une réponse générée en direct.
+    recorded: boolean("recorded").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
   },

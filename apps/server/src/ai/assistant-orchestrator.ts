@@ -6,8 +6,15 @@ import { hydrateMessage, insertMessage, listChannelMessages } from "../api/repos
 import { serializeMessage } from "../api/chat-serializers.js";
 import { canViewSkill, findAuthorProfile, findSkillBySlug, findSkillsByIds } from "../api/repositories/skills.js";
 import { completeInvocation, failInvocation, insertInvocation, markInvocationStreaming } from "../api/repositories/assistant.js";
-import { LlmProviderError, type LlmMessage, type LlmProviderName, type StreamingLlmProvider } from "./llm-provider.js";
+import {
+  BothProvidersUnavailableError,
+  LlmProviderError,
+  type LlmMessage,
+  type LlmProviderName,
+  type StreamingLlmProvider,
+} from "./llm-provider.js";
 import { checkDailyQuota } from "./quota.js";
+import { findRecordedAnswer, splitForReplay } from "./recorded-answers.js";
 import { buildCacheKey, type ResponseCache } from "./response-cache.js";
 import type { SkillCandidate, SkillRetriever } from "./skill-retriever.js";
 
@@ -35,6 +42,23 @@ export class NoopAssistantOrchestrator implements AssistantOrchestrator {
 
 const CONVERSATION_HISTORY_SIZE = 10;
 
+export const RECORDED_ANSWER_REPLAY_DELAY_MS = 40;
+
+export interface RecordedAnswersOptions {
+  /** ASSISTANT_RECORDED_ANSWERS : démo de secours quand aucun fournisseur ne répond. */
+  enabled: boolean;
+  /** Pause entre deux morceaux rejoués, pour garder l'allure d'un streaming. */
+  replayDelayMs: number;
+}
+
+function isProviderUnavailable(error: unknown): boolean {
+  return error instanceof LlmProviderError || error instanceof BothProvidersUnavailableError;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // Exporté pour evals/prompt-injection.ts : la suite d'attaques doit tester
 // exactement la consigne envoyée en production, jamais une copie qui dérive.
 export const SYSTEM_PROMPT_PREFIX = [
@@ -54,6 +78,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     // Limite fixe utilisée seulement par les tests ; en production, le
     // quota se calcule par niveau (apps/server/src/ai/quota.ts).
     private readonly dailyQuotaOverride?: number,
+    private readonly recordedAnswers: RecordedAnswersOptions = { enabled: false, replayDelayMs: 0 },
   ) {}
 
   async handleMention(input: AssistantMentionInput): Promise<void> {
@@ -81,7 +106,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
 
     try {
       await markInvocationStreaming(this.db, invocation.id);
-      const resolvedSkills = await this.resolveSkills(requestedSlugs, question, input.requestedBy);
+      let resolvedSkills = await this.resolveSkills(requestedSlugs, question, input.requestedBy);
       // La réponse dépend de l'historique du salon : sans ce préfixe, elle
       // pourrait ressortir dans un autre salon, y compris privé.
       const cacheKey = `${input.channelId}:${buildCacheKey(question, resolvedSkills.map((skill) => skill.id))}`;
@@ -89,27 +114,40 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
 
       let fullText = "";
       let provider: LlmProviderName | null = null;
+      let recorded = false;
       if (cached !== null) {
         fullText = cached;
-        await this.chat.publish({
-          type: "assistant:chunk",
-          channelId: input.channelId,
-          invocationId: invocation.id,
-          delta: cached,
-        });
+        await this.publishChunk(input.channelId, invocation.id, cached, false);
       } else {
         const messages = await this.buildMessages(input.channelId, question, resolvedSkills);
-        for await (const chunk of this.provider.streamResponse(messages)) {
-          fullText += chunk.delta;
-          provider = chunk.provider;
-          await this.chat.publish({
-            type: "assistant:chunk",
-            channelId: input.channelId,
-            invocationId: invocation.id,
-            delta: chunk.delta,
-          });
+        try {
+          for await (const chunk of this.provider.streamResponse(messages)) {
+            fullText += chunk.delta;
+            provider = chunk.provider;
+            await this.publishChunk(input.channelId, invocation.id, chunk.delta, false);
+          }
+        } catch (error) {
+          // Jamais après un premier morceau : la réponse en direct déjà
+          // affichée serait suivie d'une autre, enregistrée.
+          const recording =
+            this.recordedAnswers.enabled && fullText === "" && isProviderUnavailable(error)
+              ? findRecordedAnswer(question, requestedSlugs)
+              : null;
+          if (!recording) throw error;
+          // La réponse enregistrée annonce son skill : sans lui, visible et
+          // écrit par un compte de démo, elle citerait le mauvais auteur.
+          const replaySkills = await this.resolveSkills([recording.skillSlug], question, input.requestedBy);
+          const replaySkill = replaySkills[0];
+          if (!replaySkill || !(await findAuthorProfile(this.db, replaySkill.authorId)).isDemo) throw error;
+          recorded = true;
+          resolvedSkills = replaySkills;
+          for (const delta of splitForReplay(recording.answer)) {
+            await sleep(this.recordedAnswers.replayDelayMs);
+            fullText += delta;
+            await this.publishChunk(input.channelId, invocation.id, delta, true);
+          }
         }
-        if (fullText.trim().length > 0) await this.cache.set(cacheKey, fullText);
+        if (!recorded && fullText.trim().length > 0) await this.cache.set(cacheKey, fullText);
       }
 
       const body = fullText.trim() || "Je n'ai pas de réponse utile pour cette question.";
@@ -134,6 +172,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
         responseMessageId: message.id,
         provider,
         skillIds: resolvedSkills.map((skill) => skill.id),
+        recorded,
       });
       const citedSkill = resolvedSkills[0];
       let skill: { slug: string; name: string; authorHandle: string; authorDisplayName: string } | null = null;
@@ -152,11 +191,16 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
         invocationId: invocation.id,
         message: serialized,
         skill,
+        recorded,
       });
     } catch (error) {
-      const errorCode = error instanceof LlmProviderError ? "assistant_unavailable" : "internal_error";
+      const errorCode = isProviderUnavailable(error) ? "assistant_unavailable" : "internal_error";
       await this.fail(invocation.id, input.channelId, errorCode);
     }
+  }
+
+  private async publishChunk(channelId: string, invocationId: string, delta: string, recorded: boolean): Promise<void> {
+    await this.chat.publish({ type: "assistant:chunk", channelId, invocationId, delta, recorded });
   }
 
   private async fail(invocationId: string, channelId: string, errorCode: string): Promise<void> {

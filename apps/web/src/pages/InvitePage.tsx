@@ -53,7 +53,7 @@ export function InvitePage() {
 
   if (loadError) {
     return (
-      <main className="flex h-screen flex-col items-center justify-center px-4">
+      <main className="flex h-viewport flex-col items-center justify-center px-4">
         <ErrorState message={fr.invites.loadingError} retry={{ label: fr.chat.retry, onClick: load }} />
       </main>
     );
@@ -61,7 +61,7 @@ export function InvitePage() {
 
   if (!preview) {
     return (
-      <main className="flex h-screen flex-col items-center justify-center gap-4 px-4">
+      <main className="flex h-viewport flex-col items-center justify-center gap-4 px-4">
         <Skeleton className="h-6 w-64" />
         <Skeleton className="h-10 w-32" />
       </main>
@@ -71,7 +71,7 @@ export function InvitePage() {
   const status = joinStatus ?? preview.status;
 
   return (
-    <main className="flex h-screen flex-col items-center justify-center gap-4 px-4 text-center">
+    <main className="flex h-viewport flex-col items-center justify-center gap-4 px-4 text-center">
       <p className="text-lg text-text">{STATUS_MESSAGE[status](preview.spaceName)}</p>
       {status === "valid" && <Button onClick={handleJoin}>{fr.invites.join}</Button>}
       {joinError && <p className="text-sm text-danger">{fr.spaces.actionError}</p>}

@@ -17,7 +17,7 @@ export async function markInvocationStreaming(db: Db, id: string): Promise<void>
 export async function completeInvocation(
   db: Db,
   id: string,
-  input: { responseMessageId: string; provider: LlmProviderName | null; skillIds: string[] },
+  input: { responseMessageId: string; provider: LlmProviderName | null; skillIds: string[]; recorded: boolean },
 ): Promise<void> {
   await db
     .update(assistantInvocations)
@@ -26,6 +26,7 @@ export async function completeInvocation(
       responseMessageId: input.responseMessageId,
       provider: input.provider,
       skillIds: input.skillIds,
+      recorded: input.recorded,
       completedAt: new Date(),
     })
     .where(eq(assistantInvocations.id, id));

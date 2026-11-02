@@ -6,9 +6,10 @@ import { SmtpEmailSender } from "../email/smtp-email-sender.js";
 import { loadAttachmentLimits } from "../storage/config.js";
 import { LocalDiskStorage } from "../storage/file-storage.js";
 import { createLlmProviderFromEnv } from "../ai/create-llm-provider.js";
+import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { FullTextRetriever } from "../ai/skill-retriever.js";
 import { RedisResponseCache } from "../ai/response-cache.js";
-import { KemetAssistantOrchestrator } from "../ai/assistant-orchestrator.js";
+import { KemetAssistantOrchestrator, RECORDED_ANSWER_REPLAY_DELAY_MS } from "../ai/assistant-orchestrator.js";
 import { buildApp } from "./app.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -67,15 +68,20 @@ const attachmentLimits = loadAttachmentLimits();
 // Sans les deux clés, l'assistant reste inerte (NoopAssistantOrchestrator,
 // voir buildApp) plutôt que de faire échouer le démarrage du serveur :
 // utile en développement local avant d'avoir créé les comptes Gemini et
-// OpenRouter.
+// OpenRouter. Avec ASSISTANT_RECORDED_ANSWERS, il répond quand même aux
+// questions de démo connues, par leur réponse enregistrée.
+const hasLlmKeys = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.OPENROUTER_API_KEY);
+const recordedAnswersEnabled = process.env.ASSISTANT_RECORDED_ANSWERS === "true";
 const assistant =
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.OPENROUTER_API_KEY
+  hasLlmKeys || recordedAnswersEnabled
     ? new KemetAssistantOrchestrator(
         db,
         chat,
-        createLlmProviderFromEnv(process.env),
+        hasLlmKeys ? createLlmProviderFromEnv(process.env) : new UnavailableLlmProvider(),
         new FullTextRetriever(db),
         new RedisResponseCache(valkeyUrl),
+        undefined,
+        { enabled: recordedAnswersEnabled, replayDelayMs: RECORDED_ANSWER_REPLAY_DELAY_MS },
       )
     : undefined;
 

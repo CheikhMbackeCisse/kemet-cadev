@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { createSkillSchema, rateSkillSchema, updateSkillSchema } from "@kemet/shared";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   canViewSkill,
@@ -27,7 +27,7 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-async function requireVisibleSkill(db: ChatAppDeps["db"], slug: string, profileId: string) {
+async function requireVisibleSkill(db: ChatAppDeps["db"], slug: string, profileId: string | null) {
   const skill = await findSkillBySlug(db, slug);
   if (!skill) throw notFound("Ce skill n'existe pas.");
   if (!(await canViewSkill(db, skill, profileId))) throw notFound("Ce skill n'existe pas.");
@@ -52,11 +52,14 @@ async function requireSpaceMembershipForVisibility(
 }
 
 export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
-  app.get("/api/skills", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const memberSpaceIds = await listMemberSpaceIds(db, profile.id);
-    const rows = await listSkillsForViewer(db, profile.id, memberSpaceIds);
+  // Un visiteur lit les skills publics : la réponse de @kemet qu'il voit dans
+  // un salon public cite un skill, le lien doit mener quelque part.
+  // Un compte suspendu garde la lecture, comme ailleurs (ADR 0016).
+  app.get("/api/skills", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (request) => {
+    const userId = await getSessionUserId(auth, request);
+    const profile = userId ? await findProfileByUserId(db, userId) : null;
+    const memberSpaceIds = profile ? await listMemberSpaceIds(db, profile.id) : [];
+    const rows = await listSkillsForViewer(db, profile?.id ?? null, memberSpaceIds);
     const items = await Promise.all(
       rows.map(async (skill) => {
         const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillRatingStats(db, skill.id)]);
@@ -79,9 +82,9 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
   });
 
   app.get<{ Params: { slug: string } }>("/api/skills/:slug", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await requireOwnProfile(db, userId);
-    const skill = await requireVisibleSkill(db, request.params.slug, profile.id);
+    const userId = await getSessionUserId(auth, request);
+    const profile = userId ? await findProfileByUserId(db, userId) : null;
+    const skill = await requireVisibleSkill(db, request.params.slug, profile?.id ?? null);
     const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillRatingStats(db, skill.id)]);
     return { skill: serializeSkillDetail(skill, author, ratings) };
   });

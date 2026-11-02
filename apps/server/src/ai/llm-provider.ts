@@ -72,6 +72,18 @@ export class BothProvidersUnavailableError extends Error {
   }
 }
 
+/**
+ * Remplace les fournisseurs quand aucune clé d'API n'est configurée mais que
+ * les réponses enregistrées sont activées : chaque appel échoue, et seule une
+ * question de démo connue reçoit une réponse.
+ */
+export class UnavailableLlmProvider implements StreamingLlmProvider {
+  // eslint-disable-next-line require-yield -- échoue toujours, avant tout morceau.
+  async *streamResponse(): AsyncGenerator<LlmStreamChunk> {
+    throw new BothProvidersUnavailableError();
+  }
+}
+
 export function extractHttpStatusCode(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) return undefined;
   const candidate = error as { statusCode?: unknown; status?: unknown };

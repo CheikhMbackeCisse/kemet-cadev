@@ -24,7 +24,7 @@ export function RailPage({ activeSection, activeMobileTab, className, children }
   const activeTab = activeMobileTab ?? activeSection ?? "";
 
   return (
-    <div className="flex min-h-screen w-full bg-bg">
+    <div className="flex min-h-viewport w-full bg-bg">
       <SpaceRail activeSection={activeSection} />
       <main
         className={cn(

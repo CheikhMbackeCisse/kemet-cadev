@@ -15,6 +15,7 @@ export const assistantInvocationDetailSchema = z.object({
   invocationId: z.string().uuid(),
   skill: skillCitationSchema.nullable(),
   helpful: z.boolean().nullable(),
+  recorded: z.boolean(),
 });
 
 export type AssistantInvocationDetail = z.infer<typeof assistantInvocationDetailSchema>;
@@ -46,6 +47,7 @@ export const assistantInvocationSchema = z.object({
   status: assistantInvocationStatusSchema,
   errorCode: z.string().nullable(),
   helpful: z.boolean().nullable(),
+  recorded: z.boolean(),
   createdAt: z.string().datetime(),
 });
 

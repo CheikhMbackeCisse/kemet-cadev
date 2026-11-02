@@ -6,6 +6,7 @@ import {
   addSpaceMember,
   countSpaceMembers,
   countSpaceMembersBatch,
+  findSpacesWithUnread,
   createSpaceWithDefaults,
   findSpaceById,
   findSpaceBySlug,
@@ -62,7 +63,7 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
         visibility: input.visibility,
         creatorProfileId: profile.id,
       });
-      return { space: serializeSpace(space, "owner", 1) };
+      return { space: serializeSpace(space, "owner", 1, false) };
     },
   );
 
@@ -71,9 +72,13 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     const profile = await findOwnProfile(db, userId);
     const query = paginationQuerySchema.parse(request.query);
     const page = await listSpacesForViewer(db, profile?.id ?? null, query.cursor, query.limit);
-    const memberCounts = await countSpaceMembersBatch(db, page.items.map((row) => row.id));
+    const spaceIds = page.items.map((row) => row.id);
+    const memberCounts = await countSpaceMembersBatch(db, spaceIds);
+    const unreadSpaceIds = profile ? await findSpacesWithUnread(db, profile.id, spaceIds) : new Set<string>();
     return {
-      items: page.items.map((row) => serializeSpace(row, row.role, memberCounts.get(row.id) ?? 0)),
+      items: page.items.map((row) =>
+        serializeSpace(row, row.role, memberCounts.get(row.id) ?? 0, unreadSpaceIds.has(row.id)),
+      ),
       nextCursor: page.nextCursor,
     };
   });
@@ -83,7 +88,8 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     const profile = await findOwnProfile(db, userId);
     const { space, membership } = await requireVisibleSpace(db, request.params.id, profile?.id ?? null);
     const memberCount = await countSpaceMembers(db, space.id);
-    return { space: serializeSpace(space, membership?.role ?? null, memberCount) };
+    const hasUnread = profile ? (await findSpacesWithUnread(db, profile.id, [space.id])).has(space.id) : false;
+    return { space: serializeSpace(space, membership?.role ?? null, memberCount, hasUnread) };
   });
 
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(

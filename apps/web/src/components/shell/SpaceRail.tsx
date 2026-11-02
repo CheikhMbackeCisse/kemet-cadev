@@ -4,6 +4,7 @@ import { IconButton } from "../ui/IconButton.js";
 import { KemetSymbol } from "../ui/KemetSymbol.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { RAIL_NAV, type RailNavItem } from "./railNav.js";
+import { fr } from "../../i18n/fr.js";
 import type { SpaceItem } from "./types.js";
 
 export interface SpaceRailProps {
@@ -77,26 +78,34 @@ function SpaceButton({
   return (
     <li className="group relative flex w-full justify-center">
       <ActiveMarker active={active} />
-      <Tooltip label={space.name} side="right">
-        <button
-          type="button"
-          aria-label={space.name}
-          aria-current={active ? "true" : undefined}
-          onClick={() => onSelect?.(space.id)}
-          className={cn(
-            "inline-flex size-control items-center justify-center overflow-hidden rounded-control",
-            active ? "ring-2 ring-primary" : "hover:ring-2 hover:ring-border-strong",
-          )}
-        >
-          {space.imageUrl ? (
-            <img src={space.imageUrl} alt="" className="size-full object-cover" />
-          ) : (
-            <span className="flex size-full items-center justify-center bg-accent-soft text-xs font-semibold text-primary">
-              {monogramOf(space.name)}
-            </span>
-          )}
-        </button>
-      </Tooltip>
+      <span className="relative">
+        <Tooltip label={space.name} side="right">
+          <button
+            type="button"
+            aria-label={space.hasUnread ? fr.spaces.spaceWithUnread(space.name) : space.name}
+            aria-current={active ? "true" : undefined}
+            onClick={() => onSelect?.(space.id)}
+            className={cn(
+              "inline-flex size-control items-center justify-center overflow-hidden rounded-control",
+              active ? "ring-2 ring-primary" : "hover:ring-2 hover:ring-border-strong",
+            )}
+          >
+            {space.imageUrl ? (
+              <img src={space.imageUrl} alt="" className="size-full object-cover" />
+            ) : (
+              <span className="flex size-full items-center justify-center bg-accent-soft text-xs font-semibold text-primary">
+                {monogramOf(space.name)}
+              </span>
+            )}
+          </button>
+        </Tooltip>
+        {space.hasUnread && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-primary ring-2 ring-surface"
+          />
+        )}
+      </span>
     </li>
   );
 }

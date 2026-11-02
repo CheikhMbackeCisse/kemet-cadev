@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb } from "../client.js";
 import { getTestDatabaseUrl, resetTestDatabase } from "../testing.js";
-import { profiles, user } from "../schema/index.js";
+import { assistantInvocations, messages, pointsLedger, profiles, user } from "../schema/index.js";
 import { DEMO_ACCOUNTS } from "./accounts.js";
 import { DEFAULT_FILLER_PROFILE_COUNT, seedDemoDataset } from "./demo-dataset.js";
 
@@ -22,6 +22,23 @@ describe.skipIf(!databaseUrl)("seed de démonstration", () => {
     const admins = await db.select().from(profiles).where(eq(profiles.isPlatformAdmin, true));
     expect(admins).toHaveLength(0);
   }, 120_000);
+
+  it("pose des échanges avec @kemet marqués comme enregistrés, avec leurs points", async () => {
+    const invocations = await db.select().from(assistantInvocations);
+    expect(invocations).toHaveLength(3);
+    for (const invocation of invocations) {
+      expect(invocation).toMatchObject({ status: "done", recorded: true });
+      expect(invocation.skillIds).toHaveLength(1);
+      const [response] = await db.select().from(messages).where(eq(messages.id, invocation.responseMessageId!));
+      const [author] = await db.select().from(profiles).where(eq(profiles.id, response!.authorId));
+      expect(author!.handle).toBe("kemet");
+    }
+
+    const helpful = invocations.filter((invocation) => invocation.helpful === true);
+    const awards = await db.select().from(pointsLedger).where(eq(pointsLedger.source, "assistant_skill_helpful"));
+    expect(awards.map((award) => award.sourceId).sort()).toEqual(helpful.map((invocation) => invocation.id).sort());
+    expect(awards.every((award) => award.givenByProfileId !== award.profileId)).toBe(true);
+  });
 
   it("ne crée rien la deuxième fois", async () => {
     const before = await db.$count(profiles);

@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 
 const STORAGE_PREFIX = "kemet:draft:";
+const FOCUS_REQUEST_KEY = "kemet:draft-focus";
 
 // sessionStorage plutôt que localStorage : le brouillon survit à un
 // rechargement de la page, pas à la fermeture de l'onglet, ce qui évite de le
@@ -12,6 +13,19 @@ function readStoredDraft(channelId: string): string {
 function writeStoredDraft(channelId: string, value: string) {
   if (value) window.sessionStorage.setItem(STORAGE_PREFIX + channelId, value);
   else window.sessionStorage.removeItem(STORAGE_PREFIX + channelId);
+}
+
+/** Prépare le brouillon d'un salon avant de l'ouvrir, depuis une autre page. */
+export function storeChannelDraft(channelId: string, value: string) {
+  writeStoredDraft(channelId, value);
+  window.sessionStorage.setItem(FOCUS_REQUEST_KEY, channelId);
+}
+
+/** Vrai une seule fois, à l'ouverture du salon dont le brouillon vient d'être préparé. */
+export function takeDraftFocusRequest(channelId: string): boolean {
+  if (window.sessionStorage.getItem(FOCUS_REQUEST_KEY) !== channelId) return false;
+  window.sessionStorage.removeItem(FOCUS_REQUEST_KEY);
+  return true;
 }
 
 /** Efface les brouillons de tous les salons, pour qu'ils ne passent pas au compte suivant. */

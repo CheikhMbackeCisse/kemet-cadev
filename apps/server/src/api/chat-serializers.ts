@@ -9,7 +9,12 @@ type AttachmentRow = typeof messageAttachments.$inferSelect;
 type SpaceMemberRole = (typeof spaceMembers.$inferSelect)["role"];
 type InviteRow = typeof spaceInvites.$inferSelect;
 
-export function serializeSpace(row: SpaceRow, role: SpaceMemberRole | null, memberCount: number): Space {
+export function serializeSpace(
+  row: SpaceRow,
+  role: SpaceMemberRole | null,
+  memberCount: number,
+  hasUnread: boolean,
+): Space {
   return {
     id: row.id,
     name: row.name,
@@ -18,6 +23,7 @@ export function serializeSpace(row: SpaceRow, role: SpaceMemberRole | null, memb
     visibility: row.visibility,
     role,
     memberCount,
+    hasUnread,
     createdAt: row.createdAt.toISOString(),
   };
 }

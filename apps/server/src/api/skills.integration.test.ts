@@ -1,5 +1,6 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
+import { createDb, profiles, type Db } from "@kemet/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -9,11 +10,12 @@ const databaseUrl = getTestDatabaseUrl();
 
 describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
+  let db: Db;
   let emailSender: InMemoryEmailSender;
 
   beforeEach(async () => {
     await resetTestDatabase(databaseUrl!);
-    const db = createDb(databaseUrl!);
+    db = createDb(databaseUrl!);
     emailSender = new InMemoryEmailSender();
     const auth = createAuth({
       db,
@@ -86,6 +88,57 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
 
     const asOther = await app.inject({ method: "GET", url: "/api/skills/wave-paiements", headers: { cookie: other } });
     expect(asOther.statusCode).toBe(200);
+  });
+
+  it("laisse un visiteur lire un skill public, jamais un skill privé", async () => {
+    const author = await createMember("author-v@test.kemet", "authorv");
+    await createSkill(author);
+    await createSkill(author, { slug: "notes-privees", name: "notes-privees", visibility: "private" });
+
+    const publicSkill = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(publicSkill.statusCode).toBe(200);
+    const privateSkill = await app.inject({ method: "GET", url: "/api/skills/notes-privees" });
+    expect(privateSkill.statusCode).toBe(404);
+
+    const list = await app.inject({ method: "GET", url: "/api/skills" });
+    expect(list.statusCode).toBe(200);
+    expect((list.json().items as { slug: string }[]).map((skill) => skill.slug)).toEqual(["wave-paiements"]);
+  });
+
+  it("ne montre jamais à un visiteur un skill limité à un espace", async () => {
+    const author = await createMember("author-s@test.kemet", "authors");
+    const space = await app.inject({
+      method: "POST",
+      url: "/api/spaces",
+      headers: { cookie: author },
+      payload: { name: "backend", slug: "backend", visibility: "public" },
+    });
+    const created = await createSkill(author, { visibility: "space", spaceId: space.json().space.id });
+    expect(created.statusCode).toBe(200);
+
+    const detail = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(detail.statusCode).toBe(404);
+    const list = await app.inject({ method: "GET", url: "/api/skills" });
+    expect(list.json().items).toEqual([]);
+  });
+
+  it("laisse un compte suspendu lire un skill public", async () => {
+    const author = await createMember("author-x@test.kemet", "authorx");
+    const reader = await createMember("reader-x@test.kemet", "readerx");
+    await createSkill(author);
+    await db.update(profiles).set({ suspendedAt: new Date() }).where(eq(profiles.handle, "readerx"));
+
+    const detail = await app.inject({ method: "GET", url: "/api/skills/wave-paiements", headers: { cookie: reader } });
+    expect(detail.statusCode).toBe(200);
+    const list = await app.inject({ method: "GET", url: "/api/skills", headers: { cookie: reader } });
+    expect(list.statusCode).toBe(200);
+  });
+
+  it("refuse toujours à un visiteur de noter un skill", async () => {
+    const author = await createMember("author-r@test.kemet", "authorr");
+    await createSkill(author);
+    const rate = await app.inject({ method: "PUT", url: "/api/skills/wave-paiements/rating", payload: { stars: 5 } });
+    expect(rate.statusCode).toBe(401);
   });
 
   it("refuse la modification ou la suppression d'un skill à qui n'en est pas l'auteur", async () => {

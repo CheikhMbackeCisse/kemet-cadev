@@ -92,6 +92,13 @@
       "when": 1791925760684,
       "tag": "0012_premium_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793380424816,
+      "tag": "0013_fat_skullbuster",
+      "breakpoints": true
     }
   ]
 }

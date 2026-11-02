@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, profiles, type Db } from "@kemet/db";
+import { createDb, profiles, WAVE_WEBHOOK_RECORDING, type Db } from "@kemet/db";
 import type { ChatEvent } from "@kemet/shared";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -12,7 +12,13 @@ import { findInvocationById } from "../api/repositories/assistant.js";
 import { KemetAssistantOrchestrator } from "./assistant-orchestrator.js";
 import { InMemoryResponseCache } from "./response-cache.js";
 import { FullTextRetriever } from "./skill-retriever.js";
-import type { LlmMessage, LlmStreamChunk } from "./llm-provider.js";
+import {
+  LlmProviderError,
+  UnavailableLlmProvider,
+  type LlmMessage,
+  type LlmStreamChunk,
+  type StreamingLlmProvider,
+} from "./llm-provider.js";
 
 const databaseUrl = getTestDatabaseUrl();
 
@@ -23,6 +29,15 @@ class RecordingChatPublisher implements ChatPublisher {
   }
   async close(): Promise<void> {}
 }
+
+class ProviderFailingAfterFirstChunk {
+  async *streamResponse(): AsyncGenerator<LlmStreamChunk> {
+    yield { provider: "gemini", delta: "Début" };
+    throw new LlmProviderError("gemini", true, "quota");
+  }
+}
+
+const RECORDED_ANSWERS_ON = { enabled: true, replayDelayMs: 0 };
 
 class FakeStreamingProvider {
   capturedMessages: LlmMessage[][] = [];
@@ -81,12 +96,16 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     return { cookie, profileId: me.json().profile.id as string };
   }
 
-  async function createSpaceAndChannel(cookie: string, slug = "backend"): Promise<{ channelId: string }> {
+  async function createSpaceAndChannel(
+    cookie: string,
+    slug = "backend",
+    visibility: "public" | "private" = "public",
+  ): Promise<{ channelId: string }> {
     const space = await app.inject({
       method: "POST",
       url: "/api/spaces",
       headers: { cookie },
-      payload: { name: slug, slug, visibility: "public" },
+      payload: { name: slug, slug, visibility },
     });
     const spaceId = space.json().space.id as string;
     const channels = await app.inject({ method: "GET", url: `/api/spaces/${spaceId}/channels`, headers: { cookie } });
@@ -346,5 +365,156 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
 
     const authorMe = await app.inject({ method: "GET", url: "/api/me", headers: { cookie: authorCookie } });
     expect(authorMe.json().points).toBe(0);
+  });
+
+  describe("réponses enregistrées", () => {
+    const waveTrigger = `@kemet avec wave-paiements, ${WAVE_WEBHOOK_RECORDING.question}`;
+
+    async function setUpWaveQuestion(
+      email: string,
+      handle: string,
+      visibility: "public" | "private" = "public",
+      skillAuthorIsDemo = true,
+    ) {
+      const member = await createMember(email, handle);
+      if (skillAuthorIsDemo) await db.update(profiles).set({ isDemo: true }).where(eq(profiles.id, member.profileId));
+      const { channelId } = await createSpaceAndChannel(member.cookie, `${handle}-espace`, visibility);
+      await createSkill(db, member.profileId, {
+        slug: "wave-paiements",
+        name: "wave-paiements",
+        description: "Intégration des paiements Wave côté serveur.",
+        content: "Vérifier la signature des webhooks.",
+        tags: [],
+        visibility: "public",
+      });
+      const triggerMessageId = await sendTriggerMessage(member.cookie, channelId, waveTrigger);
+      return { ...member, channelId, triggerMessageId };
+    }
+
+    function orchestratorWith(chat: RecordingChatPublisher, provider: StreamingLlmProvider, recordedAnswers = true) {
+      return new KemetAssistantOrchestrator(
+        db,
+        chat,
+        provider,
+        new FullTextRetriever(db),
+        new InMemoryResponseCache(),
+        undefined,
+        recordedAnswers ? RECORDED_ANSWERS_ON : undefined,
+      );
+    }
+
+    it("rejoue la réponse enregistrée d'une question de démo quand aucun fournisseur ne répond", async () => {
+      const { profileId, channelId, triggerMessageId } = await setUpWaveQuestion("rec1@test.kemet", "rec1");
+      const chat = new RecordingChatPublisher();
+
+      await orchestratorWith(chat, new UnavailableLlmProvider()).handleMention({
+        channelId,
+        triggerMessageId,
+        requestedBy: profileId,
+        body: waveTrigger,
+      });
+
+      const chunks = chat.events.filter((event) => event.type === "assistant:chunk");
+      expect(chunks.length).toBeGreaterThan(1);
+      expect(chunks.every((event) => event.type === "assistant:chunk" && event.recorded)).toBe(true);
+      const doneEvent = chat.events.find((event) => event.type === "assistant:done");
+      if (doneEvent?.type !== "assistant:done") throw new Error("événement inattendu");
+      expect(doneEvent.recorded).toBe(true);
+      expect(doneEvent.message.body).toBe(WAVE_WEBHOOK_RECORDING.answer);
+      expect(doneEvent.skill?.slug).toBe("wave-paiements");
+
+      const invocation = await findInvocationById(db, doneEvent.invocationId);
+      expect(invocation).toMatchObject({ status: "done", recorded: true, provider: null });
+    });
+
+    it("échoue comme avant si les réponses enregistrées ne sont pas activées", async () => {
+      const { profileId, channelId, triggerMessageId } = await setUpWaveQuestion("rec2@test.kemet", "rec2");
+      const chat = new RecordingChatPublisher();
+
+      await orchestratorWith(chat, new UnavailableLlmProvider(), false).handleMention({
+        channelId,
+        triggerMessageId,
+        requestedBy: profileId,
+        body: waveTrigger,
+      });
+
+      expect(chat.events.map((event) => event.type)).toEqual(["assistant:failed"]);
+    });
+
+    it("n'invente rien pour une question qui n'est pas une question de démo", async () => {
+      const { profileId, channelId, triggerMessageId } = await setUpWaveQuestion("rec3@test.kemet", "rec3");
+      const chat = new RecordingChatPublisher();
+      const body = "@kemet avec wave-paiements, comment gérer un remboursement partiel ?";
+
+      await orchestratorWith(chat, new UnavailableLlmProvider()).handleMention({
+        channelId,
+        triggerMessageId,
+        requestedBy: profileId,
+        body,
+      });
+
+      expect(chat.events.map((event) => event.type)).toEqual(["assistant:failed"]);
+    });
+
+    it("ne rejoue pas un enregistrement dont le skill n'est pas écrit par un compte de démo", async () => {
+      const { profileId, channelId, triggerMessageId } = await setUpWaveQuestion("rec5@test.kemet", "rec5", "public", false);
+      const chat = new RecordingChatPublisher();
+
+      await orchestratorWith(chat, new UnavailableLlmProvider()).handleMention({
+        channelId,
+        triggerMessageId,
+        requestedBy: profileId,
+        body: waveTrigger,
+      });
+
+      expect(chat.events.map((event) => event.type)).toEqual(["assistant:failed"]);
+    });
+
+    it("ne rejoue jamais un enregistrement après un début de réponse en direct", async () => {
+      const { profileId, channelId, triggerMessageId } = await setUpWaveQuestion("rec4@test.kemet", "rec4");
+      const chat = new RecordingChatPublisher();
+
+      await orchestratorWith(chat, new ProviderFailingAfterFirstChunk()).handleMention({
+        channelId,
+        triggerMessageId,
+        requestedBy: profileId,
+        body: waveTrigger,
+      });
+
+      expect(chat.events.map((event) => event.type)).toEqual(["assistant:chunk", "assistant:failed"]);
+      const [chunk] = chat.events;
+      expect(chunk?.type === "assistant:chunk" && chunk.recorded).toBe(false);
+    });
+
+    async function visitorReadsRecordedAnswer(visibility: "public" | "private") {
+      const handle = `rec-${visibility}`;
+      const { profileId, channelId, triggerMessageId } = await setUpWaveQuestion(`${handle}@test.kemet`, handle, visibility);
+      const chat = new RecordingChatPublisher();
+      await orchestratorWith(chat, new UnavailableLlmProvider()).handleMention({
+        channelId,
+        triggerMessageId,
+        requestedBy: profileId,
+        body: waveTrigger,
+      });
+      const doneEvent = chat.events.find((event) => event.type === "assistant:done");
+      if (doneEvent?.type !== "assistant:done") throw new Error("événement inattendu");
+      return app.inject({ method: "GET", url: `/api/messages/${doneEvent.message.id}/assistant-invocation` });
+    }
+
+    it("donne à un visiteur la citation et la marque d'une réponse d'un salon public", async () => {
+      const response = await visitorReadsRecordedAnswer("public");
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ recorded: true, skill: { slug: "wave-paiements" } });
+    });
+
+    it("ne donne rien à un visiteur pour une réponse d'un salon privé", async () => {
+      const response = await visitorReadsRecordedAnswer("private");
+      expect(response.statusCode).toBe(404);
+    });
+
+    it("répond 404 à un identifiant de message qui n'est pas un UUID", async () => {
+      const response = await app.inject({ method: "GET", url: "/api/messages/pas-un-uuid/assistant-invocation" });
+      expect(response.statusCode).toBe(404);
+    });
   });
 });

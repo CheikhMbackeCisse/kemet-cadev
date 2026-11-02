@@ -1,0 +1,1 @@
+ALTER TABLE "assistant_invocations" ADD COLUMN "recorded" boolean DEFAULT false NOT NULL;

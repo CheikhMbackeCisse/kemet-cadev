@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { DbOrTx } from "../client.js";
 import { follows, profiles, user } from "../schema/index.js";
 import { createDemoAccounts, DEMO_ACCOUNTS, type DemoAccountIds } from "./accounts.js";
+import { createAssistantExchanges } from "./assistant-exchanges.js";
 import { createCadevSpace } from "./chat-content.js";
 import { createCommunitySpaces } from "./community.js";
 import { createDemoCompetitions } from "./competitions.js";
@@ -71,7 +72,8 @@ export async function seedDemoDataset(
     await followAllNamedAccounts(tx, ids);
     const fillerProfileIds = await insertFillerProfiles(tx, generateFillerProfiles(fillerProfileCount));
     await createDemoSkills(tx, ids);
-    await createCadevSpace(tx, ids);
+    const { generalChannelId } = await createCadevSpace(tx, ids);
+    await createAssistantExchanges(tx, ids, generalChannelId);
     await createCommunitySpaces(tx, ids, fillerProfileIds);
     await createCommunityFollows(tx, ids, fillerProfileIds);
     await createFeedContent(tx, ids);

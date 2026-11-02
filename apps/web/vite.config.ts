@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { fr } from "./src/i18n/fr.js";
 
 export default defineConfig({
   server: {
@@ -25,7 +26,11 @@ export default defineConfig({
         start_url: "/",
         display: "standalone",
         background_color: "#0D1320",
-        theme_color: "#1265DD",
+        theme_color: "#0D1320",
+        shortcuts: [
+          { name: fr.install.shortcutPublish, url: "/fil/nouveau" },
+          { name: fr.install.shortcutSpaces, url: "/salons" },
+        ],
         icons: [
           {
             src: "/brand/kemet-app-icon-192.png",

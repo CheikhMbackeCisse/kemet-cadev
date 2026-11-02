@@ -26,6 +26,7 @@ export const chatEventSchema = z.discriminatedUnion("type", [
     channelId: z.string().uuid(),
     invocationId: z.string().uuid(),
     delta: z.string(),
+    recorded: z.boolean(),
   }),
   z.object({
     type: z.literal("assistant:done"),
@@ -33,6 +34,7 @@ export const chatEventSchema = z.discriminatedUnion("type", [
     invocationId: z.string().uuid(),
     message: messageSchema,
     skill: skillCitationSchema.nullable(),
+    recorded: z.boolean(),
   }),
   z.object({
     type: z.literal("assistant:failed"),

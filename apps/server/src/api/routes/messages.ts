@@ -115,6 +115,8 @@ export function registerMessageRoutes(
         if (!parent || parent.channelId !== channel.id) {
           throw badRequest("Le message parent n'existe pas dans ce salon.");
         }
+        // Un seul niveau de fil : on répond au message d'origine, pas à une réponse.
+        if (parent.parentMessageId) throw badRequest("On ne répond pas à une réponse dans un fil.");
       }
 
       // Transaction : sinon un renvoi avec le même clientId retomberait sur

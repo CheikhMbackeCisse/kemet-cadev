@@ -19,6 +19,7 @@ import { Tabs } from "../components/ui/Tabs.js";
 import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
+import { InstallBanner } from "../components/shell/InstallBanner.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
@@ -232,7 +233,19 @@ export function FeedPage() {
         header={header}
         className="pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-8"
       >
-        {status === "visitor" && <VisitorBanner />}
+        {status === "visitor" && (
+          <>
+            <VisitorBanner />
+            {/* Ce qui distingue Kemet, dit en une ligne à qui arrive sans compte. */}
+            <p className="text-sm text-text-2">
+              {fr.skills.principle}{" "}
+              <a href="/skills" className="text-link hover:underline">
+                {fr.skills.browse}
+              </a>
+            </p>
+          </>
+        )}
+        {status === "ready" && <InstallBanner />}
         {isSuspended && <SuspendedBanner />}
 
         {/* Un visiteur n'a pas d'abonnements : une barre d'onglets a un seul

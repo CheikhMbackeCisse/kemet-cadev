@@ -14,7 +14,7 @@ export interface AuthLayoutProps {
 
 export function AuthLayout({ title, subtitle, intro, footer, children }: AuthLayoutProps) {
   return (
-    <div className="relative min-h-screen w-full">
+    <div className="relative min-h-viewport w-full">
       <AuthBackground />
 
       {/* Le fond est sombre dans les deux themes : ce qui flotte dessus est
@@ -32,7 +32,7 @@ export function AuthLayout({ title, subtitle, intro, footer, children }: AuthLay
         </a>
       </div>
 
-      <main className="relative z-10 flex min-h-screen items-center justify-center px-4 py-24 sm:py-16">
+      <main className="relative z-10 flex min-h-viewport items-center justify-center px-4 py-24 sm:py-16">
         <div className="flex w-full max-w-md flex-col gap-4">
           {intro && (
             <div className="hidden flex-col items-center gap-2 text-center text-auth-text sm:flex">

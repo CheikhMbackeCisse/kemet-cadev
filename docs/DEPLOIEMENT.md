@@ -176,6 +176,11 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
      renseigner seulement si un modèle est arrêté ou si son quota gratuit ne
      suffit plus, sans reconstruire les images : un redémarrage de `api`
      suffit.
+   - `ASSISTANT_RECORDED_ANSWERS` : vide en temps normal. `true` le jour
+     d'une démonstration, pour qu'une question de démo connue reçoive sa
+     réponse enregistrée si Gemini et OpenRouter sont tous deux saturés
+     (voir `docs/adr/0022-reponses-enregistrees.md`). Un redémarrage de
+     `api` suffit à l'activer ou la couper.
 
 5. Depuis le poste de l'administrateur (pas depuis le serveur), lancer le premier
    déploiement :

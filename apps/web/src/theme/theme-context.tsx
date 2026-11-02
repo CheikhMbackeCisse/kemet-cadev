@@ -32,6 +32,18 @@ function applyChoice(choice: ThemeChoice) {
   } else {
     root.setAttribute("data-theme", choice);
   }
+  syncThemeColor(choice);
+}
+
+// Les balises theme-color de index.html suivent le thème du système par
+// `media` : un thème choisi à la main doit les remplacer toutes les deux,
+// sinon la barre d'état reste claire sur une page sombre.
+function syncThemeColor(choice: ThemeChoice) {
+  const background = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+    meta.dataset.systemColor ??= meta.content;
+    meta.content = choice === "system" ? meta.dataset.systemColor : background;
+  }
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

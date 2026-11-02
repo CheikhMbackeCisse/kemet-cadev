@@ -18,8 +18,14 @@ export async function findSkillsByIds(db: DbOrTx, skillIds: string[]) {
 }
 
 /** Même règle que `FullTextRetriever`, appliquée à une ligne déjà chargée. */
-export async function canViewSkill(db: Db, skill: typeof skills.$inferSelect, profileId: string): Promise<boolean> {
+/** `profileId` nul pour un visiteur : seuls les skills publics lui sont visibles. */
+export async function canViewSkill(
+  db: Db,
+  skill: typeof skills.$inferSelect,
+  profileId: string | null,
+): Promise<boolean> {
   if (skill.visibility === "public") return true;
+  if (!profileId) return false;
   if (skill.visibility === "private") return skill.authorId === profileId;
   if (!skill.spaceId) return false;
   const [member] = await db
@@ -66,9 +72,11 @@ export async function deleteSkill(db: Db, skillId: string) {
   await db.delete(skills).where(eq(skills.id, skillId));
 }
 
-export async function listSkillsForViewer(db: Db, profileId: string, memberSpaceIds: string[]) {
-  const visibility =
-    memberSpaceIds.length > 0
+/** `profileId` nul pour un visiteur : seuls les skills publics. */
+export async function listSkillsForViewer(db: Db, profileId: string | null, memberSpaceIds: string[]) {
+  const visibility = !profileId
+    ? eq(skills.visibility, "public")
+    : memberSpaceIds.length > 0
       ? or(eq(skills.visibility, "public"), eq(skills.authorId, profileId), inArray(skills.spaceId, memberSpaceIds))
       : or(eq(skills.visibility, "public"), eq(skills.authorId, profileId));
   return db.select().from(skills).where(visibility).orderBy(desc(skills.createdAt));

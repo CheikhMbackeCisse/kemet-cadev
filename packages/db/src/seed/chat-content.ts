@@ -6,7 +6,7 @@ import { hoursAgo } from "./time.js";
 
 // Public et rempli de messages, pour que la plateforme ne paraisse pas vide
 // à la première visite.
-export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): Promise<void> {
+export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): Promise<{ generalChannelId: string }> {
   const [cadevSpace] = await db
     .insert(spaces)
     .values({
@@ -135,4 +135,6 @@ export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): 
       createdAt: hoursAgo(6),
     },
   ]);
+
+  return { generalChannelId: generalChannel!.id };
 }

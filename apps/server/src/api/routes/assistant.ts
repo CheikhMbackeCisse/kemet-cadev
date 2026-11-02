@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { assistantFeedbackSchema } from "@kemet/shared";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, notFound } from "../../errors.js";
 import { findInvocationById, findInvocationByResponseMessageId, setInvocationHelpful } from "../repositories/assistant.js";
 import { canViewSkill, findAuthorProfile, findSkillsByIds } from "../repositories/skills.js";
@@ -9,24 +10,29 @@ import { awardPoints, computeUtileAwardAmount, POINTS_ASSISTANT_SKILL_HELPFUL } 
 import type { ChatAppDeps } from "../app.js";
 import { requireChannelAccess } from "./channels.js";
 
+const messageIdParamsSchema = z.object({ id: z.string().uuid() });
+
 export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
-  // Pour réafficher la citation d'un skill et l'état "Utile" après un
-  // rechargement de page : rien de tout cela n'est stocké sur le message
-  // lui-même, l'invocation reste la seule source.
+  // Pour réafficher la citation d'un skill, l'état "Utile" et la marque
+  // "réponse enregistrée" après un rechargement de page : rien de tout cela
+  // n'est stocké sur le message lui-même, l'invocation reste la seule source.
+  // Lisible par un visiteur, comme les messages d'un salon public.
   app.get<{ Params: { id: string } }>("/api/messages/:id/assistant-invocation", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await findProfileByUserId(db, userId);
-    if (!profile) throw badRequest("Complétez votre profil avant d'accéder à ce salon.");
-    const invocation = await findInvocationByResponseMessageId(db, request.params.id);
+    const userId = await getSessionUserId(auth, request);
+    const profile = userId ? await findProfileByUserId(db, userId) : null;
+    const profileId = profile?.id ?? null;
+    const params = messageIdParamsSchema.safeParse(request.params);
+    if (!params.success) throw notFound("Cette réponse n'a pas d'invocation associée.");
+    const invocation = await findInvocationByResponseMessageId(db, params.data.id);
     if (!invocation) throw notFound("Cette réponse n'a pas d'invocation associée.");
-    await requireChannelAccess(db, invocation.channelId, profile.id);
+    await requireChannelAccess(db, invocation.channelId, profileId);
     const [citedSkill] = await findSkillsByIds(db, invocation.skillIds);
     let skill: { slug: string; name: string; authorHandle: string; authorDisplayName: string } | null = null;
     // Défense en profondeur : si la visibilité du skill a changé depuis la
     // réponse (passé de public à privé, retiré d'un espace), on ne la
     // révèle plus ici même si elle apparaît toujours dans le message déjà
     // posté.
-    if (citedSkill && (await canViewSkill(db, citedSkill, profile.id))) {
+    if (citedSkill && (await canViewSkill(db, citedSkill, profileId))) {
       const author = await findAuthorProfile(db, citedSkill.authorId);
       skill = {
         slug: citedSkill.slug,
@@ -35,7 +41,7 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
         authorDisplayName: author.displayName,
       };
     }
-    return { invocationId: invocation.id, skill, helpful: invocation.helpful };
+    return { invocationId: invocation.id, skill, helpful: invocation.helpful, recorded: invocation.recorded };
   });
 
   // Tout lecteur peut marquer la réponse Utile, ce qui rapporte des points à

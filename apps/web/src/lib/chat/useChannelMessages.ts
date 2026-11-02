@@ -8,18 +8,27 @@ import {
   sendMessage,
   toggleReaction,
 } from "./api.js";
+import {
+  addOutgoing,
+  describeSendFailure,
+  removeOutgoing,
+  setOutgoingStatus,
+  type OutgoingMessage,
+} from "./outgoing.js";
 import { joinChannel, leaveChannel, onChatEvent } from "./socket.js";
 
 export interface AssistantStream {
   invocationId: string;
   text: string;
   failed: boolean;
+  recorded: boolean;
 }
 
 export interface AssistantMeta {
   invocationId: string;
   skill: SkillCitation | null;
   helpful?: boolean | null;
+  recorded: boolean;
 }
 
 /** Taille d'une page d'historique, à l'ouverture comme en remontant. */
@@ -38,7 +47,11 @@ export interface UseChannelMessagesResult {
   assistantStream: AssistantStream | null;
   assistantMetaByMessageId: Record<string, AssistantMeta>;
   reload: () => void;
-  send: (body: string, parentMessageId?: string | null, attachmentIds?: string[]) => Promise<void>;
+  /** Messages partis du composeur que le serveur n'a pas encore renvoyés. */
+  outgoing: OutgoingMessage[];
+  send: (body: string, parentMessageId?: string | null, attachmentIds?: string[]) => void;
+  retry: (clientId: string) => void;
+  discard: (clientId: string) => void;
   react: (messageId: string, emoji: string) => Promise<void>;
   giveAssistantFeedback: (messageId: string, helpful: boolean) => Promise<void>;
 }
@@ -63,6 +76,7 @@ export function useChannelMessages(
   hasProfile = true,
 ): UseChannelMessagesResult {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [outgoing, setOutgoing] = useState<OutgoingMessage[]>([]);
   const [loading, setLoading] = useState(channelId !== null);
   const [error, setError] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
@@ -80,6 +94,7 @@ export function useChannelMessages(
 
   useEffect(() => {
     setFirstUnreadMessageId(null);
+    setOutgoing([]);
     setOlderCursor(null);
     setOlderError(false);
     if (!channelId) {
@@ -111,8 +126,21 @@ export function useChannelMessages(
     const unsubscribe = onChatEvent((event) => {
       if (channelIdRef.current !== channelId) return;
       if (event.type === "message:new" || event.type === "message:updated") {
-        if (event.channelId !== channelId || event.message.parentMessageId) return;
+        if (event.channelId !== channelId) return;
+        const parentId = event.message.parentMessageId;
+        if (parentId) {
+          if (event.type === "message:new")
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === parentId
+                  ? { ...message, replyCount: message.replyCount + 1 }
+                  : message,
+              ),
+            );
+          return;
+        }
         setMessages((current) => upsertMessage(current, event.message));
+        setOutgoing((current) => removeOutgoing(current, event.message.clientId));
         if (event.type === "message:new" && hasProfile)
           void markChannelRead(channelId, event.message.id);
       } else if (event.type === "message:deleted") {
@@ -136,7 +164,12 @@ export function useChannelMessages(
         setAssistantStream((current) =>
           current?.invocationId === event.invocationId
             ? { ...current, text: current.text + event.delta }
-            : { invocationId: event.invocationId, text: event.delta, failed: false },
+            : {
+                invocationId: event.invocationId,
+                text: event.delta,
+                failed: false,
+                recorded: event.recorded,
+              },
         );
       } else if (event.type === "assistant:done") {
         if (event.channelId !== channelId) return;
@@ -145,7 +178,11 @@ export function useChannelMessages(
         );
         setAssistantMetaByMessageId((current) => ({
           ...current,
-          [event.message.id]: { invocationId: event.invocationId, skill: event.skill },
+          [event.message.id]: {
+            invocationId: event.invocationId,
+            skill: event.skill,
+            recorded: event.recorded,
+          },
         }));
         setMessages((current) => upsertMessage(current, event.message));
         if (hasProfile) void markChannelRead(channelId, event.message.id);
@@ -181,6 +218,7 @@ export function useChannelMessages(
               invocationId: detail.invocationId,
               skill: detail.skill,
               helpful: detail.helpful,
+              recorded: detail.recorded,
             },
           }));
         })
@@ -206,20 +244,56 @@ export function useChannelMessages(
     }
   }, [channelId, olderCursor, loadingOlder]);
 
-  const send = useCallback(
-    async (body: string, parentMessageId: string | null = null, attachmentIds: string[] = []) => {
+  const deliver = useCallback(
+    async (message: OutgoingMessage) => {
       if (!channelId) return;
-      const clientId = crypto.randomUUID();
-      const message = await sendMessage(channelId, {
-        clientId,
-        body,
-        parentMessageId,
-        attachmentIds,
-      });
-      setMessages((current) => upsertMessage(current, message.message));
+      setOutgoing((current) => addOutgoing(current, { ...message, status: "sending" }));
+      try {
+        const result = await sendMessage(channelId, {
+          clientId: message.clientId,
+          body: message.body,
+          parentMessageId: message.parentMessageId,
+          attachmentIds: message.attachmentIds,
+        });
+        if (channelIdRef.current !== channelId) return;
+        setMessages((current) => upsertMessage(current, result.message));
+        setOutgoing((current) => removeOutgoing(current, message.clientId));
+      } catch (error) {
+        if (channelIdRef.current !== channelId) return;
+        setOutgoing((current) =>
+          setOutgoingStatus(current, message.clientId, "failed", describeSendFailure(error)),
+        );
+      }
     },
     [channelId],
   );
+
+  const send = useCallback(
+    (body: string, parentMessageId: string | null = null, attachmentIds: string[] = []) => {
+      void deliver({
+        clientId: crypto.randomUUID(),
+        body,
+        parentMessageId,
+        attachmentIds,
+        status: "sending",
+      });
+    },
+    [deliver],
+  );
+
+  // Même clientId : le serveur ne crée pas de doublon si le premier envoi
+  // était en fait arrivé.
+  const retry = useCallback(
+    (clientId: string) => {
+      const message = outgoing.find((item) => item.clientId === clientId);
+      if (message) void deliver(message);
+    },
+    [outgoing, deliver],
+  );
+
+  const discard = useCallback((clientId: string) => {
+    setOutgoing((current) => removeOutgoing(current, clientId));
+  }, []);
 
   const react = useCallback(async (messageId: string, emoji: string) => {
     const result = await toggleReaction(messageId, emoji);
@@ -252,7 +326,10 @@ export function useChannelMessages(
     assistantStream,
     assistantMetaByMessageId,
     reload,
+    outgoing,
     send,
+    retry,
+    discard,
     react,
     giveAssistantFeedback,
   };

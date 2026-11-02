@@ -149,6 +149,25 @@ export async function countSpaceMembersBatch(db: Db, spaceIds: string[]): Promis
   return new Map(rows.map((row) => [row.spaceId, row.value]));
 }
 
+// Même règle que countUnreadMessages : un message est non lu s'il est plus
+// récent que la dernière lecture du salon, ou que l'arrivée dans l'espace.
+export async function findSpacesWithUnread(db: Db, profileId: string, spaceIds: string[]): Promise<Set<string>> {
+  if (spaceIds.length === 0) return new Set();
+  const rows = await db
+    .selectDistinct({ spaceId: channels.spaceId })
+    .from(messages)
+    .innerJoin(channels, eq(channels.id, messages.channelId))
+    .innerJoin(spaceMembers, and(eq(spaceMembers.spaceId, channels.spaceId), eq(spaceMembers.profileId, profileId)))
+    .leftJoin(readStates, and(eq(readStates.channelId, channels.id), eq(readStates.profileId, profileId)))
+    .where(
+      and(
+        inArray(channels.spaceId, spaceIds),
+        gt(messages.createdAt, sql`coalesce(${readStates.lastReadAt}, ${spaceMembers.joinedAt})`),
+      ),
+    );
+  return new Set(rows.map((row) => row.spaceId));
+}
+
 export async function listChannelsBySpace(db: Db, spaceId: string) {
   return db.select().from(channels).where(eq(channels.spaceId, spaceId)).orderBy(asc(channels.displayOrder));
 }

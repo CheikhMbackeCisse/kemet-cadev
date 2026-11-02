@@ -5,6 +5,7 @@ export interface SpaceItem {
   name: string;
   /** Image de l'espace. Absente : le rail affiche son monogramme. */
   imageUrl?: string | null;
+  hasUnread?: boolean;
 }
 
 export interface ChannelItem {

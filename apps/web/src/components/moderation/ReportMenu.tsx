@@ -1,5 +1,5 @@
 import { Flag } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReportTarget } from "@kemet/shared";
 import { ChatApiError, createReport } from "../../lib/chat/api.js";
 import { Button } from "../ui/Button.js";
@@ -16,17 +16,47 @@ export interface ReportMenuProps {
   authorHandle: string;
 }
 
-export function ReportMenu({ contentType, contentId, authorId, authorHandle }: ReportMenuProps) {
+export function ReportMenu(props: ReportMenuProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <IconButton aria-label={fr.moderation.reportAction} onClick={() => setOpen(true)}>
+        <Flag className="size-4" aria-hidden="true" />
+      </IconButton>
+      <ReportDialog {...props} open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+export interface ReportDialogProps extends ReportMenuProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+/** Fenêtre de signalement seule, pour l'ouvrir depuis un autre déclencheur. */
+export function ReportDialog({
+  contentType,
+  contentId,
+  authorId,
+  authorHandle,
+  open,
+  onClose,
+}: ReportDialogProps) {
   const toast = useToast();
   const [target, setTarget] = useState<ReportTarget | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (open) setTarget(contentType);
+  }, [open, contentType]);
+
   function close() {
     setTarget(null);
     setReason("");
     setError(null);
+    onClose();
   }
 
   async function submit() {
@@ -50,10 +80,7 @@ export function ReportMenu({ contentType, contentId, authorId, authorHandle }: R
 
   return (
     <>
-      <IconButton aria-label={fr.moderation.reportAction} onClick={() => setTarget(contentType)}>
-        <Flag className="size-4" aria-hidden="true" />
-      </IconButton>
-      <Dialog open={target !== null} onOpenChange={(open) => !open && close()} title={fr.moderation.reportTitle} description={fr.moderation.reportDescription(authorHandle)}>
+      <Dialog open={open && target !== null} onOpenChange={(open) => !open && close()} title={fr.moderation.reportTitle} description={fr.moderation.reportDescription(authorHandle)}>
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
             <Button

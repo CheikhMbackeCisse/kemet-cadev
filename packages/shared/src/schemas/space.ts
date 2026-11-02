@@ -30,6 +30,8 @@ export const spaceSchema = z.object({
   visibility: spaceVisibilitySchema,
   role: spaceMemberRoleSchema.nullable(),
   memberCount: z.number().int().nonnegative(),
+  /** Toujours faux pour un visiteur ou un non-membre. */
+  hasUnread: z.boolean(),
   createdAt: z.string().datetime(),
 });
 

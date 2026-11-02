@@ -106,7 +106,7 @@ function StatusPage() {
   }, []);
 
   return (
-    <main className="flex h-screen flex-col items-center justify-center gap-6">
+    <main className="flex h-viewport flex-col items-center justify-center gap-6">
       <p className="text-lg">Kemet arrive.</p>
       <ul className="flex flex-col gap-2 text-sm" aria-live="polite">
         {SERVICE_CHECKS.map((service) => (
@@ -127,7 +127,7 @@ function StatusPage() {
 /** Le temps que la page arrive : la forme commune des écrans plutôt qu'une page blanche. */
 function PageFallback() {
   return (
-    <div className="flex min-h-screen w-full bg-bg" aria-busy="true">
+    <div className="flex min-h-viewport w-full bg-bg" aria-busy="true">
       <div className="hidden w-rail shrink-0 border-r border-border-strong bg-surface lg:block" />
       <div className="mx-auto flex w-full max-w-reading flex-col gap-6 px-4 py-8">
         <Skeleton className="h-8 w-40" />

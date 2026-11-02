@@ -19,6 +19,8 @@ interface Options {
   loadOlder: () => Promise<void>;
   ownProfileId: string | null;
   streamingText: string | null;
+  /** Nombre de messages envoyés d'ici et pas encore confirmés. */
+  outgoingCount: number;
 }
 
 export interface MessageListScroll {
@@ -52,6 +54,7 @@ export function useMessageListScroll({
   loadOlder,
   ownProfileId,
   streamingText,
+  outgoingCount,
 }: Options): MessageListScroll {
   const [newMessagesBelow, setNewMessagesBelow] = useState(0);
   const [prependingOlder, setPrependingOlder] = useState(false);
@@ -139,6 +142,12 @@ export function useMessageListScroll({
   useLayoutEffect(() => {
     if (streamingText !== null && atBottomRef.current) scrollToBottom();
   }, [streamingText, scrollToBottom]);
+
+  const previousOutgoingCountRef = useRef(outgoingCount);
+  useLayoutEffect(() => {
+    if (outgoingCount > previousOutgoingCountRef.current) scrollToBottom();
+    previousOutgoingCountRef.current = outgoingCount;
+  }, [outgoingCount, scrollToBottom]);
 
   // Une image qui finit de charger allonge la liste : on reste collé en bas
   // si on y était.

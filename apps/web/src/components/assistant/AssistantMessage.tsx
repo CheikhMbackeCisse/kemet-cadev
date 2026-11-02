@@ -1,7 +1,9 @@
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
+import { Badge } from "../ui/Badge.js";
 import { KemetSymbol } from "../ui/KemetSymbol.js";
 
 export interface AssistantSkillReference {
@@ -18,6 +20,8 @@ export interface AssistantMessageProps {
   onFeedback?: (helpful: boolean) => void;
   hideFeedback?: boolean;
   initialFeedback?: "helpful" | "not-helpful" | null;
+  /** Réponse rejouée depuis un enregistrement : toujours signalée, jamais présentée comme générée en direct. */
+  recorded?: boolean;
   className?: string;
 }
 
@@ -28,6 +32,7 @@ export function AssistantMessage({
   onFeedback,
   hideFeedback = false,
   initialFeedback = null,
+  recorded = false,
   className,
 }: AssistantMessageProps) {
   const [feedback, setFeedback] = useState<"helpful" | "not-helpful" | null>(initialFeedback);
@@ -46,6 +51,7 @@ export function AssistantMessage({
       <div className="flex items-center gap-2">
         <KemetSymbol className="size-5" />
         <span className="text-sm font-semibold text-text">kemet</span>
+        {recorded && <Badge tone="accent">{fr.chat.assistantRecorded}</Badge>}
       </div>
 
       <div className="mt-3 min-w-0 text-sm leading-relaxed text-text">{content}</div>
