@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { ErrorState } from "../ui/ErrorState.js";
-import { MobileTabBar } from "../shell/MobileTabBar.js";
-import { SpaceRail } from "../shell/SpaceRail.js";
 import { mobileTabFor } from "../shell/mobileTabs.js";
+import { AppFrame } from "./AppFrame.js";
 import { cn } from "../../lib/cn.js";
 
 export interface ReadingPageState {
@@ -13,7 +12,7 @@ export interface ReadingPageState {
 
 export interface ReadingPageProps {
   header: ReactNode;
-  /** Icône du rail à marquer comme active (voir `RAIL_NAV`). */
+  /** Section de la barre d'activité à marquer comme active (voir `RAIL_NAV`). */
   activeSection?: string;
   /** Onglet mobile actif, quand il ne porte pas le même identifiant que la section. */
   activeMobileTab?: string;
@@ -24,9 +23,9 @@ export interface ReadingPageProps {
 }
 
 /**
- * Pages de lecture (profil, post, projet…) : rail, conteneur de 960px,
- * en-tête propre à chaque écran et états chargement, introuvable et erreur.
- * Sous `lg`, la barre d'onglets remplace le rail.
+ * Pages de lecture (profil, post, projet…) : conteneur de 960px dans le
+ * cadre commun, en-tête propre à chaque écran et états chargement,
+ * introuvable et erreur.
  */
 export function ReadingPage({
   header,
@@ -40,8 +39,7 @@ export function ReadingPage({
   const activeTab = activeMobileTab ?? mobileTabFor(activeSection ?? "");
 
   return (
-    <div className="flex min-h-viewport w-full bg-bg">
-      <SpaceRail activeSection={activeSection} />
+    <AppFrame activeSection={activeSection} activeMobileTab={activeTab}>
       <main
         className={cn(
           "mx-auto flex w-full max-w-reading flex-col gap-6 px-4 py-8",
@@ -58,7 +56,6 @@ export function ReadingPage({
           children
         )}
       </main>
-      <MobileTabBar activeTabId={activeTab} />
-    </div>
+    </AppFrame>
   );
 }

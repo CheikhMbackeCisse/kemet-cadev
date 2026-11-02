@@ -63,8 +63,8 @@ export default {
         "control-mobile": "44px",
       },
       width: {
-        rail: "64px",
-        "channel-list": "240px",
+        "activity-bar": "56px",
+        "side-panel": "264px",
         panel: "300px",
       },
       size: {

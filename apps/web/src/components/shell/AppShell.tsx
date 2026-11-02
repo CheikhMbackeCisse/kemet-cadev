@@ -1,15 +1,30 @@
 import { Menu as MenuIcon, PanelRight, Plus } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { fr } from "../../i18n/fr.js";
+import { AppFrame } from "../layout/AppFrame.js";
 import { IconButton } from "../ui/IconButton.js";
 import { Sheet } from "../ui/Sheet.js";
 import { ChannelList, type ChannelListProps } from "./ChannelList.js";
-import { MobileTabBar } from "./MobileTabBar.js";
 import { RightPanel } from "./RightPanel.js";
-import { SpaceRail, type SpaceRailProps } from "./SpaceRail.js";
+import { sectionLabel } from "./railNav.js";
+import { SpaceTree, type SpaceTreeStatus } from "./SpaceTree.js";
+import type { SpaceItem } from "./types.js";
+
+export interface AppShellSpaces {
+  /** Titre de la liste : "Mes espaces", ou "Espaces publics" pour un visiteur. */
+  title: string;
+  items: SpaceItem[];
+  activeSpaceId: string;
+  onSelect: (id: string) => void;
+  status: SpaceTreeStatus;
+  onRetry: () => void;
+  channelsLoading: boolean;
+  /** Faux pour un visiteur ou un compte suspendu : le lien n'est pas rendu. */
+  canCreateSpace: boolean;
+}
 
 export interface AppShellProps {
-  spaceRail: SpaceRailProps;
+  spaces: AppShellSpaces;
   channelList: ChannelListProps;
   activeMobileTabId: string;
   rightPanel?: { title: string; content: ReactNode };
@@ -17,8 +32,24 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
+function CreateSpaceLink({ mobile }: { mobile?: boolean }) {
+  return (
+    <a
+      href="/salons/nouveau"
+      className={
+        mobile
+          ? "flex h-control-mobile w-full items-center gap-2 rounded-control px-2 text-sm font-medium text-link hover:bg-surface-2"
+          : "flex h-control w-full items-center gap-2 rounded-control px-2 text-sm font-medium text-link hover:bg-surface-2"
+      }
+    >
+      <Plus className="size-4 shrink-0" aria-hidden="true" />
+      {fr.spaces.createTitle}
+    </a>
+  );
+}
+
 export function AppShell({
-  spaceRail,
+  spaces,
   channelList,
   activeMobileTabId,
   rightPanel,
@@ -33,20 +64,33 @@ export function AppShell({
   )?.name;
 
   return (
-    <div className="flex h-viewport w-full overflow-hidden overscroll-none bg-bg">
-      <SpaceRail {...spaceRail} />
-
-      <div className="hidden w-channel-list shrink-0 flex-col border-r border-border-strong bg-surface lg:flex">
-        <div className="flex h-12 shrink-0 items-center border-b border-border px-3">
-          <h2 className="truncate text-md font-semibold text-text">{channelList.spaceName}</h2>
-        </div>
-        <ChannelList {...channelList} className="flex-1" />
-      </div>
-
+    <AppFrame
+      activeSection="salons"
+      activeMobileTab={activeMobileTabId}
+      fixedHeight
+      sidePanel={{
+        title: sectionLabel("salons"),
+        content: (
+          <SpaceTree
+            title={spaces.title}
+            status={spaces.status}
+            onRetry={spaces.onRetry}
+            spaces={spaces.items}
+            activeSpaceId={spaces.activeSpaceId}
+            onSelectSpace={spaces.onSelect}
+            channels={channelList.channels}
+            channelsLoading={spaces.channelsLoading}
+            activeChannelId={channelList.activeChannelId}
+            onSelectChannel={channelList.onSelect}
+          />
+        ),
+        footer: spaces.canCreateSpace ? <CreateSpaceLink /> : undefined,
+      }}
+    >
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex min-h-12 shrink-0 items-center justify-between border-b border-border px-3 py-1 lg:h-12 lg:px-4 lg:py-0">
           <IconButton
-            aria-label="Ouvrir la liste des salons"
+            aria-label={fr.shell.openChannelList}
             className="lg:hidden"
             onClick={() => setChannelDrawerOpen(true)}
           >
@@ -63,9 +107,14 @@ export function AppShell({
               <span className="truncate text-xs text-muted">{channelList.spaceName}</span>
             )}
           </h1>
-          {activeChannelName && (
-            <h2 className="hidden truncate text-md font-semibold text-text lg:block">
-              #{activeChannelName}
+          {/* Sur bureau, le panneau latéral peut être replié : l'en-tête
+              rappelle donc aussi l'espace, pas seulement le salon. */}
+          {(activeChannelName || channelList.spaceName) && (
+            <h2 className="hidden min-w-0 truncate text-md font-semibold text-text lg:block">
+              {activeChannelName ? `#${activeChannelName}` : channelList.spaceName}
+              {activeChannelName && channelList.spaceName && (
+                <span className="font-normal text-muted"> · {channelList.spaceName}</span>
+              )}
             </h2>
           )}
           <div className="flex items-center gap-2">
@@ -76,7 +125,7 @@ export function AppShell({
                 encombrait la barre du haut. */}
             {rightPanel && (
               <IconButton
-                aria-label="Ouvrir le panneau"
+                aria-label={fr.shell.openDetailsPanel}
                 className="lg:hidden"
                 onClick={() => setRightSheetOpen(true)}
               >
@@ -108,17 +157,11 @@ export function AppShell({
               setChannelDrawerOpen(false);
             }}
           />
-          {/* Sur mobile, le rail est masqué : créer un espace se fait ici,
-              avec un libellé, plutôt que par un "+" seul dans l'en-tête. */}
-          {spaceRail.onCreateSpace && (
+          {/* Sur mobile, créer un espace se fait ici, avec un libellé,
+              plutôt que par un "+" seul dans l'en-tête. */}
+          {spaces.canCreateSpace && (
             <div className="border-t border-border px-2 py-3">
-              <a
-                href="/salons/nouveau"
-                className="flex h-control-mobile w-full items-center gap-2 rounded-control px-2 text-sm font-medium text-link hover:bg-surface-2"
-              >
-                <Plus className="size-4 shrink-0" aria-hidden="true" />
-                {fr.spaces.createTitle}
-              </a>
+              <CreateSpaceLink mobile />
             </div>
           )}
         </div>
@@ -134,8 +177,6 @@ export function AppShell({
           {rightPanel.content}
         </Sheet>
       )}
-
-      <MobileTabBar activeTabId={activeMobileTabId} />
-    </div>
+    </AppFrame>
   );
 }

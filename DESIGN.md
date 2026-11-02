@@ -75,15 +75,15 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 
 **Bureau (à partir de 1024 px) :**
 
-- Rail des espaces : 64 px.
-- Liste des salons : 240 px.
-- Contenu : fluide.
+- Barre d'activité : 56 px, sur le modèle de VS Code. Le logo (vers le fil), puis une icône par section (Fil, Salons, Skills, Projets, Compétitions), et au pied Confidentialité, Paramètres et le compte (avatar qui ouvre le menu du compte, ou "Se connecter" pour un visiteur). Infobulle au survol et au focus, indicateur de 2 px `--primary` à gauche de l'icône active. Ses sections se parcourent aux flèches haut et bas, Début et Fin, en un seul arrêt de tabulation ; le logo et le compte sont deux arrêts à part. L'indicateur marque la page ouverte, le fond `--accent-soft` le panneau déplié. Kemet Pro n'y figure pas.
+- Panneau latéral : 264 px, titré du nom de la section. Les salons y montrent leurs espaces en arbre : un espace par ligne (monogramme et nom, point de non-lus), l'espace ouvert déplié sur ses salons, "Créer un espace" en pied. Un clic sur l'icône de la section ouverte, ou Ctrl+B (Cmd+B sur Mac), le replie et le rouvre ; le choix est mémorisé. Replié par défaut sous 1280 px. Une page sans panneau garde ses icônes en liens, et Ctrl+B y garde son sens habituel. Pas de redimensionnement à la souris.
+- Contenu : fluide. Toutes les pages partagent ce cadre (`AppFrame`).
 - Panneau de détails à droite : 300 px, affiché en permanence sur grand écran. Sous 1024 px il devient une feuille, ouverte depuis la barre du haut. Il n'est pas refermable sur grand écran : sa bascule encombrait la barre du haut, et une fois fermé rien ne permettait de le rouvrir.
 - Pages de lecture (profil, post, skill) : largeur de contenu maximale de 960 px.
 
 **Mobile (moins de 768 px) :**
 
-- Barre d'onglets en bas : Fil, Salons, Skills, Projets, Moi. Ce sont les sections du rail de bureau, tirées de la même liste. "Moi" ouvre une feuille : profil, Compétitions, Paramètres, Confidentialité, et Modération pour un administrateur.
+- Barre d'onglets en bas : Fil, Salons, Skills, Projets, Moi. Ce sont les sections de la barre d'activité du bureau, tirées de la même liste. "Moi" ouvre une feuille : profil, Compétitions, Paramètres, Confidentialité, et Modération pour un administrateur.
 - Un visiteur voit une seule invitation, une barre "Se connecter" / "Créer un compte" posée au-dessus des onglets, jamais une carte en haut de chaque page.
 - La liste des salons s'ouvre en tiroir depuis la gauche. "Créer un espace" s'y trouve, en bas, avec son libellé : l'en-tête n'a pas de "+" seul. Le panneau de détails devient une feuille qui monte du bas.
 - Le champ de message reste collé en bas, au-dessus du clavier et de la barre d'onglets. Dans un salon, la page fait la hauteur réellement visible (`100dvh`, repli `100vh`) et ne défile jamais en entier : seule la liste des messages défile. Le clavier réduit la page (`interactive-widget=resizes-content`) au lieu de la recouvrir.
@@ -167,7 +167,7 @@ halo. Aucun autre écran du produit ne bénéficie de cette exception.
 - Icônes Lucide uniquement, trait de 2 px, 16 ou 20 px.
 - Logo Kemet : fichiers dans `apps/web/public/brand/`. Ne jamais les modifier, les déformer, changer leurs couleurs ou ajouter d'effet.
   - `kemet-wordmark.svg` sur fond clair, `kemet-wordmark-dark.svg` sur fond sombre, versions noire et blanche pour les cas en une couleur.
-  - `kemet-symbol.svg` : le "k" seul, pour les petits espaces (rail des espaces, avatar de l'assistant).
+  - `kemet-symbol.svg` : le "k" seul, pour les petits espaces (barre d'activité, avatar de l'assistant).
   - `kemet-app-icon.svg` et PNG : icône de la web app ; `kemet-app-icon-maskable-512.png` pour Android ; `apple-touch-icon.png` pour iOS ; `favicon.svg`, `favicon-32.png`, `favicon-16.png`.
   - Zone de protection autour du logo : au moins la largeur du bras du "k". Hauteur minimale du mot-symbole : 16 px.
   - Sur fond sombre, le bleu du logo est #3B82F0.

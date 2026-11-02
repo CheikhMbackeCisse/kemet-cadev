@@ -6,6 +6,14 @@ export const fr = {
     missingFields: (labels: string[]) => `À remplir : ${labels.join(", ")}.`,
     suspendedCannotSubmit: "Ton compte est suspendu : l'envoi est bloqué.",
   },
+  shell: {
+    activityBarLabel: "Sections",
+    home: "Accueil",
+    openChannelList: "Ouvrir la liste des salons",
+    openDetailsPanel: "Ouvrir le panneau",
+    mySpaces: "Mes espaces",
+    publicSpaces: "Espaces publics",
+  },
   install: {
     banner: "Installe Kemet sur ton écran d'accueil pour l'ouvrir comme une app.",
     cta: "Installer Kemet",
@@ -245,6 +253,8 @@ export const fr = {
   },
   spaces: {
     spaceWithUnread: (name: string) => `${name}, messages non lus`,
+    channelWithUnread: (name: string, count: number) =>
+      `${name}, ${count} ${count > 1 ? "messages non lus" : "message non lu"}`,
     loadingMembers: "Chargement des membres…",
     loadingMembersError: "Impossible de charger les membres.",
     createTitle: "Créer un espace",

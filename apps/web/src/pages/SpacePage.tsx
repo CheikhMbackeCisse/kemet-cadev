@@ -447,15 +447,18 @@ export function SpacePage() {
   return (
     <>
       <AppShell
-        spaceRail={{
-          spaces: spaceItems,
+        spaces={{
+          title: canInteract ? fr.shell.mySpaces : fr.shell.publicSpaces,
+          items: spaceItems,
           activeSpaceId: activeSpaceId ?? "",
           onSelect: (id) => {
             setActiveSpaceId(id);
             setActiveChannelId(null);
           },
-          activeSection: "salons",
-          onCreateSpace: canWrite ? () => (window.location.href = "/salons/nouveau") : undefined,
+          status: spacesLoading ? "loading" : spacesError ? "error" : "ready",
+          onRetry: () => void refreshSpaces(),
+          channelsLoading,
+          canCreateSpace: canWrite,
         }}
         channelList={{
           // Le nombre de membres est déjà dans le titre du panneau de droite.

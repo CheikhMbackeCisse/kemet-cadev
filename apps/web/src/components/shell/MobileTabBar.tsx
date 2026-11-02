@@ -1,4 +1,4 @@
-import { Flag } from "lucide-react";
+import { Flag, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
@@ -18,7 +18,7 @@ export interface MobileTabBarProps {
  * marge basse des pages par `--mobile-visitor-bar` (index.css).
  */
 export function MobileTabBar({ activeTabId }: MobileTabBarProps) {
-  const { status, profile, isPlatformAdmin } = useSession();
+  const { status, profile, isPlatformAdmin, signOut } = useSession();
   const [moiOpen, setMoiOpen] = useState(false);
   const isVisitor = status === "visitor";
 
@@ -101,7 +101,12 @@ export function MobileTabBar({ activeTabId }: MobileTabBarProps) {
           {profile && (
             <li>
               <a href={`/u/${profile.handle}`} className={SHEET_ROW_CLASS}>
-                <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={24} className="-mx-0.5" />
+                <Avatar
+                  name={profile.displayName}
+                  src={profile.avatarUrl ?? undefined}
+                  size={24}
+                  className="-mx-0.5"
+                />
                 {fr.moi.myProfile}
               </a>
             </li>
@@ -120,6 +125,19 @@ export function MobileTabBar({ activeTabId }: MobileTabBarProps) {
                 <Flag className="size-5 text-muted" aria-hidden="true" />
                 {fr.moderation.navLink}
               </a>
+            </li>
+          )}
+          {/* Seule déconnexion des pages mobiles sans menu de compte dans l'en-tête. */}
+          {profile && (
+            <li>
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className={`${SHEET_ROW_CLASS} w-full text-danger`}
+              >
+                <LogOut className="size-5" aria-hidden="true" />
+                {fr.auth.signOut}
+              </button>
             </li>
           )}
         </ul>

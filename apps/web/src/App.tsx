@@ -137,7 +137,7 @@ function StatusPage() {
 function PageFallback() {
   return (
     <div className="flex min-h-viewport w-full bg-bg" aria-busy="true">
-      <div className="hidden w-rail shrink-0 border-r border-border-strong bg-surface lg:block" />
+      <div className="hidden w-activity-bar shrink-0 border-r border-border-strong bg-surface lg:block" />
       <div className="mx-auto flex w-full max-w-reading flex-col gap-6 px-4 py-8">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-24 w-full" />

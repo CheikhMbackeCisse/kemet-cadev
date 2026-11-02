@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { AppShell } from "../components/shell/AppShell.js";
+import { fr } from "../i18n/fr.js";
 import type { ChannelItem, SpaceItem } from "../components/shell/types.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { KemetSymbol } from "../components/ui/KemetSymbol.js";
@@ -32,7 +33,16 @@ export function ShellPreviewPage() {
 
   return (
     <AppShell
-      spaceRail={{ spaces: SAMPLE_SPACES, activeSpaceId, onSelect: setActiveSpaceId }}
+      spaces={{
+        title: fr.shell.mySpaces,
+        status: "ready",
+        onRetry: () => {},
+        items: SAMPLE_SPACES,
+        activeSpaceId,
+        onSelect: setActiveSpaceId,
+        channelsLoading: false,
+        canCreateSpace: true,
+      }}
       channelList={{
         spaceName: "Accueil",
         channels: SAMPLE_CHANNELS,

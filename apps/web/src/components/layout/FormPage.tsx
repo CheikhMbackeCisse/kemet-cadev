@@ -8,7 +8,7 @@ import { fr } from "../../i18n/fr.js";
 export interface FormPageProps {
   title: string;
   subtitle?: string;
-  /** Icone du rail a marquer comme active (voir `RAIL_NAV`). */
+  /** Section de la barre d'activité à marquer comme active (voir `RAIL_NAV`). */
   activeSection?: string;
   /** Destination du bouton Annuler, et du retour quand il n'y a pas d'historique. */
   backHref: string;

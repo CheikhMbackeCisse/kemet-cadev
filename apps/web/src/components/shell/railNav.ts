@@ -39,13 +39,17 @@ export const RAIL_FOOTER_NAV: RailNavItem = {
   icon: ShieldCheck,
 };
 
-/** Sur bureau, les paramètres passent par le menu du compte. */
+/** Au pied de la barre d'activité sur bureau, dans la feuille "Moi" sur mobile. */
 export const SETTINGS_NAV: RailNavItem = {
   id: "parametres",
   label: "Paramètres",
   href: "/parametres",
   icon: Settings,
 };
+
+export function sectionLabel(id: string): string {
+  return NAV_SECTIONS.find((section) => section.id === id)?.label ?? "";
+}
 
 /** Section du rail correspondant a une URL, pour marquer l'icone active. */
 export function activeRailSection(pathname: string): string {

@@ -15,15 +15,24 @@ export interface MenuProps {
   onSelect: (value: string) => void;
   selectedValue?: string;
   align?: "start" | "center" | "end";
+  side?: "top" | "right" | "bottom" | "left";
 }
 
-export function Menu({ trigger, items, onSelect, selectedValue, align = "end" }: MenuProps) {
+export function Menu({
+  trigger,
+  items,
+  onSelect,
+  selectedValue,
+  align = "end",
+  side = "bottom",
+}: MenuProps) {
   return (
     <RadixMenu.Root>
       <RadixMenu.Trigger asChild>{trigger}</RadixMenu.Trigger>
       <RadixMenu.Portal>
         <RadixMenu.Content
           align={align}
+          side={side}
           sideOffset={4}
           className="z-50 min-w-40 overflow-hidden rounded-panel border border-border bg-surface p-1 shadow-floating"
         >
