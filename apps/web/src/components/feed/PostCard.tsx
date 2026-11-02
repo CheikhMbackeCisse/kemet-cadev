@@ -4,7 +4,6 @@ import type { PostFormat, PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { Button } from "../ui/Button.js";
-import { Card } from "../ui/Card.js";
 import { IconButton } from "../ui/IconButton.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
@@ -59,6 +58,11 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
   );
 }
 
+// Un post est une ligne de la colonne de lecture, pas une carte : les posts
+// se suivent séparés par un filet (posé par la liste), le fond ne change
+// qu'au survol, sur bureau, quand la ligne mène au post.
+const POST_ROW_CLASS = "-mx-4 px-4 py-4 lg:-mx-3 lg:px-3";
+
 export interface PostCardProps {
   post: PostSummary;
   as?: "li" | "div";
@@ -109,8 +113,9 @@ export function PostCard({
   const replyClassName =
     "inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted hover:bg-surface-2 hover:text-text";
 
+  const Tag = as;
   return (
-    <Card as={as}>
+    <Tag className={cn(POST_ROW_CLASS, bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2")}>
       <div className="flex gap-3">
         <a
           href={`/u/${post.authorHandle}`}
@@ -233,14 +238,14 @@ export function PostCard({
           </div>
         </div>
       </div>
-    </Card>
+    </Tag>
   );
 }
 
 /** Reprend la forme réelle d'un post (avatar rond, lignes de texte) plutôt qu'un simple rectangle. */
 export function PostCardSkeleton() {
   return (
-    <Card>
+    <div className={POST_ROW_CLASS}>
       <div className="flex gap-3">
         <Skeleton className="size-8 shrink-0 rounded-full" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -249,6 +254,6 @@ export function PostCardSkeleton() {
           <Skeleton className="h-4 w-2/3" />
         </div>
       </div>
-    </Card>
+    </div>
   );
 }

@@ -31,6 +31,7 @@ Le thème suit le réglage du système (`prefers-color-scheme`), avec un choix m
 | `--link` | #1265DD | #7FB0F7 | Liens, mentions |
 | `--accent-soft` | #ECF3FF | #16233D | Élément actif, mention |
 | `--accent-soft-2` | #DBE9FD | #1D2E50 | Badges, bouton pressé |
+| `--level-badge-text` | #0F56BD | #7FB0F7 | Texte du badge de niveau, sur `--accent-soft-2` (5,5:1 et 6,1:1) |
 | `--assistant-bg` | #F5F8FF | #121C30 | Fond du bloc de réponse de l'assistant |
 | `--assistant-border` | #D0E2FF | #26406E | Bordure du bloc de l'assistant |
 | `--success` | #1E8205 | #4CC26A | Vérifié, actif |
@@ -61,7 +62,13 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 
 - Grille de 4 px. Espacements utilisés : 4, 8, 12, 16, 24, 32.
 - Hauteur des contrôles : 32 px (compact), 36 px (par défaut sur bureau), 44 px minimum sur mobile pour tout ce qui se touche.
-- Arrondis : 6 px pour les contrôles, 8 px pour les cartes, 12 px pour les panneaux et fenêtres, pastilles entièrement arrondies. Pas le même arrondi partout.
+- Arrondis, trois variables CSS reliées à Tailwind (`rounded-control`, `rounded-card`, `rounded-panel`) :
+  - 8 px (`--radius-control`) : boutons, champs, selects ;
+  - 12 px (`--radius-card`) : cartes, blocs de code, bloc de l'assistant, images, composeur ;
+  - 16 px (`--radius-panel`) : dialogues, feuilles, menus, popovers ;
+  - pastilles et avatars entièrement arrondis.
+- Un élément posé dans un autre garde un rayon concentrique : rayon extérieur moins le rembourrage, 6 px au minimum (les éléments d'un menu de 16 px avec 4 px de rembourrage ont 12 px).
+- Cadres : un cadre sépare un objet du reste de la page (champ de saisie, bloc de code, réponse de `@kemet`, menu flottant, dialogue, feuille, image). Il ne sert jamais à regrouper : les éléments d'une liste (posts, skills, projets, compétitions, équipes, soumissions) sont des lignes séparées par un filet `--border`, et les pastilles sont remplies, sans bordure.
 - Ombres : aucune sur les éléments posés dans la page. Une seule ombre douce pour ce qui flotte (menus, fenêtres, notifications).
 
 ## Mise en page
@@ -87,12 +94,13 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 
 - **Nom d'utilisateur :** prénom et nom, badge de niveau discret. Pas de drapeau ici : il est porté par l'avatar (voir ci-dessous). Jamais de total de points à côté d'un nom.
 - **Avatar :** photo ou motif généré, en 24, 32 ou 40 px. À 32 et 40 px, le drapeau du pays s'ajoute en badge sur le coin inférieur droit de la photo (SVG flag-icons, avec le nom du pays en `title` et pour les lecteurs d'écran). Jamais à 24 px, où le badge ne laisserait plus voir la photo. C'est le seul endroit où le drapeau apparaît : la règle précédente le mettait aussi à côté du nom, ce qui affichait deux drapeaux par message et par post. Corrigé le 20/10/2026. Là où aucun avatar n'est rendu (aperçu d'un post partagé, retour structuré), on affiche un avatar de 32 px plutôt qu'un drapeau isolé.
-- **Badge de niveau :** petite pastille avec le nom du niveau (Apprenti, Artisan, Scribe, Architecte, Légende). Couleur neutre, sauf Légende qui utilise `--primary`.
+- **Badge de niveau :** petite pastille remplie, sans bordure, avec le nom du niveau (Apprenti, Artisan, Scribe, Architecte, Légende). Fond `--accent-soft-2` et texte `--level-badge-text`, le même pour tous les niveaux sauf Légende (fond `--primary`, texte blanc). Pas d'exception en contour. Les pastilles de format (Astuce, À tester, Question) restent neutres, en `--surface-2` : niveau et format se distinguent par la teinte. `--primary` ne sert pas de texte ici, il n'atteint que 4,35:1 en clair et 2,86:1 en sombre sur ce fond.
 - **Message :** avatar de 32 px, nom, heure, contenu. Les messages successifs d'une même personne sont regroupés sous un seul avatar, jamais par-delà minuit. Un séparateur nomme chaque jour ("Aujourd'hui", "Hier", "18 octobre"). Les actions (réagir, signaler) vivent dans une petite barre posée sur le coin du message, visible au survol et au focus sur bureau, à l'appui sur écran tactile : jamais en permanence sous chaque message. Les réactions déjà posées restent affichées, elles font partie du contenu.
 - **Fil d'un salon :** il s'ouvre sur le dernier message, ou sur le premier message non lu précédé d'un séparateur "Nouveaux messages" : traits en `--primary`, libellé en `--link`, qui garde 4,5:1 sur `--bg` en sombre (seul séparateur coloré, il signale une position et non une erreur). Les messages plus anciens se chargent en remontant, sans déplacer ce qui est à l'écran ni les annoncer comme nouveaux ; un bouton "Charger les messages précédents" en tête de liste les rend joignables au clavier et au lecteur d'écran. Un message qui arrive pendant qu'on lit plus haut ne fait pas défiler la liste : un bouton flottant "Aller au dernier message" apparaît, sur fond `--surface` ; il rend le focus à la liste, ou au composeur s'il est activé au clavier (au toucher, le clavier virtuel cacherait les messages atteints). Le composeur garde un brouillon par salon et le focus après l'envoi ; son bouton d'envoi fait 44 px sur mobile.
 - **Bloc de réponse de l'assistant :** fond `--assistant-bg`, bordure `--assistant-border`, icône Kemet, nom "kemet", ligne "Basé sur le skill wave-paiements d'Awa Ndiaye" (lien vers le skill et le profil), mention de ce que l'assistant a lu, boutons "Utile" et "Pas utile". C'est le seul bloc coloré de l'interface.
-- **Post du fil :** ton détendu, texte court, images et mèmes, code. Étiquette de format seulement si l'auteur en a choisi un (Astuce, À tester, Question). Actions : répondre, partager, "Utile", et "J'ai testé" sur les posts À tester. Nos propres icônes et notre propre mise en page : rien qui rappelle X.
-- **Skill :** carte avec nom, description, auteur (avec drapeau et niveau), étoiles (moyenne et nombre de notes), nombre d'utilisations. Les étoiles n'existent que sur les skills.
+- **Post du fil :** ton détendu, texte court, images et mèmes, code. Étiquette de format seulement si l'auteur en a choisi un (Astuce, À tester, Question). Actions : répondre, partager, "Utile", et "J'ai testé" sur les posts À tester. Nos propres icônes et notre propre mise en page : rien qui rappelle X. Un post n'est pas une carte : c'est une ligne de la colonne de lecture, séparée de la suivante par un filet `--border`, fond `--surface-2` au survol sur bureau seulement. Même composant (`PostCard`) dans le fil et sur la page du post.
+- **Skill :** ligne de liste (comme un post) avec nom, description, auteur (avec drapeau et niveau), étoiles (moyenne et nombre de notes), nombre d'utilisations. Les étoiles n'existent que sur les skills.
+- **Onglets :** un seul composant (`Tabs`) partout. L'onglet actif est souligné de 2 px `--primary`, texte `--text` ; les autres sont en `--muted`. Pas de conteneur gris ni de fond plein sous l'onglet actif.
 - **Code :** Geist Mono 13 px, coloration syntaxique avec Shiki, bouton "Copier", défilement horizontal plutôt que retour à la ligne.
 
 ## États
@@ -145,7 +153,9 @@ halo. Aucun autre écran du produit ne bénéficie de cette exception.
 ## Accessibilité
 
 - Vrais éléments : `<button>`, `<a href>`, `<input>` avec `<label>`. Jamais de `div` cliquable.
-- Focus clavier toujours visible (contour de 2 px `--primary`).
+- Focus visible au clavier (`:focus-visible`) : contour de 2 px `--primary`, décalé de 2 px, sur les boutons, liens, onglets, interrupteurs, éléments de menu et lignes cliquables. Jamais au clic ni au toucher.
+- Un champ de saisie (`Input`, `Textarea`, `Select`, composeur) n'a jamais de contour autour de lui : au focus, sa bordure de 1 px passe de `--border-strong` à `--primary`.
+- À l'ouverture d'un dialogue ou d'une feuille, le focus va sur son contenu, pas sur le bouton de fermeture. Dans une autocomplétion ou un menu, l'élément actif se montre par un fond `--accent-soft`, sans bordure.
 - `aria-label` sur chaque bouton qui n'a qu'une icône.
 - Palette de commandes avec Ctrl+K (Cmd+K sur Mac) pour aller à un salon, un profil ou une action.
 

@@ -249,7 +249,7 @@ export function PostPage() {
         />
 
         {post.format === "a_tester" && feedback.length > 0 && (
-          <Card padding="compact" className="flex flex-col gap-2">
+          <Card variant="plain" padding="compact" className="flex flex-col gap-2">
             <p className="text-md font-semibold text-text">{fr.feed.feedbackTitle}</p>
             {feedback.map((entry) => (
               <div key={entry.id} className="flex flex-col gap-0.5">

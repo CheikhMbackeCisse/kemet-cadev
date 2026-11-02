@@ -47,7 +47,7 @@ function ReportRow({
   const isContent = report.targetType === "message" || report.targetType === "post";
 
   return (
-    <li className="rounded-card border border-border p-3">
+    <li className="py-3">
       <div className="flex items-baseline gap-2">
         <Badge>{TARGET_LABELS[report.targetType]}</Badge>
         <span className="text-xs text-subtle">
@@ -202,7 +202,7 @@ export function ModerationPage() {
         ) : reports.length === 0 ? (
           <p className="text-sm text-subtle">{fr.moderation.queueEmpty}</p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col divide-y divide-border">
             {reports.map((report) => (
               <ReportRow key={report.id} report={report} onResolve={handleResolve} />
             ))}
@@ -227,9 +227,9 @@ export function ModerationPage() {
         ) : log.length === 0 ? (
           <p className="text-sm text-subtle">{fr.moderation.logEmpty}</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col divide-y divide-border">
             {log.map((entry) => (
-              <li key={entry.id} className="rounded-card border border-border p-3 text-sm">
+              <li key={entry.id} className="py-3 text-sm">
                 <div className="flex items-baseline gap-2">
                   <Badge>{TARGET_LABELS[entry.targetType]}</Badge>
                   <span className="font-medium text-text">{ACTION_LABELS[entry.action]}</span>

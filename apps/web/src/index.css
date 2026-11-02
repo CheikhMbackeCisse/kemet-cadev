@@ -81,9 +81,17 @@
     }
   }
 
+  /* Contour réservé à la navigation au clavier. Un champ de saisie
+     (data-field) montre son focus par sa bordure, jamais par un second
+     cadre autour. */
   :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
+  }
+
+  [data-field]:focus,
+  [data-field]:focus-visible {
+    outline: none;
   }
 
   @media (prefers-reduced-motion: reduce) {

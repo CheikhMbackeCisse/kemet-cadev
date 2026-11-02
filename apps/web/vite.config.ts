@@ -6,7 +6,9 @@ import { fr } from "./src/i18n/fr.js";
 export default defineConfig({
   server: {
     proxy: {
-      "/api": "http://localhost:3001",
+      // Développement seulement : permet de lancer l'API sur un autre port
+      // quand 3001 est déjà pris sur le poste.
+      "/api": process.env.API_PROXY_TARGET ?? "http://localhost:3001",
       "/socket.io": { target: "http://localhost:3002", ws: true },
       "/realtime/health": {
         target: "http://localhost:3002",

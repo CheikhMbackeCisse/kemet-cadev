@@ -868,14 +868,14 @@ export function SpacePage() {
                                             reaction.emoji,
                                             reaction.profileIds.length,
                                           )}
-                                          className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs hover:bg-surface-2 max-md:min-h-11 max-md:px-3"
+                                          className="inline-flex items-center rounded-full bg-surface-2 px-2 py-0.5 text-xs hover:bg-accent-soft max-md:min-h-11 max-md:px-3"
                                         >
                                           {reaction.emoji} {reaction.profileIds.length}
                                         </button>
                                       </Tooltip>
                                     ) : (
                                       <Tooltip key={reaction.emoji} label={tooltipLabel}>
-                                        <span className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle">
+                                        <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-subtle">
                                           {reaction.emoji} {reaction.profileIds.length}
                                         </span>
                                       </Tooltip>
@@ -1002,7 +1002,7 @@ export function SpacePage() {
                   {pendingAttachments.map((attachment) => (
                     <span
                       key={attachment.id}
-                      className="inline-flex items-center gap-1 rounded-card border border-border pl-2 text-xs text-text"
+                      className="inline-flex items-center gap-1 rounded-full bg-surface-2 pl-2 text-xs text-text"
                     >
                       {attachment.originalName}
                       <IconButton
@@ -1079,7 +1079,7 @@ export function SpacePage() {
                     }
                   }}
                   maxHeight={144}
-                  className="min-h-9 max-md:min-h-11 flex-1 py-2"
+                  className="min-h-9 max-md:min-h-11 flex-1 rounded-card py-2"
                 />
                 <Button
                   onClick={handleSend}

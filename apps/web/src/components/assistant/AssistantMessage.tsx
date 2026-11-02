@@ -46,7 +46,7 @@ export function AssistantMessage({
 
   return (
     <div
-      className={cn("rounded-panel border border-assistant-border bg-assistant-bg p-4", className)}
+      className={cn("rounded-card border border-assistant-border bg-assistant-bg p-4", className)}
     >
       <div className="flex items-center gap-2">
         <KemetSymbol className="size-5" />

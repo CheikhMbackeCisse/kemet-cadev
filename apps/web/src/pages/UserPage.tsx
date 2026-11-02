@@ -228,7 +228,7 @@ export function UserPage() {
 
         {/* Kemet Pro ne vit que sur son propre profil, nulle part ailleurs. */}
         {isOwnProfile && (
-          <Card className="flex flex-wrap items-center justify-between gap-3 bg-surface">
+          <Card variant="plain" className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
               <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
               <div className="min-w-0">
@@ -299,9 +299,9 @@ export function UserPage() {
         {credentials.length === 0 ? (
           <p className="text-sm text-subtle">{fr.profile.noCredentials}</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col divide-y divide-border">
             {credentials.map((credential: Credential) => (
-              <li key={credential.id} className="rounded-card border border-border p-3">
+              <li key={credential.id} className="py-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>{CREDENTIAL_TYPE_LABELS[credential.type]}</Badge>
                   <span className="text-sm font-medium text-text">{credential.title}</span>

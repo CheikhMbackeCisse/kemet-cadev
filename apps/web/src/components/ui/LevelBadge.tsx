@@ -21,10 +21,7 @@ export function LevelBadge({ level, className }: LevelBadgeProps) {
     <span
       className={cn(
         "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        // Discret à côté d'un nom : contour seul, pour ne pas se confondre
-        // avec les pastilles pleines de format ou de statut. Légende garde
-        // la couleur de marque.
-        level === "legende" ? "bg-primary text-white" : "border border-border text-subtle",
+        level === "legende" ? "bg-primary text-white" : "bg-accent-soft-2 text-level-badge-text",
         className,
       )}
     >

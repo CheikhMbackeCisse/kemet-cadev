@@ -5,6 +5,12 @@
  * applique le sombre quoi que dise le système, pour le choix manuel.
  */
 :root {
+  /* Arrondis (DESIGN.md, "Espacement, tailles, formes") : contrôles, cartes
+     et blocs, panneaux flottants. Communs aux deux thèmes. */
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-panel: 16px;
+
   --bg: #ffffff;
   --surface: #f8fafd;
   --surface-2: #f2f6fb;
@@ -19,6 +25,7 @@
   --link: #1265dd;
   --accent-soft: #ecf3ff;
   --accent-soft-2: #dbe9fd;
+  --level-badge-text: #0f56bd;
   --assistant-bg: #f5f8ff;
   --assistant-border: #d0e2ff;
   --success: #1e8205;
@@ -43,6 +50,7 @@
     --link: #7fb0f7;
     --accent-soft: #16233d;
     --accent-soft-2: #1d2e50;
+    --level-badge-text: #7fb0f7;
     --assistant-bg: #121c30;
     --assistant-border: #26406e;
     --success: #4cc26a;
@@ -99,6 +107,7 @@
   --link: #7fb0f7;
   --accent-soft: #16233d;
   --accent-soft-2: #1d2e50;
+  --level-badge-text: #7fb0f7;
   --assistant-bg: #121c30;
   --assistant-border: #26406e;
   --success: #4cc26a;
@@ -157,7 +166,7 @@
  * Contour de focus sur le fond sombre des ecrans de compte : le bleu
  * --primary du contour par defaut n'a pas assez de contraste sur ce fond.
  */
-.auth-on-dark :focus-visible {
+.auth-on-dark :focus-visible:not([data-field]) {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }

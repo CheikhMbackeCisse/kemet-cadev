@@ -37,6 +37,7 @@ export default {
         "auth-text-muted": "var(--auth-text-muted)",
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
+        "level-badge-text": "var(--level-badge-text)",
         "assistant-bg": "var(--assistant-bg)",
         "assistant-border": "var(--assistant-border)",
         success: {
@@ -49,9 +50,9 @@ export default {
         },
       },
       borderRadius: {
-        control: "6px",
-        card: "8px",
-        panel: "12px",
+        control: "var(--radius-control)",
+        card: "var(--radius-card)",
+        panel: "var(--radius-panel)",
       },
       spacing: {
         4.5: "18px",

@@ -63,12 +63,12 @@ export function ProjectsPage() {
           }}
         />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col divide-y divide-border">
           {projects.map((project) => (
             <li key={project.id}>
               <a
                 href={`/projets/${project.slug}`}
-                className="block rounded-card border border-border p-4 hover:bg-surface-2"
+                className="block -mx-4 px-4 py-4 transition-colors duration-150 lg:-mx-3 lg:px-3 lg:hover:bg-surface-2"
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm font-medium text-text">{project.name}</span>

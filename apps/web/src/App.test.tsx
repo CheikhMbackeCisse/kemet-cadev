@@ -1,8 +1,16 @@
 import { render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { App } from "./App.js";
 
 describe("App", () => {
+  // Pages chargées à la demande (React.lazy) et transformées à froid par Vitest :
+  // les charger ici plutôt que dans le délai de 5 s des tests.
+  beforeAll(async () => {
+    await import("./pages/FeedPage.js");
+    await import("./pages/LoginPage.js");
+    await import("./components/content/MarkdownContent.js");
+  }, 30_000);
+
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
@@ -66,8 +74,6 @@ describe("App", () => {
     );
     window.history.pushState({}, "", "/");
     render(<App />);
-    // Les pages sont chargees a la demande (React.lazy) : le delai par defaut
-    // d'1 s de findBy ne suffit pas a transformer le module dans Vitest.
     expect(
       await screen.findByRole("heading", { name: "Fil" }, { timeout: 10000 }),
     ).toBeInTheDocument();

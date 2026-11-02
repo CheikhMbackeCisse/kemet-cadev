@@ -115,7 +115,7 @@ export function SkillPage() {
           {skill.tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full border border-border px-2 py-0.5 text-xs text-subtle"
+              className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-2"
             >
               {tag}
             </span>
@@ -141,7 +141,7 @@ export function SkillPage() {
 
       <RichText
         source={skill.content}
-        className="rounded-card border border-border bg-surface p-4 text-base text-text"
+        className="text-base text-text"
       />
 
       <div className="flex items-center gap-3">

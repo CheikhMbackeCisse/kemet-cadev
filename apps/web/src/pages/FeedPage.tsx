@@ -164,7 +164,7 @@ export function FeedPage() {
   }
 
   const feedContent = loading ? (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col divide-y divide-border">
       <PostCardSkeleton />
       <PostCardSkeleton />
     </div>
@@ -177,7 +177,7 @@ export function FeedPage() {
     <EmptyState icon={Rss} message={fr.feed.noPosts} />
   ) : (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col divide-y divide-border">
         {posts.map((post) => (
           <PostListItem
             key={post.id}

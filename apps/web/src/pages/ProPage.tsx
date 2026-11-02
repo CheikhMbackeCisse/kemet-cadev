@@ -42,7 +42,7 @@ export function ProPage() {
         </div>
       </div>
 
-      <p className="rounded-card border border-border bg-surface-2 p-4 text-sm text-text-2">
+      <p className="rounded-card bg-surface-2 p-4 text-sm text-text-2">
         {fr.pro.previewNotice}
       </p>
 
@@ -50,7 +50,7 @@ export function ProPage() {
         {BENEFITS.map((benefit) => (
           <li
             key={benefit.title}
-            className="flex flex-col gap-2 rounded-card border border-border p-4"
+            className="flex flex-col gap-2 rounded-card bg-surface p-4"
           >
             <benefit.icon className="size-5 text-text-2" aria-hidden="true" />
             <h2 className="text-md font-semibold text-text">{benefit.title}</h2>
@@ -59,12 +59,12 @@ export function ProPage() {
         ))}
       </ul>
 
-      <div className="flex items-start gap-2 rounded-card border border-border p-4 text-sm text-text-2">
+      <div className="flex items-start gap-2 rounded-card bg-surface p-4 text-sm text-text-2">
         <ShieldCheck className="size-5 shrink-0 text-text-2" aria-hidden="true" />
         <p>{fr.pro.verificationNote}</p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-border p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card bg-surface p-4">
         <div className="flex items-center gap-2">
           <Smartphone className="size-5 text-text-2" aria-hidden="true" />
           <div>

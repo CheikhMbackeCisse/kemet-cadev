@@ -1,20 +1,22 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { RichText } from "./RichText.js";
 
 // RichText charge son moteur Markdown à la demande : attendre que le texte
 // brut affiché en attendant ait été remplacé.
 async function renderRichText(source: string) {
   const result = render(<RichText source={source} />);
-  // Le premier import du module, transformé à la volée par Vitest, dépasse
-  // le délai par défaut de waitFor (1 s) ; les suivants sont immédiats.
-  await waitFor(() => expect(result.container.querySelector(".whitespace-pre-wrap")).toBeNull(), {
-    timeout: 10_000,
-  });
+  await waitFor(() => expect(result.container.querySelector(".whitespace-pre-wrap")).toBeNull());
   return result;
 }
 
 describe("RichText", () => {
+  // Le moteur Markdown, transformé à froid par Vitest, prend plusieurs secondes
+  // à son premier import : le charger ici plutôt que dans le premier test.
+  beforeAll(async () => {
+    await import("./MarkdownContent.js");
+  }, 30_000);
+
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
@@ -147,18 +149,23 @@ describe("RichText", () => {
     expect(screen.getByRole("link", { name: "doc (nouvel onglet)" })).toBeInTheDocument();
   });
 
-  it("colore un bloc de code dont le langage est connu, pour les deux thèmes", async () => {
-    const { container } = await renderRichText("```ts\nconst total: number = 2;\n```");
-    await waitFor(() => expect(container.querySelector(".shiki-token")).not.toBeNull(), {
-      timeout: 10_000,
-    });
-    const keyword = [...container.querySelectorAll<HTMLElement>(".shiki-token")].find(
-      (token) => token.textContent === "const",
-    );
-    expect(keyword?.style.getPropertyValue("--shiki-light")).not.toBe("");
-    expect(keyword?.style.getPropertyValue("--shiki-dark")).not.toBe("");
-    expect(container.querySelector("pre")?.textContent).toBe("const total: number = 2;");
-  });
+  // Seul test qui charge Shiki et une grammaire à froid : plusieurs secondes.
+  it(
+    "colore un bloc de code dont le langage est connu, pour les deux thèmes",
+    { timeout: 20_000 },
+    async () => {
+      const { container } = await renderRichText("```ts\nconst total: number = 2;\n```");
+      await waitFor(() => expect(container.querySelector(".shiki-token")).not.toBeNull(), {
+        timeout: 15_000,
+      });
+      const keyword = [...container.querySelectorAll<HTMLElement>(".shiki-token")].find(
+        (token) => token.textContent === "const",
+      );
+      expect(keyword?.style.getPropertyValue("--shiki-light")).not.toBe("");
+      expect(keyword?.style.getPropertyValue("--shiki-dark")).not.toBe("");
+      expect(container.querySelector("pre")?.textContent).toBe("const total: number = 2;");
+    },
+  );
 
   it("laisse en texte brut un bloc de code trop long pour être coloré", async () => {
     const longCode = "x".repeat(20_001);

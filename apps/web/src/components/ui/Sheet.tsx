@@ -2,6 +2,7 @@ import * as RadixDialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
+import { focusContent } from "./focusContent.js";
 
 export type SheetSide = "bottom" | "left" | "right";
 
@@ -26,8 +27,10 @@ export function Sheet({ open, onOpenChange, side, title, children, className }: 
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <RadixDialog.Content
+          tabIndex={-1}
+          onOpenAutoFocus={focusContent}
           className={cn(
-            "fixed z-50 flex flex-col overflow-y-auto border-border bg-bg p-4 shadow-floating transition-transform duration-200",
+            "outline-none fixed z-50 flex flex-col overflow-y-auto border-border bg-bg p-4 shadow-floating transition-transform duration-200",
             SIDE_CLASSES[side],
             className,
           )}

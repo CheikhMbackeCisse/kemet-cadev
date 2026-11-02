@@ -283,9 +283,9 @@ export function ProjectPage() {
         {helpRequests.length === 0 ? (
           <p className="text-sm text-subtle">{fr.projects.noHelpRequests}</p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col divide-y divide-border">
             {helpRequests.map((helpRequest) => (
-              <li key={helpRequest.id} className="rounded-card border border-border p-4">
+              <li key={helpRequest.id} className="py-4">
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm font-medium text-text">{helpRequest.title}</span>
                   <Badge>{KIND_LABELS[helpRequest.kind]}</Badge>
@@ -377,7 +377,7 @@ export function ProjectPage() {
             applications.map((application) => (
               <div
                 key={application.id}
-                className="flex flex-col gap-1 rounded-card border border-border p-3"
+                className="flex flex-col gap-1 border-b border-border pb-3 last:border-b-0"
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <UserName name={application.applicantDisplayName} level={application.applicantLevel} />

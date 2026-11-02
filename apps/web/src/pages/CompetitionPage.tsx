@@ -243,9 +243,9 @@ export function CompetitionPage() {
                 {teams.length === 0 ? (
                   <p className="text-sm text-subtle">{fr.competitions.noTeams}</p>
                 ) : (
-                  <ul className="flex flex-col gap-3">
+                  <ul className="flex flex-col divide-y divide-border">
                     {teams.map((team) => (
-                      <li key={team.id} className="rounded-card border border-border p-4">
+                      <li key={team.id} className="py-4">
                         <div className="flex items-baseline justify-between gap-2">
                           <span className="text-sm font-medium text-text">{team.name}</span>
                           {team.viewerIsMember && (
@@ -295,9 +295,9 @@ export function CompetitionPage() {
                 {submissions.length === 0 ? (
                   <p className="text-sm text-subtle">{fr.competitions.noSubmissions}</p>
                 ) : (
-                  <ul className="flex flex-col gap-3">
+                  <ul className="flex flex-col divide-y divide-border">
                     {submissions.map((submission) => (
-                      <li key={submission.id} className="rounded-card border border-border p-4">
+                      <li key={submission.id} className="py-4">
                         <div className="flex items-baseline justify-between gap-2">
                           <span className="text-sm font-medium text-text">{submission.title}</span>
                           <span className="text-xs text-subtle">{submission.teamName}</span>
@@ -398,11 +398,11 @@ export function CompetitionPage() {
               ) : results === null ? (
                 <Skeleton className="h-20 w-full" />
               ) : (
-                <ul className="flex flex-col gap-3">
+                <ul className="flex flex-col divide-y divide-border">
                   {results.map((result) => (
                     <li
                       key={result.submissionId}
-                      className="flex items-center justify-between rounded-card border border-border p-4"
+                      className="flex items-center justify-between py-4"
                     >
                       <div>
                         <span className="text-sm font-medium text-text">

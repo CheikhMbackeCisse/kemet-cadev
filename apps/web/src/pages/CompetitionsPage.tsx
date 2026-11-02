@@ -102,7 +102,7 @@ export function CompetitionsPage() {
       </div>
 
       {isAdmin && (
-        <div className="flex flex-col gap-3 rounded-card border border-border-strong p-4">
+        <div className="flex flex-col gap-3 rounded-card bg-surface p-4">
           <p className="text-sm font-medium text-text">{fr.competitions.pendingReviewTitle}</p>
           {pendingLoading ? (
             <Skeleton className="h-16 w-full" />
@@ -114,9 +114,9 @@ export function CompetitionsPage() {
           ) : pending.length === 0 ? (
             <p className="text-sm text-subtle">{fr.competitions.noPendingRequests}</p>
           ) : (
-            <ul className="flex flex-col gap-3">
+            <ul className="flex flex-col divide-y divide-border">
               {pending.map((competition) => (
-                <li key={competition.id} className="rounded-card border border-border p-3">
+                <li key={competition.id} className="py-3">
                   <p className="text-sm font-medium text-text">{competition.name}</p>
                   <p className="text-sm text-text-2">{competition.pitch}</p>
                   <p className="mt-1 text-xs text-subtle">
@@ -165,12 +165,12 @@ export function CompetitionsPage() {
           }}
         />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col divide-y divide-border">
           {competitions.map((competition) => (
             <li key={competition.id}>
               <a
                 href={`/competitions/${competition.slug}`}
-                className="block rounded-card border border-border p-4 hover:bg-surface-2"
+                className="block -mx-4 px-4 py-4 transition-colors duration-150 lg:-mx-3 lg:px-3 lg:hover:bg-surface-2"
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="text-sm font-medium text-text">{competition.name}</span>
