@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { expectVisitorInvitation } from "./support/visitor.js";
 
-test("la racine ouvre le fil, y compris pour un visiteur", async ({ page }) => {
+test("la racine ouvre le fil, y compris pour un visiteur", async ({ page, isMobile }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Fil" })).toBeVisible();
-  await expect(page.getByText("Tu consultes Kemet sans compte.")).toBeVisible();
+  await expectVisitorInvitation(page, isMobile);
 });
 
 test("la page de connexion affiche les options pour un visiteur", async ({ page }) => {

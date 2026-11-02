@@ -100,12 +100,19 @@ export const fr = {
     roleStepError: "Ton rôle n'a pas pu être enregistré. Réessaie.",
     visitorBanner: "Tu consultes Kemet sans compte.",
     visitorBannerCta: "Se connecter pour participer",
+    visitorBarLabel: "Compte",
+    visitorBarSignup: "Créer un compte",
+    accountMenuLabel: (name: string) => `Menu du compte de ${name}`,
     landingHeadline: "Le salon des développeurs africains",
     landingPitch: "Discussions en direct, fil de posts, assistant IA et compétitions.",
     landingVisitorIntro: "Tu peux aussi explorer sans compte.",
     landingBrowseSpaces: "Parcourir les espaces",
     landingBrowseFeed: "Voir le fil",
     backToApp: "Retour",
+  },
+  moi: {
+    title: "Moi",
+    myProfile: "Mon profil",
   },
   settings: {
     navLink: "Paramètres",
@@ -365,7 +372,6 @@ export const fr = {
     cancel: "Annuler",
     viewPost: "Voir le post",
     loadMore: "Charger plus",
-    salonsLink: "Salons",
   },
   projects: {
     title: "Projets",

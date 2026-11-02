@@ -204,7 +204,7 @@ export function PostCard({
               </span>
             )}
             {canFeedback && (
-              <Button variant="ghost" className="px-2 text-xs" onClick={onFeedback}>
+              <Button variant="ghost" className="whitespace-nowrap px-2 text-xs" onClick={onFeedback}>
                 <CheckCircle2 className="size-4" aria-hidden="true" />
                 {fr.feed.iTested}
               </Button>

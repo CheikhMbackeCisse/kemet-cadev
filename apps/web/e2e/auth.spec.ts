@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { createPublicSpace } from "./support/spaces.js";
+import { expectVisitorInvitation } from "./support/visitor.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -76,6 +77,7 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
 test("un visiteur sans session parcourt un espace public et le fil sans composeur", async ({
   page,
   request,
+  isMobile,
 }) => {
   // `request` est un contexte API indépendant du navigateur de `page` : les
   // cookies de session du propriétaire de l'espace n'atteignent jamais
@@ -96,12 +98,12 @@ test("un visiteur sans session parcourt un espace public et le fil sans composeu
 
   // `page` n'a jamais signé en : c'est le visiteur de ce test.
   await page.goto(`/salons?space=${spaceId}&channel=${generalId}`);
-  await expect(page.getByText("Tu consultes Kemet sans compte.")).toBeVisible();
+  await expectVisitorInvitation(page, isMobile);
   await expect(page.getByText("Visible sans compte, mode visiteur")).toBeVisible();
   await expect(page.getByPlaceholder("Écrire un message…")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Se connecter", exact: true })).toBeVisible();
 
   await page.goto("/fil");
-  await expect(page.getByText("Tu consultes Kemet sans compte.")).toBeVisible();
+  await expectVisitorInvitation(page, isMobile);
   await expect(page.getByPlaceholder("Partager quelque chose…")).toHaveCount(0);
 });

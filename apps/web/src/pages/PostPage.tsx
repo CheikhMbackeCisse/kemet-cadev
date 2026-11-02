@@ -230,7 +230,7 @@ export function PostPage() {
       <ReadingPage
         activeSection="fil"
         header={header}
-        className="pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-8"
+        className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
       >
         {status === "visitor" && <VisitorBanner />}
         {isSuspended && <SuspendedBanner />}

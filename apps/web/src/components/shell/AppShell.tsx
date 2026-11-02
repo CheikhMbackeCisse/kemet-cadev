@@ -6,14 +6,11 @@ import { ChannelList, type ChannelListProps } from "./ChannelList.js";
 import { MobileTabBar } from "./MobileTabBar.js";
 import { RightPanel } from "./RightPanel.js";
 import { SpaceRail, type SpaceRailProps } from "./SpaceRail.js";
-import type { MobileTabItem } from "./types.js";
 
 export interface AppShellProps {
   spaceRail: SpaceRailProps;
   channelList: ChannelListProps;
-  mobileTabs: MobileTabItem[];
   activeMobileTabId: string;
-  onSelectMobileTab: (id: string) => void;
   rightPanel?: { title: string; content: ReactNode };
   topBarExtra?: ReactNode;
   children: ReactNode;
@@ -22,9 +19,7 @@ export interface AppShellProps {
 export function AppShell({
   spaceRail,
   channelList,
-  mobileTabs,
   activeMobileTabId,
-  onSelectMobileTab,
   rightPanel,
   topBarExtra,
   children,
@@ -48,7 +43,7 @@ export function AppShell({
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3 lg:px-4">
+        <header className="flex min-h-12 shrink-0 items-center justify-between border-b border-border px-3 py-1 lg:h-12 lg:px-4 lg:py-0">
           <IconButton
             aria-label="Ouvrir la liste des salons"
             className="lg:hidden"
@@ -56,10 +51,16 @@ export function AppShell({
           >
             <MenuIcon className="size-5" aria-hidden="true" />
           </IconButton>
-          <h1 className="truncate text-md font-semibold text-text lg:hidden">
-            {activeChannelName
-              ? `${channelList.spaceName} · #${activeChannelName}`
-              : channelList.spaceName}
+          {/* Sous lg, le salon d'abord, en entier sur deux lignes au plus,
+              l'espace en dessous : "Espace · #salon" sur une ligne
+              coupait le nom du salon dès que l'espace avait un nom long. */}
+          <h1 className="flex min-w-0 flex-1 flex-col px-2 lg:hidden">
+            <span className="line-clamp-2 break-words text-md font-semibold leading-tight text-text">
+              {activeChannelName ?? channelList.spaceName}
+            </span>
+            {activeChannelName && (
+              <span className="truncate text-xs text-muted">{channelList.spaceName}</span>
+            )}
           </h1>
           {activeChannelName && (
             <h2 className="hidden truncate text-md font-semibold text-text lg:block">
@@ -84,7 +85,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(44px+env(safe-area-inset-bottom))] lg:pb-0">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(44px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
         </main>
       </div>
@@ -117,11 +118,7 @@ export function AppShell({
         </Sheet>
       )}
 
-      <MobileTabBar
-        tabs={mobileTabs}
-        activeTabId={activeMobileTabId}
-        onSelect={onSelectMobileTab}
-      />
+      <MobileTabBar activeTabId={activeMobileTabId} />
     </div>
   );
 }

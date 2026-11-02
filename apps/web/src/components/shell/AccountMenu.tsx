@@ -13,7 +13,7 @@ export function AccountMenu() {
     return (
       <a
         href="/connexion"
-        className="inline-flex h-control max-md:h-control-mobile items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text hover:bg-surface-2"
+        className="inline-flex h-control items-center justify-center gap-2 whitespace-nowrap rounded-control border border-border-strong px-4 text-sm font-medium text-text hover:bg-surface-2 max-lg:hidden"
       >
         {fr.auth.signInCta}
       </a>
@@ -23,9 +23,9 @@ export function AccountMenu() {
   return (
     <Menu
       trigger={
-        <Button variant="ghost" className="gap-2 px-2">
+        <Button variant="ghost" aria-label={fr.auth.accountMenuLabel(profile.displayName)} className="gap-2 px-2">
           <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={24} />
-          <span title={profile.displayName} className="max-w-24 truncate text-sm font-medium text-text">
+          <span title={profile.displayName} className="max-w-24 truncate text-sm font-medium text-text max-lg:hidden">
             {profile.displayName}
           </span>
         </Button>

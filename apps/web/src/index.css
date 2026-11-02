@@ -64,6 +64,23 @@
     background: transparent;
   }
 
+  /* Hauteur de la barre visiteur posée au-dessus des onglets mobiles
+     (MobileTabBar), ajoutée à la marge basse des pages. */
+  :root {
+    --mobile-visitor-bar: 0px;
+  }
+
+  /* h-14 et la bordure de la barre visiteur dans MobileTabBar.tsx. */
+  :root[data-visitor-bar] {
+    --mobile-visitor-bar: 57px;
+  }
+
+  @media (min-width: 1024px) {
+    :root[data-visitor-bar] {
+      --mobile-visitor-bar: 0px;
+    }
+  }
+
   :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;

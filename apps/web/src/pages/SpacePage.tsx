@@ -8,7 +8,6 @@ import {
   Plus,
   Send,
   SmilePlus,
-  Star,
   UserPlus,
   Users,
   UserX,
@@ -52,7 +51,6 @@ import { ThreadView } from "../components/chat/ThreadView.js";
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { useLongPress } from "../lib/chat/useLongPress.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
-import { MOBILE_TABS, mobileTabHref } from "../components/shell/mobileTabs.js";
 import { ReportDialog, ReportMenu } from "../components/moderation/ReportMenu.js";
 import type { ChannelItem, SpaceItem } from "../components/shell/types.js";
 import { useSession } from "../session/SessionProvider.js";
@@ -467,24 +465,9 @@ export function SpacePage() {
           activeChannelId: activeChannelId ?? "",
           onSelect: switchChannel,
         }}
-        mobileTabs={MOBILE_TABS}
         activeMobileTabId="salons"
-        onSelectMobileTab={(id) => {
-          if (id !== "salons") window.location.href = mobileTabHref(id, profile?.handle ?? null);
-        }}
         topBarExtra={
           <>
-            {/* La navigation entre sections vit dans le rail de gauche
-                (RAIL_NAV) sur grand ecran et dans la barre d'onglets sur
-                mobile. Skills n'a pas d'onglet mobile : son icone reste
-                donc le seul acces a cette taille. */}
-            <a
-              href="/skills"
-              aria-label={fr.skills.title}
-              className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text lg:hidden"
-            >
-              <Star className="size-5" aria-hidden="true" />
-            </a>
             {canWrite && (
               <a
                 href="/salons/nouveau"

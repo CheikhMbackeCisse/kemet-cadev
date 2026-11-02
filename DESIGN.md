@@ -76,7 +76,8 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 
 **Mobile (moins de 768 px) :**
 
-- Barre d'onglets en bas : Fil, Salons, Projets, Compétitions, Moi.
+- Barre d'onglets en bas : Fil, Salons, Skills, Projets, Moi. Ce sont les sections du rail de bureau, tirées de la même liste. "Moi" ouvre une feuille : profil, Compétitions, Paramètres, Confidentialité, et Modération pour un administrateur.
+- Un visiteur voit une seule invitation, une barre "Se connecter" / "Créer un compte" posée au-dessus des onglets, jamais une carte en haut de chaque page.
 - La liste des salons s'ouvre en tiroir depuis la gauche. Le panneau de détails devient une feuille qui monte du bas.
 - Le champ de message reste collé en bas, au-dessus du clavier et de la barre d'onglets. Dans un salon, la page fait la hauteur réellement visible (`100dvh`, repli `100vh`) et ne défile jamais en entier : seule la liste des messages défile. Le clavier réduit la page (`interactive-widget=resizes-content`) au lieu de la recouvrir.
 - Les champs de saisie (`Input`, `Textarea`, `Select`) font 16 px de texte sur mobile : en dessous, Safari iOS zoome au focus et décale la page.

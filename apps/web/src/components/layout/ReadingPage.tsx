@@ -2,8 +2,7 @@ import type { ReactNode } from "react";
 import { ErrorState } from "../ui/ErrorState.js";
 import { MobileTabBar } from "../shell/MobileTabBar.js";
 import { SpaceRail } from "../shell/SpaceRail.js";
-import { MOBILE_TABS, mobileTabHref } from "../shell/mobileTabs.js";
-import { useSession } from "../../session/SessionProvider.js";
+import { mobileTabFor } from "../shell/mobileTabs.js";
 import { cn } from "../../lib/cn.js";
 
 export interface ReadingPageState {
@@ -38,8 +37,7 @@ export function ReadingPage({
   className,
   children,
 }: ReadingPageProps) {
-  const { profile } = useSession();
-  const activeTab = activeMobileTab ?? activeSection ?? "";
+  const activeTab = activeMobileTab ?? mobileTabFor(activeSection ?? "");
 
   return (
     <div className="flex min-h-viewport w-full bg-bg">
@@ -47,7 +45,7 @@ export function ReadingPage({
       <main
         className={cn(
           "mx-auto flex w-full max-w-reading flex-col gap-6 px-4 py-8",
-          "pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-8",
+          "pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8",
           className,
         )}
       >
@@ -60,13 +58,7 @@ export function ReadingPage({
           children
         )}
       </main>
-      <MobileTabBar
-        tabs={MOBILE_TABS}
-        activeTabId={activeTab}
-        onSelect={(id) => {
-          if (id !== activeTab) window.location.href = mobileTabHref(id, profile?.handle ?? null);
-        }}
-      />
+      <MobileTabBar activeTabId={activeTab} />
     </div>
   );
 }

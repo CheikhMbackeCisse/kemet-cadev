@@ -1,4 +1,4 @@
-import { Hash, Plus, Rss } from "lucide-react";
+import { Plus, Rss } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { FeedTab, PostSummary } from "@kemet/shared";
 import {
@@ -203,15 +203,6 @@ export function FeedPage() {
     <div className="flex items-center justify-between">
       <h1 className="text-lg font-bold text-text">{fr.feed.title}</h1>
       <div className="flex items-center gap-2">
-        {/* Sur grand ecran la navigation vit dans le rail de gauche : cette
-            icone ne reste que sous lg, ou le rail n'est pas rendu. */}
-        <a
-          href="/salons"
-          aria-label={fr.feed.salonsLink}
-          className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 hover:bg-surface-2 hover:text-text lg:hidden"
-        >
-          <Hash className="size-5" aria-hidden="true" />
-        </a>
         {canInteract && (
           <a
             href="/fil/nouveau"
@@ -231,7 +222,7 @@ export function FeedPage() {
       <ReadingPage
         activeSection="fil"
         header={header}
-        className="pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-8"
+        className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
       >
         {status === "visitor" && (
           <>

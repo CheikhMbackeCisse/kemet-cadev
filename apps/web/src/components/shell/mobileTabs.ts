@@ -1,23 +1,30 @@
-import { FolderGit2, Hash, Rss, Trophy, User } from "lucide-react";
+import { User } from "lucide-react";
+import { NAV_SECTIONS, RAIL_FOOTER_NAV, SETTINGS_NAV, type RailNavItem } from "./railNav.js";
 import type { MobileTabItem } from "./types.js";
 
+export const MOI_TAB_ID = "moi";
+
 export const MOBILE_TABS: MobileTabItem[] = [
-  { id: "fil", label: "Fil", icon: Rss },
-  { id: "salons", label: "Salons", icon: Hash },
-  { id: "projets", label: "Projets", icon: FolderGit2 },
-  { id: "competitions", label: "Compétitions", icon: Trophy },
-  { id: "moi", label: "Moi", icon: User },
+  ...NAV_SECTIONS.filter((section) => section.mobile === "tab"),
+  { id: MOI_TAB_ID, label: "Moi", icon: User },
 ];
 
-const ROUTES: Partial<Record<string, string>> = {
-  fil: "/fil",
-  salons: "/salons",
-  projets: "/projets",
-  competitions: "/competitions",
-};
+/** Lignes de la feuille ouverte par "Moi", après le profil. */
+export const MOI_SHEET_ITEMS: RailNavItem[] = [
+  ...NAV_SECTIONS.filter((section) => section.mobile === "moi"),
+  SETTINGS_NAV,
+  RAIL_FOOTER_NAV,
+];
 
-/** Destination d'un onglet mobile. "Moi" dépend de la session : profil public si connecté, connexion sinon. */
-export function mobileTabHref(id: string, ownHandle: string | null): string {
-  if (id === "moi") return ownHandle ? `/u/${ownHandle}` : "/connexion";
-  return ROUTES[id] ?? "/fil";
+/** Onglet actif d'une section : celles rangées dans "Moi" allument "Moi". */
+export function mobileTabFor(sectionId: string): string {
+  const section = NAV_SECTIONS.find((candidate) => candidate.id === sectionId);
+  if (section?.mobile === "moi") return MOI_TAB_ID;
+  if (sectionId === SETTINGS_NAV.id || sectionId === RAIL_FOOTER_NAV.id) return MOI_TAB_ID;
+  return sectionId;
+}
+
+/** Destination d'un onglet mobile ("Moi" ouvre une feuille, pas une page). */
+export function mobileTabHref(id: string): string {
+  return NAV_SECTIONS.find((section) => section.id === id)?.href ?? "/fil";
 }

@@ -1,8 +1,7 @@
-import { Flame, Hash, MessageSquare, Trophy, User } from "lucide-react";
 import { useState } from "react";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { AppShell } from "../components/shell/AppShell.js";
-import type { ChannelItem, MobileTabItem, SpaceItem } from "../components/shell/types.js";
+import type { ChannelItem, SpaceItem } from "../components/shell/types.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { KemetSymbol } from "../components/ui/KemetSymbol.js";
 import { UserName } from "../components/ui/UserName.js";
@@ -22,14 +21,6 @@ const SAMPLE_CHANNELS: ChannelItem[] = [
   { id: "cadev-2026", name: "cadev-2026" },
 ];
 
-const SAMPLE_TABS: MobileTabItem[] = [
-  { id: "fil", label: "Fil", icon: Flame },
-  { id: "salons", label: "Salons", icon: MessageSquare },
-  { id: "projets", label: "Projets", icon: Hash },
-  { id: "competitions", label: "Compétitions", icon: Trophy },
-  { id: "moi", label: "Moi", icon: User },
-];
-
 /**
  * Page isolée (chargée dans une iframe par /dev/ui) : la barre d'onglets
  * mobile et les feuilles de AppShell utilisent `position: fixed`, ancré au
@@ -38,7 +29,6 @@ const SAMPLE_TABS: MobileTabItem[] = [
 export function ShellPreviewPage() {
   const [activeSpaceId, setActiveSpaceId] = useState("accueil");
   const [activeChannelId, setActiveChannelId] = useState("backend");
-  const [activeTabId, setActiveTabId] = useState("salons");
 
   return (
     <AppShell
@@ -49,9 +39,7 @@ export function ShellPreviewPage() {
         activeChannelId,
         onSelect: setActiveChannelId,
       }}
-      mobileTabs={SAMPLE_TABS}
-      activeMobileTabId={activeTabId}
-      onSelectMobileTab={setActiveTabId}
+      activeMobileTabId="salons"
       rightPanel={{
         title: "Détails du salon",
         content: (
