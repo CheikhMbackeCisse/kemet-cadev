@@ -205,7 +205,6 @@ export function CompetitionsPage() {
             <Textarea
               value={rejectNote}
               onChange={(event) => setRejectNote(event.target.value)}
-              className="min-h-20"
               autoFocus
             />
           </label>

@@ -338,7 +338,8 @@ export function PostPage() {
                     void handleReply();
                   }
                 }}
-                className="min-h-9 max-md:min-h-11 flex-1 py-2"
+                variant="composer"
+                className="max-md:min-h-11 flex-1"
               />
               <Button onClick={handleReply} disabled={!replyDraft.trim()}>
                 {fr.feed.reply}
@@ -354,7 +355,6 @@ export function PostPage() {
               aria-label={fr.feed.feedbackPlaceholder}
               value={feedbackBody}
               onChange={(event) => setFeedbackBody(event.target.value)}
-              className="min-h-24"
               autoFocus
             />
             {feedbackError && (

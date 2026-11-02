@@ -14,6 +14,7 @@ import {
 } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
 
 /**
  * Soumettre un projet a une competition, ou modifier une soumission existante
@@ -110,8 +111,16 @@ export function SubmitProjectPage() {
         editingId ? fr.competitions.editSubmissionSubmit : fr.competitions.submitProjectSubmit
       }
       submitting={submitting}
-      submitDisabled={
-        loading || (!editingId && !projectId) || !title.trim() || !pitch.trim() || !repoUrl.trim()
+      submitDisabled={loading}
+      submitDisabledReason={
+        !editingId && !loading && myProjects.length === 0
+          ? fr.competitions.noOwnProjects
+          : missingFieldsReason([
+              ...(editingId ? [] : [[projectId, fr.competitions.projectLabel] as const]),
+              [title, fr.competitions.titleLabel],
+              [pitch, fr.competitions.pitchLabel],
+              [repoUrl, fr.competitions.repoUrlLabel],
+            ])
       }
       error={error}
       onSubmit={handleSubmit}
@@ -120,7 +129,7 @@ export function SubmitProjectPage() {
         (loading ? null : myProjects.length === 0 ? (
           <p className="text-sm text-subtle">{fr.competitions.noOwnProjects}</p>
         ) : (
-          <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+          <label className="flex flex-col gap-1 text-sm text-text-2">
             {fr.competitions.projectLabel}
             <Select
               aria-label={fr.competitions.projectLabel}
@@ -143,8 +152,6 @@ export function SubmitProjectPage() {
         <Textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          maxHeight={400}
-          className="min-h-32"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-2">

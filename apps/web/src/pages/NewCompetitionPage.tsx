@@ -7,6 +7,7 @@ import { ChatApiError, requestCompetition } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
 
 export function NewCompetitionPage() {
   const toast = useToast();
@@ -55,14 +56,14 @@ export function NewCompetitionPage() {
       backHref="/competitions"
       submitLabel={fr.competitions.requestSubmit}
       submitting={submitting}
-      submitDisabled={
-        !name.trim() ||
-        !slug.trim() ||
-        !pitch.trim() ||
-        !registrationClosesAt ||
-        !submissionClosesAt ||
-        !votingClosesAt
-      }
+      submitDisabledReason={missingFieldsReason([
+        [name, fr.competitions.nameLabel],
+        [slug, fr.competitions.slugLabel],
+        [pitch, fr.competitions.pitchLabel],
+        [registrationClosesAt, fr.competitions.registrationClosesAtLabel],
+        [submissionClosesAt, fr.competitions.submissionClosesAtLabel],
+        [votingClosesAt, fr.competitions.votingClosesAtLabel],
+      ])}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -90,11 +91,9 @@ export function NewCompetitionPage() {
         <Textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          maxHeight={400}
-          className="min-h-32"
         />
       </label>
-      <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.competitions.registrationClosesAtLabel}
         <Input
           type="datetime-local"
@@ -102,7 +101,7 @@ export function NewCompetitionPage() {
           onChange={(event) => setRegistrationClosesAt(event.target.value)}
         />
       </label>
-      <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.competitions.submissionClosesAtLabel}
         <Input
           type="datetime-local"
@@ -110,7 +109,7 @@ export function NewCompetitionPage() {
           onChange={(event) => setSubmissionClosesAt(event.target.value)}
         />
       </label>
-      <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.competitions.votingClosesAtLabel}
         <Input
           type="datetime-local"

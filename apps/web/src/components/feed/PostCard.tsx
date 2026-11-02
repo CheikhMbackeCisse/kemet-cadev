@@ -1,10 +1,11 @@
 import type { MouseEvent } from "react";
-import { CheckCircle2, MessageSquare, Share2, Sparkles, Trash2 } from "lucide-react";
+import { CheckCircle2, MessageSquare, Share2, ThumbsUp } from "lucide-react";
 import type { PostFormat, PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { Button } from "../ui/Button.js";
 import { IconButton } from "../ui/IconButton.js";
+import { MoreActionsMenu } from "../ui/MoreActionsMenu.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
 import { ReportMenu } from "../moderation/ReportMenu.js";
@@ -199,12 +200,14 @@ export function PostCard({
                   post.reactedByMe ? "text-primary" : "text-muted hover:text-text",
                 )}
               >
-                <Sparkles className="size-4" aria-hidden="true" />
+                <ThumbsUp className="size-4" aria-hidden="true" />
+                <span className="max-md:hidden">{fr.feed.utile}</span>
                 {post.utileCount}
               </button>
             ) : (
               <span className="inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted">
-                <Sparkles className="size-4" aria-hidden="true" />
+                <ThumbsUp className="size-4" aria-hidden="true" />
+                <span className="max-md:hidden">{fr.feed.utile}</span>
                 {post.utileCount}
               </span>
             )}
@@ -215,14 +218,13 @@ export function PostCard({
               </Button>
             )}
             {isOwnPost ? (
-              <Button
-                variant="ghost"
-                className="ml-auto px-2 text-xs text-danger"
-                onClick={onDelete}
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-                {fr.feed.delete}
-              </Button>
+              <div className="ml-auto">
+                <MoreActionsMenu
+                  label={fr.feed.moreActions}
+                  items={[{ value: "delete", label: fr.feed.delete, danger: true }]}
+                  onSelect={onDelete}
+                />
+              </div>
             ) : (
               canReport && (
                 <div className="ml-auto">

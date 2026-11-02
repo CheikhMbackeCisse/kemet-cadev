@@ -38,7 +38,7 @@ export function MentionSuggestions({
           onClick={() => onSelect(suggestion)}
           className={cn(
             "flex h-control max-md:h-control-mobile cursor-pointer items-center gap-2 rounded-control px-2 text-sm",
-            index === activeIndex ? "bg-accent-soft-2 ring-1 ring-inset ring-primary" : "",
+            index === activeIndex && "bg-accent-soft",
           )}
         >
           <span className="truncate font-medium text-text">{suggestion.label}</span>

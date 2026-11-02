@@ -7,6 +7,8 @@ import { ChatApiError, resendVerificationEmail, signIn, signUp } from "../lib/ch
 import { useToast } from "../components/ui/Toast.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
+import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function SignupPage() {
   const toast = useToast();
@@ -100,9 +102,17 @@ export function SignupPage() {
               {error}
             </p>
           )}
-          <Button type="submit" loading={submitting} disabled={!name.trim() || !email.trim() || password.length < 8}>
-            {fr.auth.signupSubmit}
-          </Button>
+          <SubmitButton
+            label={fr.auth.signupSubmit}
+            loading={submitting}
+            disabledReason={
+              missingFieldsReason([
+                [name, fr.auth.nameLabel],
+                [email, fr.auth.emailLabel],
+                [password, fr.auth.passwordLabel],
+              ]) ?? (password.length < 8 ? fr.auth.passwordTooShort : null)
+            }
+          />
         </form>
         <p className="text-center text-xs text-subtle">
           {fr.auth.signupPrivacyNotice}{" "}

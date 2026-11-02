@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ExternalLink, Rocket, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, Rocket, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { Application, HelpRequest, HelpRequestKind, ProjectDetail } from "@kemet/shared";
 import {
@@ -17,6 +17,7 @@ import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
+import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
 import { UserName } from "../components/ui/UserName.js";
@@ -197,14 +198,11 @@ export function ProjectPage() {
             <p className="mt-1 text-sm text-text-2">{project.pitch}</p>
           </div>
           {isOwner && (
-            <Button
-              variant="ghost"
-              className="px-2 text-xs text-danger"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="size-4" aria-hidden="true" />
-              {fr.projects.delete}
-            </Button>
+            <MoreActionsMenu
+              label={fr.projects.moreActions}
+              items={[{ value: "delete", label: fr.projects.delete, danger: true }]}
+              onSelect={() => setDeleteOpen(true)}
+            />
           )}
         </div>
 
@@ -348,7 +346,6 @@ export function ProjectPage() {
             <Textarea
               value={applyMessage}
               onChange={(event) => setApplyMessage(event.target.value)}
-              className="min-h-24"
               autoFocus
             />
           </label>

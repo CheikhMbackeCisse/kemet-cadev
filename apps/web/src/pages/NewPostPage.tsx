@@ -16,6 +16,7 @@ import {
 } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
 
 export function NewPostPage() {
   const toast = useToast();
@@ -72,6 +73,14 @@ export function NewPostPage() {
     }
   }
 
+  const blockedReason = isSuspended
+    ? fr.common.suspendedCannotSubmit
+    : !body.trim() && attachments.length === 0
+      ? fr.feed.bodyOrImageRequired
+      : format === "a_tester"
+        ? missingFieldsReason([[testUrl, fr.feed.testUrlLabel]])
+        : null;
+
   return (
     <FormPage
       title={fr.feed.newPostTitle}
@@ -80,11 +89,7 @@ export function NewPostPage() {
       backHref="/fil"
       submitLabel={fr.feed.publish}
       submitting={submitting}
-      submitDisabled={
-        isSuspended ||
-        (!body.trim() && attachments.length === 0) ||
-        (format === "a_tester" && !testUrl.trim())
-      }
+      submitDisabledReason={blockedReason}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -94,8 +99,6 @@ export function NewPostPage() {
           placeholder={fr.feed.composerPlaceholder}
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          maxHeight={400}
-          className="min-h-32"
           disabled={isSuspended}
         />
       </label>
@@ -147,7 +150,7 @@ export function NewPostPage() {
         </span>
       </div>
 
-      <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.feed.formatLabel}
         <Select
           aria-label={fr.feed.formatLabel}

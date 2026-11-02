@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
-import { Button } from "../ui/Button.js";
 import { IconButton } from "../ui/IconButton.js";
+import { SubmitButton } from "../ui/SubmitButton.js";
 import { RailPage } from "./RailPage.js";
 import { fr } from "../../i18n/fr.js";
 
@@ -15,6 +15,8 @@ export interface FormPageProps {
   submitLabel: string;
   submitting?: boolean;
   submitDisabled?: boolean;
+  /** Pourquoi l'envoi est bloqué, affiché à côté du bouton tant qu'il l'est. */
+  submitDisabledReason?: string | null;
   error?: string | null;
   onSubmit: (event: FormEvent) => void;
   children: ReactNode;
@@ -32,6 +34,7 @@ export function FormPage({
   submitLabel,
   submitting,
   submitDisabled,
+  submitDisabledReason,
   error,
   onSubmit,
   children,
@@ -62,17 +65,20 @@ export function FormPage({
           </p>
         )}
 
-        <div className="flex items-center gap-2">
-          <Button type="submit" loading={submitting} disabled={submitDisabled}>
-            {submitLabel}
-          </Button>
-          <a
-            href={backHref}
-            className="inline-flex h-control max-md:h-control-mobile items-center justify-center rounded-control px-4 text-sm font-medium text-text-2 hover:bg-surface-2 hover:text-text"
-          >
-            {fr.common.cancel}
-          </a>
-        </div>
+        <SubmitButton
+          label={submitLabel}
+          loading={submitting}
+          disabled={submitDisabled}
+          disabledReason={submitDisabledReason}
+          secondary={
+            <a
+              href={backHref}
+              className="inline-flex h-control max-md:h-control-mobile items-center justify-center rounded-control px-4 text-sm font-medium text-text-2 hover:bg-surface-2 hover:text-text"
+            >
+              {fr.common.cancel}
+            </a>
+          }
+        />
       </form>
     </RailPage>
   );

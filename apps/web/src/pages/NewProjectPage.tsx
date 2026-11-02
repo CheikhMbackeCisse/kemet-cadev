@@ -6,6 +6,7 @@ import { createProject } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
 
 function parseStack(value: string): string[] {
   return value
@@ -59,7 +60,12 @@ export function NewProjectPage() {
       backHref="/projets"
       submitLabel={fr.projects.create}
       submitting={submitting}
-      submitDisabled={!name.trim() || !slug.trim() || !pitch.trim() || !repoUrl.trim()}
+      submitDisabledReason={missingFieldsReason([
+        [name, fr.projects.nameLabel],
+        [slug, fr.projects.slugLabel],
+        [pitch, fr.projects.pitchLabel],
+        [repoUrl, fr.projects.repoUrlLabel],
+      ])}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -87,8 +93,6 @@ export function NewProjectPage() {
         <Textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          maxHeight={400}
-          className="min-h-32"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-2">

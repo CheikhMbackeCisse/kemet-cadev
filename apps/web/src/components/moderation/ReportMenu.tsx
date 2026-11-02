@@ -103,7 +103,6 @@ export function ReportDialog({
             aria-label={fr.moderation.reasonPlaceholder}
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            className="min-h-20"
             autoFocus
           />
           {error && (

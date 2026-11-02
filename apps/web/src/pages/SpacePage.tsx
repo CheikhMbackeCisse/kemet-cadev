@@ -5,7 +5,6 @@ import {
   MessageSquare,
   MessageSquareReply,
   Paperclip,
-  Plus,
   Send,
   SmilePlus,
   UserPlus,
@@ -466,20 +465,7 @@ export function SpacePage() {
           onSelect: switchChannel,
         }}
         activeMobileTabId="salons"
-        topBarExtra={
-          <>
-            {canWrite && (
-              <a
-                href="/salons/nouveau"
-                aria-label={fr.spaces.createTitle}
-                className="inline-flex size-control max-md:size-control-mobile items-center justify-center rounded-control text-text-2 hover:bg-surface-2 hover:text-text lg:hidden"
-              >
-                <Plus className="size-5" aria-hidden="true" />
-              </a>
-            )}
-            <AccountMenu />
-          </>
-        }
+        topBarExtra={<AccountMenu />}
         rightPanel={
           !canInteract
             ? undefined
@@ -1078,8 +1064,8 @@ export function SpacePage() {
                       handleSend();
                     }
                   }}
-                  maxHeight={144}
-                  className="min-h-9 max-md:min-h-11 flex-1 rounded-card py-2"
+                  variant="composer"
+                  className="max-md:min-h-11 flex-1 rounded-card"
                 />
                 <Button
                   onClick={handleSend}

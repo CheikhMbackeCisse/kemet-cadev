@@ -6,6 +6,7 @@ import { createSpace } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
 
 export function NewSpacePage() {
   const { status } = useSession();
@@ -43,7 +44,7 @@ export function NewSpacePage() {
       backHref="/salons"
       submitLabel={fr.spaces.create}
       submitting={submitting}
-      submitDisabled={!name.trim()}
+      submitDisabledReason={missingFieldsReason([[name, fr.spaces.nameLabel]])}
       error={error}
       onSubmit={handleSubmit}
     >

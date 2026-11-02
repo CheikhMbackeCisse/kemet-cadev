@@ -149,8 +149,9 @@ export function useMessageListScroll({
     previousOutgoingCountRef.current = outgoingCount;
   }, [outgoingCount, scrollToBottom]);
 
-  // Une image qui finit de charger allonge la liste : on reste collé en bas
-  // si on y était.
+  // Une image qui finit de charger allonge le contenu, un composeur qui
+  // grandit raccourcit la liste : dans les deux cas, on reste collé en bas si
+  // on y était.
   useEffect(() => {
     const list = listRef.current;
     const content = list?.firstElementChild;
@@ -159,6 +160,7 @@ export function useMessageListScroll({
       if (atBottomRef.current) list.scrollTop = list.scrollHeight;
     });
     observer.observe(content);
+    observer.observe(list);
     return () => observer.disconnect();
   }, [listRef, loading, channelId, hasMessages]);
 

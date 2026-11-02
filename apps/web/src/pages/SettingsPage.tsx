@@ -10,6 +10,8 @@ import { ChatApiError, downloadAccountExport, updateMyProfile } from "../lib/cha
 import { useToast } from "../components/ui/Toast.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
+import { SubmitButton } from "../components/ui/SubmitButton.js";
 import { RailPage } from "../components/layout/RailPage.js";
 
 const THEME_OPTIONS: { value: ThemeChoice; label: string }[] = [
@@ -166,13 +168,19 @@ export function SettingsPage() {
                 {error}
               </p>
             )}
-            <Button
-              type="submit"
+            <SubmitButton
+              label={fr.settings.save}
               loading={submitting}
-              disabled={isSuspended || !handle.trim() || !displayName.trim() || !country}
-            >
-              {fr.settings.save}
-            </Button>
+              disabledReason={
+                isSuspended
+                  ? fr.common.suspendedCannotSubmit
+                  : missingFieldsReason([
+                      [handle, fr.auth.handleLabel],
+                      [displayName, fr.auth.displayNameLabel],
+                      [country, fr.auth.countryLabel],
+                    ])
+              }
+            />
           </form>
         </section>
       )}

@@ -7,22 +7,44 @@ import {
 } from "react";
 import { cn } from "../../lib/cn.js";
 
-export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
-  /** Hauteur maximale en pixels avant que le champ ne defile. */
-  maxHeight?: number;
+export type TextareaVariant = "composer" | "form";
+
+/** Lignes visibles au départ et avant que le champ ne défile, par variante. */
+export const TEXTAREA_ROWS: Record<TextareaVariant, { min: number; max: number }> = {
+  composer: { min: 1, max: 6 },
+  form: { min: 3, max: 10 },
+};
+
+export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "rows"> {
+  /** `composer` pour un salon ou un fil, `form` pour un formulaire. */
+  variant?: TextareaVariant;
+}
+
+function px(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function measure(node: HTMLTextAreaElement) {
+  const style = window.getComputedStyle(node);
+  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.5;
+  const borders = px(style.borderTopWidth) + px(style.borderBottomWidth);
+  const padding = px(style.paddingTop) + px(style.paddingBottom);
+  return { lineHeight, borders, padding };
 }
 
 /**
  * Champ qui grandit avec le texte et redescend quand on efface, comme un
- * composeur de messagerie. La poignee de redimensionnement du navigateur est
- * retiree : elle laissait un champ figee a une taille choisie a la main, et se
- * voyait comme un artefact dans le coin.
+ * composeur de messagerie. Au-delà du nombre maximal de lignes, il défile à
+ * l'intérieur. Jamais de poignée de redimensionnement : elle figeait le champ
+ * à une taille choisie à la main.
  */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { className, maxHeight = 200, onInput, value, ...props },
+  { className, variant = "form", onInput, value, ...props },
   ref,
 ) {
   const innerRef = useRef<HTMLTextAreaElement | null>(null);
+  const { min: minRows, max: maxRows } = TEXTAREA_ROWS[variant];
 
   const setRefs = useCallback(
     (node: HTMLTextAreaElement | null) => {
@@ -36,21 +58,27 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const resize = useCallback(() => {
     const node = innerRef.current;
     if (!node) return;
-    // Remise a zero avant mesure : sans elle, scrollHeight ne redescend jamais.
+    const { lineHeight, borders, padding } = measure(node);
+    const minHeight = minRows * lineHeight + padding + borders;
+    const maxHeight = maxRows * lineHeight + padding + borders;
+    // Remise à zéro avant mesure : sans elle, scrollHeight ne redescend jamais.
     node.style.height = "auto";
-    node.style.height = `${Math.min(node.scrollHeight, maxHeight)}px`;
-    node.style.overflowY = node.scrollHeight > maxHeight ? "auto" : "hidden";
-  }, [maxHeight]);
+    // box-sizing: border-box : la hauteur posée compte les bordures, que
+    // scrollHeight ne contient pas.
+    const contentHeight = node.scrollHeight + borders;
+    node.style.height = `${Math.min(Math.max(contentHeight, minHeight), maxHeight)}px`;
+    node.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+  }, [minRows, maxRows]);
 
-  // useLayoutEffect plutot que useEffect : evite une frame a la mauvaise
-  // hauteur quand le champ est rempli par le code (edition, brouillon).
+  // useLayoutEffect plutôt que useEffect : évite une frame à la mauvaise
+  // hauteur quand le champ est rempli par le code (édition, brouillon).
   useLayoutEffect(resize, [resize, value]);
 
   return (
     <textarea
       ref={setRefs}
       data-field=""
-      rows={1}
+      rows={minRows}
       value={value}
       onInput={(event) => {
         resize();
@@ -60,6 +88,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         "w-full resize-none rounded-control border border-border-strong bg-bg px-3 py-2 text-sm max-md:text-md text-text placeholder:text-subtle",
         "focus:border-primary",
         "disabled:cursor-not-allowed disabled:opacity-50",
+        variant === "composer" && "py-[7px] leading-5",
         className,
       )}
       {...props}

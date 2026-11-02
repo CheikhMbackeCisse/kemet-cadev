@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
-import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
 import { ChatApiError, signIn } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
+import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function LoginPage() {
   const { status, refresh } = useSession();
@@ -87,9 +88,14 @@ export function LoginPage() {
               {error}
             </p>
           )}
-          <Button type="submit" loading={submitting} disabled={!email.trim() || !password}>
-            {fr.auth.loginSubmit}
-          </Button>
+          <SubmitButton
+            label={fr.auth.loginSubmit}
+            loading={submitting}
+            disabledReason={missingFieldsReason([
+              [email, fr.auth.emailLabel],
+              [password, fr.auth.passwordLabel],
+            ])}
+          />
         </form>
         <p className="text-center text-sm text-subtle">
           {fr.auth.noAccountYet}{" "}

@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
-import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
 import { forgotPassword } from "../lib/chat/api.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
+import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -38,9 +39,11 @@ export function ForgotPasswordPage() {
           {fr.auth.emailLabel}
           <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} autoFocus />
         </label>
-        <Button type="submit" loading={submitting} disabled={!email.trim()}>
-          {fr.auth.forgotPasswordSubmit}
-        </Button>
+        <SubmitButton
+          label={fr.auth.forgotPasswordSubmit}
+          loading={submitting}
+          disabledReason={missingFieldsReason([[email, fr.auth.emailLabel]])}
+        />
       </form>
     </AuthLayout>
   );

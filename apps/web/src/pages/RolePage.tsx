@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { ProfileRole } from "@kemet/shared";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
-import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
 import { Select } from "../components/ui/Select.js";
 import { updateMyProfile } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 const ROLE_OPTIONS: { value: ProfileRole; label: string }[] = [
   { value: "developer", label: fr.auth.roleDeveloper },
@@ -81,9 +81,11 @@ export function RolePage() {
             {error}
           </p>
         )}
-        <Button type="submit" loading={submitting} disabled={!role}>
-          {fr.auth.roleStepContinue}
-        </Button>
+        <SubmitButton
+          label={fr.auth.roleStepContinue}
+          loading={submitting}
+          disabledReason={role ? null : fr.auth.roleStepRequired}
+        />
       </form>
     </AuthLayout>
   );

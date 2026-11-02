@@ -160,8 +160,8 @@ export function ThreadView({
                 send();
               }
             }}
-            maxHeight={144}
-            className="min-h-9 max-md:min-h-11 flex-1 py-2"
+            variant="composer"
+            className="max-md:min-h-11 flex-1"
           />
           <Button
             onClick={send}

@@ -7,6 +7,7 @@ import { FormPage } from "../components/layout/FormPage.js";
 import { createHelpRequest } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
 
 function parseStack(value: string): string[] {
   return value
@@ -56,11 +57,14 @@ export function NewHelpRequestPage() {
       backHref={`/projets/${slug}`}
       submitLabel={fr.projects.create}
       submitting={submitting}
-      submitDisabled={!title.trim() || !description.trim()}
+      submitDisabledReason={missingFieldsReason([
+        [title, fr.projects.titleLabel],
+        [description, fr.projects.descriptionLabel],
+      ])}
       error={error}
       onSubmit={handleSubmit}
     >
-      <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.projects.kindLabel}
         <Select
           aria-label={fr.projects.kindLabel}
@@ -81,8 +85,6 @@ export function NewHelpRequestPage() {
         <Textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          maxHeight={400}
-          className="min-h-32"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-2">

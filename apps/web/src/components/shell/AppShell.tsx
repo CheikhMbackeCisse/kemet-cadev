@@ -1,5 +1,6 @@
-import { Menu as MenuIcon, PanelRight } from "lucide-react";
+import { Menu as MenuIcon, PanelRight, Plus } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { fr } from "../../i18n/fr.js";
 import { IconButton } from "../ui/IconButton.js";
 import { Sheet } from "../ui/Sheet.js";
 import { ChannelList, type ChannelListProps } from "./ChannelList.js";
@@ -98,13 +99,29 @@ export function AppShell({
         side="left"
         title={channelList.spaceName}
       >
-        <ChannelList
-          {...channelList}
-          onSelect={(id) => {
-            channelList.onSelect(id);
-            setChannelDrawerOpen(false);
-          }}
-        />
+        <div className="flex h-full flex-col">
+          <ChannelList
+            {...channelList}
+            className="min-h-0 flex-1"
+            onSelect={(id) => {
+              channelList.onSelect(id);
+              setChannelDrawerOpen(false);
+            }}
+          />
+          {/* Sur mobile, le rail est masqué : créer un espace se fait ici,
+              avec un libellé, plutôt que par un "+" seul dans l'en-tête. */}
+          {spaceRail.onCreateSpace && (
+            <div className="border-t border-border px-2 py-3">
+              <a
+                href="/salons/nouveau"
+                className="flex h-control-mobile w-full items-center gap-2 rounded-control px-2 text-sm font-medium text-link hover:bg-surface-2"
+              >
+                <Plus className="size-4 shrink-0" aria-hidden="true" />
+                {fr.spaces.createTitle}
+              </a>
+            </div>
+          )}
+        </div>
       </Sheet>
 
       {rightPanel && (

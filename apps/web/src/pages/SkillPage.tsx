@@ -1,4 +1,4 @@
-import { ArrowLeft, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { SkillDetail } from "@kemet/shared";
 import { ChatApiError, deleteSkill, getSkill, rateSkill } from "../lib/chat/api.js";
@@ -6,6 +6,7 @@ import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { IconButton } from "../components/ui/IconButton.js";
+import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
@@ -108,7 +109,16 @@ export function SkillPage() {
       </div>
 
       <div>
-        <h1 className="text-lg font-semibold text-text">{skill.name}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-lg font-semibold text-text">{skill.name}</h1>
+          {canWrite && profile?.id === skill.authorId && (
+            <MoreActionsMenu
+              label={fr.skills.moreActions}
+              items={[{ value: "delete", label: fr.skills.delete, danger: true }]}
+              onSelect={() => setDeleteOpen(true)}
+            />
+          )}
+        </div>
         <p className="mt-1 text-sm text-subtle">{fr.skills.byAuthor(skill.authorDisplayName)}</p>
         <p className="mt-3 text-sm text-text-2">{skill.description}</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -172,13 +182,6 @@ export function SkillPage() {
         <p className="text-sm text-danger" role="alert">
           {actionError}
         </p>
-      )}
-
-      {canWrite && profile?.id === skill.authorId && (
-        <Button variant="danger" onClick={() => setDeleteOpen(true)} className="self-start">
-          <Trash2 className="size-4" aria-hidden="true" />
-          {fr.skills.delete}
-        </Button>
       )}
 
       <AskKemetDialog skillSlug={skill.slug} open={askOpen} onOpenChange={setAskOpen} />

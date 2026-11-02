@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
-import { Button } from "../components/ui/Button.js";
 import { CountrySelect } from "../components/ui/CountrySelect.js";
 import { Input } from "../components/ui/Input.js";
 import { ChatApiError, updateMyProfile } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
+import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function CompleteProfilePage() {
   const { status, refresh } = useSession();
@@ -62,9 +63,15 @@ export function CompleteProfilePage() {
             {error}
           </p>
         )}
-        <Button type="submit" loading={submitting} disabled={!handle.trim() || !displayName.trim() || !country}>
-          {fr.auth.completeProfileSubmit}
-        </Button>
+        <SubmitButton
+          label={fr.auth.completeProfileSubmit}
+          loading={submitting}
+          disabledReason={missingFieldsReason([
+            [displayName, fr.auth.displayNameLabel],
+            [handle, fr.auth.handleLabel],
+            [country, fr.auth.countryLabel],
+          ])}
+        />
       </form>
     </AuthLayout>
   );

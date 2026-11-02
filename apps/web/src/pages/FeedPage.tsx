@@ -273,7 +273,6 @@ export function FeedPage() {
               aria-label={fr.feed.feedbackPlaceholder}
               value={feedbackBody}
               onChange={(event) => setFeedbackBody(event.target.value)}
-              className="min-h-24"
               autoFocus
             />
             {feedbackError && (

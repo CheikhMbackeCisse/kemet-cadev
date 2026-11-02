@@ -7,6 +7,7 @@ import { createSkill } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
+import { missingFieldsReason } from "../lib/forms.js";
 
 export function NewSkillPage() {
   const { status } = useSession();
@@ -54,7 +55,12 @@ export function NewSkillPage() {
       backHref="/skills"
       submitLabel={fr.skills.create}
       submitting={submitting}
-      submitDisabled={!name.trim() || !slug.trim() || !description.trim() || !content.trim()}
+      submitDisabledReason={missingFieldsReason([
+        [name, fr.skills.nameLabel],
+        [slug, fr.skills.slugLabel],
+        [description, fr.skills.descriptionLabel],
+        [content, fr.skills.contentLabel],
+      ])}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -78,7 +84,6 @@ export function NewSkillPage() {
         <Textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          className="min-h-16"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-2">
@@ -86,15 +91,13 @@ export function NewSkillPage() {
         <Textarea
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          maxHeight={600}
-          className="min-h-48"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.skills.tagsLabel}
         <Input value={tags} onChange={(event) => setTags(event.target.value)} />
       </label>
-      <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.skills.visibilityLabel}
         <Select
           aria-label={fr.skills.visibilityLabel}

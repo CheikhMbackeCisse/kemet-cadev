@@ -46,7 +46,11 @@ async function signInBrowser(page: Page, email: string): Promise<void> {
   await page.request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
 }
 
-test("envoie un message dans un salon et le voit apparaître", async ({ page, request }) => {
+test("envoie un message dans un salon et le voit apparaître", async ({
+  page,
+  request,
+  isMobile,
+}) => {
   const email = `e2e-${test.info().project.name}-${Date.now()}@test.kemet`;
   // Pas de troncature : couper les derniers chiffres de Date.now() ferait
   // collisionner deux essais lancés à quelques dizaines de ms d'écart (un
@@ -58,10 +62,10 @@ test("envoie un message dans un salon et le voit apparaître", async ({ page, re
   await signInBrowser(page, email);
 
   await page.goto("/salons");
-  // « Créer un espace » est un bouton dans le rail sur grand écran et un lien
-  // dans l'en-tête sous lg : on prend celui des deux qui est visible. Le
-  // raccourci de l'état vide ne convient pas, la base de démonstration de la
-  // CI fournit déjà des espaces publics.
+  // « Créer un espace » est dans le rail sur grand écran, et dans le tiroir
+  // de la liste des salons sous lg. Le raccourci de l'état vide ne convient
+  // pas, la base de démonstration de la CI fournit déjà des espaces publics.
+  if (isMobile) await page.getByRole("button", { name: "Ouvrir la liste des salons" }).click();
   await page
     .getByRole("button", { name: "Créer un espace" })
     .or(page.getByRole("link", { name: "Créer un espace" }))

@@ -32,9 +32,10 @@ export function Menu({ trigger, items, onSelect, selectedValue, align = "end" }:
               key={item.value}
               onSelect={() => onSelect(item.value)}
               className={cn(
-                "flex h-9 cursor-pointer select-none items-center justify-between rounded-card px-2 text-sm outline-none",
-                "data-[highlighted]:bg-accent-soft",
-                item.danger ? "text-danger" : "text-text data-[highlighted]:text-link",
+                "flex h-control max-md:h-control-mobile cursor-pointer select-none items-center justify-between rounded-card px-2 text-sm outline-none",
+                item.danger
+                  ? "text-danger data-[highlighted]:bg-danger-soft"
+                  : "text-text data-[highlighted]:bg-accent-soft data-[highlighted]:text-link",
               )}
             >
               {item.label}

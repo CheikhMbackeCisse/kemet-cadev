@@ -4,6 +4,7 @@ import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
 import { resetPassword } from "../lib/chat/api.js";
 import { fr } from "../i18n/fr.js";
+import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 function readToken(): string | null {
   return new URLSearchParams(window.location.search).get("token");
@@ -72,9 +73,11 @@ export function ResetPasswordPage() {
             {error}
           </p>
         )}
-        <Button type="submit" loading={submitting} disabled={password.length < 8}>
-          {fr.auth.resetPasswordSubmit}
-        </Button>
+        <SubmitButton
+          label={fr.auth.resetPasswordSubmit}
+          loading={submitting}
+          disabledReason={password.length < 8 ? fr.auth.passwordTooShort : null}
+        />
       </form>
     </AuthLayout>
   );
