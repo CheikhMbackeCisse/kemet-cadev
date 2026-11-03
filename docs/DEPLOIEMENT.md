@@ -175,7 +175,10 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
      `gemini-flash-latest` et `meta-llama/llama-3.3-70b-instruct:free`. Les
      renseigner seulement si un modèle est arrêté ou si son quota gratuit ne
      suffit plus, sans reconstruire les images : un redémarrage de `api`
-     suffit.
+     suffit. Le 03/11/2026, `gemini-flash-latest` ne répondait plus avant
+     60 secondes sur l'offre gratuite, `gemini-2.5-flash` n'existait plus et
+     `gemini-3.5-flash` répondait en moins de 5 secondes : renseigner
+     `GEMINI_MODEL=gemini-3.5-flash` en production.
    - `ASSISTANT_RECORDED_ANSWERS` : vide en temps normal. `true` le jour
      d'une démonstration, pour qu'une question de démo connue reçoive sa
      réponse enregistrée si Gemini et OpenRouter sont tous deux saturés

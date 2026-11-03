@@ -1,6 +1,6 @@
 import type { MouseEvent } from "react";
 import { CheckCircle2, MessageSquare, Share2, ThumbsUp } from "lucide-react";
-import type { PostFormat, PostSummary } from "@kemet/shared";
+import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { Button } from "../ui/Button.js";
@@ -13,6 +13,7 @@ import { PostImages } from "./PostImages.js";
 import { RichText } from "../content/RichText.js";
 import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
+import { authorLevel, ProfileLink } from "../ui/ProfileLink.js";
 
 const FORMAT_LABELS: Record<PostFormat, string> = {
   astuce: fr.feed.formatAstuce,
@@ -118,21 +119,25 @@ export function PostCard({
   return (
     <Tag className={cn(POST_ROW_CLASS, bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2")}>
       <div className="flex gap-3">
-        <a
-          href={`/u/${post.authorHandle}`}
+        <ProfileLink
+          handle={post.authorHandle}
           aria-label={fr.profile.viewProfile(post.authorDisplayName)}
         >
           <Avatar
+            deleted={isDeletedAccountHandle(post.authorHandle)}
             name={post.authorDisplayName}
             src={post.authorAvatarUrl ?? undefined}
             countryCode={post.authorCountry}
           />
-        </a>
+        </ProfileLink>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <a href={`/u/${post.authorHandle}`} className="min-w-0 max-w-full hover:underline">
-              <UserName name={post.authorDisplayName} level={post.authorLevel} />
-            </a>
+            <ProfileLink handle={post.authorHandle} className="min-w-0 max-w-full">
+              <UserName
+                name={post.authorDisplayName}
+                level={authorLevel(post.authorHandle, post.authorLevel)}
+              />
+            </ProfileLink>
             {bodyHref ? (
               <a
                 href={bodyHref}

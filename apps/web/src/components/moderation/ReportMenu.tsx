@@ -1,6 +1,6 @@
 import { Flag } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { ReportTarget } from "@kemet/shared";
+import { isDeletedAccountHandle, type ReportTarget } from "@kemet/shared";
 import { ChatApiError, createReport } from "../../lib/chat/api.js";
 import { Button } from "../ui/Button.js";
 import { Dialog } from "../ui/Dialog.js";
@@ -47,6 +47,8 @@ export function ReportDialog({
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Un compte supprimé n'a plus de profil à signaler, seulement ses contenus.
+  const deleted = isDeletedAccountHandle(authorHandle);
 
   useEffect(() => {
     if (open) setTarget(contentType);
@@ -80,7 +82,7 @@ export function ReportDialog({
 
   return (
     <>
-      <Dialog open={open && target !== null} onOpenChange={(open) => !open && close()} title={fr.moderation.reportTitle} description={fr.moderation.reportDescription(authorHandle)}>
+      <Dialog open={open && target !== null} onOpenChange={(open) => !open && close()} title={fr.moderation.reportTitle} description={fr.moderation.reportDescription(deleted ? fr.moderation.deletedAccount : authorHandle)}>
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
             <Button
@@ -90,13 +92,15 @@ export function ReportDialog({
             >
               {contentType === "message" ? fr.moderation.reportThisMessage : fr.moderation.reportThisPost}
             </Button>
-            <Button
-              variant={target === "profile" ? "primary" : "secondary"}
-              aria-pressed={target === "profile"}
-              onClick={() => setTarget("profile")}
-            >
-              {fr.moderation.reportThisProfile(authorHandle)}
-            </Button>
+            {!deleted && (
+              <Button
+                variant={target === "profile" ? "primary" : "secondary"}
+                aria-pressed={target === "profile"}
+                onClick={() => setTarget("profile")}
+              >
+                {fr.moderation.reportThisProfile(authorHandle)}
+              </Button>
+            )}
           </div>
           <Textarea
             placeholder={fr.moderation.reasonPlaceholder}

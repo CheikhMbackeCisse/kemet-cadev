@@ -38,6 +38,7 @@ Le thème suit le réglage du système (`prefers-color-scheme`), avec un choix m
 | `--success-soft` | #EAF5E6 | #12301B | Fond des pastilles de succès |
 | `--danger` | #C4320A | #F07856 | Erreurs, suppression |
 | `--danger-soft` | #FBE9E3 | #3A1B14 | Fond des pastilles d'erreur |
+| `--on-danger` | #FFFFFF | #0D1320 | Texte d'un bouton rouge plein (contraste AA dans les deux thèmes) |
 
 Vérifier chaque couple texte/fond avec un outil de contraste : 4,5:1 minimum pour le texte courant, 3:1 pour le texte de 24 px et plus.
 

@@ -76,11 +76,13 @@ import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
 import {
   KEMET_HANDLE,
+  isDeletedAccountHandle,
   type Attachment,
   type Channel,
   type Space,
   type SpaceMember,
 } from "@kemet/shared";
+import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
 
 function readParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
@@ -766,16 +768,17 @@ export function SpacePage() {
                           >
                             <div className="flex w-8 shrink-0 items-start justify-center">
                               {index === 0 ? (
-                                <a
-                                  href={`/u/${group.authorHandle}`}
+                                <ProfileLink
+                                  handle={group.authorHandle}
                                   aria-label={fr.profile.viewProfile(group.authorDisplayName)}
                                 >
                                   <Avatar
+                                    deleted={isDeletedAccountHandle(group.authorHandle)}
                                     name={group.authorDisplayName}
                                     src={group.authorAvatarUrl ?? undefined}
                                     countryCode={group.authorCountry ?? undefined}
                                   />
-                                </a>
+                                </ProfileLink>
                               ) : (
                                 <span className="pt-1 text-xs leading-none text-subtle">
                                   {formatTime(message.createdAt)}
@@ -785,15 +788,12 @@ export function SpacePage() {
                             <div className="min-w-0 flex-1">
                               {index === 0 && (
                                 <div className="flex flex-wrap items-baseline gap-x-2">
-                                  <a
-                                    href={`/u/${group.authorHandle}`}
-                                    className="min-w-0 max-w-full hover:underline"
-                                  >
+                                  <ProfileLink handle={group.authorHandle} className="min-w-0 max-w-full">
                                     <UserName
                                       name={group.authorDisplayName}
-                                      level={group.authorLevel}
+                                      level={group.authorLevel && authorLevel(group.authorHandle, group.authorLevel)}
                                     />
-                                  </a>
+                                  </ProfileLink>
                                   <span className="text-xs text-subtle">
                                     {formatTime(message.createdAt)}
                                   </span>
@@ -820,7 +820,11 @@ export function SpacePage() {
                               {!message.deletedAt && message.attachments.length > 0 && (
                                 <div className="mt-1 flex flex-wrap gap-2">
                                   {message.attachments.map((attachment) =>
-                                    attachment.kind === "image" ? (
+                                    attachment.removed ? (
+                                      <span key={attachment.id} className="text-sm text-subtle">
+                                        {fr.chat.fileRemoved(attachment.originalName)}
+                                      </span>
+                                    ) : attachment.kind === "image" ? (
                                       <img
                                         key={attachment.id}
                                         src={attachmentUrl(attachment.id)}

@@ -37,6 +37,11 @@ export async function requireChannelAccess(db: ChatAppDeps["db"], channelId: str
   return { channel, space, membership };
 }
 
+/** Un espace archivé (ADR 0023) reste lisible mais n'accepte plus rien de nouveau. */
+export function requireWritableSpace(space: { archivedAt: Date | null }) {
+  if (space.archivedAt) throw forbidden("Cet espace est archivé.");
+}
+
 function requireAdmin(membership: { role: string } | null) {
   if (!membership || (membership.role !== "owner" && membership.role !== "admin")) {
     throw forbidden("Seuls les administrateurs de l'espace peuvent faire cette action.");
@@ -73,6 +78,7 @@ export function registerChannelRoutes(app: FastifyInstance, { db, auth }: ChatAp
       const membership = await findSpaceMembership(db, space.id, profile.id);
       if (space.visibility === "private" && !membership) throw notFound("Cet espace n'existe pas.");
       requireAdmin(membership);
+      requireWritableSpace(space);
       const input = createChannelSchema.parse(request.body);
       const existing = (await listChannelsBySpace(db, space.id)).find((channel) => channel.slug === input.slug);
       if (existing) throw conflict("Un salon avec cet identifiant existe déjà dans cet espace.");
@@ -88,8 +94,9 @@ export function registerChannelRoutes(app: FastifyInstance, { db, auth }: ChatAp
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
-      const { membership } = await requireChannelAccess(db, request.params.id, profile.id);
+      const { membership, space } = await requireChannelAccess(db, request.params.id, profile.id);
       requireAdmin(membership);
+      requireWritableSpace(space);
       const input = renameChannelSchema.parse(request.body);
       const channel = await renameChannel(db, request.params.id, input.name);
       const since = membership?.joinedAt ?? channel.createdAt;

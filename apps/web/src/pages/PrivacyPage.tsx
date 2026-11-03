@@ -73,7 +73,12 @@ export function PrivacyPage() {
       </Section>
 
       <Section title={fr.privacy.deletionTitle}>
-        <p className="text-base text-text-2">{fr.privacy.deletion}</p>
+        <List items={fr.privacy.deletion} />
+        <p className="text-base text-text-2">
+          <a href="/parametres/supprimer-mon-compte" className="text-link hover:underline">
+            {fr.privacy.deletionLink}
+          </a>
+        </p>
       </Section>
 
       <Section title={fr.privacy.lawTitle}>

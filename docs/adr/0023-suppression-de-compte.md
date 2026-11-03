@@ -1,7 +1,7 @@
 # 0023 : Suppression d'un compte
 
-Statut : acceptée le 31/10/2026. Implémentée après les lots regroupés du 1er
-novembre.
+Statut : acceptée le 31/10/2026, implémentée le 3/11/2026 (voir "Mise en
+oeuvre" en fin de document).
 
 ## Contexte
 
@@ -33,7 +33,9 @@ bon comportement.
 1. Les données d'identification sont effacées : lignes `user`, `session` et
    `account` de Better Auth (adresse email, mot de passe haché, jetons des
    fournisseurs de connexion), crédentials, abonnements dans les deux sens,
-   appartenances aux espaces, votes, notes de skills, serveurs MCP ajoutés.
+   appartenances aux espaces, votes d'une compétition encore ouverte, notes
+   de skills, serveurs MCP ajoutés. Les votes d'une compétition close sont
+   conservés, sans lien vers la personne.
 2. Le profil reste, vidé : nom affiché "Compte supprimé", identifiant
    remplacé par une valeur aléatoire non réservable (`supprime-<8 caractères>`),
    avatar, spécialité, rôle, biographie, stack et liens remis à vide, pays
@@ -98,3 +100,60 @@ Un export est proposé juste avant.
   légitimement gagnés par d'autres via des contenus qui n'existent plus.
 - **Simple désactivation** (compte marqué inactif, données intactes) : ne
   répond pas à une demande d'effacement des données personnelles.
+
+## Mise en oeuvre
+
+- `DELETE /api/me` (`apps/server/src/api/routes/account-deletion.ts`), cinq
+  essais par quart d'heure. Le corps ne porte que le mot de passe ; tout
+  autre champ est ignoré.
+- Mot de passe vérifié avec la même fonction Argon2id que Better Auth. Sans
+  mot de passe, la session doit avoir moins de cinq minutes : la page de
+  confirmation propose de se reconnecter avec le fournisseur lié, puis y
+  revient.
+- `profiles.user_id` devient nullable (migration `0015_account_deletion.sql`,
+  qui retire un `NOT NULL` et ajoute `deleted_at`, sans toucher aux données).
+  La transaction vide `user_id` avant d'effacer la ligne `user`, sinon la
+  cascade emporterait le profil.
+- L'identifiant `supprime-<8 caractères>` est refusé par
+  `updateProfileSchema` : personne ne peut le choisir. L'interface s'appuie
+  sur ce préfixe (`isDeletedAccountHandle`) pour retirer le lien vers le
+  profil et le badge de niveau, sans nouveau champ dans chaque réponse.
+- L'avatar d'un compte supprimé est une icône neutre, sans initiales ni
+  drapeau.
+- Fichiers : les lignes restent, les fichiers sont effacés après la
+  validation de la transaction. Les réponses portent `removed: true` et les
+  routes de contenu répondent 404 ; l'interface affiche "Fichier supprimé".
+- Votes : seuls ceux d'une compétition encore ouverte au vote sont effacés.
+  Retirer un vote après la clôture changerait un classement déjà publié, et
+  les points de podium, versés de façon idempotente à la lecture des
+  résultats, iraient à une équipe de plus sans être retirés à l'autre. Un
+  vote conservé n'est plus rattaché qu'au profil anonyme.
+- Sont aussi effacés, en plus de la liste ci-dessus : les états de lecture
+  des salons, les jetons de vérification et de réinitialisation.
+- Un espace dont la personne est propriétaire passe à son administrateur le
+  plus ancien, sinon à son membre le plus ancien. S'il ne reste aucun
+  membre, l'espace est archivé (`spaces.archived_at`) : lisible par lien,
+  absent des listes, fermé à toute écriture (messages, fichiers, réactions,
+  salons, membres) et ses invitations sont révoquées. Un compte suspendu
+  n'est choisi qu'en dernier recours. La même règle s'applique quand un
+  propriétaire quitte son espace, et personne ne peut retirer le
+  propriétaire. Les espaces de la personne sont verrouillés avant le
+  transfert : deux départs simultanés passent l'un après l'autre, sans
+  laisser un espace sans propriétaire.
+
+### Limites connues
+
+- Les événements de saisie (`typing:start`, `typing:stop`) sont relayés sans
+  vérifier l'accès au salon, y compris dans un espace archivé. Antérieur à
+  cette mise en oeuvre, à reprendre avec la messagerie.
+- Les skills privés restent en base sous le profil anonyme. Ils ne sont
+  lisibles que par leur auteur, qui ne peut plus se connecter : personne ne
+  les lit, mais ils ne sont pas effacés.
+- L'ancien identifiant redevient libre tout de suite. Une mention `@ancien`
+  écrite par quelqu'un d'autre pointera vers la personne qui le reprendrait.
+- Les connexions Socket.IO déjà ouvertes par le compte supprimé ne sont pas
+  fermées : elles reçoivent encore les messages de leurs salons jusqu'à leur
+  déconnexion, ce qui ne concerne que la personne qui vient de partir.
+- Un fichier envoyé pendant la suppression peut être écrit après la
+  transaction. Non rattaché, il est ramassé par le nettoyage horaire ;
+  rattaché, il reste sur le disque, mais sa route de contenu répond 404.

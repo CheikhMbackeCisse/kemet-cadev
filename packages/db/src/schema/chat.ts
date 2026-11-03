@@ -28,6 +28,10 @@ export const spaces = pgTable("spaces", {
     .notNull()
     .references(() => profiles.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  // Posé quand le dernier membre d'un espace supprime son compte (ADR 0023) :
+  // l'espace reste lisible par lien, mais ne figure plus dans les listes et
+  // n'accepte plus de message.
+  archivedAt: timestamp("archived_at"),
 });
 
 export const spaceMembers = pgTable(

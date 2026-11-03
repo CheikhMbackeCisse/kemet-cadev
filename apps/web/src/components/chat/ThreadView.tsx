@@ -13,6 +13,7 @@ import { Skeleton } from "../ui/Skeleton.js";
 import { Textarea } from "../ui/Textarea.js";
 import { UserName } from "../ui/UserName.js";
 import { OutgoingMessages } from "./OutgoingMessages.js";
+import { ProfileLink } from "../ui/ProfileLink.js";
 
 interface ThreadViewProps {
   parent: Message;
@@ -40,9 +41,9 @@ function ThreadMessage({ message }: { message: Message }) {
   return (
     <div className="flex flex-col gap-0.5">
       <div className="flex items-baseline gap-2">
-        <a href={`/u/${message.authorHandle}`} className="hover:underline">
+        <ProfileLink handle={message.authorHandle}>
           <UserName name={message.authorDisplayName} />
-        </a>
+        </ProfileLink>
         <span className="text-xs text-subtle">{formatTime(message.createdAt)}</span>
       </div>
       {message.deletedAt ? (

@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { IconButton } from "../ui/IconButton.js";
+import type { ButtonVariant } from "../ui/Button.js";
 import { SubmitButton } from "../ui/SubmitButton.js";
 import { RailPage } from "./RailPage.js";
 import { fr } from "../../i18n/fr.js";
@@ -13,6 +14,7 @@ export interface FormPageProps {
   /** Destination du bouton Annuler, et du retour quand il n'y a pas d'historique. */
   backHref: string;
   submitLabel: string;
+  submitVariant?: ButtonVariant;
   submitting?: boolean;
   submitDisabled?: boolean;
   /** Pourquoi l'envoi est bloqué, affiché à côté du bouton tant qu'il l'est. */
@@ -32,6 +34,7 @@ export function FormPage({
   activeSection,
   backHref,
   submitLabel,
+  submitVariant,
   submitting,
   submitDisabled,
   submitDisabledReason,
@@ -67,6 +70,7 @@ export function FormPage({
 
         <SubmitButton
           label={submitLabel}
+          variant={submitVariant}
           loading={submitting}
           disabled={submitDisabled}
           disabledReason={submitDisabledReason}

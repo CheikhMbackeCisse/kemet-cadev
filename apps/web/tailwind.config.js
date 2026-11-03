@@ -47,6 +47,7 @@ export default {
         danger: {
           DEFAULT: "var(--danger)",
           soft: "var(--danger-soft)",
+          on: "var(--on-danger)",
         },
       },
       borderRadius: {

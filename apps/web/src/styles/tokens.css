@@ -32,6 +32,7 @@
   --success-soft: #eaf5e6;
   --danger: #c4320a;
   --danger-soft: #fbe9e3;
+  --on-danger: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,6 +58,7 @@
     --success-soft: #12301b;
     --danger: #f07856;
     --danger-soft: #3a1b14;
+    --on-danger: #0d1320;
   }
 }
 
@@ -114,6 +116,7 @@
   --success-soft: #12301b;
   --danger: #f07856;
   --danger-soft: #3a1b14;
+  --on-danger: #0d1320;
 }
 
 /**

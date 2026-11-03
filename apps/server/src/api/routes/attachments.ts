@@ -10,11 +10,11 @@ import {
   sumUserStorageBytes,
 } from "../repositories/attachments.js";
 import { findMessageById } from "../repositories/chat.js";
-import { findProfileByUserId } from "../repositories/profiles.js";
+import { findProfileByUserId, isProfileDeleted } from "../repositories/profiles.js";
 import { serializeAttachment } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
-import { requireChannelAccess } from "./channels.js";
+import { requireChannelAccess, requireWritableSpace } from "./channels.js";
 
 const MAX_ATTACHMENTS_PER_MINUTE = 30;
 
@@ -48,7 +48,8 @@ export function registerAttachmentRoutes(
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
-      const { channel } = await requireChannelAccess(db, request.params.id, profile.id);
+      const { channel, space } = await requireChannelAccess(db, request.params.id, profile.id);
+      requireWritableSpace(space);
 
       const part = await request.file();
       if (!part) throw badRequest("Aucun fichier envoyé.");
@@ -107,6 +108,8 @@ export function registerAttachmentRoutes(
     // joignable directement à qui l'avait conservée.
     if (!message || message.deletedAt) throw notFound("Ce fichier n'existe pas.");
     await requireChannelAccess(db, attachment.channelId, profile.id);
+    // Effacé du disque avec le compte de son auteur (ADR 0023).
+    if (await isProfileDeleted(db, attachment.authorId)) throw notFound("Ce fichier a été supprimé.");
 
     const disposition = attachment.kind === "image" ? "inline" : "attachment";
     reply

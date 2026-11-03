@@ -1,6 +1,11 @@
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PostFeedbackEntry, PostReply, PostSummary } from "@kemet/shared";
+import {
+  isDeletedAccountHandle,
+  type PostFeedbackEntry,
+  type PostReply,
+  type PostSummary,
+} from "@kemet/shared";
 import {
   ChatApiError,
   createPostFeedback,
@@ -35,6 +40,7 @@ import { fr } from "../i18n/fr.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
+import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -257,18 +263,19 @@ export function PostPage() {
             <p className="text-md font-semibold text-text">{fr.feed.feedbackTitle}</p>
             {feedback.map((entry) => (
               <div key={entry.id} className="flex flex-col gap-0.5">
-                <a
-                  href={`/u/${entry.authorHandle}`}
-                  className="flex w-fit items-center gap-2 hover:underline"
-                >
+                <ProfileLink handle={entry.authorHandle} className="flex w-fit items-center gap-2">
                   <Avatar
+                    deleted={isDeletedAccountHandle(entry.authorHandle)}
                     name={entry.authorDisplayName}
                     src={entry.authorAvatarUrl ?? undefined}
                     size={32}
                     countryCode={entry.authorCountry}
                   />
-                  <UserName name={entry.authorDisplayName} level={entry.authorLevel} />
-                </a>
+                  <UserName
+                    name={entry.authorDisplayName}
+                    level={authorLevel(entry.authorHandle, entry.authorLevel)}
+                  />
+                </ProfileLink>
                 <RichText source={entry.body} className="text-sm text-text-2" />
               </div>
             ))}
@@ -282,24 +289,25 @@ export function PostPage() {
           ) : (
             replies.map((reply) => (
               <div key={reply.id} className="flex gap-3">
-                <a
-                  href={`/u/${reply.authorHandle}`}
+                <ProfileLink
+                  handle={reply.authorHandle}
                   aria-label={fr.profile.viewProfile(reply.authorDisplayName)}
                 >
                   <Avatar
+                    deleted={isDeletedAccountHandle(reply.authorHandle)}
                     name={reply.authorDisplayName}
                     src={reply.authorAvatarUrl ?? undefined}
                     countryCode={reply.authorCountry}
                   />
-                </a>
+                </ProfileLink>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <a
-                      href={`/u/${reply.authorHandle}`}
-                      className="min-w-0 max-w-full hover:underline"
-                    >
-                      <UserName name={reply.authorDisplayName} level={reply.authorLevel} />
-                    </a>
+                    <ProfileLink handle={reply.authorHandle} className="min-w-0 max-w-full">
+                      <UserName
+                        name={reply.authorDisplayName}
+                        level={authorLevel(reply.authorHandle, reply.authorLevel)}
+                      />
+                    </ProfileLink>
                     <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
                     {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
                   </div>

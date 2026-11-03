@@ -1,6 +1,12 @@
 import { ArrowLeft, Check, ExternalLink, Rocket, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { Application, HelpRequest, HelpRequestKind, ProjectDetail } from "@kemet/shared";
+import {
+  isDeletedAccountHandle,
+  type Application,
+  type HelpRequest,
+  type HelpRequestKind,
+  type ProjectDetail,
+} from "@kemet/shared";
 import {
   ChatApiError,
   closeHelpRequest,
@@ -25,6 +31,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
+import { ProfileLink } from "../components/ui/ProfileLink.js";
 
 const KIND_LABELS: Record<HelpRequestKind, string> = {
   help: fr.projects.kindHelp,
@@ -207,17 +214,15 @@ export function ProjectPage() {
           )}
         </div>
 
-        <a
-          href={`/u/${project.ownerHandle}`}
-          className="flex w-fit items-center gap-2 hover:underline"
-        >
+        <ProfileLink handle={project.ownerHandle} className="flex w-fit items-center gap-2">
           <Avatar
+            deleted={isDeletedAccountHandle(project.ownerHandle)}
             name={project.ownerDisplayName}
             src={project.ownerAvatarUrl ?? undefined}
             countryCode={project.ownerCountry}
           />
           <UserName name={project.ownerDisplayName} />
-        </a>
+        </ProfileLink>
 
         {project.description && (
           <RichText source={project.description} className="text-sm text-text" />

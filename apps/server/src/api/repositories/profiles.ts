@@ -13,6 +13,11 @@ export async function findProfileByUserId(db: Db, userId: string) {
   return profile ?? null;
 }
 
+export async function isProfileDeleted(db: Db, profileId: string): Promise<boolean> {
+  const [row] = await db.select({ deletedAt: profiles.deletedAt }).from(profiles).where(eq(profiles.id, profileId));
+  return row?.deletedAt != null;
+}
+
 export async function findProfileByHandle(db: Db, handle: string) {
   const [profile] = await db.select().from(profiles).where(eq(profiles.handle, handle));
   return profile ?? null;

@@ -90,6 +90,9 @@ const RolePage = lazy(() => import("./pages/RolePage.js").then((m) => ({ default
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage.js").then((m) => ({ default: m.SettingsPage })),
 );
+const DeleteAccountPage = lazy(() =>
+  import("./pages/DeleteAccountPage.js").then((m) => ({ default: m.DeleteAccountPage })),
+);
 const PrivacyPage = lazy(() =>
   import("./pages/PrivacyPage.js").then((m) => ({ default: m.PrivacyPage })),
 );
@@ -155,6 +158,7 @@ function resolvePage(pathname: string) {
   if (pathname === "/completer-profil") return <CompleteProfilePage />;
   if (pathname === "/ton-role") return <RolePage />;
   if (pathname === "/parametres") return <SettingsPage />;
+  if (pathname === "/parametres/supprimer-mon-compte") return <DeleteAccountPage />;
   if (pathname === "/confidentialite") return <PrivacyPage />;
   if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
   if (pathname === "/salons/nouveau") return <NewSpacePage />;

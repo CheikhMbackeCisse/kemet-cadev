@@ -30,7 +30,7 @@ import { computeLevels } from "../repositories/points.js";
 import { serializeMessage } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
-import { requireChannelAccess } from "./channels.js";
+import { requireChannelAccess, requireWritableSpace } from "./channels.js";
 
 const MAX_MESSAGES_PER_MINUTE = 20;
 
@@ -121,6 +121,7 @@ export function registerMessageRoutes(
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const { channel, space } = await requireChannelAccess(db, request.params.id, profile.id);
+      requireWritableSpace(space);
       const input = createMessageSchema.parse(request.body);
 
       if (input.parentMessageId) {
@@ -188,7 +189,8 @@ export function registerMessageRoutes(
       const profile = await requireOwnProfile(db, userId);
       const message = await findMessageById(db, request.params.id);
       if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-      await requireChannelAccess(db, message.channelId, profile.id);
+      const { space } = await requireChannelAccess(db, message.channelId, profile.id);
+      requireWritableSpace(space);
       if (message.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce message.");
       const input = editMessageSchema.parse(request.body);
       const updated = await editMessage(db, message.id, input.body);
@@ -224,7 +226,8 @@ export function registerMessageRoutes(
       const profile = await requireOwnProfile(db, userId);
       const message = await findMessageById(db, request.params.id);
       if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-      await requireChannelAccess(db, message.channelId, profile.id);
+      const { space } = await requireChannelAccess(db, message.channelId, profile.id);
+      requireWritableSpace(space);
       const input = toggleReactionSchema.parse(request.body);
       const reactions = await toggleReaction(db, message.id, profile.id, input.emoji);
       await chat.publish({

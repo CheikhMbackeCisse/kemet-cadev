@@ -11,6 +11,7 @@ import {
 } from "../repositories/profiles.js";
 import { computeProfilePoints } from "../repositories/points.js";
 import { buildAccountExport } from "../repositories/account-export.js";
+import { findPasswordHash, listSocialProviders } from "../repositories/account-deletion.js";
 import { serializeCredential, serializeProfile } from "../serializers.js";
 import type { AppDeps } from "../app.js";
 
@@ -23,6 +24,10 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
     // Le total de points reste discret à l'affichage (DESIGN.md), mais
     // reste accessible à chacun pour son propre profil.
     const points = profile ? await computeProfilePoints(db, profile.id) : null;
+    const [passwordHash, socialProviders] = await Promise.all([
+      findPasswordHash(db, userId),
+      listSocialProviders(db, userId),
+    ]);
     return {
       user: { id: account.id, email: account.email, emailVerified: account.emailVerified },
       profile: profile && points ? serializeProfile(profile, points.level) : null,
@@ -30,6 +35,8 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       credentials: credentials.map(serializeCredential),
       isPlatformAdmin: profile?.isPlatformAdmin ?? false,
       isSuspended: profile?.suspendedAt != null,
+      hasPassword: passwordHash !== null,
+      socialProviders,
     };
   });
 

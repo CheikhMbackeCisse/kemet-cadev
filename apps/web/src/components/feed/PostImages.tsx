@@ -1,6 +1,7 @@
 import type { Attachment } from "@kemet/shared";
 import { postAttachmentUrl } from "../../lib/chat/api.js";
 import { cn } from "../../lib/cn.js";
+import { fr } from "../../i18n/fr.js";
 
 export interface PostImagesProps {
   attachments: Attachment[];
@@ -18,8 +19,14 @@ function image(attachment: Attachment, className: string) {
   );
 }
 
-export function PostImages({ attachments, className }: PostImagesProps) {
-  if (attachments.length === 0) return null;
+export function PostImages({ attachments: all, className }: PostImagesProps) {
+  // Images effacées avec le compte de leur auteur : on le dit, sans cadre vide.
+  const attachments = all.filter((attachment) => !attachment.removed);
+  if (attachments.length === 0) {
+    return all.length > 0 ? (
+      <p className={cn("mt-2 text-sm text-subtle", className)}>{fr.chat.imagesRemoved(all.length)}</p>
+    ) : null;
+  }
 
   // Pas de grille à 2 colonnes pour 3 images : la troisième laisserait une
   // case vide. Une rangée pleine largeur, puis deux colonnes.

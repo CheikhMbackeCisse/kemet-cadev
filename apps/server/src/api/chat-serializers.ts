@@ -52,7 +52,8 @@ export function serializeChannel(row: ChannelRow, unreadCount: number): Channel 
   };
 }
 
-export function serializeAttachment(row: AttachmentRow): Attachment {
+/** `removed` : l'auteur a supprimé son compte, le fichier n'existe plus sur le disque. */
+export function serializeAttachment(row: AttachmentRow, removed = false): Attachment {
   return {
     id: row.id,
     kind: row.kind,
@@ -60,6 +61,7 @@ export function serializeAttachment(row: AttachmentRow): Attachment {
     originalName: row.originalName,
     byteSize: row.byteSize,
     createdAt: row.createdAt.toISOString(),
+    removed,
   };
 }
 
@@ -88,7 +90,9 @@ export function serializeMessage(
     mentionedHandles: deleted ? [] : mentionedHandles,
     reactions,
     replyCount,
-    attachments: deleted ? [] : attachments.map(serializeAttachment),
+    attachments: deleted
+      ? []
+      : attachments.map((attachment) => serializeAttachment(attachment, author.deletedAt !== null)),
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
     deletedAt: row.deletedAt?.toISOString() ?? null,

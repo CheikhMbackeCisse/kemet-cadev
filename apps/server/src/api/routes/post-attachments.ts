@@ -10,7 +10,7 @@ import {
   sumUserPostAttachmentBytes,
 } from "../repositories/post-attachments.js";
 import { findPostById } from "../repositories/posts.js";
-import { findProfileByUserId } from "../repositories/profiles.js";
+import { findProfileByUserId, isProfileDeleted } from "../repositories/profiles.js";
 import { serializePostAttachment } from "../post-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
@@ -99,6 +99,7 @@ export function registerPostAttachmentRoutes(
     // Sans ce contrôle, l'image d'un post supprimé resterait joignable par son
     // URL. Route publique, comme le fil.
     if (!post || post.deletedAt) throw notFound("Cette image n'existe pas.");
+    if (await isProfileDeleted(db, attachment.authorId)) throw notFound("Cette image a été supprimée.");
 
     reply
       .header("X-Content-Type-Options", "nosniff")

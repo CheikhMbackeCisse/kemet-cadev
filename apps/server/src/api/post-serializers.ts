@@ -7,7 +7,8 @@ type PostReplyRow = typeof postReplies.$inferSelect;
 type PostFeedbackRow = typeof postFeedback.$inferSelect;
 type PostAttachmentRow = typeof postAttachments.$inferSelect;
 
-export function serializePostAttachment(row: PostAttachmentRow): Attachment {
+/** `removed` : l'auteur a supprimé son compte, le fichier n'existe plus sur le disque. */
+export function serializePostAttachment(row: PostAttachmentRow, removed = false): Attachment {
   return {
     id: row.id,
     kind: "image",
@@ -15,6 +16,7 @@ export function serializePostAttachment(row: PostAttachmentRow): Attachment {
     originalName: row.originalName,
     byteSize: row.byteSize,
     createdAt: row.createdAt.toISOString(),
+    removed,
   };
 }
 
@@ -35,7 +37,9 @@ export function serializeSharedPostPreview(
     authorLevel,
     body: deleted ? "" : row.body,
     format: deleted ? null : row.format,
-    attachments: deleted ? [] : attachments.map(serializePostAttachment),
+    attachments: deleted
+      ? []
+      : attachments.map((attachment) => serializePostAttachment(attachment, author.deletedAt !== null)),
     deletedAt: row.deletedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
@@ -62,7 +66,9 @@ export function serializePostSummary(
     format: row.format,
     testUrl: deleted ? null : row.testUrl,
     testAsk: deleted ? null : row.testAsk,
-    attachments: deleted ? [] : attachments.map(serializePostAttachment),
+    attachments: deleted
+      ? []
+      : attachments.map((attachment) => serializePostAttachment(attachment, author.deletedAt !== null)),
     sharedPost: sharedPost
       ? serializeSharedPostPreview(sharedPost.row, sharedPost.author, sharedPost.authorLevel, sharedPost.attachments)
       : null,

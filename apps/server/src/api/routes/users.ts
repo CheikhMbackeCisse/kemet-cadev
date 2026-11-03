@@ -20,7 +20,7 @@ import type { AppDeps } from "../app.js";
 
 async function requireProfileByHandle(db: AppDeps["db"], handle: string) {
   const profile = await findProfileByHandle(db, handle);
-  if (!profile) throw notFound("Ce profil n'existe pas.");
+  if (!profile || profile.deletedAt) throw notFound("Ce profil n'existe pas.");
   return profile;
 }
 

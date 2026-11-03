@@ -90,6 +90,24 @@ export async function downloadAccountExport(): Promise<{ blob: Blob; fileName: s
   return { blob: await response.blob(), fileName };
 }
 
+/** Supprime le compte de la session (ADR 0023) : 204 sans corps. */
+export async function deleteMyAccount(password?: string): Promise<void> {
+  const response = await fetch("/api/me", {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(password ? { password } : {}),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+}
+
 export interface Page<T> {
   items: T[];
   nextCursor: string | null;

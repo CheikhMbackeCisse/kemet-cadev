@@ -13,8 +13,9 @@ export const profileRoleEnum = pgEnum("profile_role", [
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
+  // Vide une fois le compte supprimé : le profil reste, anonymisé, pour que
+  // ses contenus et ceux qui y répondent restent lisibles (ADR 0023).
   userId: text("user_id")
-    .notNull()
     .unique()
     .references(() => user.id, { onDelete: "cascade" }),
   handle: text("handle").notNull().unique(),
@@ -36,6 +37,7 @@ export const profiles = pgTable("profiles", {
   // Un compte suspendu garde la lecture, perd l'écriture : vérifié par
   // requireOwnProfile dans chaque module de routes.
   suspendedAt: timestamp("suspended_at"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

@@ -16,6 +16,8 @@ import {
   removeSpaceMember,
 } from "../repositories/chat.js";
 import { findProfileByHandle, findProfileByUserId } from "../repositories/profiles.js";
+import { leaveSpace } from "../repositories/space-ownership.js";
+import { requireWritableSpace } from "./channels.js";
 import { serializeSpace, serializeSpaceMember } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 
@@ -110,11 +112,12 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
-      const { membership } = await requireVisibleSpace(db, request.params.id, profile.id);
+      const { space, membership } = await requireVisibleSpace(db, request.params.id, profile.id);
       requireAdmin(membership);
+      requireWritableSpace(space);
       const input = addSpaceMemberSchema.parse(request.body);
       const target = await findProfileByHandle(db, input.handle);
-      if (!target) throw notFound("Ce profil n'existe pas.");
+      if (!target || target.deletedAt) throw notFound("Ce profil n'existe pas.");
       const existingMembership = await findSpaceMembership(db, request.params.id, target.id);
       if (existingMembership) throw conflict("Ce profil est déjà membre de l'espace.");
       await addSpaceMember(db, request.params.id, target.id, "member");
@@ -130,8 +133,14 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
       const profile = await requireOwnProfile(db, userId);
       const { membership } = await requireVisibleSpace(db, request.params.id, profile.id);
       const isSelf = profile.id === request.params.profileId;
-      if (!isSelf) requireAdmin(membership);
-      await removeSpaceMember(db, request.params.id, request.params.profileId);
+      if (isSelf) {
+        await leaveSpace(db, request.params.id, profile.id);
+      } else {
+        requireAdmin(membership);
+        const target = await findSpaceMembership(db, request.params.id, request.params.profileId);
+        if (target?.role === "owner") throw forbidden("Le propriétaire de l'espace ne peut pas être retiré.");
+        await removeSpaceMember(db, request.params.id, request.params.profileId);
+      }
       await chat.publish({ type: "member:removed", spaceId: request.params.id, profileId: request.params.profileId });
       return { removed: true };
     },

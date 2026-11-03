@@ -8,7 +8,7 @@ import { canViewSkill, findAuthorProfile, findSkillsByIds } from "../repositorie
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { awardPoints, computeUtileAwardAmount, POINTS_ASSISTANT_SKILL_HELPFUL } from "../repositories/points.js";
 import type { ChatAppDeps } from "../app.js";
-import { requireChannelAccess } from "./channels.js";
+import { requireChannelAccess, requireWritableSpace } from "./channels.js";
 
 const messageIdParamsSchema = z.object({ id: z.string().uuid() });
 
@@ -56,7 +56,8 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
       if (!profile) throw badRequest("Complétez votre profil avant de donner votre avis.");
       const invocation = await findInvocationById(db, request.params.id);
       if (!invocation || invocation.status !== "done") throw notFound("Cette réponse n'existe pas.");
-      await requireChannelAccess(db, invocation.channelId, profile.id);
+      const { space } = await requireChannelAccess(db, invocation.channelId, profile.id);
+      requireWritableSpace(space);
       const input = assistantFeedbackSchema.parse(request.body);
       if (input.helpful && invocation.helpful !== true) {
         const citedSkills = await findSkillsByIds(db, invocation.skillIds);

@@ -47,6 +47,9 @@ export const attachmentSchema = z.object({
   originalName: z.string(),
   byteSize: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
+  // Fichier effacé du disque avec le compte de son auteur : la ligne reste
+  // pour afficher "Fichier supprimé" plutôt qu'un lien cassé.
+  removed: z.boolean(),
 });
 
 export type Attachment = z.infer<typeof attachmentSchema>;

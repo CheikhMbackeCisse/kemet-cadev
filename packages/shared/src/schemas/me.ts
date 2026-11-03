@@ -16,9 +16,26 @@ export const meResponseSchema = z.object({
   isPlatformAdmin: z.boolean(),
   // L'interface masque composeur et actions ; le serveur refuse de toute façon.
   isSuspended: z.boolean(),
+  // Pour la suppression du compte : mot de passe à confirmer, ou fournisseurs
+  // avec lesquels se reconnecter.
+  hasPassword: z.boolean(),
+  socialProviders: z.array(z.string()),
 });
 
 export type MeResponse = z.infer<typeof meResponseSchema>;
+
+/**
+ * Confirmation de la suppression du compte : le mot de passe pour un compte
+ * email, rien pour un compte GitHub, Google ou LinkedIn, qui doit s'être
+ * reconnecté depuis moins de cinq minutes.
+ */
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1).max(200).optional(),
+});
+
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
+
+export const ACCOUNT_DELETION_FRESH_LOGIN_MINUTES = 5;
 
 export const publicProfileResponseSchema = z.object({
   profile: profileSchema,

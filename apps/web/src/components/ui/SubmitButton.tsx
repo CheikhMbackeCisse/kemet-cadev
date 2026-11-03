@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react";
-import { Button } from "./Button.js";
+import { Button, type ButtonVariant } from "./Button.js";
 
 export interface SubmitButtonProps {
   label: string;
@@ -10,6 +10,8 @@ export interface SubmitButtonProps {
   disabledReason?: string | null;
   /** Action secondaire posée juste après le bouton, comme Annuler. */
   secondary?: ReactNode;
+  /** "danger" pour une action irréversible, comme la suppression du compte. */
+  variant?: ButtonVariant;
 }
 
 /**
@@ -22,6 +24,7 @@ export function SubmitButton({
   disabled,
   disabledReason,
   secondary,
+  variant,
 }: SubmitButtonProps) {
   const reasonId = useId();
   const reason = disabledReason && !loading ? disabledReason : null;
@@ -29,6 +32,7 @@ export function SubmitButton({
     <div className="flex flex-wrap items-center gap-2">
       <Button
         type="submit"
+        variant={variant}
         loading={loading}
         disabled={Boolean(disabled || disabledReason)}
         aria-describedby={reason ? reasonId : undefined}

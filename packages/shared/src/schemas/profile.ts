@@ -9,6 +9,13 @@ export const handleSchema = z
   .max(30)
   .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, "Lettres minuscules, chiffres et tirets uniquement.");
 
+/** Préfixe de l'identifiant donné à un profil anonymisé : jamais choisi par une personne. */
+export const DELETED_ACCOUNT_HANDLE_PREFIX = "supprime-";
+
+export function isDeletedAccountHandle(handle: string): boolean {
+  return handle.startsWith(DELETED_ACCOUNT_HANDLE_PREFIX);
+}
+
 export const countryCodeSchema = z.enum(COUNTRY_CODES);
 
 export const stackSchema = z.array(z.string().min(1).max(40)).max(20);
@@ -19,7 +26,9 @@ export type ProfileRole = z.infer<typeof profileRoleSchema>;
 
 export const updateProfileSchema = z
   .object({
-    handle: handleSchema,
+    handle: handleSchema.refine((handle) => !isDeletedAccountHandle(handle), {
+      message: "Cet identifiant est réservé.",
+    }),
     displayName: z.string().min(1).max(80),
     country: countryCodeSchema,
     role: profileRoleSchema.nullable(),

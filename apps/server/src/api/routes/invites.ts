@@ -14,6 +14,7 @@ import {
 } from "../repositories/chat.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { serializeInvite } from "../chat-serializers.js";
+import { requireWritableSpace } from "./channels.js";
 import type { ChatAppDeps } from "../app.js";
 
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
@@ -40,6 +41,7 @@ export function registerInviteRoutes(app: FastifyInstance, { db, auth }: ChatApp
       if (!space) throw notFound("Cet espace n'existe pas.");
       const membership = await findSpaceMembership(db, space.id, profile.id);
       requireAdmin(membership);
+      requireWritableSpace(space);
       const input = createInviteSchema.parse(request.body);
       const invite = await createInvite(db, {
         spaceId: space.id,
@@ -87,7 +89,8 @@ export function registerInviteRoutes(app: FastifyInstance, { db, auth }: ChatApp
       if (invite.expiresAt.getTime() < Date.now()) return { status: "expired", spaceName: null };
       if (invite.maxUses !== null && invite.useCount >= invite.maxUses) return { status: "exhausted", spaceName: null };
       const space = await findSpaceById(db, invite.spaceId);
-      return { status: "valid", spaceName: space?.name ?? null };
+      if (!space || space.archivedAt) return { status: "revoked", spaceName: null };
+      return { status: "valid", spaceName: space.name };
     },
   );
 

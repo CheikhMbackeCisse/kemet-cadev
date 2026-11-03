@@ -88,7 +88,8 @@ export async function listSpacesForViewer(db: Db, profileId: string | null, curs
     : [];
   const visibility =
     memberIds.length > 0 ? or(eq(spaces.visibility, "public"), inArray(spaces.id, memberIds)) : eq(spaces.visibility, "public");
-  const condition = cursor ? and(visibility, lt(spaces.createdAt, new Date(cursor))) : visibility;
+  const listed = and(visibility, isNull(spaces.archivedAt));
+  const condition = cursor ? and(listed, lt(spaces.createdAt, new Date(cursor))) : listed;
   const rows = profileId
     ? await db
         .select({ space: spaces, role: spaceMembers.role })
@@ -439,6 +440,7 @@ export async function redeemInvite(db: Db, code: string, profileId: string): Pro
           isNull(spaceInvites.revokedAt),
           gt(spaceInvites.expiresAt, new Date()),
           or(isNull(spaceInvites.maxUses), lt(spaceInvites.useCount, spaceInvites.maxUses)),
+          sql`not exists (select 1 from ${spaces} where ${spaces.id} = ${spaceInvites.spaceId} and ${spaces.archivedAt} is not null)`,
         ),
       )
       .returning();
