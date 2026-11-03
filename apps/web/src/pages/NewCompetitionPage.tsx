@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Input } from "../components/ui/Input.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
 import { FormPage } from "../components/layout/FormPage.js";
 import { ChatApiError, requestCompetition } from "../lib/chat/api.js";
@@ -8,6 +7,7 @@ import { useSession } from "../session/SessionProvider.js";
 import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 export function NewCompetitionPage() {
   const toast = useToast();
@@ -86,13 +86,11 @@ export function NewCompetitionPage() {
         {fr.competitions.pitchLabel}
         <Input value={pitch} onChange={(event) => setPitch(event.target.value)} />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.descriptionLabel}
-        <Textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </label>
+      <CodeTextarea
+        label={fr.competitions.descriptionLabel}
+        value={description}
+        onValueChange={setDescription}
+      />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.competitions.registrationClosesAtLabel}
         <Input

@@ -32,6 +32,9 @@ import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
+import { CodeButton } from "../components/content/CodeButton.js";
+import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -60,6 +63,7 @@ export function PostPage() {
 
   const [replies, setReplies] = useState<PostReply[]>([]);
   const [replyDraft, setReplyDraft] = useState("");
+  const replyPaste = usePasteAsCode(replyTextareaRef, setReplyDraft, "-mb-2");
   const [replyToDelete, setReplyToDelete] = useState<string | null>(null);
 
   const [feedback, setFeedback] = useState<PostFeedbackEntry[]>([]);
@@ -290,7 +294,10 @@ export function PostPage() {
                 </a>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <a href={`/u/${reply.authorHandle}`} className="min-w-0 max-w-full hover:underline">
+                    <a
+                      href={`/u/${reply.authorHandle}`}
+                      className="min-w-0 max-w-full hover:underline"
+                    >
                       <UserName name={reply.authorDisplayName} level={reply.authorLevel} />
                     </a>
                     <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
@@ -325,36 +332,41 @@ export function PostPage() {
             ))
           )}
           {canInteract && (
-            <div className="flex gap-2">
-              <Textarea
-                ref={replyTextareaRef}
-                placeholder={fr.feed.replyPlaceholder}
-                aria-label={fr.feed.replyPlaceholder}
-                value={replyDraft}
-                onChange={(event) => setReplyDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    void handleReply();
-                  }
-                }}
-                variant="composer"
-                className="max-md:min-h-11 flex-1"
-              />
-              <Button onClick={handleReply} disabled={!replyDraft.trim()}>
-                {fr.feed.reply}
-              </Button>
+            <div className="flex flex-col gap-2">
+              {replyPaste.notice}
+              <div className="flex gap-2">
+                <CodeButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />
+                <Textarea
+                  ref={replyTextareaRef}
+                  placeholder={fr.feed.replyPlaceholder}
+                  aria-label={fr.feed.replyPlaceholder}
+                  value={replyDraft}
+                  onChange={(event) => setReplyDraft(event.target.value)}
+                  onPaste={replyPaste.handlePaste}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void handleReply();
+                    }
+                  }}
+                  variant="composer"
+                  className="max-md:min-h-11 flex-1"
+                />
+                <Button onClick={handleReply} disabled={!replyDraft.trim()}>
+                  {fr.feed.reply}
+                </Button>
+              </div>
             </div>
           )}
         </div>
 
         <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen} title={fr.feed.feedbackTitle}>
           <div className="flex flex-col gap-3">
-            <Textarea
+            <CodeTextarea
               placeholder={fr.feed.feedbackPlaceholder}
               aria-label={fr.feed.feedbackPlaceholder}
               value={feedbackBody}
-              onChange={(event) => setFeedbackBody(event.target.value)}
+              onValueChange={setFeedbackBody}
               autoFocus
             />
             {feedbackError && (

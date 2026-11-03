@@ -63,7 +63,11 @@ export async function createDemoCompetitions(
       pitch: "Des projets d'intelligence artificielle pensés pour des usages africains concrets.",
       description:
         "De la recommandation en langues locales à la détection d'anomalies sur des pipelines de données : " +
-        "le jury et le public votent pour le projet qui répond le mieux à un vrai besoin du continent.",
+        "le jury et le public votent pour le projet qui répond le mieux à un vrai besoin du continent.\n\n" +
+        "Chaque soumission documente comment lancer son évaluation en une commande, par exemple :\n\n" +
+        "```bash\n" +
+        "python -m evaluate --dataset data/test.jsonl --report report.md\n" +
+        "```",
       registrationClosesAt: daysAgo(20),
       submissionClosesAt: daysAgo(10),
       votingClosesAt: daysFromNow(4),
@@ -111,7 +115,14 @@ export async function createDemoCompetitions(
         authorId: ids.zaneleMokoena,
         title: "DataPulse",
         pitch: "Détecter les anomalies mémoire d'un pipeline Airflow avant qu'une tâche échoue sans message clair.",
-        description: "Remplace des seuils fixes par un modèle de détection d'anomalies pour réduire les faux positifs.",
+        description:
+          "Remplace des seuils fixes par un modèle de détection d'anomalies pour réduire les faux positifs.\n\n" +
+          "```python\n" +
+          "from sklearn.ensemble import IsolationForest\n\n" +
+          "features = memory_by_task[[\"rss_mb\", \"duration_s\"]]\n" +
+          "model = IsolationForest(contamination=0.01, random_state=0).fit(features)\n" +
+          "anomalies = memory_by_task[model.predict(features) == -1]\n" +
+          "```",
         repoUrl: "https://github.com/zanele-mokoena/datapulse",
         demoUrl: null,
         createdAt: daysAgo(11),

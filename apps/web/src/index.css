@@ -125,3 +125,34 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Sur mobile, Chromium cache la barre en surimpression et un bloc de code
+   ne montre pas qu'il défile. Les règles -webkit- ne s'appliquent que si
+   scrollbar-width et scrollbar-color restent à auto ; Firefox garde la
+   barre fine. */
+@media (max-width: 767px) {
+  .code-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  .code-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .code-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .code-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--subtle);
+    border-radius: 999px;
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    .code-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: var(--subtle) transparent;
+    }
+  }
+}

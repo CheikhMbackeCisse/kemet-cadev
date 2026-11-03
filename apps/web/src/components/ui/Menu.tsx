@@ -16,6 +16,8 @@ export interface MenuProps {
   selectedValue?: string;
   align?: "start" | "center" | "end";
   side?: "top" | "right" | "bottom" | "left";
+  /** Remplace le retour du focus sur le déclencheur à la fermeture. */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function Menu({
@@ -25,6 +27,7 @@ export function Menu({
   selectedValue,
   align = "end",
   side = "bottom",
+  onCloseAutoFocus,
 }: MenuProps) {
   return (
     <RadixMenu.Root>
@@ -34,7 +37,11 @@ export function Menu({
           align={align}
           side={side}
           sideOffset={4}
-          className="z-50 min-w-40 overflow-hidden rounded-panel border border-border bg-surface p-1 shadow-floating"
+          // Garde un menu long (langages du bouton Code) à distance des bords
+          // de l'écran au lieu de le coller au haut sur mobile.
+          collisionPadding={16}
+          onCloseAutoFocus={onCloseAutoFocus}
+          className="z-50 max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-40 overflow-y-auto rounded-panel border border-border-strong bg-surface p-1 shadow-floating"
         >
           {items.map((item) => (
             <RadixMenu.Item

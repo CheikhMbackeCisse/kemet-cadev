@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Input } from "../components/ui/Input.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { FormPage } from "../components/layout/FormPage.js";
 import { createProject } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 function parseStack(value: string): string[] {
   return value
@@ -88,13 +88,11 @@ export function NewProjectPage() {
         {fr.projects.pitchLabel}
         <Input value={pitch} onChange={(event) => setPitch(event.target.value)} />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.projects.descriptionLabel}
-        <Textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </label>
+      <CodeTextarea
+        label={fr.projects.descriptionLabel}
+        value={description}
+        onValueChange={setDescription}
+      />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.projects.repoUrlLabel}
         <Input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />

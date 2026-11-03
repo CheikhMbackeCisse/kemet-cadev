@@ -14,6 +14,7 @@ import {
   submitJuryScore,
   voteForSubmission,
 } from "../lib/chat/api.js";
+import { RichText } from "../components/content/RichText.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
@@ -214,7 +215,7 @@ export function CompetitionPage() {
           )}
         </div>
         {competition.description && (
-          <p className="whitespace-pre-wrap text-sm text-text">{competition.description}</p>
+          <RichText source={competition.description} className="text-sm text-text" />
         )}
         <p className="text-xs text-subtle">
           {fr.competitions.createdBy(competition.createdByHandle)}
@@ -303,6 +304,9 @@ export function CompetitionPage() {
                           <span className="text-xs text-subtle">{submission.teamName}</span>
                         </div>
                         <p className="mt-1 text-sm text-text-2">{submission.pitch}</p>
+                        {submission.description && (
+                          <RichText source={submission.description} className="mt-2 text-sm text-text" />
+                        )}
                         {submission.viewerIsTeamMember && competition.phase === "submission" && (
                           <Button
                             variant="secondary"

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { ProjectSummary, Submission } from "@kemet/shared";
 import { Input } from "../components/ui/Input.js";
 import { Select } from "../components/ui/Select.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { FormPage } from "../components/layout/FormPage.js";
 import {
   ChatApiError,
@@ -15,6 +14,7 @@ import {
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 /**
  * Soumettre un projet a une competition, ou modifier une soumission existante
@@ -147,13 +147,11 @@ export function SubmitProjectPage() {
         {fr.competitions.pitchLabel}
         <Input value={pitch} onChange={(event) => setPitch(event.target.value)} />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.descriptionLabel}
-        <Textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </label>
+      <CodeTextarea
+        label={fr.competitions.descriptionLabel}
+        value={description}
+        onValueChange={setDescription}
+      />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.competitions.repoUrlLabel}
         <Input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />

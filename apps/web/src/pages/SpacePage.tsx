@@ -32,6 +32,8 @@ import {
   useMessageListScroll,
 } from "../lib/chat/useMessageListScroll.js";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
+import { CodeButton } from "../components/content/CodeButton.js";
+import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { RichText } from "../components/content/RichText.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { AppShell } from "../components/shell/AppShell.js";
@@ -153,6 +155,7 @@ export function SpacePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const composerPaste = usePasteAsCode(composerRef, setDraft, "-mb-2");
   const mentions = useMentionAutocomplete({
     draft,
     setDraft,
@@ -782,8 +785,14 @@ export function SpacePage() {
                             <div className="min-w-0 flex-1">
                               {index === 0 && (
                                 <div className="flex flex-wrap items-baseline gap-x-2">
-                                  <a href={`/u/${group.authorHandle}`} className="min-w-0 max-w-full hover:underline">
-                                    <UserName name={group.authorDisplayName} level={group.authorLevel} />
+                                  <a
+                                    href={`/u/${group.authorHandle}`}
+                                    className="min-w-0 max-w-full hover:underline"
+                                  >
+                                    <UserName
+                                      name={group.authorDisplayName}
+                                      level={group.authorLevel}
+                                    />
                                   </a>
                                   <span className="text-xs text-subtle">
                                     {formatTime(message.createdAt)}
@@ -1005,6 +1014,7 @@ export function SpacePage() {
                   ))}
                 </div>
               )}
+              {composerPaste.notice}
               <div className="relative flex gap-2">
                 <p className="sr-only" aria-live="polite">
                   {mentions.suggestions.length > 0
@@ -1033,6 +1043,14 @@ export function SpacePage() {
                 >
                   <Paperclip className="size-4" aria-hidden="true" />
                 </IconButton>
+                <CodeButton
+                  textareaRef={composerRef}
+                  onChange={(value) => {
+                    setDraft(value);
+                    mentions.syncCaret();
+                  }}
+                  disabled={!activeChannelId}
+                />
                 <Textarea
                   ref={composerRef}
                   placeholder={fr.chat.composerPlaceholder}
@@ -1045,6 +1063,7 @@ export function SpacePage() {
                     mentions.syncCaret();
                   }}
                   onSelect={mentions.syncCaret}
+                  onPaste={composerPaste.handlePaste}
                   role="combobox"
                   aria-autocomplete="list"
                   aria-expanded={mentions.suggestions.length > 0}

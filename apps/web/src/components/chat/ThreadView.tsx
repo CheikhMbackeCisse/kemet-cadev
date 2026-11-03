@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import type { Message } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
 import type { OutgoingMessage } from "../../lib/chat/outgoing.js";
+import { CodeButton } from "../content/CodeButton.js";
+import { usePasteAsCode } from "../content/usePasteAsCode.js";
 import { RichText } from "../content/RichText.js";
 import { Button } from "../ui/Button.js";
 import { ErrorState } from "../ui/ErrorState.js";
@@ -70,6 +72,7 @@ export function ThreadView({
 }: ThreadViewProps) {
   const [draft, setDraft] = useState("");
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const { handlePaste, notice: pasteNotice } = usePasteAsCode(composerRef, setDraft, "-mb-2");
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Le fil est rendu en fin de page : sans ça, il faudrait traverser tout le
@@ -141,36 +144,41 @@ export function ThreadView({
         )}
       </div>
       {canWrite && (
-        <div className="flex shrink-0 gap-2 border-t border-border p-3">
-          <Textarea
-            ref={composerRef}
-            placeholder={fr.chat.threadComposerPlaceholder}
-            aria-label={fr.chat.threadComposerPlaceholder}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            enterKeyHint={enterSends ? "send" : "enter"}
-            onKeyDown={(event) => {
-              if (
-                enterSends &&
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                !event.nativeEvent.isComposing
-              ) {
-                event.preventDefault();
-                send();
-              }
-            }}
-            variant="composer"
-            className="max-md:min-h-11 flex-1"
-          />
-          <Button
-            onClick={send}
-            onPointerDown={(event) => event.preventDefault()}
-            aria-label={fr.chat.send}
-            className="max-md:size-control-mobile max-md:px-0"
-          >
-            <Send className="size-4" aria-hidden="true" />
-          </Button>
+        <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
+          {pasteNotice}
+          <div className="flex gap-2">
+            <CodeButton textareaRef={composerRef} onChange={setDraft} iconOnly />
+            <Textarea
+              ref={composerRef}
+              placeholder={fr.chat.threadComposerPlaceholder}
+              aria-label={fr.chat.threadComposerPlaceholder}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onPaste={handlePaste}
+              enterKeyHint={enterSends ? "send" : "enter"}
+              onKeyDown={(event) => {
+                if (
+                  enterSends &&
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+                  send();
+                }
+              }}
+              variant="composer"
+              className="max-md:min-h-11 flex-1"
+            />
+            <Button
+              onClick={send}
+              onPointerDown={(event) => event.preventDefault()}
+              aria-label={fr.chat.send}
+              className="max-md:size-control-mobile max-md:px-0"
+            >
+              <Send className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
         </div>
       )}
     </section>

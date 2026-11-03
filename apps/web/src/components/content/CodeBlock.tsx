@@ -88,7 +88,7 @@ export function CodeBlock({ code, languageLabel }: CodeBlockProps) {
         tabIndex={0}
         role="region"
         aria-label={fr.content.codeRegion(label)}
-        className="overflow-x-auto p-3 font-mono text-[13px] leading-relaxed text-text"
+        className="code-scroll overflow-x-auto p-3 font-mono text-[13px] leading-relaxed text-text"
       >
         <code>
           {tokens

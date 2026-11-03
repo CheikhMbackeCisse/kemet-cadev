@@ -5,7 +5,6 @@ import { Button } from "../components/ui/Button.js";
 import { IconButton } from "../components/ui/IconButton.js";
 import { Input } from "../components/ui/Input.js";
 import { Select } from "../components/ui/Select.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
 import { FormPage } from "../components/layout/FormPage.js";
 import {
@@ -17,6 +16,7 @@ import {
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 export function NewPostPage() {
   const toast = useToast();
@@ -93,15 +93,13 @@ export function NewPostPage() {
       error={error}
       onSubmit={handleSubmit}
     >
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.feed.newPostBodyLabel}
-        <Textarea
-          placeholder={fr.feed.composerPlaceholder}
-          value={body}
-          onChange={(event) => setBody(event.target.value)}
-          disabled={isSuspended}
-        />
-      </label>
+      <CodeTextarea
+        label={fr.feed.newPostBodyLabel}
+        placeholder={fr.feed.composerPlaceholder}
+        value={body}
+        onValueChange={setBody}
+        disabled={isSuspended}
+      />
 
       <div className="flex flex-col gap-2">
         <span className="text-sm text-text-2">{fr.feed.newPostImagesLabel}</span>

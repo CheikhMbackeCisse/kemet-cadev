@@ -49,3 +49,7 @@ Mobile et tablette ne changent pas.
   pages n'ont pas de panneau.
 - Ctrl+B est pris par l'application sur la page d'un salon. Le composeur
   n'a pas de mise en gras au clavier, le conflit n'existe pas aujourd'hui.
+- Deux sections sont prévues et ont leur place réservée : Travaux en
+  deuxième position, juste après le Fil, et Messages juste après Salons.
+  La barre affiche déjà une pastille de non-lus par section ; sur mobile,
+  Messages sera un segment en haut de l'onglet Salons plutôt qu'un onglet.

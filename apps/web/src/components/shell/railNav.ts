@@ -10,16 +10,19 @@ export interface RailNavItem {
 
 export interface NavSection extends RailNavItem {
   /**
-   * Place sur mobile : un onglet de la barre du bas, ou une ligne de la
-   * feuille ouverte par "Moi" (la barre n'a pas la place pour tout).
+   * Place sur mobile : un onglet de la barre du bas, une ligne de la feuille
+   * ouverte par "Moi" (la barre n'a pas la place pour tout), ou un segment en
+   * haut de l'onglet Salons (conversations privées).
    */
-  mobile: "tab" | "moi";
+  mobile: "tab" | "moi" | "salons";
 }
 
 /**
  * Seule liste des grandes sections, pour le bureau comme pour le mobile.
  * La navigation vit dans le rail (bureau) et dans la barre d'onglets
- * (mobile), jamais dans la barre du haut d'une page.
+ * (mobile), jamais dans la barre du haut d'une page. Ordre prévu une fois
+ * les deux sections livrées : Fil, Travaux, Salons, Messages, Skills,
+ * Projets, Compétitions. Messages passe par `mobile: "salons"`.
  */
 export const NAV_SECTIONS: NavSection[] = [
   { id: "fil", label: "Fil", href: "/fil", icon: Rss, mobile: "tab" },

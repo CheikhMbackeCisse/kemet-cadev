@@ -12,6 +12,7 @@ import {
   listApplications,
   listHelpRequests,
 } from "../lib/chat/api.js";
+import { RichText } from "../components/content/RichText.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
@@ -19,11 +20,11 @@ import { Dialog } from "../components/ui/Dialog.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 const KIND_LABELS: Record<HelpRequestKind, string> = {
   help: fr.projects.kindHelp,
@@ -219,7 +220,7 @@ export function ProjectPage() {
         </a>
 
         {project.description && (
-          <p className="whitespace-pre-wrap text-sm text-text">{project.description}</p>
+          <RichText source={project.description} className="text-sm text-text" />
         )}
 
         {project.stack.length > 0 && (
@@ -293,7 +294,7 @@ export function ProjectPage() {
                       : fr.projects.statusClosed}
                   </Badge>
                 </div>
-                <p className="mt-1 text-sm text-text-2">{helpRequest.description}</p>
+                <RichText source={helpRequest.description} className="mt-1 text-sm text-text-2" />
                 {helpRequest.stack.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {helpRequest.stack.map((item) => (
@@ -341,14 +342,12 @@ export function ProjectPage() {
         title={fr.projects.applyTitle}
       >
         <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.projects.applyMessageLabel}
-            <Textarea
-              value={applyMessage}
-              onChange={(event) => setApplyMessage(event.target.value)}
-              autoFocus
-            />
-          </label>
+          <CodeTextarea
+            label={fr.projects.applyMessageLabel}
+            value={applyMessage}
+            onValueChange={setApplyMessage}
+            autoFocus
+          />
           {applyError && (
             <p className="text-sm text-danger" role="alert">
               {applyError}
@@ -390,7 +389,7 @@ export function ProjectPage() {
                     {APPLICATION_STATUS_LABELS[application.status]}
                   </Badge>
                 </div>
-                <p className="text-sm text-text-2">{application.message}</p>
+                <RichText source={application.message} className="text-sm text-text-2" />
                 {application.status === "pending" && (
                   <div className="mt-1 flex gap-2">
                     <Button

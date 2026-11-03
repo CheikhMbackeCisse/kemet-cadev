@@ -5,14 +5,22 @@ import { cn } from "../../lib/cn.js";
 
 export type ToastTone = "neutral" | "success" | "danger";
 
+export interface ToastAction {
+  label: string;
+  /** Ce que fait l'action, pour un lecteur d'écran (Radix l'annonce avec le raccourci F8). */
+  altText: string;
+  onSelect: () => void;
+}
+
 interface ToastItem {
   id: number;
   title: string;
   tone: ToastTone;
+  action?: ToastAction;
 }
 
 interface ToastContextValue {
-  show: (title: string, tone?: ToastTone) => void;
+  show: (title: string, tone?: ToastTone, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -28,9 +36,9 @@ const TONE_CLASSES: Record<ToastTone, string> = {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
 
-  const show = useCallback((title: string, tone: ToastTone = "neutral") => {
+  const show = useCallback((title: string, tone: ToastTone = "neutral", action?: ToastAction) => {
     const id = nextId++;
-    setItems((current) => [...current, { id, title, tone }]);
+    setItems((current) => [...current, { id, title, tone, action }]);
   }, []);
 
   const dismiss = useCallback((id: number) => {
@@ -44,7 +52,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((item) => (
           <RadixToast.Root
             key={item.id}
-            duration={4000}
+            // Une action doit rester atteignable au clavier (F8, puis Tab) :
+            // 4 s ne suffisent pas.
+            duration={item.action ? 10000 : 4000}
             onOpenChange={(open) => {
               if (!open) dismiss(item.id);
             }}
@@ -54,12 +64,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             )}
           >
             <RadixToast.Title className="flex-1">{item.title}</RadixToast.Title>
-            <RadixToast.Close aria-label="Fermer la notification" className="text-muted hover:text-text">
+            {item.action && (
+              <RadixToast.Action
+                altText={item.action.altText}
+                onClick={item.action.onSelect}
+                className="inline-flex h-control items-center rounded-control px-2 font-medium text-link hover:underline max-md:h-control-mobile"
+              >
+                {item.action.label}
+              </RadixToast.Action>
+            )}
+            <RadixToast.Close
+              aria-label="Fermer la notification"
+              className="inline-flex size-control items-center justify-center rounded-control text-muted hover:text-text max-md:size-control-mobile"
+            >
               <X className="size-4" aria-hidden="true" />
             </RadixToast.Close>
           </RadixToast.Root>
         ))}
-        <RadixToast.Viewport className="fixed bottom-[calc(44px+1rem+env(safe-area-inset-bottom))] right-4 z-50 flex w-full max-w-sm flex-col gap-2 outline-none lg:bottom-4" />
+        <RadixToast.Viewport className="fixed bottom-[calc(44px+1rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 flex max-w-sm flex-col sm:left-auto sm:w-full gap-2 outline-none lg:bottom-4" />
       </RadixToast.Provider>
     </ToastContext.Provider>
   );

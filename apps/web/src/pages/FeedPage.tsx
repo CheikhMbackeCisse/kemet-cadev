@@ -16,7 +16,6 @@ import { Dialog } from "../components/ui/Dialog.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { Tabs } from "../components/ui/Tabs.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
 import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { InstallBanner } from "../components/shell/InstallBanner.js";
@@ -24,6 +23,7 @@ import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 function PostListItem({
   post,
@@ -268,11 +268,11 @@ export function FeedPage() {
           title={fr.feed.feedbackTitle}
         >
           <div className="flex flex-col gap-3">
-            <Textarea
+            <CodeTextarea
               placeholder={fr.feed.feedbackPlaceholder}
               aria-label={fr.feed.feedbackPlaceholder}
               value={feedbackBody}
-              onChange={(event) => setFeedbackBody(event.target.value)}
+              onValueChange={setFeedbackBody}
               autoFocus
             />
             {feedbackError && (

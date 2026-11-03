@@ -8,6 +8,7 @@ import { useSession } from "../session/SessionProvider.js";
 import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 export function NewSkillPage() {
   const { status } = useSession();
@@ -86,13 +87,11 @@ export function NewSkillPage() {
           onChange={(event) => setDescription(event.target.value)}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.skills.contentLabel}
-        <Textarea
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-        />
-      </label>
+      <CodeTextarea
+        label={fr.skills.contentLabel}
+        value={content}
+        onValueChange={setContent}
+      />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.skills.tagsLabel}
         <Input value={tags} onChange={(event) => setTags(event.target.value)} />

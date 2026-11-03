@@ -8,6 +8,8 @@ export const fr = {
   },
   shell: {
     activityBarLabel: "Sections",
+    sectionWithUnread: (label: string, count: number) =>
+      `${label}, ${count} non ${count > 1 ? "lus" : "lu"}`,
     home: "Accueil",
     openChannelList: "Ouvrir la liste des salons",
     openDetailsPanel: "Ouvrir le panneau",
@@ -36,6 +38,13 @@ export const fr = {
     externalImage: "Image externe",
     newTab: "(nouvel onglet)",
     table: "Tableau",
+    codeButton: "Code",
+    insertCode: "Insérer du code",
+    inlineCode: "Code en ligne",
+    pastedAsCode: "Collé comme code",
+    undoPasteAsCode: "Remettre en texte",
+    dismissPasteNotice: "Masquer l'indication de collage",
+    plainTextLanguage: "Texte",
   },
   auth: {
     signInCta: "Se connecter",
@@ -58,7 +67,8 @@ export const fr = {
     providerGoogle: "Google",
     providerLinkedin: "LinkedIn",
     noAccountYet: "Pas encore de compte ?",
-    signupPrivacyNotice: "En créant un compte, tu acceptes que Kemet garde les données décrites dans",
+    signupPrivacyNotice:
+      "En créant un compte, tu acceptes que Kemet garde les données décrites dans",
     signupPrivacyLink: "la politique de confidentialité",
     alreadyHaveAccount: "Déjà un compte ?",
     signupLink: "Créer un compte",
@@ -144,7 +154,8 @@ export const fr = {
     themeDark: "Sombre",
     dataSection: "Tes données",
     exportLink: "Télécharger mes données",
-    exportHint: "Un fichier JSON avec tout ce que Kemet garde sur ton compte, sans mot de passe ni jeton. Trois exports par heure au plus.",
+    exportHint:
+      "Un fichier JSON avec tout ce que Kemet garde sur ton compte, sans mot de passe ni jeton. Trois exports par heure au plus.",
     exportError: "Le téléchargement a échoué. Réessaie dans un instant.",
     exportRateLimited: "Trois exports par heure au plus. Réessaie dans une heure.",
     privacyLink: "Lire la politique de confidentialité",
@@ -184,7 +195,8 @@ export const fr = {
       "Les sauvegardes chiffrées de la base sont gardées 7 jours sur le serveur et 14 jours hors du serveur.",
     ],
     exportTitle: "Exporter tes données",
-    export: "Dans les Paramètres, « Télécharger mes données » te donne un fichier JSON avec tout ce que Kemet garde sur ton compte. Les mots de passe et les jetons de connexion n'y figurent jamais.",
+    export:
+      "Dans les Paramètres, « Télécharger mes données » te donne un fichier JSON avec tout ce que Kemet garde sur ton compte. Les mots de passe et les jetons de connexion n'y figurent jamais.",
     exportLink: "Aller aux Paramètres",
     deletionTitle: "Supprimer ton compte",
     deletion: "La suppression du compte depuis les Paramètres est en préparation.",
@@ -229,7 +241,9 @@ export const fr = {
     threadEmptyCanWrite: "Aucune réponse pour l'instant. Écris la première.",
     mentionSuggestions: "Suggestions de mention",
     mentionCount: (count: number) =>
-      count === 1 ? "1 suggestion, flèches pour choisir" : `${count} suggestions, flèches pour choisir`,
+      count === 1
+        ? "1 suggestion, flèches pour choisir"
+        : `${count} suggestions, flèches pour choisir`,
     assistantName: "Assistant Kemet",
     copyText: "Copier le texte",
     textCopied: "Texte copié.",
@@ -290,7 +304,8 @@ export const fr = {
     askKemet: "Demander à @kemet avec ce skill",
     askKemetSignIn: "Se connecter pour demander à @kemet",
     askKemetTitle: "Choisis un salon",
-    askKemetDescription: "Ton message s'ouvre en brouillon dans ce salon, avec @kemet et ce skill déjà écrits.",
+    askKemetDescription:
+      "Ton message s'ouvre en brouillon dans ce salon, avec @kemet et ce skill déjà écrits.",
     askKemetLoading: "Chargement de tes salons…",
     askKemetNoSpace: "Rejoins d'abord un espace pour poser ta question à @kemet.",
     askKemetBrowseSpaces: "Voir les espaces",

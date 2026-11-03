@@ -37,7 +37,12 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         body:
           "Astuce Fastify + PostgreSQL : une seule instance de pool de connexions partagée entre toutes les routes, " +
           "jamais un pool par requête. Ça paraît évident mais c'est la cause la plus fréquente des 'too many clients' " +
-          "qu'on voit sur les API qui montent en charge.",
+          "qu'on voit sur les API qui montent en charge.\n\n" +
+          "```typescript\n" +
+          "const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 10 });\n\n" +
+          "app.decorate(\"db\", pool);\n" +
+          "app.addHook(\"onClose\", async () => pool.end());\n" +
+          "```",
         createdAt: hoursAgo(120),
       },
       {

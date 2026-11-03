@@ -2,12 +2,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { HelpRequestKind } from "@kemet/shared";
 import { Input } from "../components/ui/Input.js";
 import { Select } from "../components/ui/Select.js";
-import { Textarea } from "../components/ui/Textarea.js";
 import { FormPage } from "../components/layout/FormPage.js";
 import { createHelpRequest } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 function parseStack(value: string): string[] {
   return value
@@ -80,13 +80,11 @@ export function NewHelpRequestPage() {
         {fr.projects.titleLabel}
         <Input value={title} onChange={(event) => setTitle(event.target.value)} />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.projects.descriptionLabel}
-        <Textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </label>
+      <CodeTextarea
+        label={fr.projects.descriptionLabel}
+        value={description}
+        onValueChange={setDescription}
+      />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.projects.stackLabel}
         <Input value={stack} onChange={(event) => setStack(event.target.value)} />

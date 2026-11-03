@@ -58,7 +58,15 @@ export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): 
       channelId: generalChannel!.id,
       authorId: accountIds.samuelMwangi,
       clientId: randomUUID(),
-      body: "On a eu le même souci côté paiement mobile : résoudre les conflits par horodatage serveur, jamais par horodatage client, règle ça la plupart du temps.",
+      body:
+        "On a eu le même souci côté paiement mobile : résoudre les conflits par horodatage serveur, jamais par " +
+        "horodatage client, règle ça la plupart du temps. Chez nous ça tient en quelques lignes :\n\n" +
+        "```dart\n" +
+        "PendingWrite resolve(PendingWrite local, PendingWrite remote) {\n" +
+        "  // L'horloge du téléphone peut mentir, celle du serveur fait foi.\n" +
+        "  return remote.serverUpdatedAt.isAfter(local.serverUpdatedAt) ? remote : local;\n" +
+        "}\n" +
+        "```",
       createdAt: hoursAgo(89),
     },
     {

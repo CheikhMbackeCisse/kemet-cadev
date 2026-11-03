@@ -20,6 +20,7 @@ export const MOI_SHEET_ITEMS: RailNavItem[] = [
 export function mobileTabFor(sectionId: string): string {
   const section = NAV_SECTIONS.find((candidate) => candidate.id === sectionId);
   if (section?.mobile === "moi") return MOI_TAB_ID;
+  if (section?.mobile === "salons") return "salons";
   if (sectionId === SETTINGS_NAV.id || sectionId === RAIL_FOOTER_NAV.id) return MOI_TAB_ID;
   return sectionId;
 }

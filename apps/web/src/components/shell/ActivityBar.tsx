@@ -11,6 +11,12 @@ export interface ActivityBarProps {
   activeSection?: string;
   /** Vrai si la page a un panneau latéral : l'icône active le replie alors. */
   hasSidePanel: boolean;
+  /** Non-lus par identifiant de section, affichés en pastille sur l'icône. */
+  unreadCounts?: Partial<Record<string, number>>;
+}
+
+function unreadBadgeText(count: number): string {
+  return count > 9 ? "9+" : String(count);
 }
 
 const TOP_ITEMS = RAIL_NAV;
@@ -27,7 +33,7 @@ const SHORTCUT_LABEL =
  * section. L'icône de la section ouverte replie ou rouvre le panneau
  * latéral, quand la page en a un ; sinon elle reste un lien.
  */
-export function ActivityBar({ activeSection, hasSidePanel }: ActivityBarProps) {
+export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: ActivityBarProps) {
   const { open, toggle } = useSidePanel();
   const activeIndex = ALL_ITEMS.findIndex((item) => item.id === activeSection);
   const [rovingIndex, setRovingIndex] = useState(Math.max(activeIndex, 0));
@@ -51,6 +57,7 @@ export function ActivityBar({ activeSection, hasSidePanel }: ActivityBarProps) {
   function renderItem(item: RailNavItem, index: number) {
     const active = item.id === activeSection;
     const togglesPanel = active && hasSidePanel;
+    const unread = unreadCounts?.[item.id] ?? 0;
     const className = cn(
       "relative inline-flex size-control items-center justify-center rounded-control",
       // Comme dans VS Code : l'indicateur marque la page, le fond le panneau ouvert.
@@ -66,12 +73,24 @@ export function ActivityBar({ activeSection, hasSidePanel }: ActivityBarProps) {
       },
       tabIndex: index === rovingIndex ? 0 : -1,
       onFocus: () => setRovingIndex(index),
-      "aria-label": item.label,
+      "aria-label": unread > 0 ? fr.shell.sectionWithUnread(item.label, unread) : item.label,
       "aria-current": active ? ("page" as const) : undefined,
       "data-activity-current": active ? "" : undefined,
       className,
     };
-    const icon = <item.icon className="size-5" aria-hidden="true" />;
+    const icon = (
+      <>
+        <item.icon className="size-5" aria-hidden="true" />
+        {unread > 0 && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-medium leading-none text-white tabular-nums"
+          >
+            {unreadBadgeText(unread)}
+          </span>
+        )}
+      </>
+    );
 
     return (
       <li key={item.id} className="relative flex w-full justify-center">
