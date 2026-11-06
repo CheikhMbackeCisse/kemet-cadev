@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const reportTargetSchema = z.enum(["message", "post", "profile"]);
+export const reportTargetSchema = z.enum(["message", "post", "profile", "work"]);
 export type ReportTarget = z.infer<typeof reportTargetSchema>;
 
 export const reportStatusSchema = z.enum(["pending", "resolved", "dismissed"]);
@@ -35,7 +35,7 @@ export const resolveReportSchema = z.object({
 export type ResolveReportInput = z.infer<typeof resolveReportSchema>;
 
 // Résumé de la cible calculé côté serveur (texte tronqué pour un message ou
-// un post, handle pour un profil) : le client n'a jamais besoin de refaire
+// un post, titre pour un travail, handle pour un profil) : le client n'a jamais besoin de refaire
 // cette résolution lui-même.
 export const reportSchema = z.object({
   id: z.string().uuid(),

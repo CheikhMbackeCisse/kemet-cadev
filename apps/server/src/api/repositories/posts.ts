@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
-import { follows, postFeedback, postReactions, postReplies, posts, profiles, type Db, type DbOrTx } from "@kemet/db";
+import { follows, postFeedback, postReactions, postReplies, posts, profiles, works, type Db, type DbOrTx } from "@kemet/db";
 import type { CreatePostInput } from "@kemet/shared";
 import { findProfileById } from "./chat.js";
 import { listAttachmentsForPosts } from "./post-attachments.js";
@@ -24,6 +24,7 @@ export async function insertPost(
     testUrl: string | null;
     testAsk: string | null;
     sharedPostId: string | null;
+    workId?: string | null;
   },
 ) {
   const [post] = await db
@@ -35,6 +36,7 @@ export async function insertPost(
       testUrl: input.testUrl ?? null,
       testAsk: input.testAsk ?? null,
       sharedPostId: input.sharedPostId,
+      workId: input.workId ?? null,
     })
     .returning();
   return post!;
@@ -130,7 +132,7 @@ export async function togglePostReaction(db: Db, postId: string, profileId: stri
 
 // `viewerProfileId` est `null` pour un visiteur : jamais réagi, sans requête.
 export async function hydratePost(db: Db, row: typeof posts.$inferSelect, viewerProfileId: string | null) {
-  const [author, utileCount, reactedByMe, replyCount, feedbackCount, sharedPost, attachments] = await Promise.all([
+  const [author, utileCount, reactedByMe, replyCount, feedbackCount, sharedPost, attachments, work] = await Promise.all([
     findProfileById(db, row.authorId),
     countPostReactions(db, row.id),
     viewerProfileId ? isPostReactedByProfile(db, row.id, viewerProfileId) : Promise.resolve(false),
@@ -138,6 +140,7 @@ export async function hydratePost(db: Db, row: typeof posts.$inferSelect, viewer
     countPostFeedback(db, row.id),
     row.sharedPostId ? findPostById(db, row.sharedPostId) : Promise.resolve(null),
     listAttachmentsForPosts(db, [row.id]),
+    row.workId ? findLinkedWork(db, row.workId) : Promise.resolve(null),
   ]);
   const sharedAuthor = sharedPost ? await findProfileById(db, sharedPost.authorId) : null;
   const sharedAttachments = sharedPost ? await listAttachmentsForPosts(db, [sharedPost.id]) : [];
@@ -152,7 +155,13 @@ export async function hydratePost(db: Db, row: typeof posts.$inferSelect, viewer
     sharedPost,
     sharedAuthor,
     sharedAttachments,
+    work,
   };
+}
+
+async function findLinkedWork(db: Db, workId: string) {
+  const [work] = await db.select().from(works).where(eq(works.id, workId));
+  return work && !work.deletedAt ? work : null;
 }
 
 export async function insertPostReply(db: Db, input: { postId: string; authorId: string; body: string }) {

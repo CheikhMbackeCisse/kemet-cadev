@@ -88,6 +88,7 @@ async function toSerializedPosts(db: ChatAppDeps["db"], rows: (typeof posts.$inf
             attachments: hydrated.sharedAttachments,
           }
         : null,
+      hydrated.work,
     ),
   );
 }

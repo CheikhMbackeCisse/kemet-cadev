@@ -13,6 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
+import { works } from "./works.js";
 
 export const postFormatEnum = pgEnum("post_format", ["astuce", "a_tester", "question"]);
 
@@ -30,6 +31,8 @@ export const posts = pgTable(
     format: postFormatEnum("format"),
     testUrl: text("test_url"),
     testAsk: text("test_ask"),
+    // Post publié automatiquement avec un travail : il renvoie vers lui.
+    workId: uuid("work_id").references(() => works.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),
     deletedAt: timestamp("deleted_at"),
@@ -37,6 +40,7 @@ export const posts = pgTable(
   (table) => [
     index("posts_author_created_idx").on(table.authorId, table.createdAt),
     index("posts_shared_post_idx").on(table.sharedPostId),
+    index("posts_work_idx").on(table.workId),
     // Pas de CHECK "texte ou image" : les images vivent dans une autre table.
     // La règle est appliquée par createPostSchema.
     // Écrit avec coalesce pour éviter le piège des CHECK Postgres : une
@@ -134,6 +138,7 @@ export const postsRelations = relations(posts, ({ one, many }) => ({
   reactions: many(postReactions),
   feedback: many(postFeedback),
   attachments: many(postAttachments),
+  work: one(works, { fields: [posts.workId], references: [works.id] }),
 }));
 
 export const postAttachmentsRelations = relations(postAttachments, ({ one }) => ({

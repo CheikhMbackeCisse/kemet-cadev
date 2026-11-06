@@ -16,6 +16,7 @@ import {
 import { findProfileByHandle, findProfileByUserId, reinstateProfile, suspendProfile } from "../repositories/profiles.js";
 import { findProfileById, softDeleteMessage } from "../repositories/chat.js";
 import { softDeletePost } from "../repositories/posts.js";
+import { softDeleteWork } from "../repositories/works.js";
 import { serializeModerationActionEntry, serializeReport } from "../moderation-serializers.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
 import type { ChatAppDeps } from "../app.js";
@@ -85,9 +86,9 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
       if (report.status !== "pending") throw conflict("Ce signalement a déjà été traité.");
       const input = resolveReportSchema.parse(request.body);
 
-      const contentTargets = report.targetType === "message" || report.targetType === "post";
+      const contentTargets = report.targetType !== "profile";
       if (input.action === "hide" && !contentTargets) {
-        throw badRequest("Seul un message ou un post peut être masqué.");
+        throw badRequest("Seul un message, un post ou un travail peut être masqué.");
       }
       if (input.action === "suspend" && report.targetType !== "profile") {
         throw badRequest("Seul un profil peut être suspendu.");
@@ -109,6 +110,7 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
 
       if (input.action === "hide") {
         if (report.targetType === "message") await softDeleteMessage(db, report.targetId);
+        else if (report.targetType === "work") await softDeleteWork(db, report.targetId);
         else await softDeletePost(db, report.targetId);
         await resolvePendingReportsForTarget(db, report.targetType, report.targetId, admin.id);
         await insertModerationAction(db, {

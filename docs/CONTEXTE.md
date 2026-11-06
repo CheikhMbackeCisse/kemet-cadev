@@ -60,6 +60,7 @@ P0 = indispensable, terminé, testé et déployé le 19 octobre. P1 = visé. P2 
 | Fil de posts | Posts courts, réponses, partages, mèmes, onglets "Abonnements" et "Pour toi", formats optionnels (Astuce, À tester, Question) | Recherche dans le fil, retours structurés sur les posts "À tester" | |
 | Assistant et skills | Assistant @kemet, création de skills, appel explicite ou automatique, réponse en streaming qui cite le skill et son auteur, page publique du skill, étoiles, bouton "Utile" | Fiches de connaissance, outils MCP | Modèle hébergé chez Systalink |
 | Projets | Page projet, demandes d'aide et de collaboration, candidatures | Recherche par stack et par pays | |
+| Travaux | Projets de classe, stages, mémoires, applications et articles publiés avec leurs auteurs (coauteurs qui acceptent, auteurs sans compte), liens, un PDF ; "Qui a travaillé sur ce sujet ?" sur un travail, un projet ou un post Question | | |
 | Compétitions | Compétitions de projets : inscription, soumission, vote, jury, résultats sur le profil | Défis de code sans exécution | Défis avec correction automatique |
 | Appels | | Audio en privé et en groupe | Vidéo |
 | Interface | Thème clair ou sombre selon le système, mobile soigné, notifications dans l'app | Notifications push, palette de commandes Ctrl+K | |

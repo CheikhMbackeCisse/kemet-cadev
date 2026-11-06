@@ -32,6 +32,11 @@ import { registerCompetitionRoutes } from "./routes/competitions.js";
 import { registerModerationRoutes } from "./routes/moderation.js";
 import { registerCredentialRoutes } from "./routes/credentials.js";
 import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
+import { UnavailableLlmProvider } from "../ai/llm-provider.js";
+import { WorkMatcher } from "../ai/work-matcher.js";
+import { FullTextWorkRetriever } from "../ai/work-retriever.js";
+import { registerWorkRoutes } from "./routes/works.js";
+import { registerWorkMatchRoutes } from "./routes/work-matches.js";
 
 export interface AppDeps {
   db: Db;
@@ -43,6 +48,7 @@ export interface AppDeps {
   authConfig?: AuthConfig;
   privacyContact?: PrivacyContact | null;
   antiSpamConfig?: AntiSpamConfig;
+  workMatcher?: WorkMatcher;
 }
 
 const TRUSTED_PROXY_RANGES = ["loopback", "uniquelocal"];
@@ -61,6 +67,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const authConfig = deps.authConfig ?? loadAuthConfig();
   const privacyContact = deps.privacyContact === undefined ? loadPrivacyContact() : deps.privacyContact;
   const antiSpamConfig = deps.antiSpamConfig ?? loadAntiSpamConfig();
+  // Sans fournisseur d'IA, la mise en relation garde la recherche plein texte.
+  const workMatcher =
+    deps.workMatcher ?? new WorkMatcher(deps.db, new UnavailableLlmProvider(), new FullTextWorkRetriever(deps.db));
 
   void app.register(rateLimit, { global: false });
   void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
@@ -136,6 +145,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       attachmentLimits,
       assistant,
       antiSpamConfig,
+      workMatcher,
     };
     registerSpaceRoutes(app, chatDeps);
     registerChannelRoutes(app, chatDeps);
@@ -152,6 +162,8 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerModerationRoutes(app, chatDeps);
     registerCredentialRoutes(app, chatDeps);
     registerAccountDeletionRoutes(app, chatDeps);
+    registerWorkRoutes(app, chatDeps);
+    registerWorkMatchRoutes(app, chatDeps);
   });
 
   return app;
@@ -165,4 +177,5 @@ export interface ChatAppDeps {
   attachmentLimits: AttachmentLimits;
   assistant: AssistantOrchestrator;
   antiSpamConfig: AntiSpamConfig;
+  workMatcher: WorkMatcher;
 }

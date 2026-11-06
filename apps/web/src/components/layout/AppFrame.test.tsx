@@ -118,7 +118,7 @@ describe("cadre de bureau", () => {
 
     tabStops[0]!.focus();
     fireEvent.keyDown(tabStops[0]!, { key: "ArrowDown" });
-    expect(within(bar).getByRole("link", { name: "Salons" })).toHaveFocus();
+    expect(within(bar).getByRole("link", { name: "Travaux" })).toHaveFocus();
 
     fireEvent.keyDown(document.activeElement!, { key: "End" });
     expect(within(bar).getByRole("link", { name: "Paramètres" })).toHaveFocus();

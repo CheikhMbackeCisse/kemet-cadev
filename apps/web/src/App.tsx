@@ -96,6 +96,13 @@ const DeleteAccountPage = lazy(() =>
 const PrivacyPage = lazy(() =>
   import("./pages/PrivacyPage.js").then((m) => ({ default: m.PrivacyPage })),
 );
+const WorksPage = lazy(() =>
+  import("./pages/WorksPage.js").then((m) => ({ default: m.WorksPage })),
+);
+const WorkPage = lazy(() => import("./pages/WorkPage.js").then((m) => ({ default: m.WorkPage })));
+const WorkFormPage = lazy(() =>
+  import("./pages/WorkFormPage.js").then((m) => ({ default: m.WorkFormPage })),
+);
 const UserPage = lazy(() => import("./pages/UserPage.js").then((m) => ({ default: m.UserPage })));
 
 const STATUS_LABELS: Record<ServiceStatus, string> = {
@@ -173,6 +180,10 @@ function resolvePage(pathname: string) {
   if (pathname === "/projets/nouveau") return <NewProjectPage />;
   if (/^\/projets\/[^/]+\/demandes\/nouvelle$/.test(pathname)) return <NewHelpRequestPage />;
   if (pathname.startsWith("/projets/")) return <ProjectPage />;
+  if (pathname === "/travaux" || pathname === "/travaux/") return <WorksPage />;
+  if (pathname === "/travaux/nouveau" || /^\/travaux\/[^/]+\/modifier\/?$/.test(pathname))
+    return <WorkFormPage />;
+  if (pathname.startsWith("/travaux/")) return <WorkPage />;
   if (pathname === "/competitions" || pathname === "/competitions/") return <CompetitionsPage />;
   if (pathname === "/competitions/nouvelle") return <NewCompetitionPage />;
   if (/^\/competitions\/[^/]+\/soumettre$/.test(pathname)) return <SubmitProjectPage />;

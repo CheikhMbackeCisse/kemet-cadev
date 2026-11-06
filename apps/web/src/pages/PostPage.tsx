@@ -36,6 +36,7 @@ import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
+import { WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
 import { fr } from "../i18n/fr.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { CodeButton } from "../components/content/CodeButton.js";
@@ -257,6 +258,10 @@ export function PostPage() {
           onDelete={() => setDeleteOpen(true)}
           onReply={() => replyTextareaRef.current?.focus()}
         />
+
+        {post.format === "question" && !post.deletedAt && (
+          <WorkMatchPanel subject={{ type: "post", id: post.id }} signedIn={status === "ready"} />
+        )}
 
         {post.format === "a_tester" && feedback.length > 0 && (
           <Card variant="plain" padding="compact" className="flex flex-col gap-2">

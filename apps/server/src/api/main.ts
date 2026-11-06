@@ -10,6 +10,8 @@ import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { FullTextRetriever } from "../ai/skill-retriever.js";
 import { RedisResponseCache } from "../ai/response-cache.js";
 import { KemetAssistantOrchestrator, RECORDED_ANSWER_REPLAY_DELAY_MS } from "../ai/assistant-orchestrator.js";
+import { WorkMatcher } from "../ai/work-matcher.js";
+import { FullTextWorkRetriever } from "../ai/work-retriever.js";
 import { buildApp } from "./app.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
@@ -72,12 +74,13 @@ const attachmentLimits = loadAttachmentLimits();
 // questions de démo connues, par leur réponse enregistrée.
 const hasLlmKeys = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.OPENROUTER_API_KEY);
 const recordedAnswersEnabled = process.env.ASSISTANT_RECORDED_ANSWERS === "true";
+const llmProvider = hasLlmKeys ? createLlmProviderFromEnv(process.env) : new UnavailableLlmProvider();
 const assistant =
   hasLlmKeys || recordedAnswersEnabled
     ? new KemetAssistantOrchestrator(
         db,
         chat,
-        hasLlmKeys ? createLlmProviderFromEnv(process.env) : new UnavailableLlmProvider(),
+        llmProvider,
         new FullTextRetriever(db),
         new RedisResponseCache(valkeyUrl),
         undefined,
@@ -85,7 +88,13 @@ const assistant =
       )
     : undefined;
 
-const app = buildApp({ db, auth, chat, storage, attachmentLimits, assistant });
+// Toujours construit : sans clés, la mise en relation se replie sur la
+// recherche plein texte, ou sur sa réponse enregistrée pour la démo.
+const workMatcher = new WorkMatcher(db, llmProvider, new FullTextWorkRetriever(db), {
+  recordedAnswers: recordedAnswersEnabled,
+});
+
+const app = buildApp({ db, auth, chat, storage, attachmentLimits, assistant, workMatcher });
 
 const port = Number(process.env.API_PORT ?? 3001);
 app.listen({ port, host: "0.0.0.0" }).catch((error) => {

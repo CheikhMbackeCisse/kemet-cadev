@@ -3,11 +3,12 @@ import type { FastifyInstance } from "fastify";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { detectAttachment } from "../../storage/detect-attachment.js";
-import { lockUserStorageQuota, sumUserStorageBytes } from "../repositories/attachments.js";
+import { contentDisposition } from "../../storage/content-disposition.js";
+import { lockUserStorageQuota } from "../repositories/attachments.js";
+import { sumTotalUserStorageBytes } from "../repositories/storage-usage.js";
 import {
   findPostAttachmentById,
   insertPendingPostAttachment,
-  sumUserPostAttachmentBytes,
 } from "../repositories/post-attachments.js";
 import { findPostById } from "../repositories/posts.js";
 import { findProfileByUserId, isProfileDeleted } from "../repositories/profiles.js";
@@ -71,8 +72,7 @@ export function registerPostAttachmentRoutes(
       const attachment = await db.transaction(async (tx) => {
         // Même verrou que les fichiers de salon : un seul quota par utilisateur.
         await lockUserStorageQuota(tx, profile.id);
-        const alreadyStored =
-          (await sumUserStorageBytes(tx, profile.id)) + (await sumUserPostAttachmentBytes(tx, profile.id));
+        const alreadyStored = await sumTotalUserStorageBytes(tx, profile.id);
         if (alreadyStored + buffer.length > attachmentLimits.maxUserStorageBytes) {
           throw badRequest("Quota de stockage de fichiers atteint.");
         }
@@ -105,7 +105,7 @@ export function registerPostAttachmentRoutes(
       .header("X-Content-Type-Options", "nosniff")
       .header("Content-Security-Policy", "default-src 'none'")
       .header("Content-Length", attachment.byteSize)
-      .header("Content-Disposition", `inline; filename="${attachment.originalName}"`)
+      .header("Content-Disposition", contentDisposition("inline", attachment.originalName))
       .type(attachment.mimeType);
     return reply.send(storage.read(attachment.storageKey));
   });

@@ -1,11 +1,17 @@
 import { User } from "lucide-react";
-import { NAV_SECTIONS, RAIL_FOOTER_NAV, SETTINGS_NAV, type RailNavItem } from "./railNav.js";
+import {
+  MOBILE_TAB_ORDER,
+  NAV_SECTIONS,
+  RAIL_FOOTER_NAV,
+  SETTINGS_NAV,
+  type RailNavItem,
+} from "./railNav.js";
 import type { MobileTabItem } from "./types.js";
 
 export const MOI_TAB_ID = "moi";
 
 export const MOBILE_TABS: MobileTabItem[] = [
-  ...NAV_SECTIONS.filter((section) => section.mobile === "tab"),
+  ...MOBILE_TAB_ORDER.map((id) => NAV_SECTIONS.find((section) => section.id === id)!),
   { id: MOI_TAB_ID, label: "Moi", icon: User },
 ];
 

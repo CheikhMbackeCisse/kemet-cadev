@@ -11,6 +11,7 @@ import { UserName } from "../ui/UserName.js";
 import { ReportMenu } from "../moderation/ReportMenu.js";
 import { PostImages } from "./PostImages.js";
 import { RichText } from "../content/RichText.js";
+import { WORK_TYPE_LABELS } from "../works/workLabels.js";
 import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
 import { authorLevel, ProfileLink } from "../ui/ProfileLink.js";
@@ -56,6 +57,20 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
       </div>
       <p className="mt-1 text-sm text-text-2">{post.body}</p>
       <PostImages attachments={post.attachments} />
+    </a>
+  );
+}
+
+function WorkPreview({ work }: { work: PostSummary["work"] }) {
+  if (!work) return null;
+  return (
+    <a
+      href={`/travaux/${work.slug}`}
+      className="mt-2 block rounded-card bg-surface-2 p-3 hover:bg-accent-soft"
+    >
+      <p className="text-xs text-muted">{WORK_TYPE_LABELS[work.type]}</p>
+      <p className="mt-0.5 text-sm font-medium text-text">{work.title}</p>
+      <p className="mt-1 line-clamp-3 text-sm text-text-2">{work.excerpt}</p>
     </a>
   );
 }
@@ -150,16 +165,22 @@ export function PostCard({
               <span className="text-xs text-subtle">{formatTime(post.createdAt)}</span>
             )}
             {post.format && <Badge>{FORMAT_LABELS[post.format]}</Badge>}
+            {post.work && !post.deletedAt && (
+              <span className="text-xs text-subtle">{fr.works.feedAnnouncement}</span>
+            )}
           </div>
           {post.deletedAt ? (
             <p className="mt-1 text-sm text-text">{fr.feed.postDeleted}</p>
           ) : (
-            <div onClick={openPostFromBody} className={cn(bodyHref && "cursor-pointer")}>
-              <RichText source={post.body} className="mt-1 text-base text-text" />
-            </div>
+            post.body && (
+              <div onClick={openPostFromBody} className={cn(bodyHref && "cursor-pointer")}>
+                <RichText source={post.body} className="mt-1 text-base text-text" />
+              </div>
+            )
           )}
           {!post.deletedAt && <PostImages attachments={post.attachments} />}
           {!post.deletedAt && <SharedPostPreview post={post.sharedPost} />}
+          {!post.deletedAt && <WorkPreview work={post.work} />}
           {post.format === "a_tester" && post.testUrl && (
             <a
               href={post.testUrl}

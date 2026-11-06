@@ -21,6 +21,8 @@ import {
   user,
   verification,
   votes,
+  workAttachments,
+  workAuthors,
   type Db,
 } from "@kemet/db";
 import { DELETED_ACCOUNT_HANDLE_PREFIX } from "@kemet/shared";
@@ -40,7 +42,10 @@ function randomDeletedHandle(): string {
 
 /** Fournisseurs de connexion liés au compte, hors mot de passe. */
 export async function listSocialProviders(db: Db, userId: string): Promise<string[]> {
-  const rows = await db.select({ providerId: account.providerId }).from(account).where(eq(account.userId, userId));
+  const rows = await db
+    .select({ providerId: account.providerId })
+    .from(account)
+    .where(eq(account.userId, userId));
   return rows.map((row) => row.providerId).filter((providerId) => providerId !== "credential");
 }
 
@@ -172,5 +177,14 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .select({ storageKey: postAttachments.storageKey })
     .from(postAttachments)
     .where(eq(postAttachments.authorId, profileId));
-  return [...messageFiles, ...postFiles].map((file) => file.storageKey);
+  // Le PDF d'un travail porte en général le nom de son auteur : il part avec
+  // le compte, comme les images de post. Le travail reste, sans pièce jointe.
+  const workFiles = await tx
+    .delete(workAttachments)
+    .where(eq(workAttachments.authorId, profileId))
+    .returning({ storageKey: workAttachments.storageKey });
+  await tx
+    .delete(workAuthors)
+    .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "pending")));
+  return [...messageFiles, ...postFiles, ...workFiles].map((file) => file.storageKey);
 }

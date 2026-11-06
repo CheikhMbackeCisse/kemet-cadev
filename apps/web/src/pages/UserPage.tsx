@@ -26,6 +26,8 @@ import { Skeleton } from "../components/ui/Skeleton.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
+import { Tabs } from "../components/ui/Tabs.js";
+import { ProfileWorks, WorkInvitations } from "../components/works/ProfileWorks.js";
 import { useSession } from "../session/SessionProvider.js";
 import { formatCount } from "../lib/formatCount.js";
 import { fr } from "../i18n/fr.js";
@@ -80,6 +82,23 @@ export function UserPage() {
   const [error, setError] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  // L'onglet vit dans l'adresse : "Parcours" se partage par un lien.
+  const [tab, setTab] = useState(() =>
+    new URLSearchParams(window.location.search).get("onglet") === "parcours"
+      ? "parcours"
+      : "travaux",
+  );
+
+  function selectTab(value: string) {
+    setTab(value);
+    const url =
+      value === "parcours"
+        ? `${window.location.pathname}?onglet=parcours`
+        : window.location.pathname;
+    window.history.replaceState(null, "", url);
+  }
+
+  const [worksReloadKey, setWorksReloadKey] = useState(0);
 
   const [followList, setFollowList] = useState<FollowListKind | null>(null);
   const [followListItems, setFollowListItems] = useState<ProfileSummary[]>([]);
@@ -183,6 +202,34 @@ export function UserPage() {
 
   const { profile, credentials, followerCount, followingCount, isFollowedByViewer } = data;
   const isOwnProfile = viewerProfile?.handle === profile.handle;
+
+  const credentialsContent = (
+    <div className="flex flex-col gap-3">
+      {credentials.length === 0 ? (
+        <p className="text-sm text-subtle">{fr.profile.noCredentials}</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {credentials.map((credential: Credential) => (
+            <li key={credential.id} className="py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge>{CREDENTIAL_TYPE_LABELS[credential.type]}</Badge>
+                <span className="text-sm font-medium text-text">{credential.title}</span>
+                <Badge tone={credential.status === "verified" ? "success" : "neutral"}>
+                  {credential.status === "verified"
+                    ? fr.profile.credentialVerified
+                    : fr.profile.credentialDeclared}
+                </Badge>
+              </div>
+              <p className="mt-1 text-sm text-text-2">{credential.organization}</p>
+              <p className="mt-0.5 text-xs text-subtle">
+                {formatCredentialRange(credential.startDate, credential.endDate)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 
   return (
     <ReadingPage header={header} activeMobileTab="moi">
@@ -294,32 +341,26 @@ export function UserPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-border pt-6">
-        <p className="text-md font-semibold text-text">{fr.profile.credentialsTitle}</p>
-        {credentials.length === 0 ? (
-          <p className="text-sm text-subtle">{fr.profile.noCredentials}</p>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {credentials.map((credential: Credential) => (
-              <li key={credential.id} className="py-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge>{CREDENTIAL_TYPE_LABELS[credential.type]}</Badge>
-                  <span className="text-sm font-medium text-text">{credential.title}</span>
-                  <Badge tone={credential.status === "verified" ? "success" : "neutral"}>
-                    {credential.status === "verified"
-                      ? fr.profile.credentialVerified
-                      : fr.profile.credentialDeclared}
-                  </Badge>
-                </div>
-                <p className="mt-1 text-sm text-text-2">{credential.organization}</p>
-                <p className="mt-0.5 text-xs text-subtle">
-                  {formatCredentialRange(credential.startDate, credential.endDate)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {isOwnProfile && <WorkInvitations onDecided={() => setWorksReloadKey((key) => key + 1)} />}
+
+      <Tabs
+        value={tab}
+        onValueChange={selectTab}
+        items={[
+          {
+            value: "travaux",
+            label: fr.works.profileTab,
+            content: (
+              <ProfileWorks
+                handle={profile.handle}
+                isOwnProfile={isOwnProfile}
+                reloadKey={worksReloadKey}
+              />
+            ),
+          },
+          { value: "parcours", label: fr.works.profileCredentialsTab, content: credentialsContent },
+        ]}
+      />
 
       <Dialog
         open={followList !== null}

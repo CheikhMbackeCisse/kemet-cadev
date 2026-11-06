@@ -2,6 +2,7 @@ import { z } from "zod";
 import { levelSchema } from "./points.js";
 import { attachmentSchema, MAX_POST_ATTACHMENTS } from "./attachment.js";
 import { httpUrlSchema } from "./url.js";
+import { workTypeSchema } from "./work.js";
 
 export const MAX_POST_BODY_LENGTH = 1000;
 export const MAX_POST_REPLY_LENGTH = 1000;
@@ -94,6 +95,16 @@ export const sharedPostPreviewSchema = z.object({
 
 export type SharedPostPreview = z.infer<typeof sharedPostPreviewSchema>;
 
+/** Travail annoncé par un post publié avec lui. */
+export const postWorkPreviewSchema = z.object({
+  slug: z.string(),
+  title: z.string(),
+  type: workTypeSchema,
+  excerpt: z.string(),
+});
+
+export type PostWorkPreview = z.infer<typeof postWorkPreviewSchema>;
+
 export const postSummarySchema = z.object({
   id: z.string().uuid(),
   authorId: z.string().uuid(),
@@ -108,6 +119,7 @@ export const postSummarySchema = z.object({
   testAsk: z.string().nullable(),
   attachments: z.array(attachmentSchema),
   sharedPost: sharedPostPreviewSchema.nullable(),
+  work: postWorkPreviewSchema.nullable(),
   utileCount: z.number().int().nonnegative(),
   reactedByMe: z.boolean(),
   replyCount: z.number().int().nonnegative(),

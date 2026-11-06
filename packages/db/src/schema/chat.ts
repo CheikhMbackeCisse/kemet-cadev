@@ -16,6 +16,15 @@ import { profiles } from "./profiles.js";
 
 export const spaceVisibilityEnum = pgEnum("space_visibility", ["public", "private"]);
 export const attachmentKindEnum = pgEnum("attachment_kind", ["image", "file"]);
+// Un espace "work_discussions" porte les salons de discussion des travaux :
+// il n'apparaît jamais dans la liste des espaces.
+export const spaceKindEnum = pgEnum("space_kind", ["community", "work_discussions"]);
+
+/**
+ * Espace système qui porte un salon public par travail, créé par une migration
+ * au nom du profil de l'assistant : aucun compte ne peut prendre son slug.
+ */
+export const WORK_DISCUSSIONS_SPACE_ID = "00000000-0000-0000-0000-000000000002";
 export const spaceMemberRoleEnum = pgEnum("space_member_role", ["owner", "admin", "member"]);
 
 export const spaces = pgTable("spaces", {
@@ -24,6 +33,7 @@ export const spaces = pgTable("spaces", {
   slug: text("slug").notNull().unique(),
   description: text("description"),
   visibility: spaceVisibilityEnum("visibility").notNull().default("public"),
+  kind: spaceKindEnum("kind").notNull().default("community"),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => profiles.id, { onDelete: "cascade" }),
@@ -148,7 +158,9 @@ export const messageMentions = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
   },
-  (table) => [uniqueIndex("message_mentions_message_profile_idx").on(table.messageId, table.profileId)],
+  (table) => [
+    uniqueIndex("message_mentions_message_profile_idx").on(table.messageId, table.profileId),
+  ],
 );
 
 export const messageReactions = pgTable(

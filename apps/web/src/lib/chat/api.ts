@@ -45,6 +45,18 @@ import type {
   UpdateProjectInput,
   UpdateSkillInput,
   UpdateSubmissionInput,
+  CreateWorkInput,
+  PendingWorkInvitation,
+  ProfileWork,
+  UpdateWorkInput,
+  WorkAttachment,
+  WorkDetail,
+  WorkMatchResult,
+  WorkMatchSubject,
+  WorkSummary,
+  WorkSort,
+  WorkStatus,
+  WorkType,
 } from "@kemet/shared";
 
 class ChatApiError extends Error {
@@ -687,3 +699,109 @@ export function listModerationLog(cursor?: string): Promise<Page<ModerationActio
 }
 
 export { ChatApiError };
+
+export function listWorks(
+  filters: {
+    q?: string;
+    type?: WorkType;
+    status?: WorkStatus;
+    sort?: WorkSort;
+    tag?: string;
+    cursor?: string;
+  } = {},
+): Promise<Page<WorkSummary>> {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.type) params.set("type", filters.type);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.sort && filters.sort !== "recent") params.set("sort", filters.sort);
+  if (filters.tag) params.set("tag", filters.tag);
+  if (filters.cursor) params.set("cursor", filters.cursor);
+  const query = params.toString();
+  return request(`/api/works${query ? `?${query}` : ""}`);
+}
+
+export function getWork(slug: string) {
+  return request<{ work: WorkDetail }>(`/api/works/${encodeURIComponent(slug)}`);
+}
+
+export function createWork(input: CreateWorkInput) {
+  return request<{ work: WorkDetail }>("/api/works", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateWork(slug: string, input: UpdateWorkInput) {
+  return request<{ work: WorkDetail }>(`/api/works/${encodeURIComponent(slug)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteWork(slug: string) {
+  return request<{ deleted: boolean }>(`/api/works/${encodeURIComponent(slug)}`, {
+    method: "DELETE",
+  });
+}
+
+export function inviteWorkCoauthor(slug: string, handle: string) {
+  return request<{ work: WorkDetail }>(`/api/works/${encodeURIComponent(slug)}/authors`, {
+    method: "POST",
+    body: JSON.stringify({ handle }),
+  });
+}
+
+export function removeWorkCoauthor(slug: string, handle: string) {
+  return request<{ removed: boolean }>(
+    `/api/works/${encodeURIComponent(slug)}/authors/${encodeURIComponent(handle)}`,
+    { method: "DELETE" },
+  );
+}
+
+export function decideWorkInvitation(slug: string, accepted: boolean) {
+  return request<{ work: WorkDetail }>(`/api/works/${encodeURIComponent(slug)}/invitation`, {
+    method: "PUT",
+    body: JSON.stringify({ accepted }),
+  });
+}
+
+export function listUserWorks(handle: string, cursor?: string): Promise<Page<ProfileWork>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/users/${encodeURIComponent(handle)}/works${query}`);
+}
+
+export function listMyWorkInvitations() {
+  return request<{ items: PendingWorkInvitation[] }>("/api/me/work-invitations");
+}
+
+export async function uploadWorkAttachment(file: File): Promise<WorkAttachment> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/works/attachments", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { attachment } = (await response.json()) as { attachment: WorkAttachment };
+  return attachment;
+}
+
+export function workAttachmentUrl(attachmentId: string): string {
+  return `/api/work-attachments/${attachmentId}/content`;
+}
+
+export function findWorkMatches(subject: WorkMatchSubject) {
+  return request<{ result: WorkMatchResult }>("/api/work-matches", {
+    method: "POST",
+    body: JSON.stringify({ subject }),
+  });
+}

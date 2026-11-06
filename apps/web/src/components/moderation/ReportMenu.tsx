@@ -9,8 +9,14 @@ import { Textarea } from "../ui/Textarea.js";
 import { useToast } from "../ui/Toast.js";
 import { fr } from "../../i18n/fr.js";
 
+const CONTENT_LABELS = {
+  message: fr.moderation.reportThisMessage,
+  post: fr.moderation.reportThisPost,
+  work: fr.moderation.reportThisWork,
+};
+
 export interface ReportMenuProps {
-  contentType: "message" | "post";
+  contentType: "message" | "post" | "work";
   contentId: string;
   authorId: string;
   authorHandle: string;
@@ -90,7 +96,7 @@ export function ReportDialog({
               aria-pressed={target === contentType}
               onClick={() => setTarget(contentType)}
             >
-              {contentType === "message" ? fr.moderation.reportThisMessage : fr.moderation.reportThisPost}
+              {CONTENT_LABELS[contentType]}
             </Button>
             {!deleted && (
               <Button

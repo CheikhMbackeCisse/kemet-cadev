@@ -18,6 +18,7 @@ const TARGET_LABELS = {
   message: fr.moderation.targetMessage,
   post: fr.moderation.targetPost,
   profile: fr.moderation.targetProfile,
+  work: fr.moderation.targetWork,
 };
 
 const ACTION_LABELS: Record<ModerationActionEntry["action"], string> = {
@@ -44,7 +45,7 @@ function ReportRow({
   onResolve: (reportId: string, action: "hide" | "dismiss" | "suspend", reason: string) => void;
 }) {
   const [reason, setReason] = useState("");
-  const isContent = report.targetType === "message" || report.targetType === "post";
+  const isContent = report.targetType !== "profile";
 
   return (
     <li className="py-3">

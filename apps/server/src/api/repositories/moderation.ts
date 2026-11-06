@@ -3,6 +3,7 @@ import { moderationActions, reports, type Db } from "@kemet/db";
 import type { ModerationAction, ReportTarget } from "@kemet/shared";
 import { findChannelById, findMessageById, findProfileById, findSpaceById, findSpaceMembership } from "./chat.js";
 import { findPostById } from "./posts.js";
+import { findWorkById } from "./works.js";
 
 const TARGET_SUMMARY_LENGTH = 140;
 
@@ -42,6 +43,11 @@ export async function resolveReportTarget(
     if (!post || post.deletedAt) return null;
     return { authorId: post.authorId, summary: truncate(post.body, TARGET_SUMMARY_LENGTH) };
   }
+  if (targetType === "work") {
+    const work = await findWorkById(db, targetId);
+    if (!work || work.deletedAt) return null;
+    return { authorId: work.publisherId, summary: truncate(work.title, TARGET_SUMMARY_LENGTH) };
+  }
   const profile = await findProfileById(db, targetId);
   if (!profile) return null;
   return { authorId: profile.id, summary: `@${profile.handle}` };
@@ -62,6 +68,11 @@ export async function describeReportTarget(db: Db, targetType: ReportTarget, tar
     const post = await findPostById(db, targetId);
     if (!post) return "(post introuvable)";
     return post.deletedAt ? "(post masqué)" : truncate(post.body, TARGET_SUMMARY_LENGTH);
+  }
+  if (targetType === "work") {
+    const work = await findWorkById(db, targetId);
+    if (!work) return "(travail introuvable)";
+    return work.deletedAt ? "(travail masqué)" : truncate(work.title, TARGET_SUMMARY_LENGTH);
   }
   const profile = await findProfileById(db, targetId);
   return profile ? `@${profile.handle}` : "(profil introuvable)";

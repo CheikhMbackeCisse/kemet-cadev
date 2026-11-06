@@ -32,6 +32,7 @@ import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { ProfileLink } from "../components/ui/ProfileLink.js";
+import { WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
 
 const KIND_LABELS: Record<HelpRequestKind, string> = {
   help: fr.projects.kindHelp,
@@ -270,6 +271,11 @@ export function ProjectPage() {
           )}
         </div>
       </div>
+
+      <WorkMatchPanel
+        subject={{ type: "project", slug: project.slug }}
+        signedIn={myProfileId !== null}
+      />
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">

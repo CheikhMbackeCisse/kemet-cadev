@@ -17,6 +17,7 @@
     "licenses:check": "tsx scripts/check-licenses.ts",
     "test:scripts": "tsx --test scripts/lockfile-platforms.test.ts",
     "eval:llm-throughput": "tsx evals/llm-throughput.ts",
+    "eval:work-matching": "tsx evals/work-matching.ts",
     "db:migrate": "pnpm --filter @kemet/db migrate",
     "db:seed": "pnpm --filter @kemet/db seed",
     "db:seed:demo": "pnpm --filter @kemet/db seed",

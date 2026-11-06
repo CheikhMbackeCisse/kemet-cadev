@@ -14,6 +14,7 @@ import { createMentoringHistory } from "./mentoring.js";
 import { recordDemoPoints } from "./points-ledger.js";
 import { createDemoProjects } from "./projects.js";
 import { createDemoSkills } from "./skills.js";
+import { createDemoWorks } from "./works.js";
 
 /** Mot de passe public des comptes de démonstration, pour que le jury puisse s'y connecter. */
 export const DEMO_PASSWORD = "demonstration";
@@ -80,6 +81,7 @@ export async function seedDemoDataset(
     await createCommunityFollows(tx, ids, fillerProfileIds);
     await createFeedContent(tx, ids);
     const projectIds = await createDemoProjects(tx, ids);
+    await createDemoWorks(tx, ids);
     await createDemoCompetitions(tx, ids, projectIds, fillerProfileIds);
     await createMentoringHistory(tx, ids, projectIds, fillerProfileIds);
     await recordDemoPoints(tx);

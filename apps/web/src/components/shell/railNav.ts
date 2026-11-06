@@ -1,4 +1,13 @@
-import { FolderGit2, Hash, Rss, Settings, ShieldCheck, Trophy, Wrench } from "lucide-react";
+import {
+  BookOpen,
+  FolderGit2,
+  Hash,
+  Rss,
+  Settings,
+  ShieldCheck,
+  Trophy,
+  Wrench,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export interface RailNavItem {
@@ -20,17 +29,20 @@ export interface NavSection extends RailNavItem {
 /**
  * Seule liste des grandes sections, pour le bureau comme pour le mobile.
  * La navigation vit dans le rail (bureau) et dans la barre d'onglets
- * (mobile), jamais dans la barre du haut d'une page. Ordre prévu une fois
- * les deux sections livrées : Fil, Travaux, Salons, Messages, Skills,
- * Projets, Compétitions. Messages passe par `mobile: "salons"`.
+ * (mobile), jamais dans la barre du haut d'une page. Ordre du bureau ;
+ * Messages (lot suivant) se placera après Salons, avec `mobile: "salons"`.
  */
 export const NAV_SECTIONS: NavSection[] = [
   { id: "fil", label: "Fil", href: "/fil", icon: Rss, mobile: "tab" },
+  { id: "travaux", label: "Travaux", href: "/travaux", icon: BookOpen, mobile: "tab" },
   { id: "salons", label: "Salons", href: "/salons", icon: Hash, mobile: "tab" },
   { id: "skills", label: "Skills", href: "/skills", icon: Wrench, mobile: "tab" },
-  { id: "projets", label: "Projets", href: "/projets", icon: FolderGit2, mobile: "tab" },
+  { id: "projets", label: "Projets", href: "/projets", icon: FolderGit2, mobile: "moi" },
   { id: "competitions", label: "Compétitions", href: "/competitions", icon: Trophy, mobile: "moi" },
 ];
+
+/** Ordre de la barre du bas sur mobile, qui diffère du bureau : Salons reste au pouce. */
+export const MOBILE_TAB_ORDER = ["fil", "salons", "travaux", "skills"];
 
 export const RAIL_NAV: RailNavItem[] = NAV_SECTIONS;
 
@@ -59,6 +71,7 @@ export function activeRailSection(pathname: string): string {
   if (pathname === "/" || pathname.startsWith("/fil")) return "fil";
   if (pathname.startsWith("/skills")) return "skills";
   if (pathname.startsWith("/projets")) return "projets";
+  if (pathname.startsWith("/travaux")) return "travaux";
   if (pathname.startsWith("/competitions")) return "competitions";
   if (pathname.startsWith("/salons")) return "salons";
   if (pathname === "/confidentialite") return "confidentialite";

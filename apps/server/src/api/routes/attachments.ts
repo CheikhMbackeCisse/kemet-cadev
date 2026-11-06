@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { sumTotalUserStorageBytes } from "../repositories/storage-usage.js";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { detectAttachment } from "../../storage/detect-attachment.js";
+import { contentDisposition } from "../../storage/content-disposition.js";
 import {
   findAttachmentById,
   insertPendingAttachment,
   lockUserStorageQuota,
-  sumUserStorageBytes,
 } from "../repositories/attachments.js";
 import { findMessageById } from "../repositories/chat.js";
 import { findProfileByUserId, isProfileDeleted } from "../repositories/profiles.js";
@@ -75,7 +76,7 @@ export function registerAttachmentRoutes(
         // concurrents du même utilisateur pourraient tous deux lire un
         // quota encore disponible avant que l'un des deux ne committe.
         await lockUserStorageQuota(tx, profile.id);
-        const alreadyStored = await sumUserStorageBytes(tx, profile.id);
+        const alreadyStored = await sumTotalUserStorageBytes(tx, profile.id);
         if (alreadyStored + buffer.length > attachmentLimits.maxUserStorageBytes) {
           throw badRequest("Quota de stockage de fichiers atteint.");
         }
@@ -116,7 +117,7 @@ export function registerAttachmentRoutes(
       .header("X-Content-Type-Options", "nosniff")
       .header("Content-Security-Policy", "default-src 'none'")
       .header("Content-Length", attachment.byteSize)
-      .header("Content-Disposition", `${disposition}; filename="${attachment.originalName}"`)
+      .header("Content-Disposition", contentDisposition(disposition, attachment.originalName))
       .type(attachment.mimeType);
     return reply.send(storage.read(attachment.storageKey));
   });

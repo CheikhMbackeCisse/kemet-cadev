@@ -136,6 +136,32 @@ export const assistantInvocations = pgTable(
   ],
 );
 
+export const workMatchSubjectEnum = pgEnum("work_match_subject", ["work", "project", "post"]);
+export const workMatchModeEnum = pgEnum("work_match_mode", ["assistant", "recorded", "full_text"]);
+
+// Une ligne par appel de "Qui a travaillé sur ce sujet ?". Elle compte dans
+// le quota quotidien de l'assistant au même titre qu'une invocation dans un
+// salon (voir apps/server/src/ai/quota.ts).
+export const workMatchRequests = pgTable(
+  "work_match_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    requestedBy: uuid("requested_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    subjectType: workMatchSubjectEnum("subject_type").notNull(),
+    subjectId: uuid("subject_id").notNull(),
+    mode: workMatchModeEnum("mode").notNull(),
+    provider: llmProviderNameEnum("provider"),
+    candidateCount: integer("candidate_count").notNull(),
+    suggestionCount: integer("suggestion_count").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("work_match_requests_requested_by_created_idx").on(table.requestedBy, table.createdAt),
+  ],
+);
+
 export const mcpServers = pgTable("mcp_servers", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -174,6 +200,10 @@ export const assistantInvocationsRelations = relations(assistantInvocations, ({ 
     references: [messages.id],
   }),
   requester: one(profiles, { fields: [assistantInvocations.requestedBy], references: [profiles.id] }),
+}));
+
+export const workMatchRequestsRelations = relations(workMatchRequests, ({ one }) => ({
+  requester: one(profiles, { fields: [workMatchRequests.requestedBy], references: [profiles.id] }),
 }));
 
 export const mcpServersRelations = relations(mcpServers, ({ one }) => ({

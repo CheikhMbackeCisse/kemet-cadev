@@ -88,7 +88,8 @@ export async function listSpacesForViewer(db: Db, profileId: string | null, curs
     : [];
   const visibility =
     memberIds.length > 0 ? or(eq(spaces.visibility, "public"), inArray(spaces.id, memberIds)) : eq(spaces.visibility, "public");
-  const listed = and(visibility, isNull(spaces.archivedAt));
+  // L'espace système des discussions de travaux ne figure jamais dans la liste.
+  const listed = and(visibility, isNull(spaces.archivedAt), eq(spaces.kind, "community"));
   const condition = cursor ? and(listed, lt(spaces.createdAt, new Date(cursor))) : listed;
   const rows = profileId
     ? await db

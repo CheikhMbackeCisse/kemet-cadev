@@ -1,5 +1,5 @@
 import { and, gte, eq, count } from "drizzle-orm";
-import { assistantInvocations, type Db } from "@kemet/db";
+import { assistantInvocations, workMatchRequests, type Db } from "@kemet/db";
 import type { Level } from "@kemet/shared";
 import { computeProfilePoints } from "../api/repositories/points.js";
 
@@ -19,7 +19,9 @@ const LEVEL_DAILY_QUOTA: Record<Level, number> = {
 
 /**
  * Quota quotidien selon le niveau, calculé en comptant les invocations du
- * jour plutôt que stocké. `limitOverride` fixe la limite pour les tests.
+ * jour plutôt que stocké : mentions de @kemet dans un salon et appels de
+ * "Qui a travaillé sur ce sujet ?" confondus. `limitOverride` fixe la limite
+ * pour les tests.
  */
 export async function checkDailyQuota(
   db: Db,
@@ -29,10 +31,26 @@ export async function checkDailyQuota(
   const limit = limitOverride ?? LEVEL_DAILY_QUOTA[(await computeProfilePoints(db, profileId)).level];
   const startOfDay = new Date();
   startOfDay.setUTCHours(0, 0, 0, 0);
-  const [row] = await db
-    .select({ value: count() })
-    .from(assistantInvocations)
-    .where(and(eq(assistantInvocations.requestedBy, profileId), gte(assistantInvocations.createdAt, startOfDay)));
-  const usedToday = row?.value ?? 0;
+  const [[invocations], [matches]] = await Promise.all([
+    db
+      .select({ value: count() })
+      .from(assistantInvocations)
+      .where(
+        and(
+          eq(assistantInvocations.requestedBy, profileId),
+          gte(assistantInvocations.createdAt, startOfDay),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(workMatchRequests)
+      .where(
+        and(
+          eq(workMatchRequests.requestedBy, profileId),
+          gte(workMatchRequests.createdAt, startOfDay),
+        ),
+      ),
+  ]);
+  const usedToday = (invocations?.value ?? 0) + (matches?.value ?? 0);
   return { allowed: usedToday < limit, usedToday, limit };
 }

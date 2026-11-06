@@ -1,4 +1,5 @@
-import type { postAttachments, postFeedback, postReplies, posts, profiles } from "@kemet/db";
+import type { postAttachments, postFeedback, postReplies, posts, profiles, works } from "@kemet/db";
+import { serializePostWorkPreview } from "./work-serializers.js";
 import type { Attachment, Level, PostFeedbackEntry, PostReply, PostSummary, SharedPostPreview } from "@kemet/shared";
 
 type PostRow = typeof posts.$inferSelect;
@@ -52,6 +53,7 @@ export function serializePostSummary(
   counts: { utileCount: number; reactedByMe: boolean; replyCount: number; feedbackCount: number },
   attachments: PostAttachmentRow[],
   sharedPost: { row: PostRow; author: ProfileRow; authorLevel: Level; attachments: PostAttachmentRow[] } | null,
+  work: typeof works.$inferSelect | null = null,
 ): PostSummary {
   const deleted = row.deletedAt !== null;
   return {
@@ -72,6 +74,7 @@ export function serializePostSummary(
     sharedPost: sharedPost
       ? serializeSharedPostPreview(sharedPost.row, sharedPost.author, sharedPost.authorLevel, sharedPost.attachments)
       : null,
+    work: work && !deleted ? serializePostWorkPreview(work) : null,
     utileCount: counts.utileCount,
     reactedByMe: counts.reactedByMe,
     replyCount: counts.replyCount,

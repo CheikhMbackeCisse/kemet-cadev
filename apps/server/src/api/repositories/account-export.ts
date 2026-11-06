@@ -35,6 +35,12 @@ import {
   teams,
   user,
   votes,
+  workAttachments,
+  workAuthors,
+  workExternalAuthors,
+  workLinks,
+  workMatchRequests,
+  works,
   type Db,
 } from "@kemet/db";
 
@@ -51,6 +57,8 @@ const postAttachmentColumns = omit(getTableColumns(postAttachments), "storageKey
 const skillColumns = omit(getTableColumns(skills), "searchVector");
 const competitionColumns = omit(getTableColumns(competitions), "reviewedBy");
 const reportColumns = omit(getTableColumns(reports), "resolvedBy");
+const workColumns = omit(getTableColumns(works), "searchVector");
+const workAttachmentColumns = omit(getTableColumns(workAttachments), "storageKey");
 
 /**
  * Toutes les données rattachées à un compte, lisibles par la personne
@@ -163,6 +171,29 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
       ? []
       : await db.select().from(skillFiles).where(inArray(skillFiles.skillId, skillRows.map((skill) => skill.id)));
 
+  const workRows = await db.select(workColumns).from(works).where(eq(works.publisherId, profileId));
+  const workIds = workRows.map((work) => work.id);
+  const [
+    workLinkRows,
+    workExternalAuthorRows,
+    workAttachmentRows,
+    coauthorshipRows,
+    workMatchRows,
+  ] = await Promise.all([
+    workIds.length === 0
+      ? []
+      : db.select().from(workLinks).where(inArray(workLinks.workId, workIds)),
+    workIds.length === 0
+      ? []
+      : db.select().from(workExternalAuthors).where(inArray(workExternalAuthors.workId, workIds)),
+    db
+      .select(workAttachmentColumns)
+      .from(workAttachments)
+      .where(eq(workAttachments.authorId, profileId)),
+    db.select().from(workAuthors).where(eq(workAuthors.profileId, profileId)),
+    db.select().from(workMatchRequests).where(eq(workMatchRequests.requestedBy, profileId)),
+  ]);
+
   return {
     ...base,
     profile: profile ?? null,
@@ -197,5 +228,11 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     spaceInvites: inviteRows,
     captainedTeams: captainedTeamRows,
     moderationActions: moderationActionRows,
+    works: workRows,
+    workLinks: workLinkRows,
+    workExternalAuthors: workExternalAuthorRows,
+    workAttachments: workAttachmentRows,
+    workCoauthorships: coauthorshipRows,
+    workMatchRequests: workMatchRows,
   };
 }

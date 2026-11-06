@@ -7,5 +7,6 @@ export * from "./assistant.js";
 export * from "./feed.js";
 export * from "./points.js";
 export * from "./projects.js";
+export * from "./works.js";
 export * from "./competitions.js";
 export * from "./moderation.js";

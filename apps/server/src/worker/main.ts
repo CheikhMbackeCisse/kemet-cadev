@@ -5,6 +5,7 @@ import { runMigrations } from "@kemet/db/migrate";
 import { healthcheckResponseSchema } from "@kemet/shared";
 import { cleanupOrphanAttachments } from "../chat/attachments-cleanup.js";
 import { cleanupOrphanPostAttachments } from "../feed/post-attachments-cleanup.js";
+import { cleanupOrphanWorkAttachments } from "../works/work-attachments-cleanup.js";
 import { LocalDiskStorage } from "../storage/file-storage.js";
 
 const databaseUrl = process.env.DATABASE_URL ?? "postgres://kemet:kemet@localhost:5432/kemet";
@@ -18,6 +19,7 @@ const connection = { url: process.env.VALKEY_URL ?? "redis://localhost:6379" };
 const MAINTENANCE_QUEUE = "maintenance";
 const CLEANUP_JOB = "cleanup-orphan-attachments";
 const CLEANUP_POST_ATTACHMENTS_JOB = "cleanup-orphan-post-attachments";
+const CLEANUP_WORK_ATTACHMENTS_JOB = "cleanup-orphan-work-attachments";
 
 const maintenanceQueue = new Queue(MAINTENANCE_QUEUE, { connection });
 await maintenanceQueue.upsertJobScheduler(CLEANUP_JOB, { every: 60 * 60 * 1000 }, { name: CLEANUP_JOB });
@@ -25,6 +27,11 @@ await maintenanceQueue.upsertJobScheduler(
   CLEANUP_POST_ATTACHMENTS_JOB,
   { every: 60 * 60 * 1000 },
   { name: CLEANUP_POST_ATTACHMENTS_JOB },
+);
+await maintenanceQueue.upsertJobScheduler(
+  CLEANUP_WORK_ATTACHMENTS_JOB,
+  { every: 60 * 60 * 1000 },
+  { name: CLEANUP_WORK_ATTACHMENTS_JOB },
 );
 
 new Worker(
@@ -38,6 +45,11 @@ new Worker(
     if (job.name === CLEANUP_POST_ATTACHMENTS_JOB) {
       const deleted = await cleanupOrphanPostAttachments(db, storage);
       if (deleted > 0) job.log(`${deleted} image(s) orpheline(s) de post supprimée(s).`);
+      return;
+    }
+    if (job.name === CLEANUP_WORK_ATTACHMENTS_JOB) {
+      const deleted = await cleanupOrphanWorkAttachments(db, storage);
+      if (deleted > 0) job.log(`${deleted} PDF orphelin(s) de travail supprimé(s).`);
     }
   },
   { connection },
