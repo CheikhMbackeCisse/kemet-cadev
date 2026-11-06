@@ -66,6 +66,6 @@ la lecture à partir de `read_states.last_read_at`, jamais écrit à l'avance.
   sur les usages futurs : les membres déjà rejoints par ce lien restent
   membres.
 - Les tests d'intégration (`apps/server/src/api/chat.integration.test.ts`,
-  `packages/db/src/schema/chat.integration.test.ts`) couvrent le refus
+  `packages/db/src/schema-chat.integration.test.ts`) couvrent le refus
   d'accès à un espace privé, la déduplication par `client_id`, et les
   quatre états d'un lien d'invitation.

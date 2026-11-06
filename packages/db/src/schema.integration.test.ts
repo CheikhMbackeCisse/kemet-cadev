@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
-import { createDb } from "../client.js";
-import { getTestDatabaseUrl, resetTestDatabase } from "../testing.js";
-import { follows, posts, profiles, user } from "./index.js";
+import { createDb } from "./client.js";
+import { getTestDatabaseUrl, resetTestDatabase } from "./testing.js";
+import { follows, posts, profiles, user } from "./schema/index.js";
 
 const databaseUrl = getTestDatabaseUrl();
 
