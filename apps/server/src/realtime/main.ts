@@ -49,6 +49,12 @@ function channelRoom(channelId: string): string {
   return `channel:${channelId}`;
 }
 
+// Salle personnelle, rejointe à la connexion : les pastilles de la
+// messagerie y arrivent même quand aucune conversation n'est ouverte.
+function profileRoom(profileId: string): string {
+  return `profile:${profileId}`;
+}
+
 async function listChannelIdsInSpace(spaceId: string): Promise<string[]> {
   const rows = await db.select({ id: channels.id }).from(channels).where(eq(channels.spaceId, spaceId));
   return rows.map((row) => row.id);
@@ -94,6 +100,7 @@ app
         const existing = socketsByProfile.get(profileId) ?? new Set<Socket>();
         existing.add(socket);
         socketsByProfile.set(profileId, existing);
+        void socket.join(profileRoom(profileId));
       }
       app.log.info({ socketId: socket.id, profileId }, "client connecté");
 
@@ -114,12 +121,12 @@ app
       // Un visiteur n'a pas de composeur côté interface ; le serveur ne lui
       // fait pas confiance pour autant et ignore ces événements sans profil.
       socket.on("typing:start", ({ channelId }: { channelId: string }) => {
-        if (!profileId) return;
+        if (!profileId || !socket.rooms.has(channelRoom(channelId))) return;
         socket.to(channelRoom(channelId)).emit("typing:start", { channelId, profileId });
       });
 
       socket.on("typing:stop", ({ channelId }: { channelId: string }) => {
-        if (!profileId) return;
+        if (!profileId || !socket.rooms.has(channelRoom(channelId))) return;
         socket.to(channelRoom(channelId)).emit("typing:stop", { channelId, profileId });
       });
 
@@ -140,6 +147,16 @@ app
             for (const channelId of channelIds) void socket.leave(channelRoom(channelId));
           }
         });
+        return;
+      }
+      if (event.type === "conversation:member-left") {
+        for (const socket of socketsByProfile.get(event.profileId) ?? []) void socket.leave(channelRoom(event.channelId));
+        return;
+      }
+      if (event.type === "conversation:activity") {
+        for (const profileId of event.profileIds) {
+          io.to(profileRoom(profileId)).emit(event.type, { type: event.type, conversationId: event.conversationId });
+        }
         return;
       }
       io.to(channelRoom(event.channelId)).emit(event.type, event);

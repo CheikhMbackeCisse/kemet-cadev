@@ -74,6 +74,8 @@ function upsertMessage(messages: Message[], incoming: Message): Message[] {
 export function useChannelMessages(
   channelId: string | null,
   hasProfile = true,
+  /** Appelé une fois la lecture enregistrée, pour mettre à jour les pastilles. */
+  onMarkedRead?: () => void,
 ): UseChannelMessagesResult {
   const [messages, setMessages] = useState<Message[]>([]);
   const [outgoing, setOutgoing] = useState<OutgoingMessage[]>([]);
@@ -91,6 +93,8 @@ export function useChannelMessages(
   const channelIdRef = useRef(channelId);
   channelIdRef.current = channelId;
   const fetchedMetaRef = useRef<Set<string>>(new Set());
+  const onMarkedReadRef = useRef(onMarkedRead);
+  onMarkedReadRef.current = onMarkedRead;
 
   useEffect(() => {
     setFirstUnreadMessageId(null);
@@ -107,6 +111,13 @@ export function useChannelMessages(
     setError(false);
     setAssistantStream(null);
     let cancelled = false;
+    const markRead = (messageId: string) => {
+      if (!hasProfile) return;
+      // Une lecture non enregistrée se rattrape à la prochaine ouverture du salon.
+      void markChannelRead(channelId, messageId)
+        .then(() => onMarkedReadRef.current?.())
+        .catch(() => {});
+    };
     listMessages(channelId, undefined, MESSAGE_PAGE_SIZE)
       .then((page) => {
         if (cancelled) return;
@@ -115,7 +126,7 @@ export function useChannelMessages(
         setFirstUnreadMessageId(page.firstUnreadMessageId);
         setLoading(false);
         const last = page.items.at(0);
-        if (last && hasProfile) void markChannelRead(channelId, last.id);
+        if (last) markRead(last.id);
       })
       .catch(() => {
         if (cancelled) return;
@@ -141,8 +152,7 @@ export function useChannelMessages(
         }
         setMessages((current) => upsertMessage(current, event.message));
         setOutgoing((current) => removeOutgoing(current, event.message.clientId));
-        if (event.type === "message:new" && hasProfile)
-          void markChannelRead(channelId, event.message.id);
+        if (event.type === "message:new") markRead(event.message.id);
       } else if (event.type === "message:deleted") {
         if (event.channelId !== channelId) return;
         setMessages((current) =>
@@ -185,7 +195,7 @@ export function useChannelMessages(
           },
         }));
         setMessages((current) => upsertMessage(current, event.message));
-        if (hasProfile) void markChannelRead(channelId, event.message.id);
+        markRead(event.message.id);
       } else if (event.type === "assistant:failed") {
         if (event.channelId !== channelId) return;
         setAssistantStream((current) =>

@@ -5,6 +5,10 @@ import type {
   Channel,
   CompetitionDetail,
   CompetitionSummary,
+  Conversation,
+  ConversationBox,
+  ConversationDetail,
+  ConversationUnreadSummary,
   CreateApplicationInput,
   CreateCompetitionRequestInput,
   CreateHelpRequestInput,
@@ -696,6 +700,63 @@ export function reinstateProfile(handle: string) {
 export function listModerationLog(cursor?: string): Promise<Page<ModerationActionEntry>> {
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
   return request(`/api/moderation/log${query}`);
+}
+
+export function listConversations(
+  box: ConversationBox,
+  cursor?: string,
+): Promise<Page<Conversation>> {
+  const params = new URLSearchParams({ box });
+  if (cursor) params.set("cursor", cursor);
+  return request(`/api/conversations?${params.toString()}`);
+}
+
+export function getConversationUnread() {
+  return request<ConversationUnreadSummary>("/api/conversations/unread");
+}
+
+/** Ouvre la conversation avec ces personnes : celle qui existe déjà pour une conversation à deux. */
+export function openConversation(handles: string[]) {
+  return request<{ conversation: ConversationDetail }>("/api/conversations", {
+    method: "POST",
+    body: JSON.stringify({ handles }),
+  });
+}
+
+/** "Écrire à l'équipe en privé" : celle qui existe déjà pour ce travail et cette personne. */
+export function openTeamConversation(workSlug: string) {
+  return request<{ conversation: ConversationDetail }>("/api/conversations/team", {
+    method: "POST",
+    body: JSON.stringify({ workSlug }),
+  });
+}
+
+export function getConversation(conversationId: string) {
+  return request<{ conversation: ConversationDetail }>(`/api/conversations/${conversationId}`);
+}
+
+export function acceptConversation(conversationId: string) {
+  return request<{ conversation: ConversationDetail }>(
+    `/api/conversations/${conversationId}/accept`,
+    { method: "POST" },
+  );
+}
+
+/** Refuser une demande ou quitter une conversation. */
+export function leaveConversation(conversationId: string) {
+  return request<{ left: true }>(`/api/conversations/${conversationId}/leave`, { method: "POST" });
+}
+
+export function getBlockStatus(handle: string) {
+  return request<{ blocked: boolean }>(`/api/users/${handle}/block`);
+}
+
+export function blockUser(handle: string) {
+  return request<{ blocked: boolean }>(`/api/users/${handle}/block`, { method: "PUT" });
+}
+
+export function unblockUser(handle: string) {
+  return request<{ blocked: boolean }>(`/api/users/${handle}/block`, { method: "DELETE" });
 }
 
 export { ChatApiError };

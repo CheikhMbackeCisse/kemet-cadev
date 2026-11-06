@@ -9,18 +9,21 @@ import { Textarea } from "../ui/Textarea.js";
 import { useToast } from "../ui/Toast.js";
 import { fr } from "../../i18n/fr.js";
 
-const CONTENT_LABELS = {
-  message: fr.moderation.reportThisMessage,
-  post: fr.moderation.reportThisPost,
-  work: fr.moderation.reportThisWork,
-};
-
 export interface ReportMenuProps {
-  contentType: "message" | "post" | "work";
+  contentType: "message" | "post" | "work" | "conversation";
   contentId: string;
   authorId: string;
   authorHandle: string;
+  /** Faux pour un groupe : personne n'en est seul responsable, seule la conversation se signale. */
+  allowProfile?: boolean;
 }
+
+const CONTENT_LABELS: Record<ReportMenuProps["contentType"], string> = {
+  message: fr.moderation.reportThisMessage,
+  post: fr.moderation.reportThisPost,
+  work: fr.moderation.reportThisWork,
+  conversation: fr.moderation.reportThisConversation,
+};
 
 export function ReportMenu(props: ReportMenuProps) {
   const [open, setOpen] = useState(false);
@@ -45,6 +48,7 @@ export function ReportDialog({
   contentId,
   authorId,
   authorHandle,
+  allowProfile = true,
   open,
   onClose,
 }: ReportDialogProps) {
@@ -88,17 +92,26 @@ export function ReportDialog({
 
   return (
     <>
-      <Dialog open={open && target !== null} onOpenChange={(open) => !open && close()} title={fr.moderation.reportTitle} description={fr.moderation.reportDescription(deleted ? fr.moderation.deletedAccount : authorHandle)}>
+      <Dialog
+        open={open && target !== null}
+        onOpenChange={(open) => !open && close()}
+        title={fr.moderation.reportTitle}
+        description={
+          target === "conversation"
+            ? fr.moderation.reportConversationDescription
+            : fr.moderation.reportDescription(deleted ? fr.moderation.deletedAccount : authorHandle)
+        }
+      >
         <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <Button
-              variant={target === contentType ? "primary" : "secondary"}
-              aria-pressed={target === contentType}
-              onClick={() => setTarget(contentType)}
-            >
-              {CONTENT_LABELS[contentType]}
-            </Button>
-            {!deleted && (
+          {allowProfile && !deleted && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={target === contentType ? "primary" : "secondary"}
+                aria-pressed={target === contentType}
+                onClick={() => setTarget(contentType)}
+              >
+                {CONTENT_LABELS[contentType]}
+              </Button>
               <Button
                 variant={target === "profile" ? "primary" : "secondary"}
                 aria-pressed={target === "profile"}
@@ -106,8 +119,8 @@ export function ReportDialog({
               >
                 {fr.moderation.reportThisProfile(authorHandle)}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
           <Textarea
             placeholder={fr.moderation.reasonPlaceholder}
             aria-label={fr.moderation.reasonPlaceholder}

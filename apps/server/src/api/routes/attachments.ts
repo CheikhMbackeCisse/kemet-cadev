@@ -15,7 +15,7 @@ import { findProfileByUserId, isProfileDeleted } from "../repositories/profiles.
 import { serializeAttachment } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
-import { requireChannelAccess, requireWritableSpace } from "./channels.js";
+import { requireChannelAccess, requireChannelWriteAccess } from "./channels.js";
 
 const MAX_ATTACHMENTS_PER_MINUTE = 30;
 
@@ -49,8 +49,7 @@ export function registerAttachmentRoutes(
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
-      const { channel, space } = await requireChannelAccess(db, request.params.id, profile.id);
-      requireWritableSpace(space);
+      const { channel } = await requireChannelWriteAccess(db, request.params.id, profile.id);
 
       const part = await request.file();
       if (!part) throw badRequest("Aucun fichier envoyé.");

@@ -21,6 +21,21 @@ export const chatEventSchema = z.discriminatedUnion("type", [
     spaceId: z.string().uuid(),
     profileId: z.string().uuid(),
   }),
+  // Envoyé à chaque membre d'une conversation privée, où qu'il soit dans
+  // l'application : de quoi rafraîchir la liste et les pastilles de non-lus
+  // sans ouvrir la conversation. Ne porte aucun contenu.
+  z.object({
+    type: z.literal("conversation:activity"),
+    conversationId: z.string().uuid(),
+    profileIds: z.array(z.string().uuid()),
+  }),
+  // Membre parti (demande refusée, conversation quittée) : ses connexions
+  // ouvertes quittent la salle du salon, comme pour `member:removed`.
+  z.object({
+    type: z.literal("conversation:member-left"),
+    channelId: z.string().uuid(),
+    profileId: z.string().uuid(),
+  }),
   z.object({
     type: z.literal("assistant:chunk"),
     channelId: z.string().uuid(),

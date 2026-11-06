@@ -19,7 +19,8 @@ export type RenameChannelInput = z.infer<typeof renameChannelSchema>;
 
 export const channelSchema = z.object({
   id: z.string().uuid(),
-  spaceId: z.string().uuid(),
+  /** Nul pour le salon d'une conversation privée. */
+  spaceId: z.string().uuid().nullable(),
   name: z.string(),
   slug: z.string(),
   displayOrder: z.number().int(),

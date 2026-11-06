@@ -6,6 +6,7 @@ import { IconButton } from "../ui/IconButton.js";
 import { Sheet } from "../ui/Sheet.js";
 import { ChannelList, type ChannelListProps } from "./ChannelList.js";
 import { RightPanel } from "./RightPanel.js";
+import { SalonsSegment } from "./SalonsSegment.js";
 import { sectionLabel } from "./railNav.js";
 import { SpaceTree, type SpaceTreeStatus } from "./SpaceTree.js";
 import type { SpaceItem } from "./types.js";
@@ -88,6 +89,7 @@ export function AppShell({
       }}
     >
       <div className="flex min-w-0 flex-1 flex-col">
+        <SalonsSegment active="salons" />
         <header className="flex min-h-12 shrink-0 items-center justify-between border-b border-border px-3 py-1 lg:h-12 lg:px-4 lg:py-0">
           <IconButton
             aria-label={fr.shell.openChannelList}

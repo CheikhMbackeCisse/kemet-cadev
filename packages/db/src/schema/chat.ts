@@ -13,6 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
+import { conversations } from "./messaging.js";
 
 export const spaceVisibilityEnum = pgEnum("space_visibility", ["public", "private"]);
 export const attachmentKindEnum = pgEnum("attachment_kind", ["image", "file"]);
@@ -89,15 +90,20 @@ export const channels = pgTable(
   "channels",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    spaceId: uuid("space_id")
-      .notNull()
-      .references(() => spaces.id, { onDelete: "cascade" }),
+    // Un salon appartient soit à un espace, soit à une conversation privée
+    // (dont il porte les messages) : jamais aux deux, jamais à aucun.
+    spaceId: uuid("space_id").references(() => spaces.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     displayOrder: integer("display_order").notNull().default(0),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => [uniqueIndex("channels_space_slug_idx").on(table.spaceId, table.slug)],
+  (table) => [
+    uniqueIndex("channels_space_slug_idx").on(table.spaceId, table.slug),
+    uniqueIndex("channels_conversation_idx").on(table.conversationId),
+    check("channels_space_xor_conversation", sql`(${table.spaceId} is null) <> (${table.conversationId} is null)`),
+  ],
 );
 
 export const messages = pgTable(
@@ -222,6 +228,7 @@ export const spaceInvitesRelations = relations(spaceInvites, ({ one }) => ({
 
 export const channelsRelations = relations(channels, ({ one, many }) => ({
   space: one(spaces, { fields: [channels.spaceId], references: [spaces.id] }),
+  conversation: one(conversations, { fields: [channels.conversationId], references: [conversations.id] }),
   messages: many(messages),
   readStates: many(readStates),
 }));

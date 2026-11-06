@@ -157,10 +157,10 @@ enregistrée", comme pour l'ADR 0022.
   sont supprimées. La recherche par nom et "Qui a travaillé sur ce sujet ?"
   ignorent les comptes supprimés.
 - **Page d'un travail.** Onglets Présentation, Discussion et Équipe ;
-  colonne de droite avec le lien vers la discussion et "Qui a travaillé sur
-  ce sujet ?". Les auteurs ne sont listés que dans l'onglet Équipe, pour ne
-  pas les lire deux fois sur mobile. "Écrire à l'équipe" attend la
-  messagerie privée.
+  colonne de droite avec "Rejoindre la discussion" (bouton principal),
+  "Écrire à l'équipe en privé" (secondaire, ADR 0026) et "Qui a travaillé
+  sur ce sujet ?". Les auteurs ne sont listés que dans l'onglet Équipe, pour
+  ne pas les lire deux fois sur mobile.
 - **Navigation.** Travaux passe en deuxième place sur bureau. Sur mobile, la
   barre devient Fil, Salons, Travaux, Skills, Moi ; Projets et Compétitions
   passent dans la feuille "Moi".

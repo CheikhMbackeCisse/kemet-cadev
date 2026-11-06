@@ -31,6 +31,7 @@ import { registerProjectRoutes } from "./routes/projects.js";
 import { registerCompetitionRoutes } from "./routes/competitions.js";
 import { registerModerationRoutes } from "./routes/moderation.js";
 import { registerCredentialRoutes } from "./routes/credentials.js";
+import { registerConversationRoutes } from "./routes/conversations.js";
 import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
 import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { WorkMatcher } from "../ai/work-matcher.js";
@@ -164,6 +165,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerAccountDeletionRoutes(app, chatDeps);
     registerWorkRoutes(app, chatDeps);
     registerWorkMatchRoutes(app, chatDeps);
+    registerConversationRoutes(app, chatDeps);
   });
 
   return app;

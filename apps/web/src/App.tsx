@@ -26,6 +26,12 @@ const NewSpacePage = lazy(() =>
 const SpacePage = lazy(() =>
   import("./pages/SpacePage.js").then((m) => ({ default: m.SpacePage })),
 );
+const MessagesPage = lazy(() =>
+  import("./pages/MessagesPage.js").then((m) => ({ default: m.MessagesPage })),
+);
+const NewConversationPage = lazy(() =>
+  import("./pages/NewConversationPage.js").then((m) => ({ default: m.NewConversationPage })),
+);
 const InvitePage = lazy(() =>
   import("./pages/InvitePage.js").then((m) => ({ default: m.InvitePage })),
 );
@@ -170,6 +176,8 @@ function resolvePage(pathname: string) {
   if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
   if (pathname === "/salons/nouveau") return <NewSpacePage />;
   if (pathname.startsWith("/salons")) return <SpacePage />;
+  if (pathname === "/messages/nouveau") return <NewConversationPage />;
+  if (pathname === "/messages" || pathname.startsWith("/messages/")) return <MessagesPage />;
   if (pathname === "/skills" || pathname === "/skills/") return <SkillsPage />;
   if (pathname === "/skills/nouveau") return <NewSkillPage />;
   if (pathname.startsWith("/skills/")) return <SkillPage />;

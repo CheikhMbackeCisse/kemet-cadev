@@ -56,8 +56,9 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
       if (!profile) throw badRequest("Complétez votre profil avant de donner votre avis.");
       const invocation = await findInvocationById(db, request.params.id);
       if (!invocation || invocation.status !== "done") throw notFound("Cette réponse n'existe pas.");
-      const { space } = await requireChannelAccess(db, invocation.channelId, profile.id);
-      requireWritableSpace(space);
+      const access = await requireChannelAccess(db, invocation.channelId, profile.id);
+      if (access.kind !== "space") throw notFound("Cette réponse n'existe pas.");
+      requireWritableSpace(access.space);
       const input = assistantFeedbackSchema.parse(request.body);
       if (input.helpful && invocation.helpful !== true) {
         const citedSkills = await findSkillsByIds(db, invocation.skillIds);

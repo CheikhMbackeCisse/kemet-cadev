@@ -4,7 +4,7 @@ import { suggestedMessages } from "./WorkDiscussion.js";
 describe("suggestedMessages", () => {
   it("propose trois débuts de message, avec le titre et le premier tag", () => {
     expect(suggestedMessages({ title: "Capteurs LoRa", tags: ["iot", "agriculture"] })).toEqual([
-      `Bonjour, j'ai lu le travail "Capteurs LoRa".`,
+      `Bonjour, j'ai lu le travail « Capteurs LoRa ».`,
       "Une question sur la partie iot : ",
       "Je travaille sur un sujet proche, on peut échanger ?",
     ]);

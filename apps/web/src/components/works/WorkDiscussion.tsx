@@ -18,6 +18,7 @@ import { buildTimeline } from "../../lib/chat/timeline.js";
 import { useChannelMessages } from "../../lib/chat/useChannelMessages.js";
 import { useChannelDraft } from "../../lib/chat/useChannelDraft.js";
 import { fr } from "../../i18n/fr.js";
+import { SuggestionChips } from "../chat/SuggestionChips.js";
 
 export interface WorkDiscussionProps {
   work: WorkDetail;
@@ -30,7 +31,7 @@ function formatTime(iso: string): string {
 }
 
 /** Débuts de message proposés à qui ouvre la discussion pour la première fois. */
-export function suggestedMessages(work: Pick<WorkDetail, "title" | "tags">): string[] {
+export function suggestedMessages(work: { title: string; tags: string[] }): string[] {
   const firstTag = work.tags[0];
   return [
     fr.works.suggestionHello(work.title),
@@ -207,23 +208,7 @@ export function WorkDiscussion({ work, viewer }: WorkDiscussionProps) {
 
       {viewer ? (
         <div className="flex flex-col gap-2 border-t border-border pt-4">
-          {showSuggestions && (
-            <div className="flex flex-col gap-2">
-              <p className="text-xs text-subtle">{fr.works.suggestionsLabel}</p>
-              <div className="flex flex-wrap gap-2">
-                {suggestedMessages(work).map((text) => (
-                  <button
-                    key={text}
-                    type="button"
-                    onClick={() => applySuggestion(text)}
-                    className="rounded-full bg-surface-2 px-3 py-1.5 text-left text-sm text-text-2 transition-colors duration-150 hover:bg-accent-soft max-md:min-h-control-mobile"
-                  >
-                    {text}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {showSuggestions && <SuggestionChips suggestions={suggestedMessages(work)} onPick={applySuggestion} />}
           {paste.notice}
           <div className="flex items-end gap-2">
             <CodeButton textareaRef={composerRef} onChange={setDraft} />

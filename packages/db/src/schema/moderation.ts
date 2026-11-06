@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
 
-export const reportTargetEnum = pgEnum("report_target", ["message", "post", "profile", "work"]);
+export const reportTargetEnum = pgEnum("report_target", ["message", "post", "profile", "work", "conversation"]);
 export const reportStatusEnum = pgEnum("report_status", ["pending", "resolved", "dismissed"]);
 export const moderationActionEnum = pgEnum("moderation_action", [
   "content_hidden",
@@ -24,6 +24,12 @@ export const reports = pgTable(
     // base.
     targetId: uuid("target_id").notNull(),
     reason: text("reason").notNull(),
+    // Pour une conversation signalée : la personne visée, fixée au moment du
+    // signalement plutôt que recalculée quand la modération décide.
+    reportedProfileId: uuid("reported_profile_id").references(() => profiles.id, { onDelete: "set null" }),
+    // Pour une conversation : la modération ne lit que les messages écrits
+    // avant cette date (signalement, ou départ de qui signale).
+    excerptUntil: timestamp("excerpt_until"),
     status: reportStatusEnum("status").notNull().default("pending"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     resolvedAt: timestamp("resolved_at"),

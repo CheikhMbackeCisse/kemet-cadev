@@ -55,6 +55,10 @@ export function PrivacyPage() {
         <List items={fr.privacy.kept} />
       </Section>
 
+      <Section title={fr.privacy.privateMessagesTitle}>
+        <List items={fr.privacy.privateMessages} />
+      </Section>
+
       <Section title={fr.privacy.assistantTitle}>
         <List items={fr.privacy.assistant} />
       </Section>

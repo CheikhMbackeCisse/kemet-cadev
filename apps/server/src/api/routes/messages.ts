@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { sql } from "drizzle-orm";
 import {
   channelMessagesQuerySchema,
   createMessageSchema,
@@ -30,7 +31,10 @@ import { computeLevels } from "../repositories/points.js";
 import { serializeMessage } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
-import { requireChannelAccess, requireWritableSpace } from "./channels.js";
+import { accessJoinedAt, requireChannelAccess, requireWritableSpace } from "./channels.js";
+import { requireCanWrite } from "../../messaging/write-block.js";
+import { findMessageByClientId } from "../repositories/conversations.js";
+import { publishConversationActivity } from "../../messaging/activity.js";
 
 const MAX_MESSAGES_PER_MINUTE = 20;
 
@@ -78,15 +82,16 @@ export function registerMessageRoutes(
     async (request) => {
       const userId = await getSessionUserId(auth, request);
       const profile = await findOwnProfile(db, userId);
-      const { membership } = await requireChannelAccess(db, request.params.id, profile?.id ?? null);
+      const access = await requireChannelAccess(db, request.params.id, profile?.id ?? null);
+      const joinedAt = accessJoinedAt(access);
       const query = channelMessagesQuerySchema.parse(request.query);
       const page = await listChannelMessages(db, request.params.id, query.cursor, query.limit);
       const items = await toSerializedMessages(db, page.items);
       // Seulement à l'ouverture (première page) et pour un membre : un visiteur
       // ou un non-membre d'un espace public n'a pas d'état de lecture.
       const firstUnreadMessageId =
-        !query.cursor && profile && membership
-          ? await findFirstUnreadMessageId(db, request.params.id, profile.id, membership.joinedAt)
+        !query.cursor && profile && joinedAt
+          ? await findFirstUnreadMessageId(db, request.params.id, profile.id, joinedAt)
           : null;
       return { items, nextCursor: page.nextCursor, firstUnreadMessageId };
     },
@@ -120,8 +125,11 @@ export function registerMessageRoutes(
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
-      const { channel, space } = await requireChannelAccess(db, request.params.id, profile.id);
-      requireWritableSpace(space);
+      // La règle d'écriture d'une conversation est vérifiée dans la transaction,
+      // où le renvoi d'un message déjà enregistré se reconnaît.
+      const access = await requireChannelAccess(db, request.params.id, profile.id);
+      if (access.kind === "space") requireWritableSpace(access.space);
+      const { channel } = access;
       const input = createMessageSchema.parse(request.body);
 
       if (input.parentMessageId) {
@@ -136,6 +144,15 @@ export function registerMessageRoutes(
       // Transaction : sinon un renvoi avec le même clientId retomberait sur
       // un message créé sans ses fichiers, sans pouvoir les rattacher.
       const { message, created } = await db.transaction(async (tx) => {
+        if (access.kind === "conversation") {
+          // Deux envois parallèles passeraient tous deux la limite d'un
+          // message avant acceptation : on la revérifie sous un verrou par
+          // conversation, sauf pour le renvoi d'un message déjà enregistré.
+          await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${channel.id}))`);
+          if (!(await findMessageByClientId(tx, profile.id, input.clientId))) {
+            await requireCanWrite(tx, access.conversation, access.member, channel.id);
+          }
+        }
         const result = await insertMessage(tx, {
           channelId: channel.id,
           authorId: profile.id,
@@ -152,9 +169,12 @@ export function registerMessageRoutes(
               throw badRequest("Un fichier envoyé n'est plus disponible pour ce message.");
             }
           }
-          const handles = extractMentionHandles(input.body);
-          const mentioned = await resolveMentionableProfiles(tx, space.id, handles);
-          await insertMentions(tx, result.message.id, mentioned.map((profile) => profile.id));
+          // Pas de mention dans une conversation privée : tout le monde y lit tout.
+          if (access.kind === "space") {
+            const handles = extractMentionHandles(input.body);
+            const mentioned = await resolveMentionableProfiles(tx, access.space.id, handles);
+            await insertMentions(tx, result.message.id, mentioned.map((profile) => profile.id));
+          }
           await attachToMessage(tx, attachmentIds, result.message.id);
         }
 
@@ -164,7 +184,11 @@ export function registerMessageRoutes(
       const serialized = await toSerializedMessage(db, message);
       if (created) {
         await chat.publish({ type: "message:new", channelId: channel.id, message: serialized });
-        if (mentionsAssistant(input.body)) {
+        if (access.kind === "conversation") {
+          await publishConversationActivity(db, chat, access.conversation.id);
+        }
+        // @kemet ne lit jamais une conversation privée.
+        if (access.kind === "space" && mentionsAssistant(input.body)) {
           // Non attendu : la réponse de l'assistant part par Socket.IO, et
           // l'orchestrateur traduit déjà ses erreurs en assistant:failed.
           assistant
@@ -189,8 +213,12 @@ export function registerMessageRoutes(
       const profile = await requireOwnProfile(db, userId);
       const message = await findMessageById(db, request.params.id);
       if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-      const { space } = await requireChannelAccess(db, message.channelId, profile.id);
-      requireWritableSpace(space);
+      const access = await requireChannelAccess(db, message.channelId, profile.id);
+      if (access.kind === "conversation") {
+        await requireCanWrite(db, access.conversation, access.member, access.channel.id);
+      } else {
+        requireWritableSpace(access.space);
+      }
       if (message.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce message.");
       const input = editMessageSchema.parse(request.body);
       const updated = await editMessage(db, message.id, input.body);
@@ -208,9 +236,10 @@ export function registerMessageRoutes(
       const profile = await requireOwnProfile(db, userId);
       const message = await findMessageById(db, request.params.id);
       if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-      const { membership } = await requireChannelAccess(db, message.channelId, profile.id);
+      const access = await requireChannelAccess(db, message.channelId, profile.id);
       const isAuthor = message.authorId === profile.id;
-      const isAdmin = membership?.role === "owner" || membership?.role === "admin";
+      const isAdmin =
+        access.kind === "space" && (access.membership?.role === "owner" || access.membership?.role === "admin");
       if (!isAuthor && !isAdmin) throw forbidden("Impossible de supprimer le message d'un autre membre.");
       await softDeleteMessage(db, message.id);
       await chat.publish({ type: "message:deleted", channelId: message.channelId, messageId: message.id });
@@ -226,8 +255,12 @@ export function registerMessageRoutes(
       const profile = await requireOwnProfile(db, userId);
       const message = await findMessageById(db, request.params.id);
       if (!message || message.deletedAt) throw notFound("Ce message n'existe pas.");
-      const { space } = await requireChannelAccess(db, message.channelId, profile.id);
-      requireWritableSpace(space);
+      const access = await requireChannelAccess(db, message.channelId, profile.id);
+      if (access.kind === "conversation") {
+        await requireCanWrite(db, access.conversation, access.member, access.channel.id);
+      } else {
+        requireWritableSpace(access.space);
+      }
       const input = toggleReactionSchema.parse(request.body);
       const reactions = await toggleReaction(db, message.id, profile.id, input.emoji);
       await chat.publish({

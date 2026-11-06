@@ -4,7 +4,7 @@ import { cn } from "../../lib/cn.js";
 
 export interface TabItem {
   value: string;
-  label: string;
+  label: ReactNode;
   content: ReactNode;
 }
 

@@ -4,6 +4,8 @@ import { ActivityBar } from "../shell/ActivityBar.js";
 import { MobileTabBar } from "../shell/MobileTabBar.js";
 import { SidePanelColumn } from "../shell/SidePanelColumn.js";
 import { SidePanelProvider } from "../shell/sidePanel.js";
+import { useSession } from "../../session/SessionProvider.js";
+import { messagesBadgeCount, useConversationUnread } from "../../lib/messaging/conversationUnread.js";
 
 export interface AppFrameSidePanel {
   title: string;
@@ -35,6 +37,8 @@ export function AppFrame({
   fixedHeight,
   children,
 }: AppFrameProps) {
+  const { status } = useSession();
+  const messagesBadge = messagesBadgeCount(useConversationUnread(status === "ready"));
   return (
     <SidePanelProvider enabled={Boolean(sidePanel)}>
       <div
@@ -43,7 +47,11 @@ export function AppFrame({
           fixedHeight ? "h-viewport overflow-hidden overscroll-none" : "min-h-viewport",
         )}
       >
-        <ActivityBar activeSection={activeSection} hasSidePanel={Boolean(sidePanel)} />
+        <ActivityBar
+          activeSection={activeSection}
+          hasSidePanel={Boolean(sidePanel)}
+          unreadCounts={{ messages: messagesBadge }}
+        />
         {sidePanel && (
           <SidePanelColumn title={sidePanel.title} footer={sidePanel.footer}>
             {sidePanel.content}
@@ -51,7 +59,7 @@ export function AppFrame({
         )}
         {children}
       </div>
-      <MobileTabBar activeTabId={activeMobileTab} />
+      <MobileTabBar activeTabId={activeMobileTab} privateUnread={messagesBadge} />
     </SidePanelProvider>
   );
 }

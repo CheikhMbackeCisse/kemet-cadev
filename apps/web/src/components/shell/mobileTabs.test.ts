@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MOBILE_TABS, MOI_SHEET_ITEMS, mobileTabFor, mobileTabHref } from "./mobileTabs.js";
-import { RAIL_NAV } from "./railNav.js";
+import { NAV_SECTIONS, RAIL_NAV } from "./railNav.js";
 
 describe("navigation mobile", () => {
   it("garde cinq onglets : Fil, Salons, Travaux, Skills, Moi", () => {
@@ -18,8 +18,17 @@ describe("navigation mobile", () => {
   });
 
   it("couvre sur mobile chaque section du rail de bureau", () => {
-    const reachable = new Set([...MOBILE_TABS, ...MOI_SHEET_ITEMS].map((item) => item.id));
+    // Messages se rejoint par le segment en haut de l'onglet Salons.
+    const inSalonsSegment = NAV_SECTIONS.filter((section) => section.mobile === "salons");
+    const reachable = new Set([...MOBILE_TABS, ...MOI_SHEET_ITEMS, ...inSalonsSegment].map((item) => item.id));
     for (const section of RAIL_NAV) expect(reachable.has(section.id)).toBe(true);
+  });
+
+  it("allume Salons pour les messages privés, rangés dans son segment", () => {
+    expect(mobileTabFor("messages")).toBe("salons");
+    expect(NAV_SECTIONS.filter((section) => section.mobile === "salons").map((section) => section.id)).toEqual([
+      "messages",
+    ]);
   });
 
   it("allume Moi pour une section rangée dans sa feuille", () => {

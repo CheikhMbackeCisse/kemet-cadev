@@ -1,4 +1,4 @@
-import { and, desc, eq, getTableName, inArray, isNull, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, getTableName, inArray, isNull, lt, or, sql, type SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   channels,
@@ -381,6 +381,22 @@ export async function listWorkInvitations(db: DbOrTx, workId: string) {
     .innerJoin(profiles, eq(profiles.id, workAuthors.profileId))
     .where(eq(workAuthors.workId, workId))
     .orderBy(workAuthors.invitedAt);
+}
+
+/** Auteurs avec un compte encore actif : la personne qui publie et les coauteurs acceptés. */
+export async function listWorkAccountAuthorIds(db: DbOrTx, work: { id: string; publisherId: string }) {
+  const coauthors = await db
+    .select({ profileId: workAuthors.profileId })
+    .from(workAuthors)
+    .innerJoin(profiles, eq(profiles.id, workAuthors.profileId))
+    .where(and(eq(workAuthors.workId, work.id), eq(workAuthors.status, "accepted"), isNull(profiles.deletedAt)))
+    .orderBy(asc(workAuthors.invitedAt));
+  const [publisher] = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.id, work.publisherId), isNull(profiles.deletedAt)));
+  const ids = [...(publisher ? [publisher.id] : []), ...coauthors.map((row) => row.profileId)];
+  return [...new Set(ids)];
 }
 
 export async function findWorkAuthor(db: DbOrTx, workId: string, profileId: string) {

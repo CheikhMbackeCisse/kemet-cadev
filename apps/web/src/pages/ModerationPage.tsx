@@ -19,6 +19,7 @@ const TARGET_LABELS = {
   post: fr.moderation.targetPost,
   profile: fr.moderation.targetProfile,
   work: fr.moderation.targetWork,
+  conversation: fr.moderation.targetConversation,
 };
 
 const ACTION_LABELS: Record<ModerationActionEntry["action"], string> = {
@@ -56,7 +57,8 @@ function ReportRow({
         </span>
         <span className="text-xs text-subtle">{formatTime(report.createdAt)}</span>
       </div>
-      <p className="mt-1 text-sm text-text">{report.targetSummary}</p>
+      {/* Une conversation signalée arrive sur plusieurs lignes : participants, puis messages. */}
+      <p className="mt-1 whitespace-pre-line text-sm text-text">{report.targetSummary}</p>
       <p className="mt-1 text-sm text-text-2">{report.reason}</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Input
@@ -75,7 +77,7 @@ function ReportRow({
             {fr.moderation.hide}
           </Button>
         )}
-        {report.targetType === "profile" && (
+        {(report.targetType === "profile" || report.targetType === "conversation") && (
           <Button
             variant="secondary"
             className="text-xs"

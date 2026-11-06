@@ -2,6 +2,7 @@ import {
   BookOpen,
   FolderGit2,
   Hash,
+  MessagesSquare,
   Rss,
   Settings,
   ShieldCheck,
@@ -29,13 +30,13 @@ export interface NavSection extends RailNavItem {
 /**
  * Seule liste des grandes sections, pour le bureau comme pour le mobile.
  * La navigation vit dans le rail (bureau) et dans la barre d'onglets
- * (mobile), jamais dans la barre du haut d'une page. Ordre du bureau ;
- * Messages (lot suivant) se placera après Salons, avec `mobile: "salons"`.
+ * (mobile), jamais dans la barre du haut d'une page. Ordre du bureau.
  */
 export const NAV_SECTIONS: NavSection[] = [
   { id: "fil", label: "Fil", href: "/fil", icon: Rss, mobile: "tab" },
   { id: "travaux", label: "Travaux", href: "/travaux", icon: BookOpen, mobile: "tab" },
   { id: "salons", label: "Salons", href: "/salons", icon: Hash, mobile: "tab" },
+  { id: "messages", label: "Messages", href: "/messages", icon: MessagesSquare, mobile: "salons" },
   { id: "skills", label: "Skills", href: "/skills", icon: Wrench, mobile: "tab" },
   { id: "projets", label: "Projets", href: "/projets", icon: FolderGit2, mobile: "moi" },
   { id: "competitions", label: "Compétitions", href: "/competitions", icon: Trophy, mobile: "moi" },
@@ -74,6 +75,7 @@ export function activeRailSection(pathname: string): string {
   if (pathname.startsWith("/travaux")) return "travaux";
   if (pathname.startsWith("/competitions")) return "competitions";
   if (pathname.startsWith("/salons")) return "salons";
+  if (pathname.startsWith("/messages")) return "messages";
   if (pathname === "/confidentialite") return "confidentialite";
   return "";
 }

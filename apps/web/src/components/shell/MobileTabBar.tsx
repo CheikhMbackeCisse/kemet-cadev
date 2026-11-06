@@ -9,6 +9,8 @@ import { MOBILE_TABS, MOI_SHEET_ITEMS, MOI_TAB_ID, mobileTabHref } from "./mobil
 
 export interface MobileTabBarProps {
   activeTabId: string;
+  /** Messages privés non lus, portés par l'onglet "Salons" qui les contient. */
+  privateUnread?: number;
 }
 
 /**
@@ -17,7 +19,7 @@ export interface MobileTabBarProps {
  * haut de chaque page et le bouton d'en-tête. Sa hauteur s'ajoute à la
  * marge basse des pages par `--mobile-visitor-bar` (index.css).
  */
-export function MobileTabBar({ activeTabId }: MobileTabBarProps) {
+export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarProps) {
   const { status, profile, isPlatformAdmin, signOut } = useSession();
   const [moiOpen, setMoiOpen] = useState(false);
   const isVisitor = status === "visitor";
@@ -63,10 +65,22 @@ export function MobileTabBar({ activeTabId }: MobileTabBarProps) {
               "flex h-control-mobile flex-1 flex-col items-center justify-center gap-0.5 text-xs",
               isActive ? "text-primary" : "text-muted",
             );
+            const unread = tab.id === "salons" ? privateUnread : 0;
             const content = (
               <>
-                <tab.icon className="size-5" aria-hidden="true" />
+                <span className="relative">
+                  <tab.icon className="size-5" aria-hidden="true" />
+                  {unread > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -right-2.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-medium leading-none text-white tabular-nums"
+                    >
+                      {unread > 9 ? "9+" : unread}
+                    </span>
+                  )}
+                </span>
                 {tab.label}
+                {unread > 0 && <span className="sr-only">{fr.messages.unreadPrivateSuffix(unread)}</span>}
               </>
             );
             // "Moi" ouvre une feuille : c'est un bouton, les autres onglets

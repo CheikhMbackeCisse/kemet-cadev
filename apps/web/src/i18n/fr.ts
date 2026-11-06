@@ -202,7 +202,7 @@ export const fr = {
     navLink: "Confidentialité",
     title: "Confidentialité",
     subtitle: "Ce que Kemet garde sur toi, pourquoi, et pour combien de temps.",
-    updatedAt: "Mise à jour le 30 octobre 2026.",
+    updatedAt: "Mise à jour le 3 novembre 2026.",
     keptTitle: "Ce que Kemet garde, et pourquoi",
     kept: [
       "Ton adresse email, et ton mot de passe si tu en as un, haché avec Argon2id : pour te connecter.",
@@ -214,6 +214,13 @@ export const fr = {
       "Le registre de tes points : pour calculer ton niveau et pouvoir toujours l'expliquer.",
       "Tes sessions, avec l'adresse IP et le navigateur : pour la sécurité de ton compte et les limites contre les abus.",
       "Les signalements que tu envoies : pour la modération.",
+    ],
+    privateMessagesTitle: "Tes messages privés",
+    privateMessages: [
+      "Tes messages privés sont stockés sur notre serveur, comme ceux des salons. Ils ne sont pas chiffrés de bout en bout : techniquement, l'équipe qui administre le serveur pourrait y accéder.",
+      "Personne d'autre que les membres d'une conversation ne la lit dans Kemet, pas même un administrateur. La modération ne voit un message privé que si quelqu'un le lui signale, et pour une conversation signalée, seulement les dix derniers messages écrits avant le signalement.",
+      "@kemet n'est jamais appelé dans une conversation privée : aucun message privé ne part chez Google ni chez OpenRouter.",
+      "Si tu bloques quelqu'un, nous gardons la liste des personnes que tu as bloquées, pour l'appliquer. Elle figure dans l'export de tes données.",
     ],
     assistantTitle: "Tes questions à @kemet",
     assistant: [
@@ -258,6 +265,7 @@ export const fr = {
   chat: {
     messageList: "Messages du salon",
     newMessages: "Nouveaux messages",
+    suggestionsLabel: "Pour commencer",
     jumpToLatest: "Aller au dernier message",
     loadOlder: "Charger les messages précédents",
     loadingOlder: "Chargement des messages précédents…",
@@ -684,7 +692,10 @@ export const fr = {
     tabPresentation: "Présentation",
     tabDiscussion: "Discussion",
     tabTeam: "Équipe",
-    openDiscussion: "Ouvrir la discussion",
+    joinDiscussion: "Rejoindre la discussion",
+    writeToTeam: "Écrire à l'équipe en privé",
+    writeToTeamError:
+      "Impossible d'ouvrir la conversation avec l'équipe. Réessaie dans un instant.",
     participants: (count: number) =>
       count === 0
         ? "Personne n'y a encore écrit"
@@ -699,8 +710,7 @@ export const fr = {
     discussionLoadError: "Impossible de charger la discussion.",
     discussionSignIn: "Connecte-toi pour écrire dans la discussion.",
     discussionPlaceholder: "Écrire dans la discussion…",
-    suggestionsLabel: "Pour commencer",
-    suggestionHello: (title: string) => `Bonjour, j'ai lu le travail "${title}".`,
+    suggestionHello: (title: string) => `Bonjour, j'ai lu le travail « ${title} ».`,
     suggestionTag: (tag: string) => `Une question sur la partie ${tag} : `,
     suggestionClose: "Je travaille sur un sujet proche, on peut échanger ?",
     teamExternal: "Sans compte Kemet",
@@ -832,6 +842,9 @@ export const fr = {
     reportThisMessage: "Ce message",
     reportThisPost: "Ce post",
     reportThisWork: "Ce travail",
+    reportThisConversation: "Cette conversation",
+    reportConversationDescription:
+      "Les dix derniers messages de la conversation seront transmis à la modération, et rien de ce qui sera écrit après. Explique brièvement le problème.",
     reportThisProfile: (handle: string) => `Le profil ${handle}`,
     reasonPlaceholder: "Motif du signalement…",
     reportSubmit: "Envoyer le signalement",
@@ -849,6 +862,7 @@ export const fr = {
     targetPost: "post",
     targetWork: "travail",
     targetProfile: "profil",
+    targetConversation: "conversation privée",
     hide: "Masquer",
     suspend: "Suspendre",
     dismiss: "Rejeter",
@@ -862,6 +876,101 @@ export const fr = {
     actionReportDismissed: "signalement rejeté",
     actionBy: (handle: string) => `par ${handle}`,
     loadMore: "Charger plus",
+  },
+  messages: {
+    title: "Messages",
+    segmentLabel: "Salons ou messages privés",
+    segmentSalons: "Salons",
+    segmentMessages: "Messages",
+    inbox: "Conversations",
+    requests: "Demandes",
+    requestsCountSr: (count: number) => `, ${count} en attente`,
+    listLabel: "Conversations",
+    loadingList: "Chargement des conversations…",
+    newConversation: "Démarrer une conversation",
+    unreadPrivateSuffix: (count: number) =>
+      `, ${count} ${count > 1 ? "messages privés non lus" : "message privé non lu"}`,
+    loadingError: "Impossible de charger tes conversations.",
+    emptyInbox:
+      "Aucune conversation pour l'instant. Écris à quelqu'un depuis son profil, ou démarre une conversation.",
+    emptyRequests:
+      "Aucune demande en attente. Les premiers messages des personnes que tu ne connais pas arrivent ici.",
+    loadMore: "Charger plus de conversations",
+    noSelection: "Choisis une conversation pour la lire.",
+    signInRequired: "Connecte-toi pour lire et envoyer des messages privés.",
+    signIn: "Se connecter",
+    you: "Toi",
+    attachmentOnly: "Fichier joint",
+    deletedMessage: "Message supprimé",
+    noMessageYet: "Aucun message pour l'instant",
+    awaitingShort: "En attente",
+    unreadCount: (count: number) => (count > 1 ? `${count} messages non lus` : "1 message non lu"),
+    aboutWork: (title: string) => `Équipe du travail « ${title} »`,
+    viewWork: "Voir le travail",
+    groupOf: (names: string[], extra: number) =>
+      extra > 0 ? `${names.join(", ")} et ${extra} autre${extra > 1 ? "s" : ""}` : names.join(", "),
+    backToList: "Retour aux conversations",
+    conversationLoadError: "Impossible d'ouvrir cette conversation.",
+    conversationNotFound: "Cette conversation n'existe pas, ou tu l'as quittée.",
+    messageListLabel: (title: string) => `Messages avec ${title}`,
+    conversationStart: (title: string) => `Début de ta conversation avec ${title}`,
+    composerPlaceholder: (title: string) => `Écrire à ${title}…`,
+    requestBanner: (title: string) =>
+      `${title} veut t'écrire. Tant que tu n'as pas accepté, cette personne ne sait pas si tu as lu son message.`,
+    teamRequestBanner:
+      "Un message pour l'équipe de ton travail. Tant que tu n'as pas accepté, la personne qui l'écrit ne sait pas si tu l'as lu.",
+    accept: "Accepter",
+    accepted: "Demande acceptée.",
+    decline: "Refuser",
+    declined: "Demande refusée.",
+    report: "Signaler",
+    firstMessageNotice: (title: string) =>
+      `${title} ne te connaît pas encore : ton premier message arrivera dans ses demandes. Tu pourras écrire à nouveau dès que la demande sera acceptée.`,
+    teamFirstMessageNotice:
+      "L'équipe ne te connaît pas encore : ton premier message arrivera dans les demandes de chaque auteur. Tu pourras écrire à nouveau dès qu'un auteur l'aura accepté.",
+    teamAwaitingAcceptance:
+      "Ton message attend qu'un auteur accepte ta demande. Tu pourras écrire à nouveau ensuite.",
+    awaitingAcceptance: (title: string) =>
+      `Ton message attend que ${title} accepte ta demande. Tu pourras écrire à nouveau ensuite.`,
+    blockedByYou: (title: string) =>
+      `Tu as bloqué ${title} : plus aucun message ne passe entre vous.`,
+    blockedOther: "Tu ne peux plus écrire dans cette conversation.",
+    alone: "Plus personne ne participe à cette conversation.",
+    conversationActions: "Actions de la conversation",
+    viewProfile: "Voir le profil",
+    block: (handle: string) => `Bloquer @${handle}`,
+    unblock: (handle: string) => `Débloquer @${handle}`,
+    blockTitle: (handle: string) => `Bloquer @${handle} ?`,
+    blockDescription:
+      "Cette personne ne pourra plus t'écrire ni t'ajouter à un groupe, et tu ne pourras plus lui écrire. Elle n'est pas prévenue. Tu peux la débloquer quand tu veux.",
+    blockConfirm: "Bloquer",
+    blocked: (handle: string) => `@${handle} est bloqué.`,
+    unblocked: (handle: string) => `@${handle} est débloqué.`,
+    reportConversation: "Signaler la conversation",
+    leave: "Quitter la conversation",
+    leaveTitle: "Quitter la conversation ?",
+    leaveDescription:
+      "Elle disparaît de tes messages et tu ne reçois plus rien. Si on t'écrit à nouveau, elle reviendra.",
+    leaveConfirm: "Quitter",
+    left: "Conversation quittée.",
+    acceptError: "La demande n'a pas pu être acceptée : connexion perdue. Réessaie.",
+    leaveError: "La conversation n'a pas pu être quittée : connexion perdue. Réessaie.",
+    blockError: "Le blocage n'a pas abouti : connexion perdue. Réessaie.",
+    unblockError: "Le déblocage n'a pas abouti : connexion perdue. Réessaie.",
+    blockedNote: (handle: string) => `Tu as bloqué @${handle} : vous ne pouvez plus vous écrire.`,
+    profileActions: (name: string) => `Plus d'actions pour ${name}`,
+    write: "Écrire",
+    writeError: "La conversation n'a pas pu s'ouvrir : connexion perdue. Réessaie.",
+    newTitle: "Démarrer une conversation",
+    newSubtitle: "À deux, ou en groupe jusqu'à huit personnes, toi compris.",
+    handlesLabel: "Identifiants des personnes",
+    handlesHint:
+      "Un identifiant par ligne ou séparés par des virgules, sans @. Exemple : awa-ndiaye, kofi.",
+    handlesTooMany: (max: number) => `Pas plus de ${max} personnes en plus de toi.`,
+    handlesInvalid: (handle: string) => `« ${handle} » n'est pas un identifiant valide.`,
+    open: "Ouvrir la conversation",
+    privacyNote:
+      "Les messages privés sont stockés sur notre serveur, sans chiffrement de bout en bout. La modération ne les lit que si quelqu'un les lui signale. @kemet n'y a pas accès.",
   },
   profile: {
     viewProfile: (name: string) => `Voir le profil de ${name}`,

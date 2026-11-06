@@ -1,6 +1,5 @@
 import {
   ArrowDown,
-  Download,
   Hash,
   MessageSquare,
   MessageSquareReply,
@@ -15,7 +14,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   addSpaceMember,
-  attachmentUrl,
   ChatApiError,
   createInvite,
   listChannels,
@@ -27,10 +25,9 @@ import {
 import { useChannelMessages } from "../lib/chat/useChannelMessages.js";
 import { buildTimeline } from "../lib/chat/timeline.js";
 import { takeDraftFocusRequest, useChannelDraft } from "../lib/chat/useChannelDraft.js";
-import {
-  UNREAD_SEPARATOR_ATTRIBUTE,
-  useMessageListScroll,
-} from "../lib/chat/useMessageListScroll.js";
+import { useMessageListScroll } from "../lib/chat/useMessageListScroll.js";
+import { DaySeparator, UnreadSeparator } from "../components/chat/TimelineSeparator.js";
+import { MessageAttachments } from "../components/chat/MessageAttachments.js";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
@@ -671,39 +668,8 @@ export function SpacePage() {
                     )
                   )}
                   {timeline.map((item) => {
-                    if (item.type === "unread") {
-                      return (
-                        <div
-                          key={item.key}
-                          {...{ [UNREAD_SEPARATOR_ATTRIBUTE]: "" }}
-                          role="separator"
-                          aria-label={fr.chat.newMessages}
-                          className="flex items-center gap-3 text-xs font-semibold"
-                        >
-                          <span className="h-px flex-1 bg-primary" aria-hidden="true" />
-                          {/* --link plutôt que --primary : même teinte en clair, plus
-                              claire en sombre où --primary n'atteint pas 4,5:1 sur --bg. */}
-                          <span className="text-link" aria-hidden="true">
-                            {fr.chat.newMessages}
-                          </span>
-                          <span className="h-px flex-1 bg-primary" aria-hidden="true" />
-                        </div>
-                      );
-                    }
-                    if (item.type === "day") {
-                      return (
-                        <div
-                          key={item.key}
-                          role="separator"
-                          aria-label={item.label}
-                          className="flex items-center gap-3 text-xs font-medium text-subtle"
-                        >
-                          <span className="h-px flex-1 bg-border" aria-hidden="true" />
-                          <span aria-hidden="true">{item.label}</span>
-                          <span className="h-px flex-1 bg-border" aria-hidden="true" />
-                        </div>
-                      );
-                    }
+                    if (item.type === "unread") return <UnreadSeparator key={item.key} />;
+                    if (item.type === "day") return <DaySeparator key={item.key} label={item.label} />;
                     const { group } = item;
                     return group.authorHandle === KEMET_HANDLE ? (
                       <AssistantMessage
@@ -817,33 +783,8 @@ export function SpacePage() {
                                     }
                                   />
                                 ))}
-                              {!message.deletedAt && message.attachments.length > 0 && (
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                  {message.attachments.map((attachment) =>
-                                    attachment.removed ? (
-                                      <span key={attachment.id} className="text-sm text-subtle">
-                                        {fr.chat.fileRemoved(attachment.originalName)}
-                                      </span>
-                                    ) : attachment.kind === "image" ? (
-                                      <img
-                                        key={attachment.id}
-                                        src={attachmentUrl(attachment.id)}
-                                        alt={attachment.originalName}
-                                        className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
-                                      />
-                                    ) : (
-                                      <a
-                                        key={attachment.id}
-                                        href={attachmentUrl(attachment.id)}
-                                        aria-label={fr.chat.downloadFile(attachment.originalName)}
-                                        className="inline-flex h-control-mobile items-center gap-2 rounded-card border border-border px-3 text-sm text-text hover:bg-surface-2 md:h-control"
-                                      >
-                                        <Download className="size-4" aria-hidden="true" />
-                                        {attachment.originalName}
-                                      </a>
-                                    ),
-                                  )}
-                                </div>
+                              {!message.deletedAt && (
+                                <MessageAttachments attachments={message.attachments} />
                               )}
                               {message.reactions.length > 0 && (
                                 <div className="mt-1 flex flex-wrap items-center gap-1">

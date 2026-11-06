@@ -7,6 +7,7 @@ export * from "./schemas/space.js";
 export * from "./schemas/channel.js";
 export * from "./schemas/attachment.js";
 export * from "./schemas/message.js";
+export * from "./schemas/conversation.js";
 export * from "./schemas/invite.js";
 export * from "./schemas/chat-event.js";
 export * from "./schemas/skill.js";

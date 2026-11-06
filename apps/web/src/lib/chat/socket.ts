@@ -50,6 +50,20 @@ export function onChatEvent(handler: ChatEventHandler): () => void {
   };
 }
 
+/**
+ * Activité dans une conversation privée dont on est membre, reçue où qu'on
+ * soit dans l'application (salle personnelle côté serveur). Sans contenu :
+ * de quoi relire la liste et les pastilles.
+ */
+export function onConversationActivity(handler: (conversationId: string) => void): () => void {
+  const client = getSocket();
+  const listener = (event: { conversationId: string }) => handler(event.conversationId);
+  client.on("conversation:activity", listener);
+  return () => {
+    client.off("conversation:activity", listener);
+  };
+}
+
 export function onTyping(handler: TypingHandler): () => void {
   const client = getSocket();
   const onStart = (event: Omit<TypingEvent, "state">) => handler({ ...event, state: "start" });

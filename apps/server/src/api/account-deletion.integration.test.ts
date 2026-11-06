@@ -1,6 +1,7 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
 import {
   account,
+  assistantInvocations,
   createDb,
   credentials,
   follows,
@@ -360,7 +361,7 @@ describe.skipIf(!databaseUrl)("Suppression du compte (base Postgres réelle)", (
       expect(write.json().error.message).toBe("Cet espace est archivé.");
     });
 
-    it("ferme un espace privé archivé : invitation, fichier et réaction refusés", async () => {
+    it("ferme un espace privé archivé : invitation, fichier, réaction, modification, renommage et avis refusés", async () => {
       const owner = await createMember("proprio@test.kemet", "proprio");
       const visitor = await createMember("visiteur@test.kemet", "visiteur");
       const { spaceId, channelId } = await createSpaceChannel(owner.cookie, "prive", "private");
@@ -412,6 +413,41 @@ Content-Type: image/png
         ]),
       });
       expect(upload.statusCode).toBe(403);
+
+      // Un administrateur resté par erreur, avec un ancien message et une réponse de l'assistant.
+      await db
+        .update(spaceMembers)
+        .set({ role: "admin" })
+        .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.profileId, visitor.profileId)));
+      const [ownMessage] = await db
+        .insert(messages)
+        .values({ channelId, authorId: visitor.profileId, clientId: crypto.randomUUID(), body: "Avant l'archivage" })
+        .returning();
+      const [invocation] = await db
+        .insert(assistantInvocations)
+        .values({ channelId, triggerMessageId: ownMessage!.id, requestedBy: visitor.profileId, status: "done" })
+        .returning();
+      const edit = await app.inject({
+        method: "PATCH",
+        url: `/api/messages/${ownMessage!.id}`,
+        headers: { cookie: visitor.cookie },
+        payload: { body: "Modifié après l'archivage" },
+      });
+      expect(edit.statusCode).toBe(403);
+      const rename = await app.inject({
+        method: "PATCH",
+        url: `/api/channels/${channelId}`,
+        headers: { cookie: visitor.cookie },
+        payload: { name: "renomme" },
+      });
+      expect(rename.statusCode).toBe(403);
+      const feedback = await app.inject({
+        method: "PUT",
+        url: `/api/assistant-invocations/${invocation!.id}/feedback`,
+        headers: { cookie: visitor.cookie },
+        payload: { helpful: true },
+      });
+      expect(feedback.statusCode).toBe(403);
     });
 
     it("archive l'espace quand son propriétaire et son seul membre partent en même temps", async () => {

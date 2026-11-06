@@ -1,11 +1,21 @@
 import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
 import { moderationActions, reports, type Db } from "@kemet/db";
 import type { ModerationAction, ReportTarget } from "@kemet/shared";
-import { findChannelById, findMessageById, findProfileById, findSpaceById, findSpaceMembership } from "./chat.js";
+import { findMessageById, findProfileById } from "./chat.js";
+import {
+  findConversationById,
+  findConversationChannel,
+  findConversationMember,
+  findLatestOtherAuthor,
+  listConversationMembers,
+  listRecentConversationMessages,
+} from "./conversations.js";
+import { canAccessChannel } from "../../realtime/access.js";
 import { findPostById } from "./posts.js";
 import { findWorkById } from "./works.js";
 
 const TARGET_SUMMARY_LENGTH = 140;
+const REPORTED_CONVERSATION_EXCERPT = 10;
 
 function truncate(text: string, length: number) {
   return text.length > length ? `${text.slice(0, length)}…` : text;
@@ -14,6 +24,8 @@ function truncate(text: string, length: number) {
 export interface ReportTargetInfo {
   authorId: string;
   summary: string;
+  /** Conversation seulement : messages lisibles par la modération jusqu'à cette date. */
+  excerptUntil?: Date;
 }
 
 /**
@@ -31,12 +43,20 @@ export async function resolveReportTarget(
   if (targetType === "message") {
     const message = await findMessageById(db, targetId);
     if (!message || message.deletedAt) return null;
-    const channel = await findChannelById(db, message.channelId);
-    if (!channel) return null;
-    const space = await findSpaceById(db, channel.spaceId);
-    if (!space) return null;
-    if (space.visibility === "private" && !(await findSpaceMembership(db, space.id, viewerProfileId))) return null;
+    if (!(await canAccessChannel(db, viewerProfileId, message.channelId))) return null;
     return { authorId: message.authorId, summary: truncate(message.body, TARGET_SUMMARY_LENGTH) };
+  }
+  if (targetType === "conversation") {
+    // Une conversation quittée reste signalable (refuser une demande puis la
+    // signaler est le cas courant), mais seulement pour ce que la personne a
+    // pu lire : rien d'écrit après son départ.
+    const member = await findConversationMember(db, targetId, viewerProfileId);
+    if (!member) return null;
+    const excerptUntil = member.status === "left" && member.respondedAt ? member.respondedAt : new Date();
+    const reportedId = await findReportedConversationMember(db, targetId, viewerProfileId, excerptUntil);
+    if (!reportedId) return null;
+    // Qui signale ne reçoit que les participants : l'extrait est pour la modération.
+    return { authorId: reportedId, summary: await describeConversation(db, targetId, null), excerptUntil };
   }
   if (targetType === "post") {
     const post = await findPostById(db, targetId);
@@ -58,7 +78,13 @@ export async function resolveReportTarget(
  * visibilité par espace : un signalement dans un espace privé doit pouvoir
  * être jugé. Accepte une cible déjà masquée ou supprimée.
  */
-export async function describeReportTarget(db: Db, targetType: ReportTarget, targetId: string): Promise<string> {
+export async function describeReportTarget(
+  db: Db,
+  targetType: ReportTarget,
+  targetId: string,
+  excerptUntil: Date | null = null,
+): Promise<string> {
+  if (targetType === "conversation") return describeConversation(db, targetId, excerptUntil);
   if (targetType === "message") {
     const message = await findMessageById(db, targetId);
     if (!message) return "(message introuvable)";
@@ -80,7 +106,14 @@ export async function describeReportTarget(db: Db, targetType: ReportTarget, tar
 
 export async function insertReport(
   db: Db,
-  input: { reporterId: string; targetType: ReportTarget; targetId: string; reason: string },
+  input: {
+    reporterId: string;
+    targetType: ReportTarget;
+    targetId: string;
+    reason: string;
+    reportedProfileId?: string | null;
+    excerptUntil?: Date | null;
+  },
 ) {
   const [report] = await db
     .insert(reports)
@@ -164,4 +197,47 @@ export async function listModerationLog(db: Db, cursor: string | undefined, limi
     .orderBy(desc(moderationActions.createdAt))
     .limit(limit + 1);
   return toPage(rows, limit, "desc");
+}
+
+/**
+ * Qui est signalé avec une conversation : l'autre personne dans une
+ * conversation à deux ; dans un groupe, la dernière personne à y avoir écrit
+ * avant `before` en dehors de qui signale, ou à défaut celle qui l'a créé.
+ * Calculé une fois, au signalement, et gardé dans `reports.reported_profile_id`.
+ */
+export async function findReportedConversationMember(
+  db: Db,
+  conversationId: string,
+  reporterId: string,
+  before: Date,
+) {
+  const conversation = await findConversationById(db, conversationId);
+  if (!conversation) return null;
+  if (conversation.directKey) {
+    const members = await listConversationMembers(db, [conversationId]);
+    return members.find((entry) => entry.member.profileId !== reporterId)?.member.profileId ?? null;
+  }
+  const channel = await findConversationChannel(db, conversationId);
+  const latest = await findLatestOtherAuthor(db, channel.id, reporterId, before);
+  if (latest) return latest;
+  return conversation.createdBy !== reporterId ? conversation.createdBy : null;
+}
+
+/**
+ * Participants, puis, pour la file de modération, les derniers messages
+ * écrits avant `excerptUntil` : la modération lit ce que la personne a choisi
+ * de signaler, rien de ce qui a été écrit après. Sans date (réponse à qui
+ * signale, journal de modération), les participants seulement.
+ */
+async function describeConversation(db: Db, conversationId: string, excerptUntil: Date | null): Promise<string> {
+  const members = await listConversationMembers(db, [conversationId]);
+  if (members.length === 0) return "(conversation introuvable)";
+  const participants = members.map((entry) => `@${entry.profile.handle}`).join(", ");
+  if (!excerptUntil) return `Conversation privée : ${participants}`;
+  const channel = await findConversationChannel(db, conversationId);
+  const excerpt = await listRecentConversationMessages(db, channel.id, excerptUntil, REPORTED_CONVERSATION_EXCERPT);
+  const lines = excerpt.map(({ message, handle }) =>
+    message.deletedAt ? `@${handle} : (message masqué)` : `@${handle} : ${truncate(message.body, TARGET_SUMMARY_LENGTH)}`,
+  );
+  return [`Conversation privée : ${participants}`, ...lines].join("\n");
 }

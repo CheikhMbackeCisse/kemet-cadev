@@ -47,11 +47,14 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
       const target = await resolveReportTarget(db, input.targetType, input.targetId, profile.id);
       if (!target) throw notFound("Ce contenu n'existe plus.");
       if (target.authorId === profile.id) throw badRequest("Impossible de se signaler soi-même.");
+      const isConversation = input.targetType === "conversation";
       const report = await insertReport(db, {
         reporterId: profile.id,
         targetType: input.targetType,
         targetId: input.targetId,
         reason: input.reason,
+        reportedProfileId: isConversation ? target.authorId : null,
+        excerptUntil: target.excerptUntil ?? null,
       });
       if (!report) throw conflict("Vous avez déjà signalé ce contenu.");
       return { report: serializeReport(report, profile.handle, target.summary) };
@@ -67,7 +70,7 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
       page.items.map(async (row) => {
         const [reporter, summary] = await Promise.all([
           findProfileById(db, row.reporterId),
-          describeReportTarget(db, row.targetType, row.targetId),
+          describeReportTarget(db, row.targetType, row.targetId, row.excerptUntil),
         ]);
         return serializeReport(row, reporter!.handle, summary);
       }),
@@ -90,8 +93,8 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
       if (input.action === "hide" && !contentTargets) {
         throw badRequest("Seul un message, un post ou un travail peut être masqué.");
       }
-      if (input.action === "suspend" && report.targetType !== "profile") {
-        throw badRequest("Seul un profil peut être suspendu.");
+      if (input.action === "suspend" && report.targetType !== "profile" && report.targetType !== "conversation") {
+        throw badRequest("Seul un profil, ou la personne signalée avec une conversation, peut être suspendu.");
       }
 
       if (input.action === "dismiss") {
@@ -104,7 +107,7 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
           reportId: report.id,
           reason: input.reason ?? null,
         });
-        const summary = await describeReportTarget(db, resolved.targetType, resolved.targetId);
+        const summary = await describeReportTarget(db, resolved.targetType, resolved.targetId, resolved.excerptUntil);
         return { report: serializeReport(resolved, (await findProfileById(db, resolved.reporterId))!.handle, summary) };
       }
 
@@ -122,20 +125,22 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
           reason: input.reason ?? null,
         });
       } else {
-        await suspendProfile(db, report.targetId);
+        const suspendedId = report.targetType === "conversation" ? report.reportedProfileId : report.targetId;
+        if (!suspendedId) throw badRequest("Personne à suspendre dans cette conversation.");
+        await suspendProfile(db, suspendedId);
         await resolvePendingReportsForTarget(db, report.targetType, report.targetId, admin.id);
         await insertModerationAction(db, {
           actorId: admin.id,
           action: "account_suspended",
-          targetType: report.targetType,
-          targetId: report.targetId,
+          targetType: "profile",
+          targetId: suspendedId,
           reportId: report.id,
           reason: input.reason ?? null,
         });
       }
 
       const updated = await findReportById(db, report.id);
-      const summary = await describeReportTarget(db, updated!.targetType, updated!.targetId);
+      const summary = await describeReportTarget(db, updated!.targetType, updated!.targetId, updated!.excerptUntil);
       return { report: serializeReport(updated!, (await findProfileById(db, updated!.reporterId))!.handle, summary) };
     },
   );

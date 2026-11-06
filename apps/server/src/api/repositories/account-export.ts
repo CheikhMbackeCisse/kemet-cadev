@@ -4,6 +4,7 @@ import {
   applications,
   assistantInvocations,
   competitions,
+  conversationMembers,
   credentials,
   follows,
   helpRequests,
@@ -19,6 +20,7 @@ import {
   postReactions,
   postReplies,
   posts,
+  profileBlocks,
   profiles,
   projects,
   readStates,
@@ -121,6 +123,8 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     inviteRows,
     captainedTeamRows,
     moderationActionRows,
+    conversationRows,
+    blockRows,
   ] = await Promise.all([
     db.select().from(profiles).where(eq(profiles.id, profileId)),
     db.select().from(credentials).where(eq(credentials.profileId, profileId)),
@@ -165,6 +169,12 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     db.select().from(spaceInvites).where(eq(spaceInvites.createdBy, profileId)),
     db.select().from(teams).where(eq(teams.captainId, profileId)),
     db.select().from(moderationActions).where(eq(moderationActions.actorId, profileId)),
+    db.select().from(conversationMembers).where(eq(conversationMembers.profileId, profileId)),
+    db
+      .select({ handle: profiles.handle, since: profileBlocks.createdAt })
+      .from(profileBlocks)
+      .innerJoin(profiles, eq(profiles.id, profileBlocks.blockedId))
+      .where(eq(profileBlocks.blockerId, profileId)),
   ]);
   const skillFileRows =
     skillRows.length === 0
@@ -234,5 +244,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     workAttachments: workAttachmentRows,
     workCoauthorships: coauthorshipRows,
     workMatchRequests: workMatchRows,
+    conversations: conversationRows,
+    blockedProfiles: blockRows,
   };
 }

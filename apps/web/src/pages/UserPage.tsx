@@ -9,9 +9,13 @@ import {
   type PublicProfileResponse,
 } from "@kemet/shared";
 import {
+  blockUser,
   ChatApiError,
   followUser,
+  getBlockStatus,
   getUserProfile,
+  openConversation,
+  unblockUser,
   listUserFollowers,
   listUserFollowing,
   unfollowUser,
@@ -28,6 +32,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { Tabs } from "../components/ui/Tabs.js";
 import { ProfileWorks, WorkInvitations } from "../components/works/ProfileWorks.js";
+import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { useSession } from "../session/SessionProvider.js";
 import { formatCount } from "../lib/formatCount.js";
 import { fr } from "../i18n/fr.js";
@@ -75,7 +80,12 @@ const PROFILE_SKELETON = (
 export function UserPage() {
   const toast = useToast();
   const handle = readHandle(window.location.pathname);
-  const { profile: viewerProfile } = useSession();
+  const { profile: viewerProfile, isSuspended } = useSession();
+  // `null` tant que le statut n'est pas connu : "Écrire" attend de le savoir.
+  const [blocked, setBlocked] = useState<boolean | null>(null);
+  const [blockBusy, setBlockBusy] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [messageBusy, setMessageBusy] = useState(false);
 
   const [data, setData] = useState<PublicProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,6 +129,45 @@ export function UserPage() {
   }, [handle]);
 
   useEffect(() => load(), [load]);
+
+  const canMessage = viewerProfile !== null && viewerProfile.handle !== handle;
+  useEffect(() => {
+    if (!canMessage) return;
+    getBlockStatus(handle)
+      .then((status) => setBlocked(status.blocked))
+      .catch(() => {});
+  }, [canMessage, handle]);
+
+  async function handleWrite() {
+    setMessageBusy(true);
+    try {
+      const { conversation } = await openConversation([handle]);
+      window.location.href = `/messages/${conversation.id}`;
+    } catch (err) {
+      toast.show(err instanceof ChatApiError && err.statusCode === 403 ? err.message : fr.messages.writeError, "danger");
+      setMessageBusy(false);
+    }
+  }
+
+  async function handleToggleBlock() {
+    setBlockBusy(true);
+    try {
+      if (blocked) {
+        await unblockUser(handle);
+        setBlocked(false);
+        toast.show(fr.messages.unblocked(handle), "success");
+      } else {
+        await blockUser(handle);
+        setBlocked(true);
+        toast.show(fr.messages.blocked(handle), "success");
+      }
+    } catch {
+      toast.show(blocked ? fr.messages.unblockError : fr.messages.blockError, "danger");
+    } finally {
+      setBlockBusy(false);
+      setBlockConfirmOpen(false);
+    }
+  }
 
   async function handleToggleFollow() {
     if (!data) return;
@@ -234,7 +283,7 @@ export function UserPage() {
   return (
     <ReadingPage header={header} activeMobileTab="moi">
       <div className="flex flex-col gap-3">
-        <div className="flex items-start gap-3">
+        <div className="flex flex-wrap items-start gap-3">
           <Avatar
             name={profile.displayName}
             src={profile.avatarUrl ?? undefined}
@@ -262,16 +311,35 @@ export function UserPage() {
             </a>
           ) : (
             viewerProfile && (
-              <Button
-                variant={isFollowedByViewer ? "secondary" : "primary"}
-                onClick={handleToggleFollow}
-                disabled={followBusy}
-              >
-                {isFollowedByViewer ? fr.profile.unfollow : fr.profile.follow}
-              </Button>
+              // Sur téléphone, trois boutons à côté du nom le coupaient sur deux lignes.
+              <div className="flex shrink-0 items-center gap-2 max-sm:w-full">
+                <Button
+                  variant={isFollowedByViewer ? "secondary" : "primary"}
+                  onClick={handleToggleFollow}
+                  disabled={followBusy}
+                >
+                  {isFollowedByViewer ? fr.profile.unfollow : fr.profile.follow}
+                </Button>
+                {blocked === false && !isSuspended && (
+                  <Button variant="secondary" onClick={handleWrite} loading={messageBusy}>
+                    {fr.messages.write}
+                  </Button>
+                )}
+                <MoreActionsMenu
+                  label={fr.messages.profileActions(profile.displayName)}
+                  items={[
+                    blocked
+                      ? { value: "unblock", label: fr.messages.unblock(profile.handle) }
+                      : { value: "block", label: fr.messages.block(profile.handle), danger: true },
+                  ]}
+                  onSelect={(value) => (value === "unblock" ? void handleToggleBlock() : setBlockConfirmOpen(true))}
+                />
+              </div>
             )
           )}
         </div>
+
+        {blocked && <p className="text-sm text-text-2">{fr.messages.blockedNote(profile.handle)}</p>}
 
         {/* Kemet Pro ne vit que sur son propre profil, nulle part ailleurs. */}
         {isOwnProfile && (
@@ -399,6 +467,21 @@ export function UserPage() {
               {fr.profile.loadMore}
             </Button>
           )}
+        </div>
+      </Dialog>
+      <Dialog
+        open={blockConfirmOpen}
+        onOpenChange={setBlockConfirmOpen}
+        title={fr.messages.blockTitle(profile.handle)}
+        description={fr.messages.blockDescription}
+      >
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setBlockConfirmOpen(false)}>
+            {fr.common.cancel}
+          </Button>
+          <Button variant="danger" loading={blockBusy} onClick={() => void handleToggleBlock()}>
+            {fr.messages.blockConfirm}
+          </Button>
         </div>
       </Dialog>
     </ReadingPage>

@@ -156,7 +156,7 @@ export async function countSpaceMembersBatch(db: Db, spaceIds: string[]): Promis
 export async function findSpacesWithUnread(db: Db, profileId: string, spaceIds: string[]): Promise<Set<string>> {
   if (spaceIds.length === 0) return new Set();
   const rows = await db
-    .selectDistinct({ spaceId: channels.spaceId })
+    .selectDistinct({ spaceId: spaceMembers.spaceId })
     .from(messages)
     .innerJoin(channels, eq(channels.id, messages.channelId))
     .innerJoin(spaceMembers, and(eq(spaceMembers.spaceId, channels.spaceId), eq(spaceMembers.profileId, profileId)))

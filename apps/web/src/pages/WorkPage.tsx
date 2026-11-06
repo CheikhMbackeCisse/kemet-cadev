@@ -1,11 +1,12 @@
-import { ArrowLeft, FileDown, MessagesSquare } from "lucide-react";
+import { ArrowLeft, FileDown, Mail, MessagesSquare } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { WorkDetail, WorkLink, WorkPerson } from "@kemet/shared";
+import { isDeletedAccountHandle, type WorkDetail, type WorkLink, type WorkPerson } from "@kemet/shared";
 import {
   ChatApiError,
   decideWorkInvitation,
   deleteWork,
   getWork,
+  openTeamConversation,
   removeWorkCoauthor,
   workAttachmentUrl,
 } from "../lib/chat/api.js";
@@ -99,7 +100,7 @@ const WORK_SKELETON = (
 export function WorkPage() {
   const toast = useToast();
   const slug = readSlug(window.location.pathname);
-  const { status, profile } = useSession();
+  const { status, profile, isSuspended } = useSession();
 
   const [work, setWork] = useState<WorkDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,7 @@ export function WorkPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [teamBusy, setTeamBusy] = useState(false);
   const [tab, setTab] = useState<WorkTab>(readTab);
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -135,6 +137,31 @@ export function WorkPage() {
   useEffect(() => {
     if (status !== "loading") load();
   }, [load, status]);
+
+  function joinDiscussion() {
+    changeTab("discussion");
+    // Sur mobile, les onglets sont au-dessus de cette colonne : on les ramène à l'écran.
+    requestAnimationFrame(() => {
+      const trigger = tabsRef.current?.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+      tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      trigger?.focus({ preventScroll: true });
+    });
+  }
+
+  async function writeToTeam() {
+    if (!work) return;
+    setTeamBusy(true);
+    try {
+      const { conversation } = await openTeamConversation(work.slug);
+      window.location.href = `/messages/${conversation.id}`;
+    } catch (err) {
+      toast.show(
+        err instanceof ChatApiError && err.statusCode < 500 ? err.message : fr.works.writeToTeamError,
+        "danger",
+      );
+      setTeamBusy(false);
+    }
+  }
 
   async function decide(accepted: boolean) {
     setBusy(true);
@@ -225,6 +252,14 @@ export function WorkPage() {
         : status === "ready"
           ? [{ value: "report", label: fr.moderation.reportAction }]
           : [];
+
+  // Un compte supprimé ne reçoit plus rien ; un auteur seul n'a personne à qui écrire.
+  const canWriteToTeam =
+    status === "ready" &&
+    !isSuspended &&
+    [work.publisher, ...work.coauthors].some(
+      (person) => person.handle !== profile?.handle && !isDeletedAccountHandle(person.handle),
+    );
 
   function onMenuSelect(value: string) {
     if (value === "edit") window.location.href = `/travaux/${work!.slug}/modifier`;
@@ -391,30 +426,21 @@ export function WorkPage() {
         </article>
 
         <aside className="flex flex-col gap-6 border-t border-border pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-          <a
-            href="?onglet=discussion"
-            onClick={(event) => {
-              event.preventDefault();
-              changeTab("discussion");
-              // Sur mobile, les onglets sont au-dessus de cette colonne : on les ramène à l'écran.
-              requestAnimationFrame(() => {
-                const trigger = tabsRef.current?.querySelector<HTMLElement>(
-                  '[role="tab"][data-state="active"]',
-                );
-                tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-                trigger?.focus({ preventScroll: true });
-              });
-            }}
-            className="flex items-start gap-2 text-sm hover:underline max-md:min-h-control-mobile"
-          >
-            <MessagesSquare className="mt-0.5 size-4 shrink-0 text-text-2" aria-hidden="true" />
-            <span className="flex flex-col">
-              <span className="text-link">{fr.works.openDiscussion}</span>
-              <span className="text-xs text-subtle">
-                {fr.works.participants(work.participantCount)}
-              </span>
-            </span>
-          </a>
+          <div className="flex flex-col gap-2">
+            <Button onClick={joinDiscussion} aria-describedby="work-discussion-participants">
+              <MessagesSquare className="size-4" aria-hidden="true" />
+              {fr.works.joinDiscussion}
+            </Button>
+            <p id="work-discussion-participants" className="text-xs text-subtle">
+              {fr.works.participants(work.participantCount)}
+            </p>
+            {canWriteToTeam && (
+              <Button variant="secondary" onClick={writeToTeam} loading={teamBusy}>
+                <Mail className="size-4" aria-hidden="true" />
+                {fr.works.writeToTeam}
+              </Button>
+            )}
+          </div>
 
           <WorkMatchPanel
             subject={{ type: "work", slug: work.slug }}
