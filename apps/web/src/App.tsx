@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Skeleton } from "./components/ui/Skeleton.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
-import { SessionProvider } from "./session/SessionProvider.js";
+import { SessionProvider, useSession } from "./session/SessionProvider.js";
+import { landingPath, ONBOARDING_BASE_PATH, onboardingPath } from "./lib/onboarding/steps.js";
 import { ThemeProvider } from "./theme/theme-context.js";
 import { ToastProvider } from "./components/ui/Toast.js";
 import { TooltipProvider } from "./components/ui/Tooltip.js";
@@ -92,7 +93,9 @@ const ResetPasswordPage = lazy(() =>
 const CompleteProfilePage = lazy(() =>
   import("./pages/CompleteProfilePage.js").then((m) => ({ default: m.CompleteProfilePage })),
 );
-const RolePage = lazy(() => import("./pages/RolePage.js").then((m) => ({ default: m.RolePage })));
+const OnboardingPage = lazy(() =>
+  import("./pages/OnboardingPage.js").then((m) => ({ default: m.OnboardingPage })),
+);
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage.js").then((m) => ({ default: m.SettingsPage })),
 );
@@ -163,13 +166,34 @@ function PageFallback() {
   );
 }
 
+function Redirect({ to }: { to: string }) {
+  useEffect(() => window.location.replace(to), [to]);
+  return <PageFallback />;
+}
+
+/**
+ * L'adresse racine, où arrivent aussi les connexions GitHub, Google et
+ * LinkedIn : un compte qui n'a pas fini l'onboarding le reprend, les autres
+ * voient le fil.
+ */
+function RootPage() {
+  const { status, onboarding } = useSession();
+  // Le fil s'affiche sans attendre la session : un visiteur, le cas le plus
+  // courant ici, n'a pas à patienter pour une redirection qui ne le concerne pas.
+  if (status === "loading" || status === "visitor") return <FeedPage />;
+  const destination = landingPath(status, onboarding);
+  if (destination === "/fil") return <FeedPage />;
+  return <Redirect to={destination} />;
+}
+
 function resolvePage(pathname: string) {
   if (pathname === "/connexion") return <LoginPage />;
   if (pathname === "/inscription") return <SignupPage />;
   if (pathname === "/mot-de-passe-oublie") return <ForgotPasswordPage />;
   if (pathname === "/reinitialiser-mot-de-passe") return <ResetPasswordPage />;
   if (pathname === "/completer-profil") return <CompleteProfilePage />;
-  if (pathname === "/ton-role") return <RolePage />;
+  if (pathname === "/ton-role") return <Redirect to={onboardingPath("role")} />;
+  if (pathname === ONBOARDING_BASE_PATH || pathname.startsWith(`${ONBOARDING_BASE_PATH}/`)) return <OnboardingPage />;
   if (pathname === "/parametres") return <SettingsPage />;
   if (pathname === "/parametres/supprimer-mon-compte") return <DeleteAccountPage />;
   if (pathname === "/confidentialite") return <PrivacyPage />;
@@ -181,7 +205,8 @@ function resolvePage(pathname: string) {
   if (pathname === "/skills" || pathname === "/skills/") return <SkillsPage />;
   if (pathname === "/skills/nouveau") return <NewSkillPage />;
   if (pathname.startsWith("/skills/")) return <SkillPage />;
-  if (pathname === "/" || pathname === "/fil" || pathname === "/fil/") return <FeedPage />;
+  if (pathname === "/") return <RootPage />;
+  if (pathname === "/fil" || pathname === "/fil/") return <FeedPage />;
   if (pathname === "/fil/nouveau") return <NewPostPage />;
   if (pathname.startsWith("/fil/")) return <PostPage />;
   if (pathname === "/projets" || pathname === "/projets/") return <ProjectsPage />;

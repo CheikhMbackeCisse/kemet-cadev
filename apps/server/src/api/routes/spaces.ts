@@ -125,6 +125,22 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     },
   );
 
+  // Rejoindre soi-même un espace public. Un espace privé se rejoint par
+  // invitation ou par un administrateur, jamais par cette route.
+  app.post<{ Params: { id: string } }>(
+    "/api/spaces/:id/join",
+    { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const { space } = await requireVisibleSpace(db, request.params.id, profile.id);
+      if (space.visibility !== "public" || space.kind !== "community") throw notFound("Cet espace n'existe pas.");
+      requireWritableSpace(space);
+      await addSpaceMember(db, space.id, profile.id, "member");
+      return { joined: true };
+    },
+  );
+
   app.delete<{ Params: { id: string; profileId: string } }>(
     "/api/spaces/:id/members/:profileId",
     { config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },

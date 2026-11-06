@@ -1,34 +1,32 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
-import { CountrySelect } from "../components/ui/CountrySelect.js";
 import { Input } from "../components/ui/Input.js";
 import { ChatApiError, updateMyProfile } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
+import { landingPath, onboardingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function CompleteProfilePage() {
-  const { status, refresh } = useSession();
+  const { status, onboarding } = useSession();
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [country, setCountry] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (status === "visitor") window.location.href = "/connexion";
-    if (status === "ready") window.location.href = "/fil";
-  }, [status]);
+    if (status === "ready") window.location.href = landingPath(status, onboarding);
+  }, [status, onboarding]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await updateMyProfile({ handle: handle.toLowerCase(), displayName, country });
-      await refresh();
-      window.location.href = "/ton-role";
+      await updateMyProfile({ handle: handle.toLowerCase(), displayName });
+      window.location.href = onboardingPath("country");
     } catch (err) {
       if (err instanceof ChatApiError && err.statusCode === 409) setError(fr.auth.handleAlreadyTakenError);
       else setError(fr.auth.completeProfileError);
@@ -49,15 +47,6 @@ export function CompleteProfilePage() {
           <Input value={handle} onChange={(event) => setHandle(event.target.value.toLowerCase())} />
           <span className="text-xs text-subtle">{fr.auth.handleHint}</span>
         </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.countryLabel}
-          <CountrySelect
-            aria-label={fr.auth.countryLabel}
-            value={country}
-            onValueChange={setCountry}
-            placeholder={fr.auth.countrySelectPlaceholder}
-          />
-        </label>
         {error && (
           <p className="text-sm text-danger" role="alert">
             {error}
@@ -69,7 +58,6 @@ export function CompleteProfilePage() {
           disabledReason={missingFieldsReason([
             [displayName, fr.auth.displayNameLabel],
             [handle, fr.auth.handleLabel],
-            [country, fr.auth.countryLabel],
           ])}
         />
       </form>

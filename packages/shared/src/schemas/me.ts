@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { credentialSchema } from "./credential.js";
+import { onboardingStateSchema } from "./onboarding.js";
 import { profileSchema } from "./profile.js";
 
 export const meResponseSchema = z.object({
@@ -20,6 +21,8 @@ export const meResponseSchema = z.object({
   // avec lesquels se reconnecter.
   hasPassword: z.boolean(),
   socialProviders: z.array(z.string()),
+  // Nul tant que le profil n'existe pas (avant /completer-profil).
+  onboarding: onboardingStateSchema.nullable(),
 });
 
 export type MeResponse = z.infer<typeof meResponseSchema>;

@@ -15,6 +15,7 @@ import { loadAttachmentLimits, type AttachmentLimits } from "../storage/config.j
 import { InMemoryStorage, type FileStorage } from "../storage/file-storage.js";
 import { loadAntiSpamConfig, type AntiSpamConfig } from "../moderation/anti-spam-config.js";
 import { registerMeRoutes } from "./routes/me.js";
+import { registerOnboardingRoutes } from "./routes/onboarding.js";
 import { registerAccountDeletionRoutes } from "./routes/account-deletion.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerSpaceRoutes } from "./routes/spaces.js";
@@ -136,6 +137,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     });
 
     registerMeRoutes(app, deps);
+    registerOnboardingRoutes(app, deps);
     registerUserRoutes(app, deps);
 
     const chatDeps: ChatAppDeps = {

@@ -4,21 +4,21 @@ import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
 import { Input } from "../components/ui/Input.js";
 import { ChatApiError, signIn } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
+import { landingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function LoginPage() {
-  const { status, refresh } = useSession();
+  const { status, onboarding, refresh } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === "ready") window.location.href = "/fil";
-    if (status === "incomplete") window.location.href = "/completer-profil";
-  }, [status]);
+    if (status === "ready" || status === "incomplete") window.location.href = landingPath(status, onboarding);
+  }, [status, onboarding]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -60,7 +60,7 @@ export function LoginPage() {
       }
     >
       <div className="flex flex-col gap-2">
-        <SocialSignInButtons callbackURL="/fil" />
+        <SocialSignInButtons callbackURL="/" />
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <label className="flex flex-col gap-1 text-sm text-text-2">
             {fr.auth.emailLabel}

@@ -63,12 +63,15 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
   await expect(page).toHaveURL(/\/completer-profil/);
   await page.getByLabel("Nom affiché").fill(name);
   await page.getByLabel("Identifiant").fill(handle);
-  await page.getByLabel("Pays").click();
-  await page.getByRole("option", { name: "Sénégal" }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
-  await expect(page).toHaveURL(/\/ton-role/);
-  await page.getByRole("link", { name: "Passer cette étape" }).click();
+  // L'onboarding se passe écran par écran ; son parcours complet est testé
+  // dans onboarding.spec.ts.
+  await expect(page).toHaveURL(/\/bienvenue\/pays/);
+  for (let screen = 1; screen <= 6; screen += 1) {
+    await expect(page.getByText(`Étape ${screen} sur 6`)).toBeVisible();
+    await page.getByRole("button", { name: "Passer" }).click();
+  }
 
   await expect(page).toHaveURL(/\/fil/);
   await expect(page.getByRole("button", { name: name, exact: false })).toBeVisible();

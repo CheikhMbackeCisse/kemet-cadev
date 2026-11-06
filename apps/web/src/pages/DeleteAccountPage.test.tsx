@@ -32,6 +32,7 @@ function me(overrides: Partial<MeResponse>): MeResponse {
     isSuspended: false,
     hasPassword: true,
     socialProviders: [],
+    onboarding: null,
     ...overrides,
   };
 }
