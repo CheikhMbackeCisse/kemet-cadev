@@ -5,7 +5,7 @@ import type { DemoAccountIds } from "./accounts.js";
 export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise<void> {
   await db.insert(skills).values([
     {
-      authorId: ids.aminaDiallo,
+      authorId: ids.coumbaThiam,
       slug: "wave-paiements",
       name: "wave-paiements",
       description: "Intégrer les paiements Wave dans une API Node.js : webhooks, statuts, remboursements.",
@@ -29,7 +29,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.fatimaBenali,
+      authorId: ids.lynaBouzid,
       slug: "ci-docker-fiable",
       name: "ci-docker-fiable",
       description: "Rendre une CI GitHub Actions stable quand elle construit et démarre des images Docker.",
@@ -48,7 +48,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.kwameAsante,
+      authorId: ids.eboQuansah,
       slug: "flutter-sync-hors-ligne",
       name: "flutter-sync-hors-ligne",
       description: "Synchroniser un cache Flutter hors-ligne sans perdre d'écritures en cas de conflit.",
@@ -66,7 +66,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.chidiOkafor,
+      authorId: ids.dapoOyelaran,
       slug: "design-system-theme-sombre",
       name: "design-system-theme-sombre",
       description: "Ajouter un thème sombre à un design system React sans tout réécrire.",
@@ -85,7 +85,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.zaneleMokoena,
+      authorId: ids.kgomotsoMahlangu,
       slug: "airflow-workers-oom",
       name: "airflow-workers-oom",
       description: "Détecter un worker Airflow qui sature en mémoire avant que la DAG plante sans message clair.",
@@ -103,7 +103,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.samuelMwangi,
+      authorId: ids.kipronoLangat,
       slug: "paiement-mobile-idempotence",
       name: "paiement-mobile-idempotence",
       description: "Rendre une API de paiement mobile idempotente face aux retransmissions réseau.",
@@ -121,7 +121,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.nadiaHassan,
+      authorId: ids.ghizlaneAmrani,
       slug: "nlp-bas-ressource-arabe",
       name: "nlp-bas-ressource-arabe",
       description: "Entraîner un modèle NLP correct en arabe dialectal malgré le peu de corpus annotés.",
@@ -140,7 +140,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.jeanMarcMukendi,
+      authorId: ids.heritierKabeya,
       slug: "firmware-autonomie-batterie",
       name: "firmware-autonomie-batterie",
       description: "Arbitrer entre fréquence de mesure et autonomie batterie sur un capteur connecté isolé.",
@@ -158,7 +158,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.aissatouToure,
+      authorId: ids.ahouKouadio,
       slug: "frame-pacing-android-bas-de-gamme",
       name: "frame-pacing-android-bas-de-gamme",
       description: "Garder un jeu Unity fluide sur Android bas de gamme sans sacrifier la résolution en premier.",
@@ -176,7 +176,7 @@ export async function createDemoSkills(db: DbOrTx, ids: DemoAccountIds): Promise
       isDemo: true,
     },
     {
-      authorId: ids.yassineTrabelsi,
+      authorId: ids.skanderJaziri,
       slug: "ux-reseau-instable",
       name: "ux-reseau-instable",
       description: "Concevoir une application web qui reste utilisable sur une connexion mobile instable.",

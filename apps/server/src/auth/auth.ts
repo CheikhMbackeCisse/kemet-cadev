@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import type { Db } from "@kemet/db";
+import { DemoAddressFilter } from "../email/demo-address-filter.js";
 import type { EmailSender } from "../email/email-sender.js";
 import { hashPassword, verifyPassword } from "./password.js";
 
@@ -23,6 +24,7 @@ export interface AuthConfig {
 export const CLIENT_IP_HEADER = "x-kemet-client-ip";
 
 export function createAuth(config: AuthConfig) {
+  const emailSender = new DemoAddressFilter(config.emailSender);
   return betterAuth({
     database: drizzleAdapter(config.db, { provider: "pg" }),
     baseURL: config.baseUrl,
@@ -38,7 +40,7 @@ export function createAuth(config: AuthConfig) {
       // n'est que journalisée, l'utilisateur ne doit de toute façon pas
       // savoir si l'adresse existe (voir ForgotPasswordPage).
       sendResetPassword: async ({ user, url }) => {
-        void config.emailSender
+        void emailSender
           .send({
             to: user.email,
             subject: "Réinitialisation de votre mot de passe Kemet",
@@ -52,7 +54,7 @@ export function createAuth(config: AuthConfig) {
       // Même raison que sendResetPassword ci-dessus : ne pas faire dépendre
       // la création de compte de la rapidité du relais SMTP.
       sendVerificationEmail: async ({ user, url }) => {
-        void config.emailSender
+        void emailSender
           .send({
             to: user.email,
             subject: "Vérifiez votre adresse email Kemet",

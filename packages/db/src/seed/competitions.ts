@@ -2,9 +2,12 @@ import type { DbOrTx } from "../client.js";
 import { competitions, juryScores, submissions, teamMembers, teams, votes } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { chunk } from "./chunk.js";
+import { EXAMPLE_COMPETITION_NOTE } from "./fun-competitions.js";
 import type { DemoProjectIds } from "./projects.js";
 import { seededShuffle } from "./filler-profiles.js";
 import { daysAgo, daysFromNow } from "./time.js";
+
+const EXAMPLE_PREFIX = `${EXAMPLE_COMPETITION_NOTE}\n\n`;
 
 const VOTE_CHUNK_SIZE = 5000;
 
@@ -20,13 +23,14 @@ export async function createDemoCompetitions(
   const [hackathon] = await db
     .insert(competitions)
     .values({
-      createdBy: ids.fatimaBenali,
-      reviewedBy: ids.aminaDiallo,
+      createdBy: ids.lynaBouzid,
+      reviewedBy: ids.coumbaThiam,
       status: "published",
       slug: "hackathon-paiements-resilients",
       name: "Hackathon Paiements Résilients",
       pitch: "48 heures pour concevoir un système de paiement qui survit à une connexion instable.",
       description:
+        EXAMPLE_PREFIX +
         "Les équipes conçoivent un flux de paiement qui reste correct face aux coupures réseau, aux " +
         "retransmissions et aux doubles clics. Le jury évalue la résilience autant que l'interface.",
       registrationClosesAt: daysFromNow(10),
@@ -40,14 +44,14 @@ export async function createDemoCompetitions(
   const [waveGuard, kemetPay] = await db
     .insert(teams)
     .values([
-      { competitionId: hackathonId, captainId: ids.fatimaBenali, name: "WaveGuard" },
-      { competitionId: hackathonId, captainId: ids.jeanMarcMukendi, name: "KemetPay" },
+      { competitionId: hackathonId, captainId: ids.lynaBouzid, name: "WaveGuard" },
+      { competitionId: hackathonId, captainId: ids.heritierKabeya, name: "KemetPay" },
     ])
     .returning({ id: teams.id });
 
   await db.insert(teamMembers).values([
-    { teamId: waveGuard!.id, competitionId: hackathonId, profileId: ids.fatimaBenali },
-    { teamId: kemetPay!.id, competitionId: hackathonId, profileId: ids.jeanMarcMukendi },
+    { teamId: waveGuard!.id, competitionId: hackathonId, profileId: ids.lynaBouzid },
+    { teamId: kemetPay!.id, competitionId: hackathonId, profileId: ids.heritierKabeya },
   ]);
 
   // Compétition en phase de vote : inscriptions et soumissions closes, le
@@ -55,13 +59,14 @@ export async function createDemoCompetitions(
   const [aiChallenge] = await db
     .insert(competitions)
     .values({
-      createdBy: ids.nadiaHassan,
-      reviewedBy: ids.aminaDiallo,
+      createdBy: ids.ghizlaneAmrani,
+      reviewedBy: ids.coumbaThiam,
       status: "published",
       slug: "defi-ia-afrique",
       name: "Défi IA Afrique",
       pitch: "Des projets d'intelligence artificielle pensés pour des usages africains concrets.",
       description:
+        EXAMPLE_PREFIX +
         "De la recommandation en langues locales à la détection d'anomalies sur des pipelines de données : " +
         "le jury et le public votent pour le projet qui répond le mieux à un vrai besoin du continent.\n\n" +
         "Chaque soumission documente comment lancer son évaluation en une commande, par exemple :\n\n" +
@@ -79,16 +84,16 @@ export async function createDemoCompetitions(
   const [recoWave, dataGuard] = await db
     .insert(teams)
     .values([
-      { competitionId: aiChallengeId, captainId: ids.nadiaHassan, name: "RecoWave" },
-      { competitionId: aiChallengeId, captainId: ids.zaneleMokoena, name: "DataGuard" },
+      { competitionId: aiChallengeId, captainId: ids.ghizlaneAmrani, name: "RecoWave" },
+      { competitionId: aiChallengeId, captainId: ids.kgomotsoMahlangu, name: "DataGuard" },
     ])
     .returning({ id: teams.id });
 
   await db.insert(teamMembers).values([
-    { teamId: recoWave!.id, competitionId: aiChallengeId, profileId: ids.nadiaHassan },
-    { teamId: recoWave!.id, competitionId: aiChallengeId, profileId: ids.aminaDiallo },
-    { teamId: dataGuard!.id, competitionId: aiChallengeId, profileId: ids.zaneleMokoena },
-    { teamId: dataGuard!.id, competitionId: aiChallengeId, profileId: ids.fatimaBenali },
+    { teamId: recoWave!.id, competitionId: aiChallengeId, profileId: ids.ghizlaneAmrani },
+    { teamId: recoWave!.id, competitionId: aiChallengeId, profileId: ids.coumbaThiam },
+    { teamId: dataGuard!.id, competitionId: aiChallengeId, profileId: ids.kgomotsoMahlangu },
+    { teamId: dataGuard!.id, competitionId: aiChallengeId, profileId: ids.lynaBouzid },
   ]);
 
   const [recoWaveSubmission, dataGuardSubmission] = await db
@@ -98,13 +103,13 @@ export async function createDemoCompetitions(
         teamId: recoWave!.id,
         competitionId: aiChallengeId,
         projectId: projectIds.darijaNlpToolkit,
-        authorId: ids.nadiaHassan,
+        authorId: ids.ghizlaneAmrani,
         title: "Darija NLP Toolkit",
         pitch: "Évaluer un modèle de recommandation en arabe dialectal dialecte par dialecte, pas en moyenne.",
         description:
           "Normalisation du mélange arabe/latin, transfert depuis un modèle multilingue pré-entraîné, " +
           "évaluation séparée par dialecte pour ne pas masquer une couverture faible.",
-        repoUrl: "https://github.com/nadia-hassan/darija-nlp-toolkit",
+        repoUrl: "https://code.demo.kemetlabs.dev/ghizlane-amrani/darija-nlp-toolkit",
         demoUrl: null,
         createdAt: daysAgo(12),
       },
@@ -112,7 +117,7 @@ export async function createDemoCompetitions(
         teamId: dataGuard!.id,
         competitionId: aiChallengeId,
         projectId: projectIds.dataPulse,
-        authorId: ids.zaneleMokoena,
+        authorId: ids.kgomotsoMahlangu,
         title: "DataPulse",
         pitch: "Détecter les anomalies mémoire d'un pipeline Airflow avant qu'une tâche échoue sans message clair.",
         description:
@@ -123,7 +128,7 @@ export async function createDemoCompetitions(
           "model = IsolationForest(contamination=0.01, random_state=0).fit(features)\n" +
           "anomalies = memory_by_task[model.predict(features) == -1]\n" +
           "```",
-        repoUrl: "https://github.com/zanele-mokoena/datapulse",
+        repoUrl: "https://code.demo.kemetlabs.dev/kgomotso-mahlangu/datapulse",
         demoUrl: null,
         createdAt: daysAgo(11),
       },
@@ -132,17 +137,19 @@ export async function createDemoCompetitions(
 
   // Compétition close, résultats définitifs : trois équipes, vote public à
   // l'échelle de la communauté et notation du jury, réservée aux niveaux
-  // Architecte et Légende (Amina Diallo, voir mentoring.ts).
+  // Architecte et Légende (Coumba Thiam, voir mentoring.ts).
   const [miniChallenge] = await db
     .insert(competitions)
     .values({
-      createdBy: ids.aminaDiallo,
-      reviewedBy: ids.aminaDiallo,
+      createdBy: ids.coumbaThiam,
+      reviewedBy: ids.coumbaThiam,
       status: "published",
       slug: "cadev-mini-defi-produit",
       name: "CADEV Mini-Défi Produit",
       pitch: "Un mini-défi CADEV pour préparer la grande compétition : un produit fini en une semaine.",
-      description: "Trois équipes, un produit, une semaine. Le jury note la qualité d'exécution, le public vote pour son préféré.",
+      description:
+        EXAMPLE_PREFIX +
+        "Trois équipes, un produit, une semaine. Le jury note la qualité d'exécution, le public vote pour son préféré.",
       registrationClosesAt: daysAgo(60),
       submissionClosesAt: daysAgo(50),
       votingClosesAt: daysAgo(40),
@@ -154,19 +161,19 @@ export async function createDemoCompetitions(
   const [offliCrew, banlieueKit, saharaTeam] = await db
     .insert(teams)
     .values([
-      { competitionId: miniChallengeId, captainId: ids.kwameAsante, name: "OffliCrew" },
-      { competitionId: miniChallengeId, captainId: ids.chidiOkafor, name: "BanlieueKit" },
-      { competitionId: miniChallengeId, captainId: ids.aissatouToure, name: "SaharaTeam" },
+      { competitionId: miniChallengeId, captainId: ids.eboQuansah, name: "OffliCrew" },
+      { competitionId: miniChallengeId, captainId: ids.dapoOyelaran, name: "BanlieueKit" },
+      { competitionId: miniChallengeId, captainId: ids.ahouKouadio, name: "SaharaTeam" },
     ])
     .returning({ id: teams.id });
 
   await db.insert(teamMembers).values([
-    { teamId: offliCrew!.id, competitionId: miniChallengeId, profileId: ids.kwameAsante },
-    { teamId: offliCrew!.id, competitionId: miniChallengeId, profileId: ids.samuelMwangi },
-    { teamId: banlieueKit!.id, competitionId: miniChallengeId, profileId: ids.chidiOkafor },
-    { teamId: banlieueKit!.id, competitionId: miniChallengeId, profileId: ids.yassineTrabelsi },
-    { teamId: saharaTeam!.id, competitionId: miniChallengeId, profileId: ids.aissatouToure },
-    { teamId: saharaTeam!.id, competitionId: miniChallengeId, profileId: ids.jeanMarcMukendi },
+    { teamId: offliCrew!.id, competitionId: miniChallengeId, profileId: ids.eboQuansah },
+    { teamId: offliCrew!.id, competitionId: miniChallengeId, profileId: ids.kipronoLangat },
+    { teamId: banlieueKit!.id, competitionId: miniChallengeId, profileId: ids.dapoOyelaran },
+    { teamId: banlieueKit!.id, competitionId: miniChallengeId, profileId: ids.skanderJaziri },
+    { teamId: saharaTeam!.id, competitionId: miniChallengeId, profileId: ids.ahouKouadio },
+    { teamId: saharaTeam!.id, competitionId: miniChallengeId, profileId: ids.heritierKabeya },
   ]);
 
   const [offliCrewSubmission, banlieueKitSubmission, saharaTeamSubmission] = await db
@@ -176,11 +183,11 @@ export async function createDemoCompetitions(
         teamId: offliCrew!.id,
         competitionId: miniChallengeId,
         projectId: projectIds.offliBank,
-        authorId: ids.kwameAsante,
+        authorId: ids.eboQuansah,
         title: "OffliBank",
         pitch: "Une application bancaire pleinement utilisable sans connexion, conflits résolus par horodatage serveur.",
         description: "File d'opérations locale, statuts explicites pending/synced/conflict, resynchronisation progressive.",
-        repoUrl: "https://github.com/kwame-asante/offlibank",
+        repoUrl: "https://code.demo.kemetlabs.dev/ebo-quansah/offlibank",
         demoUrl: null,
         createdAt: daysAgo(52),
       },
@@ -188,24 +195,24 @@ export async function createDemoCompetitions(
         teamId: banlieueKit!.id,
         competitionId: miniChallengeId,
         projectId: projectIds.kemetDesignKit,
-        authorId: ids.chidiOkafor,
+        authorId: ids.dapoOyelaran,
         title: "Kemet Design Kit",
         pitch: "Un design system React accessible pour construire une interface mobile soignée en quelques jours.",
         description: "Composants Radix UI, variables CSS pour le thème, pensé pour aller vite sans sacrifier l'accessibilité.",
-        repoUrl: "https://github.com/chidi-okafor/kemet-design-kit",
-        demoUrl: "https://kemet-design-kit.demo.kemet.africa",
+        repoUrl: "https://code.demo.kemetlabs.dev/dapo-oyelaran/kemet-design-kit",
+        demoUrl: "https://kemet-design-kit.demo.kemetlabs.dev",
         createdAt: daysAgo(51),
       },
       {
         teamId: saharaTeam!.id,
         competitionId: miniChallengeId,
         projectId: projectIds.saharaRun,
-        authorId: ids.aissatouToure,
+        authorId: ids.ahouKouadio,
         title: "SaharaRoad",
         pitch: "Un jeu de course mobile fluide même sur de l'Android bas de gamme.",
         description: "Budget de frame fixe, dégradation progressive des particules, préchargement pendant les transitions.",
-        repoUrl: "https://github.com/aissatou-toure/sahararoad",
-        demoUrl: "https://sahararoad.demo.kemet.africa",
+        repoUrl: "https://code.demo.kemetlabs.dev/ahou-kouadio/sahararoad",
+        demoUrl: "https://sahararoad.demo.kemetlabs.dev",
         createdAt: daysAgo(50),
       },
     ])
@@ -215,7 +222,7 @@ export async function createDemoCompetitions(
     {
       competitionId: miniChallengeId,
       submissionId: offliCrewSubmission!.id,
-      jurorId: ids.aminaDiallo,
+      jurorId: ids.coumbaThiam,
       score: 17,
       comment: "Gestion des conflits convaincante, l'interface reste perfectible.",
       createdAt: daysAgo(41),
@@ -223,7 +230,7 @@ export async function createDemoCompetitions(
     {
       competitionId: miniChallengeId,
       submissionId: banlieueKitSubmission!.id,
-      jurorId: ids.aminaDiallo,
+      jurorId: ids.coumbaThiam,
       score: 15,
       comment: "Composants propres et bien documentés, l'accessibilité au clavier n'est pas encore complète.",
       createdAt: daysAgo(41),
@@ -231,7 +238,7 @@ export async function createDemoCompetitions(
     {
       competitionId: miniChallengeId,
       submissionId: saharaTeamSubmission!.id,
-      jurorId: ids.aminaDiallo,
+      jurorId: ids.coumbaThiam,
       score: 18,
       comment: "La fluidité sur matériel bas de gamme est nettement au-dessus du reste du lot.",
       createdAt: daysAgo(41),

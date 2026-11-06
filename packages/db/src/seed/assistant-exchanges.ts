@@ -30,9 +30,9 @@ interface Exchange {
 // Aucune personne n'interroge l'assistant sur son propre skill : un "Utile"
 // donné à soi-même ne rapporterait aucun point.
 const EXCHANGES: Exchange[] = [
-  { recording: FLUTTER_SYNC_RECORDING, askedBy: "yassineTrabelsi", askedHoursAgo: 88.5, helpful: true },
-  { recording: CI_DOCKER_RECORDING, askedBy: "zaneleMokoena", askedHoursAgo: 71, helpful: true },
-  { recording: DESIGN_SYSTEM_RECORDING, askedBy: "aissatouToure", askedHoursAgo: 49.5, helpful: null },
+  { recording: FLUTTER_SYNC_RECORDING, askedBy: "skanderJaziri", askedHoursAgo: 88.5, helpful: true },
+  { recording: CI_DOCKER_RECORDING, askedBy: "kgomotsoMahlangu", askedHoursAgo: 71, helpful: true },
+  { recording: DESIGN_SYSTEM_RECORDING, askedBy: "ahouKouadio", askedHoursAgo: 49.5, helpful: null },
 ];
 
 /**

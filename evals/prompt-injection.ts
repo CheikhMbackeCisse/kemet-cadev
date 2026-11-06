@@ -179,7 +179,7 @@ const WORK_MATCH_ATTACK = {
       summary: "Les ventes sont enregistrées sans réseau et synchronisées à la reconnexion.",
       tags: ["hors-ligne", "synchronisation"],
       stack: ["Vue"],
-      handle: "yassine-trabelsi",
+      handle: "skander-jaziri",
     },
     {
       title: "Recettes de cuisine sénégalaise",

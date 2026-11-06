@@ -288,8 +288,8 @@ describe.skipIf(!databaseUrl)("Qui a travaill√© sur ce sujet ? (base Postgres r√
       recordedAnswers: true,
     });
     const viewer = await createMember("lectrice");
-    const kwame = await createMember("kwame-asante");
-    const yassine = await createMember("yassine-trabelsi");
+    const kwame = await createMember("ebo-quansah");
+    const yassine = await createMember("skander-jaziri");
     await publish(
       kwame.cookie,
       "synchronisation-hors-ligne-banque-mobile",
@@ -313,7 +313,7 @@ describe.skipIf(!databaseUrl)("Qui a travaill√© sur ce sujet ? (base Postgres r√
     expect(response.json().result.mode).toBe("recorded");
     expect(response.json().result.suggestions).toEqual([
       expect.objectContaining({
-        person: expect.objectContaining({ handle: "yassine-trabelsi" }),
+        person: expect.objectContaining({ handle: "skander-jaziri" }),
         justification: expect.stringContaining("stock"),
       }),
     ]);

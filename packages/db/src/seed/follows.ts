@@ -5,19 +5,19 @@ import { chunk } from "./chunk.js";
 import { seededShuffle } from "./filler-profiles.js";
 
 // Nombre d'abonnés tirés du bassin de profils de remplissage, par compte
-// nommé. Samuel Mwangi (quinze ans d'expérience, architecte reconnu) est
+// nommé. Kiprono Langat (quinze ans d'expérience, architecte reconnu) est
 // le compte le plus suivi de la plateforme.
 const FOLLOWER_COUNTS: Record<keyof DemoAccountIds, number> = {
-  aminaDiallo: 640,
-  kwameAsante: 310,
-  fatimaBenali: 980,
-  chidiOkafor: 1850,
-  zaneleMokoena: 420,
-  yassineTrabelsi: 260,
-  aissatouToure: 710,
-  samuelMwangi: 5200,
-  nadiaHassan: 1420,
-  jeanMarcMukendi: 180,
+  coumbaThiam: 640,
+  eboQuansah: 310,
+  lynaBouzid: 980,
+  dapoOyelaran: 1850,
+  kgomotsoMahlangu: 420,
+  skanderJaziri: 260,
+  ahouKouadio: 710,
+  kipronoLangat: 5200,
+  ghizlaneAmrani: 1420,
+  heritierKabeya: 180,
 };
 
 const FOLLOW_CHUNK_SIZE = 10000;

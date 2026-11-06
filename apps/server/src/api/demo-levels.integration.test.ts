@@ -35,15 +35,15 @@ describe.skipIf(!databaseUrl)("niveaux des comptes de démonstration (base Postg
       .select({ id: profiles.id, handle: profiles.handle, openToOpportunities: profiles.openToOpportunities })
       .from(profiles)
       .innerJoin(user, eq(user.id, profiles.userId))
-      .where(and(eq(profiles.isDemo, true), like(user.email, "%.%@demo.kemet.africa")));
+      .where(and(eq(profiles.isDemo, true), like(user.email, "%.%@demo.kemetlabs.dev")));
     const points = await computeProfilesPoints(db, namedAccounts.map((account) => account.id));
     levels = new Map(namedAccounts.map((account) => [account.handle, points.get(account.id)!.level]));
   }, 180_000);
 
   it("couvre plusieurs niveaux, dont un Architecte et un Scribe", () => {
     expect(namedAccounts).toHaveLength(10);
-    expect(levels.get("amina-diallo")).toBe("architecte");
-    expect(levels.get("samuel-mwangi")).toBe("scribe");
+    expect(levels.get("coumba-thiam")).toBe("architecte");
+    expect(levels.get("kiprono-langat")).toBe("scribe");
     expect(new Set(levels.values())).toEqual(new Set(["apprenti", "artisan", "scribe", "architecte"]));
   });
 
@@ -78,7 +78,7 @@ describe.skipIf(!databaseUrl)("niveaux des comptes de démonstration (base Postg
     const signIn = await app.inject({
       method: "POST",
       url: "/api/auth/sign-in/email",
-      payload: { email: "amina.diallo@demo.kemet.africa", password: "demonstration" },
+      payload: { email: "coumba.thiam@demo.kemetlabs.dev", password: "demonstration" },
     });
     const raw = signIn.headers["set-cookie"];
     const cookie = String(Array.isArray(raw) ? raw[0] : raw).split(";")[0]!;

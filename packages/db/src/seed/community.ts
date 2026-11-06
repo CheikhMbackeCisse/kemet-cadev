@@ -21,8 +21,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "Flutter Afrique",
     slug: "flutter-afrique",
     description: "Développeurs et développeuses Flutter du continent : widgets, performance, publication.",
-    ownerKey: "kwameAsante",
-    earlyMemberKeys: ["aissatouToure"],
+    ownerKey: "eboQuansah",
+    earlyMemberKeys: ["ahouKouadio"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "aide-flutter", slug: "aide-flutter" },
@@ -34,8 +34,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "Backend & API",
     slug: "backend-api",
     description: "Node.js, Java, bases de données : construire des API qui tiennent la charge.",
-    ownerKey: "aminaDiallo",
-    earlyMemberKeys: ["samuelMwangi"],
+    ownerKey: "coumbaThiam",
+    earlyMemberKeys: ["kipronoLangat"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "performance", slug: "performance" },
@@ -47,8 +47,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "Data & Intelligence Artificielle",
     slug: "data-ia",
     description: "Machine learning, NLP, pipelines de données : la data en Afrique.",
-    ownerKey: "nadiaHassan",
-    earlyMemberKeys: ["zaneleMokoena"],
+    ownerKey: "ghizlaneAmrani",
+    earlyMemberKeys: ["kgomotsoMahlangu"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "nlp-rag", slug: "nlp-rag" },
@@ -60,8 +60,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "DevOps & Cloud Afrique",
     slug: "devops-cloud-afrique",
     description: "Kubernetes, CI/CD, infrastructure : fiabiliser ce qui tourne en production.",
-    ownerKey: "fatimaBenali",
-    earlyMemberKeys: ["samuelMwangi"],
+    ownerKey: "lynaBouzid",
+    earlyMemberKeys: ["kipronoLangat"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "kubernetes", slug: "kubernetes" },
@@ -73,8 +73,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "Frontend & Design Systems",
     slug: "frontend-design-systems",
     description: "React, accessibilité, performance web : construire des interfaces soignées.",
-    ownerKey: "chidiOkafor",
-    earlyMemberKeys: ["yassineTrabelsi"],
+    ownerKey: "dapoOyelaran",
+    earlyMemberKeys: ["skanderJaziri"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "accessibilite", slug: "accessibilite" },
@@ -86,8 +86,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "Jeux Vidéo Afrique",
     slug: "jeux-video-afrique",
     description: "Game design, moteurs de jeu, publication mobile : le jeu vidéo fait en Afrique.",
-    ownerKey: "aissatouToure",
-    earlyMemberKeys: ["kwameAsante"],
+    ownerKey: "ahouKouadio",
+    earlyMemberKeys: ["eboQuansah"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "gamedev-mobile", slug: "gamedev-mobile" },
@@ -98,8 +98,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "Cybersécurité",
     slug: "cybersecurite",
     description: "Sécurité applicative, audits, réponse à incident : protéger ce qu'on construit.",
-    ownerKey: "samuelMwangi",
-    earlyMemberKeys: ["fatimaBenali"],
+    ownerKey: "kipronoLangat",
+    earlyMemberKeys: ["lynaBouzid"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "pentest", slug: "pentest" },
@@ -110,8 +110,8 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
     name: "Carrière & Freelance Tech",
     slug: "carriere-freelance-tech",
     description: "Offres, portfolios, négociation de contrats : l'espace carrière de toute la communauté.",
-    ownerKey: "yassineTrabelsi",
-    earlyMemberKeys: ["aminaDiallo", "chidiOkafor"],
+    ownerKey: "skanderJaziri",
+    earlyMemberKeys: ["coumbaThiam", "dapoOyelaran"],
     channelNames: [
       { name: "général", slug: "general" },
       { name: "offres", slug: "offres" },
@@ -124,7 +124,15 @@ const COMMUNITY_SPACES: CommunitySpaceSeed[] = [
 
 const MEMBER_CHUNK_SIZE = 5000;
 
-export async function createCommunitySpaces(db: DbOrTx, accountIds: DemoAccountIds, fillerProfileIds: string[]): Promise<void> {
+/** Identifiant de chaque salon, par slug d'espace puis slug de salon. */
+export type CommunityChannelIds = Map<string, Map<string, string>>;
+
+export async function createCommunitySpaces(
+  db: DbOrTx,
+  accountIds: DemoAccountIds,
+  fillerProfileIds: string[],
+): Promise<CommunityChannelIds> {
+  const channelIds: CommunityChannelIds = new Map();
   for (const spaceSeed of COMMUNITY_SPACES) {
     const ownerId = accountIds[spaceSeed.ownerKey];
     const [space] = await db
@@ -139,14 +147,18 @@ export async function createCommunitySpaces(db: DbOrTx, accountIds: DemoAccountI
       .returning({ id: spaces.id });
     const spaceId = space!.id;
 
-    await db.insert(channels).values(
-      spaceSeed.channelNames.map((channel, index) => ({
-        spaceId,
-        name: channel.name,
-        slug: channel.slug,
-        displayOrder: index,
-      })),
-    );
+    const insertedChannels = await db
+      .insert(channels)
+      .values(
+        spaceSeed.channelNames.map((channel, index) => ({
+          spaceId,
+          name: channel.name,
+          slug: channel.slug,
+          displayOrder: index,
+        })),
+      )
+      .returning({ id: channels.id, slug: channels.slug });
+    channelIds.set(spaceSeed.slug, new Map(insertedChannels.map((channel) => [channel.slug, channel.id])));
 
     const targetFillerCount = Number.isFinite(spaceSeed.memberCount)
       ? Math.max(0, spaceSeed.memberCount - 1 - spaceSeed.earlyMemberKeys.length)
@@ -162,4 +174,5 @@ export async function createCommunitySpaces(db: DbOrTx, accountIds: DemoAccountI
       await db.insert(spaceMembers).values(batch);
     }
   }
+  return channelIds;
 }

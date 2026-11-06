@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb } from "../client.js";
+import { isDemoEmailAddress } from "../demo-email.js";
 import { getTestDatabaseUrl, resetTestDatabase } from "../testing.js";
 import { assistantInvocations, messages, pointsLedger, profiles, user } from "../schema/index.js";
 import { DEMO_ACCOUNTS } from "./accounts.js";
@@ -23,9 +24,23 @@ describe.skipIf(!databaseUrl)("seed de démonstration", () => {
     expect(admins).toHaveLength(0);
   }, 120_000);
 
+  it("ne crée que des comptes déjà vérifiés, au domaine de démonstration et sans lien GitHub", async () => {
+    const demoUsers = await db
+      .select({ email: user.email, emailVerified: user.emailVerified, githubUrl: profiles.githubUrl })
+      .from(user)
+      .innerJoin(profiles, eq(profiles.userId, user.id))
+      .where(eq(profiles.isDemo, true));
+    expect(demoUsers).toHaveLength(DEMO_ACCOUNTS.length + DEFAULT_FILLER_PROFILE_COUNT);
+    for (const demoUser of demoUsers) {
+      expect(isDemoEmailAddress(demoUser.email)).toBe(true);
+      expect(demoUser.emailVerified).toBe(true);
+      expect(demoUser.githubUrl).toBeNull();
+    }
+  });
+
   it("pose des échanges avec @kemet marqués comme enregistrés, avec leurs points", async () => {
     const invocations = await db.select().from(assistantInvocations);
-    expect(invocations).toHaveLength(3);
+    expect(invocations).toHaveLength(6);
     for (const invocation of invocations) {
       expect(invocation).toMatchObject({ status: "done", recorded: true });
       expect(invocation.skillIds).toHaveLength(1);

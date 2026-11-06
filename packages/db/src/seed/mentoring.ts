@@ -5,7 +5,7 @@ import { seededShuffle } from "./filler-profiles.js";
 import type { DemoProjectIds } from "./projects.js";
 import { daysAgo } from "./time.js";
 
-// Entraide passée d'Amina Diallo, propriétaire de l'espace CADEV 2026 et jurée
+// Entraide passée d'Coumba Thiam, propriétaire de l'espace CADEV 2026 et jurée
 // du mini-défi : chaque point de son niveau Architecte vient d'une réponse
 // marquée comme solution, d'une aide acceptée sur un projet ou d'un retour
 // sur un post À tester, écrits ici. Tout est daté de 15 à 82 jours : hors du
@@ -226,7 +226,7 @@ interface ProjectHelp {
 const PROJECT_HELP: ProjectHelp[] = [
   {
     project: "pesaRail",
-    owner: "samuelMwangi",
+    owner: "kipronoLangat",
     day: 82,
     title: "Relecture du schéma de rapprochement",
     description: "Je veux un second regard sur les tables de rapprochement avant d'y brancher les opérateurs.",
@@ -234,7 +234,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "pesaRail",
-    owner: "samuelMwangi",
+    owner: "kipronoLangat",
     day: 71,
     title: "Idempotence des callbacks opérateurs",
     description: "Certains opérateurs rejouent leurs callbacks. Cherche quelqu'un pour poser la déduplication.",
@@ -242,7 +242,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "ciDockerWatchdog",
-    owner: "fatimaBenali",
+    owner: "lynaBouzid",
     day: 66,
     title: "Exposer les métriques en Prometheus",
     description: "Le watchdog détecte les conteneurs saturés, il faut maintenant exporter ce qu'il voit.",
@@ -250,7 +250,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "ciDockerWatchdog",
-    owner: "fatimaBenali",
+    owner: "lynaBouzid",
     day: 58,
     title: "Tests d'intégration avec un vrai Docker",
     description: "Les tests simulent Docker et ratent des cas réels. Cherche de l'aide pour des tests de bout en bout.",
@@ -258,7 +258,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "offliBank",
-    owner: "kwameAsante",
+    owner: "eboQuansah",
     day: 50,
     title: "API de synchronisation côté serveur",
     description: "L'application mobile garde une file d'opérations hors ligne, il manque l'API qui les reçoit.",
@@ -266,7 +266,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "offliBank",
-    owner: "kwameAsante",
+    owner: "eboQuansah",
     day: 44,
     title: "Résolution des conflits par horodatage serveur",
     description: "Deux appareils modifient le même compte hors ligne. Il faut une règle claire et testée.",
@@ -274,7 +274,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "darijaNlpToolkit",
-    owner: "nadiaHassan",
+    owner: "ghizlaneAmrani",
     day: 34,
     title: "API d'inférence pour le modèle",
     description: "Le modèle tourne en notebook, il faut une petite API pour que d'autres puissent l'essayer.",
@@ -282,7 +282,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "kemetDesignKit",
-    owner: "chidiOkafor",
+    owner: "dapoOyelaran",
     day: 29,
     title: "Documentation des composants de formulaire",
     description: "Les composants existent, il manque des exemples d'usage avec validation côté serveur.",
@@ -290,7 +290,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "dataPulse",
-    owner: "zaneleMokoena",
+    owner: "kgomotsoMahlangu",
     day: 24,
     title: "Partitionner la table des événements",
     description: "La table des événements dépasse 50 millions de lignes, les requêtes par mois ralentissent.",
@@ -298,7 +298,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "dataPulse",
-    owner: "zaneleMokoena",
+    owner: "kgomotsoMahlangu",
     day: 20,
     title: "Alertes quand un pipeline s'arrête",
     description: "Un pipeline peut s'arrêter sans erreur visible. Cherche une alerte simple sur l'absence de données.",
@@ -306,7 +306,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "saharaRun",
-    owner: "aissatouToure",
+    owner: "ahouKouadio",
     day: 18,
     title: "Classement en ligne",
     description: "Le jeu a besoin d'un classement des meilleurs temps, résistant aux scores falsifiés.",
@@ -314,7 +314,7 @@ const PROJECT_HELP: ProjectHelp[] = [
   },
   {
     project: "pesaRail",
-    owner: "samuelMwangi",
+    owner: "kipronoLangat",
     day: 16,
     title: "Documentation de l'API pour les commerçants",
     description: "Les premiers commerçants arrivent, il faut une documentation de l'API claire et à jour.",
@@ -332,49 +332,49 @@ interface TestedPost {
 const TESTED_POSTS: TestedPost[] = [
   {
     body: "J'ai écrit un petit outil qui génère des données de test réalistes pour des transactions mobile money.",
-    testUrl: "https://fake-momo.demo.kemet.africa",
+    testUrl: "https://fake-momo.demo.kemetlabs.dev",
     testAsk: "Est-ce que les montants et les horaires vous semblent crédibles ?",
     feedback: "Crédibles, oui. Il manque les pics de fin de mois et les échecs pour solde insuffisant, très fréquents dans les vraies données.",
   },
   {
     body: "Première version de mon API de prise de rendez-vous pour cliniques, testable sans compte.",
-    testUrl: "https://rdv-clinique.demo.kemet.africa",
+    testUrl: "https://rdv-clinique.demo.kemetlabs.dev",
     testAsk: "Essayez de réserver deux fois le même créneau.",
     feedback: "J'ai obtenu deux réservations sur le même créneau en lançant deux requêtes en même temps. Une contrainte d'unicité en base réglerait ça.",
   },
   {
     body: "Je publie un client Node pour l'API d'un opérateur de paiement, avec reprise automatique.",
-    testUrl: "https://momo-client.demo.kemet.africa",
+    testUrl: "https://momo-client.demo.kemetlabs.dev",
     testAsk: "La reprise après erreur réseau vous paraît sûre ?",
     feedback: "La reprise rejoue aussi les paiements, pas seulement les lectures. Sans clé d'idempotence, c'est un double débit possible.",
   },
   {
     body: "Tableau de bord de suivi de colis pour livreurs à moto, pensé pour des connexions lentes.",
-    testUrl: "https://colis-moto.demo.kemet.africa",
+    testUrl: "https://colis-moto.demo.kemetlabs.dev",
     testAsk: "Combien de temps met la page à s'afficher chez vous ?",
     feedback: "Quatre secondes en 3G simulée. La liste charge tous les colis d'un coup : une pagination et des réponses compressées le ramèneraient sous la seconde.",
   },
   {
     body: "J'ai ouvert l'inscription de mon application de tontine en ligne.",
-    testUrl: "https://tontine.demo.kemet.africa",
+    testUrl: "https://tontine.demo.kemetlabs.dev",
     testAsk: "Le parcours d'inscription est-il clair ?",
     feedback: "Clair. En revanche, le lien de réinitialisation du mot de passe reste valable après usage : il devrait expirer dès qu'il a servi.",
   },
   {
     body: "Petit service qui convertit des factures PDF en données structurées.",
-    testUrl: "https://factures.demo.kemet.africa",
+    testUrl: "https://factures.demo.kemetlabs.dev",
     testAsk: "Essayez avec vos propres factures.",
     feedback: "Bons résultats sur trois factures. Un PDF de 40 Mo fait tomber le service : posez une taille maximale et traitez les gros fichiers dans une file.",
   },
   {
     body: "API publique des horaires de bus de Dakar Dem Dikk, reconstruite à partir des données ouvertes.",
-    testUrl: "https://horaires-ddd.demo.kemet.africa",
+    testUrl: "https://horaires-ddd.demo.kemetlabs.dev",
     testAsk: "Le format des réponses vous convient ?",
     feedback: "Le format est bon. Les heures sont renvoyées sans fuseau : de l'ISO 8601 avec le décalage éviterait les erreurs côté client.",
   },
   {
     body: "Je teste un bot qui répond aux questions fréquentes d'une boutique en ligne sur WhatsApp.",
-    testUrl: "https://boutique-bot.demo.kemet.africa",
+    testUrl: "https://boutique-bot.demo.kemetlabs.dev",
     testAsk: "Arrivez-vous à lui faire dire n'importe quoi ?",
     feedback: "Oui, en lui demandant d'ignorer ses consignes il a donné un code promo interne. Le contenu de la conversation doit rester une donnée, jamais une instruction.",
   },
@@ -413,7 +413,7 @@ export async function createMentoringHistory(
       .returning({ id: posts.id });
     await db.insert(postReplies).values({
       postId: question!.id,
-      authorId: ids.aminaDiallo,
+      authorId: ids.coumbaThiam,
       body: item.answer,
       isSolution: true,
       createdAt: atHour(day, 11),
@@ -435,7 +435,7 @@ export async function createMentoringHistory(
       .returning({ id: posts.id });
     await db.insert(postFeedback).values({
       postId: testedPost!.id,
-      authorId: ids.aminaDiallo,
+      authorId: ids.coumbaThiam,
       body: item.feedback,
       createdAt: atHour(day, 15),
     });
@@ -458,7 +458,7 @@ export async function createMentoringHistory(
       .returning({ id: helpRequests.id });
     await db.insert(applications).values({
       helpRequestId: helpRequest!.id,
-      applicantId: ids.aminaDiallo,
+      applicantId: ids.coumbaThiam,
       message: help.application,
       status: "accepted",
       createdAt: atHour(help.day + 1, 10),

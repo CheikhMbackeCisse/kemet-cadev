@@ -39,21 +39,21 @@ interface DemoWork {
 // agriculture) : "Qui a travaillé sur ce sujet ?" doit trouver des voisins.
 const DEMO_WORKS: DemoWork[] = [
   {
-    publisher: "kwameAsante",
+    publisher: "eboQuansah",
     slug: "synchronisation-hors-ligne-banque-mobile",
     discussion: [
       {
-        author: "fatimaBenali",
+        author: "lynaBouzid",
         body: "Bonjour, j'ai lu votre mémoire. Comment avez-vous testé la reprise sur un vrai réseau 2G ? Nous avons le même problème sur une application de microcrédit.",
         hoursAgo: 30,
       },
       {
-        author: "kwameAsante",
+        author: "eboQuansah",
         body: "Avec un téléphone d'entrée de gamme et un forfait 2G réel, pas un simulateur : le simulateur ne reproduit pas les coupures de plusieurs minutes. Le chapitre 4 décrit le protocole.",
         hoursAgo: 28,
       },
       {
-        author: "samuelMwangi",
+        author: "kipronoLangat",
         body: "La file locale d'opérations, vous la purgez à quel moment ? Après l'accusé de réception du serveur ?",
         hoursAgo: 5,
       },
@@ -76,10 +76,10 @@ const DEMO_WORKS: DemoWork[] = [
     year: 2021,
     institution: "Kwame Nkrumah University of Science and Technology",
     links: [
-      { type: "github", url: "https://github.com/kwame-asante/offline-sync-thesis" },
+      { type: "site", url: "https://code.demo.kemetlabs.dev/ebo-quansah/offline-sync-thesis" },
       {
         type: "drive",
-        url: "https://drive.google.com/file/d/demo-offline-sync-thesis/view",
+        url: "https://docs.demo.kemetlabs.dev/demo-offline-sync-thesis",
         label: "Mémoire complet",
       },
     ],
@@ -87,8 +87,30 @@ const DEMO_WORKS: DemoWork[] = [
     daysAgo: 21,
   },
   {
-    publisher: "samuelMwangi",
+    publisher: "kipronoLangat",
     slug: "idempotence-paiements-mobile-money",
+    discussion: [
+      {
+        author: "coumbaThiam",
+        body: "On a eu exactement le cas du chapitre 3 la semaine dernière : un callback rejoué six heures après. Votre clé d'idempotence, vous la gardez combien de temps ?",
+        hoursAgo: 52,
+      },
+      {
+        author: "kipronoLangat",
+        body: "Trente jours. En dessous, on a vu des rejeux légitimes arriver après expiration, surtout après une panne côté opérateur.",
+        hoursAgo: 50,
+      },
+      {
+        author: "skanderJaziri",
+        body: "Question bête de freelance : pour une PME qui reçoit 200 paiements par jour, une table Postgres avec un index unique suffit, ou il faut déjà Redis ?",
+        hoursAgo: 20,
+      },
+      {
+        author: "kipronoLangat",
+        body: "Pas bête du tout. Postgres suffit largement à ce volume, et c'est plus facile à auditer. Un cache à part, c'est quand l'index unique devient ton goulot.",
+        hoursAgo: 18,
+      },
+    ],
     title: "Idempotence des paiements mobile money : ce que M-Pesa et Wave nous ont appris",
     type: "article",
     summary: [
@@ -107,17 +129,34 @@ const DEMO_WORKS: DemoWork[] = [
     links: [
       {
         type: "article",
-        url: "https://blog.demo.kemet.africa/idempotence-mobile-money",
+        url: "https://blog.demo.kemetlabs.dev/idempotence-mobile-money",
         label: "Article en ligne",
       },
-      { type: "github", url: "https://github.com/samuel-mwangi/idempotency-examples" },
+      { type: "site", url: "https://code.demo.kemetlabs.dev/kiprono-langat/idempotency-examples" },
     ],
-    coauthors: [{ key: "aminaDiallo", status: "accepted" }],
+    coauthors: [{ key: "coumbaThiam", status: "accepted" }],
     daysAgo: 18,
   },
   {
-    publisher: "yassineTrabelsi",
+    publisher: "skanderJaziri",
     slug: "stock-boutique-hors-ligne",
+    discussion: [
+      {
+        author: "eboQuansah",
+        body: "Vous avez gardé SQLite côté téléphone ou IndexedDB dans une PWA ? Je me pose la question pour un client à Takoradi.",
+        hoursAgo: 40,
+      },
+      {
+        author: "skanderJaziri",
+        body: "PWA avec IndexedDB, parce que les boutiquiers n'installent rien depuis un store. Par contre Safari peut vider le stockage d'un site pas visité depuis une semaine, il a fallu prévenir.",
+        hoursAgo: 37,
+      },
+      {
+        author: "ahouKouadio",
+        body: "Le rapport parle de \"vente fantôme\" quand deux téléphones vendent le dernier article. Vous affichez quoi au boutiquier ?",
+        hoursAgo: 9,
+      },
+    ],
     title: "Gestion de stock pour boutiques de quartier, utilisable hors ligne",
     type: "class_project",
     summary: [
@@ -129,13 +168,25 @@ const DEMO_WORKS: DemoWork[] = [
     stack: ["Vue", "Node.js", "MySQL"],
     year: 2022,
     institution: "Université de Tunis El Manar",
-    links: [{ type: "github", url: "https://github.com/yassine-trabelsi/stock-boutique" }],
+    links: [{ type: "site", url: "https://code.demo.kemetlabs.dev/skander-jaziri/stock-boutique" }],
     externalAuthors: ["Sarra Ben Youssef", "Mehdi Jlassi"],
     daysAgo: 15,
   },
   {
-    publisher: "nadiaHassan",
+    publisher: "ghizlaneAmrani",
     slug: "maladies-manioc-vision-mobile",
+    discussion: [
+      {
+        author: "dapoOyelaran",
+        body: "Le modèle tourne entièrement sur le téléphone ? Quelle taille une fois quantifié ?",
+        hoursAgo: 26,
+      },
+      {
+        author: "ghizlaneAmrani",
+        body: "Entièrement, 4,2 Mo en int8. On a perdu deux points de précision par rapport au modèle complet, mais les agents n'ont pas de réseau dans les champs.",
+        hoursAgo: 24,
+      },
+    ],
     title: "Détecter les maladies du manioc sur un téléphone d'entrée de gamme",
     type: "thesis_research",
     summary: [
@@ -148,26 +199,48 @@ const DEMO_WORKS: DemoWork[] = [
     tags: ["vision", "agriculture", "mobile", "hors-ligne", "ia"],
     stack: ["Python", "PyTorch", "TensorFlow Lite"],
     year: 2023,
-    institution: "Université américaine du Caire",
+    institution: "Université Mohammed V de Rabat",
     links: [
-      { type: "github", url: "https://github.com/nadia-hassan/cassava-mobile" },
+      { type: "site", url: "https://code.demo.kemetlabs.dev/ghizlane-amrani/cassava-mobile" },
       {
         type: "drive",
-        url: "https://drive.google.com/file/d/demo-cassava-thesis/view",
+        url: "https://docs.demo.kemetlabs.dev/demo-cassava-thesis",
         label: "Mémoire (PDF)",
       },
       {
         type: "video",
-        url: "https://www.youtube.com/watch?v=demo-cassava",
+        url: "https://video.demo.kemetlabs.dev/demo-cassava",
         label: "Démonstration au champ",
       },
     ],
-    coauthors: [{ key: "jeanMarcMukendi", status: "accepted" }],
+    coauthors: [{ key: "heritierKabeya", status: "accepted" }],
     daysAgo: 12,
   },
   {
-    publisher: "jeanMarcMukendi",
+    publisher: "heritierKabeya",
     slug: "capteurs-sol-lora-une-pile",
+    discussion: [
+      {
+        author: "kgomotsoMahlangu",
+        body: "Une mesure toutes les 4 heures, c'est assez pour l'irrigation ? Côté coopératives, on nous demande souvent de l'horaire.",
+        hoursAgo: 33,
+      },
+      {
+        author: "heritierKabeya",
+        body: "Pour le sol, oui : l'humidité bouge lentement. L'horaire divise l'autonomie par trois. On remonte plus souvent seulement quand il pleut, repéré par un saut de la mesure.",
+        hoursAgo: 31,
+      },
+      {
+        author: "lynaBouzid",
+        body: "Vous mettez à jour le firmware comment, sur le terrain ? En LoRa ça doit être long.",
+        hoursAgo: 6,
+      },
+      {
+        author: "heritierKabeya",
+        body: "Très long, donc presque jamais à distance. Un technicien passe avec un câble deux fois par an. Pas élégant, mais ça marche.",
+        hoursAgo: 4,
+      },
+    ],
     title: "Capteurs d'humidité du sol en LoRa, un an sur une seule pile",
     type: "application",
     summary: [
@@ -180,17 +253,17 @@ const DEMO_WORKS: DemoWork[] = [
     year: 2024,
     institution: null,
     links: [
-      { type: "github", url: "https://github.com/jean-marc-mukendi/lora-soil" },
+      { type: "site", url: "https://code.demo.kemetlabs.dev/heritier-kabeya/lora-soil" },
       {
         type: "video",
-        url: "https://www.youtube.com/watch?v=demo-lora-soil",
+        url: "https://video.demo.kemetlabs.dev/demo-lora-soil",
         label: "Installation sur le terrain",
       },
     ],
     daysAgo: 10,
   },
   {
-    publisher: "zaneleMokoena",
+    publisher: "kgomotsoMahlangu",
     slug: "pipeline-meteo-cooperatives-agricoles",
     title: "Pipeline de données météo pour des coopératives agricoles",
     type: "internship",
@@ -204,17 +277,17 @@ const DEMO_WORKS: DemoWork[] = [
     year: 2020,
     institution: "Université du Cap",
     links: [
-      { type: "gitlab", url: "https://gitlab.com/zanele-mokoena/weather-pipeline" },
+      { type: "site", url: "https://code.demo.kemetlabs.dev/kgomotso-mahlangu/weather-pipeline" },
       {
         type: "drive",
-        url: "https://drive.google.com/file/d/demo-weather-report/view",
+        url: "https://docs.demo.kemetlabs.dev/demo-weather-report",
         label: "Rapport de stage",
       },
     ],
     daysAgo: 8,
   },
   {
-    publisher: "chidiOkafor",
+    publisher: "dapoOyelaran",
     slug: "formulaires-paiement-accessibles-react",
     title: "Rendre accessibles les formulaires de paiement mobile en React",
     type: "article",
@@ -230,14 +303,14 @@ const DEMO_WORKS: DemoWork[] = [
     links: [
       {
         type: "article",
-        url: "https://blog.demo.kemet.africa/paiement-accessible",
+        url: "https://blog.demo.kemetlabs.dev/paiement-accessible",
         label: "Article",
       },
     ],
     daysAgo: 6,
   },
   {
-    publisher: "fatimaBenali",
+    publisher: "lynaBouzid",
     slug: "ci-docker-runners-partages",
     status: "in_progress",
     title: "Des builds Docker fiables sur des runners de CI partagés",
@@ -252,16 +325,16 @@ const DEMO_WORKS: DemoWork[] = [
     year: 2025,
     institution: null,
     links: [
-      { type: "article", url: "https://blog.demo.kemet.africa/ci-docker", label: "Article" },
+      { type: "article", url: "https://blog.demo.kemetlabs.dev/ci-docker", label: "Article" },
       {
         type: "site",
-        url: "https://ci-docker-watchdog.demo.kemet.africa",
+        url: "https://ci-docker-watchdog.demo.kemetlabs.dev",
         label: "Outil de diagnostic",
       },
     ],
-    // Invitation laissée en attente : le profil de amina-diallo montre une
+    // Invitation laissée en attente : le profil de coumba-thiam montre une
     // demande de coauteur à accepter ou refuser.
-    coauthors: [{ key: "aminaDiallo", status: "pending" }],
+    coauthors: [{ key: "coumbaThiam", status: "pending" }],
     daysAgo: 3,
   },
 ];

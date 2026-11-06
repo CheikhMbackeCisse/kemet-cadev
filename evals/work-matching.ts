@@ -23,7 +23,7 @@ const CANDIDATES = toCandidates([
       "Les ventes sont enregistrées dans le navigateur sans réseau et synchronisées à la reconnexion.",
     tags: ["hors-ligne", "synchronisation", "mobile"],
     stack: ["Vue", "Node.js"],
-    handle: "yassine-trabelsi",
+    handle: "skander-jaziri",
   },
   {
     title: "Capteurs d'humidité du sol en LoRa",
@@ -31,7 +31,7 @@ const CANDIDATES = toCandidates([
     summary: "Firmware basse consommation, un an sur une pile, pour des champs sans électricité.",
     tags: ["iot", "agriculture", "lora"],
     stack: ["Rust", "C"],
-    handle: "jean-marc-mukendi",
+    handle: "heritier-kabeya",
   },
   {
     title: "Idempotence des paiements mobile money",
@@ -39,7 +39,7 @@ const CANDIDATES = toCandidates([
     summary: "Rejouer une requête de paiement après une coupure sans débiter deux fois le client.",
     tags: ["paiements", "mobile-money", "idempotence"],
     stack: ["Java", "Kafka"],
-    handle: "samuel-mwangi",
+    handle: "kiprono-langat",
   },
 ]);
 
@@ -52,11 +52,11 @@ const CASES: Case[] = [
   {
     subject:
       "Comment synchroniser une application Flutter qui fonctionne plusieurs jours sans réseau ?",
-    expected: ["yassine-trabelsi"],
+    expected: ["skander-jaziri"],
   },
   {
     subject: "Je dois choisir la fréquence de mesure de capteurs agricoles alimentés par pile.",
-    expected: ["jean-marc-mukendi"],
+    expected: ["heritier-kabeya"],
   },
   { subject: "Quelle est la meilleure recette de thiéboudiène ?", expected: [] },
 ];

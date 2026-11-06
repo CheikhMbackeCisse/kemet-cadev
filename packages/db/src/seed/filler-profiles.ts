@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { DbOrTx } from "../client.js";
+import { DEMO_EMAIL_DOMAIN } from "../demo-email.js";
 import { profiles, user } from "../schema/index.js";
 import { avatarDataUri } from "./avatar.js";
 import { chunk } from "./chunk.js";
@@ -113,7 +114,7 @@ export function generateFillerProfiles(count: number): FillerProfileSeed[] {
     const handle = `${slugify(first)}-${slugify(last)}-${i}`;
     seeds.push({
       handle,
-      email: `${handle}@demo.kemet.africa`,
+      email: `${handle}@${DEMO_EMAIL_DOMAIN}`,
       displayName: `${first} ${last}`,
       country: country.code,
       title,

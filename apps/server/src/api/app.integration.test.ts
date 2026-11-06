@@ -1,6 +1,6 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
-import { beforeEach, describe, expect, it } from "vitest";
+import { createDb, user } from "@kemet/db";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
 import { buildApp } from "./app.js";
@@ -230,6 +230,42 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
 
     const followers = await app.inject({ method: "GET", url: "/api/users/followee/followers" });
     expect(followers.json().items).toHaveLength(1);
+  });
+
+  it("n'envoie jamais d'email de réinitialisation à une adresse de démonstration", async () => {
+    const demoEmail = "skander.jaziri@demo.kemetlabs.dev";
+    const realEmail = "vraie-personne@test.kemet";
+    await deps.db.insert(user).values([
+      { id: "demo-user", name: "Démo", email: demoEmail, emailVerified: true },
+      { id: "real-user", name: "Réel", email: realEmail, emailVerified: true },
+    ]);
+
+    for (const email of [demoEmail, realEmail]) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/auth/request-password-reset",
+        payload: { email, redirectTo: "http://localhost:5173/reinitialiser-mot-de-passe" },
+      });
+      expect(response.statusCode).toBe(200);
+    }
+
+    await vi.waitFor(() => expect(emailSender.findByRecipient(realEmail)).toHaveLength(1));
+    expect(emailSender.findByRecipient(demoEmail)).toHaveLength(0);
+  });
+
+  it("n'envoie jamais d'email de vérification à une adresse de démonstration", async () => {
+    const demoEmail = "nouveau@demo.kemetlabs.dev";
+    const realEmail = "nouvelle-personne@test.kemet";
+    for (const email of [demoEmail, realEmail]) {
+      await app.inject({
+        method: "POST",
+        url: "/api/auth/sign-up/email",
+        payload: { email, password: "une-passphrase-solide", name: "Nouveau" },
+      });
+    }
+
+    await vi.waitFor(() => expect(emailSender.findByRecipient(realEmail)).toHaveLength(1));
+    expect(emailSender.findByRecipient(demoEmail)).toHaveLength(0);
   });
 });
 

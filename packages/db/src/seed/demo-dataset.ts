@@ -7,13 +7,16 @@ import { createAssistantExchanges } from "./assistant-exchanges.js";
 import { createCadevSpace } from "./chat-content.js";
 import { createCommunitySpaces } from "./community.js";
 import { createDemoCompetitions } from "./competitions.js";
+import { createDemoConversations } from "./conversations.js";
 import { createFeedContent } from "./feed.js";
 import { generateFillerProfiles, insertFillerProfiles } from "./filler-profiles.js";
+import { createFunCompetitions } from "./fun-competitions.js";
 import { createCommunityFollows } from "./follows.js";
 import { createMentoringHistory } from "./mentoring.js";
 import { recordDemoPoints } from "./points-ledger.js";
 import { createDemoProjects } from "./projects.js";
 import { createDemoSkills } from "./skills.js";
+import { createSpaceThreads } from "./space-threads.js";
 import { createDemoWorks } from "./works.js";
 
 /** Mot de passe public des comptes de démonstration, pour que le jury puisse s'y connecter. */
@@ -32,8 +35,8 @@ async function countExistingDemoAccounts(db: DbOrTx): Promise<number> {
 }
 
 async function followAllNamedAccounts(db: DbOrTx, ids: DemoAccountIds): Promise<void> {
-  const otherKeys = (Object.keys(ids) as (keyof DemoAccountIds)[]).filter((key) => key !== "aminaDiallo");
-  await db.insert(follows).values(otherKeys.map((key) => ({ followerId: ids[key], followeeId: ids.aminaDiallo })));
+  const otherKeys = (Object.keys(ids) as (keyof DemoAccountIds)[]).filter((key) => key !== "coumbaThiam");
+  await db.insert(follows).values(otherKeys.map((key) => ({ followerId: ids[key], followeeId: ids.coumbaThiam })));
 }
 
 async function assertNoDemoAdmin(db: DbOrTx): Promise<void> {
@@ -77,12 +80,15 @@ export async function seedDemoDataset(
     await createDemoSkills(tx, ids);
     const { generalChannelId } = await createCadevSpace(tx, ids);
     await createAssistantExchanges(tx, ids, generalChannelId);
-    await createCommunitySpaces(tx, ids, fillerProfileIds);
+    const communityChannelIds = await createCommunitySpaces(tx, ids, fillerProfileIds);
+    await createSpaceThreads(tx, ids, communityChannelIds);
     await createCommunityFollows(tx, ids, fillerProfileIds);
     await createFeedContent(tx, ids);
     const projectIds = await createDemoProjects(tx, ids);
     await createDemoWorks(tx, ids);
+    await createDemoConversations(tx, ids);
     await createDemoCompetitions(tx, ids, projectIds, fillerProfileIds);
+    await createFunCompetitions(tx, ids);
     await createMentoringHistory(tx, ids, projectIds, fillerProfileIds);
     await recordDemoPoints(tx);
 

@@ -32,7 +32,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
     .insert(posts)
     .values([
       {
-        authorId: ids.aminaDiallo,
+        authorId: ids.coumbaThiam,
         format: "astuce",
         body:
           "Astuce Fastify + PostgreSQL : une seule instance de pool de connexions partagée entre toutes les routes, " +
@@ -46,7 +46,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(120),
       },
       {
-        authorId: ids.kwameAsante,
+        authorId: ids.eboQuansah,
         format: "question",
         body:
           "Quelqu'un a un pattern fiable pour la synchronisation hors-ligne sur Flutter ? Mon cache local part en " +
@@ -54,19 +54,19 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(110),
       },
       {
-        authorId: ids.fatimaBenali,
+        authorId: ids.lynaBouzid,
         format: "a_tester",
         body:
           "J'ai écrit un petit outil qui détecte les builds Docker qui vont timeout sur un runner GitHub Actions " +
           "avant qu'ils cassent toute la pipeline, en surveillant la mémoire des conteneurs pendant le build. " +
           "Qui veut le tester sur sa propre CI ?",
-        testUrl: "https://github.com/fatima-benali/ci-docker-watchdog",
+        testUrl: "https://code.demo.kemetlabs.dev/lyna-bouzid/ci-docker-watchdog",
         testAsk:
           "Dites-moi s'il détecte vos faux timeouts sans faux positifs sur vos jobs les plus lourds.",
         createdAt: hoursAgo(95),
       },
       {
-        authorId: ids.chidiOkafor,
+        authorId: ids.dapoOyelaran,
         format: "astuce",
         body:
           "Pour un design system React avec thème clair/sombre fiable : ne jamais coder une couleur en dur dans un " +
@@ -75,7 +75,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(80),
       },
       {
-        authorId: ids.zaneleMokoena,
+        authorId: ids.kgomotsoMahlangu,
         format: "question",
         body:
           "Mes DAG Airflow plantent sans message clair depuis la semaine dernière. J'ai fini par comprendre que " +
@@ -84,7 +84,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(70),
       },
       {
-        authorId: ids.yassineTrabelsi,
+        authorId: ids.skanderJaziri,
         body:
           "Cinq ans à faire du full-stack Node.js et Vue sur des projets e-commerce ouest-africains : la vraie " +
           "difficulté n'a jamais été le code, c'est la connexion instable des utilisateurs. Toute l'app doit " +
@@ -92,7 +92,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(60),
       },
       {
-        authorId: ids.aissatouToure,
+        authorId: ids.ahouKouadio,
         format: "astuce",
         body:
           "Pour le frame pacing sur Unity en Android bas de gamme : viser un budget de frame fixe et dégrader la " +
@@ -101,7 +101,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(45),
       },
       {
-        authorId: ids.samuelMwangi,
+        authorId: ids.kipronoLangat,
         format: "astuce",
         body:
           "Sur un système de paiement mobile, résoudre les conflits d'écriture par horodatage serveur, jamais par " +
@@ -109,19 +109,19 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(40),
       },
       {
-        authorId: ids.nadiaHassan,
+        authorId: ids.ghizlaneAmrani,
         format: "a_tester",
         body:
           "Premier prototype d'un modèle de recommandation en arabe dialectal, entraîné sur très peu de données " +
           "annotées. Les résultats sont encore inégaux selon le dialecte. Je cherche des retours sur l'arabe du " +
           "Maghreb en particulier.",
-        testUrl: "https://huggingface.co/nadia-hassan/darija-rec-proto",
+        testUrl: "https://code.demo.kemetlabs.dev/ghizlane-amrani/darija-rec-proto",
         testAsk:
           "Testez avec des phrases dans votre dialecte et dites-moi où ça part n'importe où.",
         createdAt: hoursAgo(20),
       },
       {
-        authorId: ids.jeanMarcMukendi,
+        authorId: ids.heritierKabeya,
         format: "question",
         body:
           "Firmware pour capteurs agricoles en zone rurale : je dois choisir entre mesurer plus souvent ou faire " +
@@ -131,14 +131,14 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
       },
       // Le fil est aussi un lieu de bonne humeur, pas seulement de technique.
       {
-        authorId: ids.kwameAsante,
+        authorId: ids.eboQuansah,
         body:
           "Trois heures sur un bug impossible. C'était une virgule. Une seule. Si vous galérez ce soir, " +
           "sachez que vous n'êtes pas seuls et que ce n'est probablement pas votre faute non plus.",
         createdAt: hoursAgo(34),
       },
       {
-        authorId: ids.zaneleMokoena,
+        authorId: ids.kgomotsoMahlangu,
         format: "question",
         body:
           "Première semaine à mon premier poste de dev et j'ai l'impression de ne rien comprendre à la " +
@@ -146,7 +146,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(28),
       },
       {
-        authorId: ids.aissatouToure,
+        authorId: ids.ahouKouadio,
         body:
           "Merci à celles et ceux qui ont répondu à ma question sur le frame pacing la semaine dernière. " +
           "J'ai appliqué vos conseils, le jeu tourne enfin correctement sur l'entrée de gamme. " +
@@ -154,7 +154,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
         createdAt: hoursAgo(26),
       },
       {
-        authorId: ids.samuelMwangi,
+        authorId: ids.kipronoLangat,
         body:
           "On a enfin livré. Première capture de l'écran d'accueil, sur un vrai téléphone, avec de vraies " +
           "données. Six mois de travail. Je la partage ici parce que c'est ici qu'on m'a débloqué deux fois.",
@@ -167,13 +167,13 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
 
   await db.insert(posts).values([
     {
-      authorId: ids.chidiOkafor,
+      authorId: ids.dapoOyelaran,
       sharedPostId: fastifyPoolPost!.id,
       body: "Ça va me servir directement sur notre API de paiement, on a eu exactement ce symptôme le mois dernier.",
       createdAt: hoursAgo(100),
     },
     {
-      authorId: ids.kwameAsante,
+      authorId: ids.eboQuansah,
       sharedPostId: arabicNlpTestPost!.id,
       body: "Pertinent même pour mon appli bancaire, qui doit gérer plusieurs langues et dialectes côté support client.",
       createdAt: hoursAgo(15),
@@ -185,7 +185,7 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
     .values([
       {
         postId: flutterSyncQuestion!.id,
-        authorId: ids.samuelMwangi,
+        authorId: ids.kipronoLangat,
         body:
           "On a eu le même souci côté paiement mobile : résoudre les conflits par horodatage serveur, jamais par " +
           "horodatage client, règle ça la plupart du temps.",
@@ -197,31 +197,31 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
   await db.insert(postReplies).values([
     {
       postId: flutterSyncQuestion!.id,
-      authorId: ids.chidiOkafor,
+      authorId: ids.dapoOyelaran,
       body: "Ça suppose que l'horloge serveur fait foi partout, donc attention si vous avez plusieurs régions avec des bases différentes.",
       createdAt: hoursAgo(105),
     },
     {
       postId: airflowQuestion!.id,
-      authorId: ids.jeanMarcMukendi,
+      authorId: ids.heritierKabeya,
       body: "Même constat côté firmware : un composant qui sature silencieusement est pire qu'un qui plante bruyamment.",
       createdAt: hoursAgo(68),
     },
     {
       postId: airflowQuestion!.id,
-      authorId: ids.fatimaBenali,
+      authorId: ids.lynaBouzid,
       body: "Poser des limites de mémoire explicites sur chaque worker (requests/limits côté Kubernetes) force l'erreur à devenir visible au lieu de se propager en silence.",
       createdAt: hoursAgo(65),
     },
     {
       postId: firmwareBatteryQuestion!.id,
-      authorId: ids.aissatouToure,
+      authorId: ids.ahouKouadio,
       body: "Dans un jeu, on sacrifie d'abord les effets visuels pour tenir le budget. Vous pourriez sacrifier la précision de mesure plutôt que la fréquence, selon ce que vos agriculteurs tolèrent.",
       createdAt: hoursAgo(6),
     },
     {
       postId: firmwareBatteryQuestion!.id,
-      authorId: ids.kwameAsante,
+      authorId: ids.eboQuansah,
       body: "Sur mobile, le mode basse consommation réduit la fréquence des tâches de fond plutôt que de les couper : peut-être une piste, mesurer moins souvent la nuit par exemple.",
       createdAt: hoursAgo(5),
     },
@@ -233,44 +233,44 @@ export async function createFeedContent(db: DbOrTx, ids: DemoAccountIds): Promis
     .where(eq(postReplies.id, solutionReply!.id));
 
   await db.insert(postReactions).values([
-    { postId: fastifyPoolPost!.id, profileId: ids.kwameAsante },
-    { postId: fastifyPoolPost!.id, profileId: ids.fatimaBenali },
-    { postId: fastifyPoolPost!.id, profileId: ids.yassineTrabelsi },
-    { postId: dockerCiTestPost!.id, profileId: ids.aminaDiallo },
-    { postId: dockerCiTestPost!.id, profileId: ids.zaneleMokoena },
-    { postId: designSystemPost!.id, profileId: ids.aminaDiallo },
-    { postId: designSystemPost!.id, profileId: ids.nadiaHassan },
-    { postId: flutterSyncQuestion!.id, profileId: ids.samuelMwangi },
-    { postId: walletSettlementPost!.id, profileId: ids.aminaDiallo },
-    { postId: walletSettlementPost!.id, profileId: ids.kwameAsante },
-    { postId: arabicNlpTestPost!.id, profileId: ids.aminaDiallo },
-    { postId: arabicNlpTestPost!.id, profileId: ids.chidiOkafor },
-    { postId: framePacingPost!.id, profileId: ids.yassineTrabelsi },
-    { postId: fullStackPost!.id, profileId: ids.fatimaBenali },
+    { postId: fastifyPoolPost!.id, profileId: ids.eboQuansah },
+    { postId: fastifyPoolPost!.id, profileId: ids.lynaBouzid },
+    { postId: fastifyPoolPost!.id, profileId: ids.skanderJaziri },
+    { postId: dockerCiTestPost!.id, profileId: ids.coumbaThiam },
+    { postId: dockerCiTestPost!.id, profileId: ids.kgomotsoMahlangu },
+    { postId: designSystemPost!.id, profileId: ids.coumbaThiam },
+    { postId: designSystemPost!.id, profileId: ids.ghizlaneAmrani },
+    { postId: flutterSyncQuestion!.id, profileId: ids.kipronoLangat },
+    { postId: walletSettlementPost!.id, profileId: ids.coumbaThiam },
+    { postId: walletSettlementPost!.id, profileId: ids.eboQuansah },
+    { postId: arabicNlpTestPost!.id, profileId: ids.coumbaThiam },
+    { postId: arabicNlpTestPost!.id, profileId: ids.dapoOyelaran },
+    { postId: framePacingPost!.id, profileId: ids.skanderJaziri },
+    { postId: fullStackPost!.id, profileId: ids.lynaBouzid },
   ]);
 
   await db.insert(postFeedback).values([
     {
       postId: dockerCiTestPost!.id,
-      authorId: ids.aminaDiallo,
+      authorId: ids.coumbaThiam,
       body: "Testé sur notre CI qui buildait 6 images : il a détecté le conteneur qui saturait avant le timeout, pas de faux positif sur les 5 autres.",
       createdAt: hoursAgo(90),
     },
     {
       postId: dockerCiTestPost!.id,
-      authorId: ids.yassineTrabelsi,
+      authorId: ids.skanderJaziri,
       body: "Marche bien chez moi aussi, seul bémol : il faut lui donner le nom exact du service docker-compose, sinon il ignore le conteneur.",
       createdAt: hoursAgo(85),
     },
     {
       postId: arabicNlpTestPost!.id,
-      authorId: ids.chidiOkafor,
+      authorId: ids.dapoOyelaran,
       body: "Testé avec des phrases en arabe du Maghreb : correct sur le vocabulaire courant, perd pied sur l'argot très local.",
       createdAt: hoursAgo(12),
     },
     {
       postId: arabicNlpTestPost!.id,
-      authorId: ids.kwameAsante,
+      authorId: ids.eboQuansah,
       body: "Résultats solides sur des phrases courtes, plus incertain sur des messages longs avec plusieurs sujets.",
       createdAt: hoursAgo(10),
     },
@@ -292,7 +292,7 @@ async function attachDemoImage(db: DbOrTx, ids: DemoAccountIds, postId: string):
   const image = await writeSeedPostImage(uploadsDir, postId, "ecran-accueil.png");
   await db.insert(postAttachments).values({
     postId,
-    authorId: ids.samuelMwangi,
+    authorId: ids.kipronoLangat,
     storageKey: image.storageKey,
     mimeType: image.mimeType,
     originalName: image.originalName,

@@ -16,7 +16,6 @@ interface DemoAccountSeed {
   title: string;
   bio: string;
   stack: string[];
-  githubUrl: string;
   openToOpportunities: boolean;
   credentials: CredentialSeed[];
 }
@@ -32,42 +31,41 @@ interface CredentialSeed {
 }
 
 export interface DemoAccountIds {
-  aminaDiallo: string;
-  kwameAsante: string;
-  fatimaBenali: string;
-  chidiOkafor: string;
-  zaneleMokoena: string;
-  yassineTrabelsi: string;
-  aissatouToure: string;
-  samuelMwangi: string;
-  nadiaHassan: string;
-  jeanMarcMukendi: string;
+  coumbaThiam: string;
+  eboQuansah: string;
+  lynaBouzid: string;
+  dapoOyelaran: string;
+  kgomotsoMahlangu: string;
+  skanderJaziri: string;
+  ahouKouadio: string;
+  kipronoLangat: string;
+  ghizlaneAmrani: string;
+  heritierKabeya: string;
 }
 
 export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
   {
-    key: "aminaDiallo",
-    email: "amina.diallo@demo.kemet.africa",
-    name: "Amina Diallo",
-    handle: "amina-diallo",
+    key: "coumbaThiam",
+    email: "coumba.thiam@demo.kemetlabs.dev",
+    name: "Coumba Thiam",
+    handle: "coumba-thiam",
     country: "SN",
-    title: "Lead développeuse backend",
-    bio: "Fastify et PostgreSQL au quotidien, passionnée de systèmes distribués.",
+    title: "Lead backend, paiements",
+    bio: "Dix ans de PostgreSQL. Je relis les migrations des autres avant qu'elles partent en prod, c'est plus fort que moi.",
     stack: ["TypeScript", "Fastify", "PostgreSQL"],
-    githubUrl: "https://github.com/amina-diallo",
     openToOpportunities: true,
     credentials: [
       {
         type: "job",
-        organization: "Orange Digital Center",
-        title: "Lead développeuse backend",
+        organization: "Jàmm Pay",
+        title: "Lead backend",
         startDate: "2022-03-01",
         status: "verified",
         verificationMethod: "Attestation employeur",
       },
       {
         type: "job",
-        organization: "Sonatel",
+        organization: "Teranga Systèmes",
         title: "Développeuse backend",
         startDate: "2015-09-01",
         endDate: "2022-02-28",
@@ -85,7 +83,7 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
       },
       {
         type: "internship",
-        organization: "Sonatel",
+        organization: "Teranga Systèmes",
         title: "Stage développeuse backend",
         startDate: "2015-02-01",
         endDate: "2015-07-31",
@@ -95,42 +93,40 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "kwameAsante",
-    email: "kwame.asante@demo.kemet.africa",
-    name: "Kwame Asante",
-    handle: "kwame-asante",
+    key: "eboQuansah",
+    email: "ebo.quansah@demo.kemetlabs.dev",
+    name: "Ebo Quansah",
+    handle: "ebo-quansah",
     country: "GH",
     title: "Développeur mobile",
-    bio: "Applications Flutter pour le secteur bancaire depuis cinq ans.",
+    bio: "Flutter pour une banque à Kumasi. Je teste tout sur un téléphone à 60 dollars avant de dire que ça marche.",
     stack: ["Flutter", "Dart", "Firebase"],
-    githubUrl: "https://github.com/kwame-asante",
     openToOpportunities: false,
     credentials: [
       {
         type: "job",
-        organization: "Zenith Bank Ghana",
-        title: "Développeur mobile senior",
+        organization: "Sika Mobile Banking",
+        title: "Développeur mobile",
         startDate: "2021-06-01",
         status: "declared",
       },
     ],
   },
   {
-    key: "fatimaBenali",
-    email: "fatima.benali@demo.kemet.africa",
-    name: "Fatima Benali",
-    handle: "fatima-benali",
-    country: "MA",
-    title: "Ingénieure DevOps",
-    bio: "Docker, Kubernetes, et une obsession pour les pipelines CI fiables.",
+    key: "lynaBouzid",
+    email: "lyna.bouzid@demo.kemetlabs.dev",
+    name: "Lyna Bouzid",
+    handle: "lyna-bouzid",
+    country: "DZ",
+    title: "DevOps en freelance",
+    bio: "J'aide les petites équipes à arrêter de déployer le vendredi soir. Docker, Terraform, et beaucoup de patience.",
     stack: ["Docker", "Kubernetes", "Terraform"],
-    githubUrl: "https://github.com/fatima-benali",
     openToOpportunities: true,
     credentials: [
       {
         type: "job",
-        organization: "OCP Group",
-        title: "Ingénieure DevOps",
+        organization: "Indépendante",
+        title: "Consultante DevOps",
         startDate: "2020-09-01",
         status: "verified",
         verificationMethod: "Attestation employeur",
@@ -138,20 +134,19 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "chidiOkafor",
-    email: "chidi.okafor@demo.kemet.africa",
-    name: "Chidi Okafor",
-    handle: "chidi-okafor",
+    key: "dapoOyelaran",
+    email: "dapo.oyelaran@demo.kemetlabs.dev",
+    name: "Dapo Oyelaran",
+    handle: "dapo-oyelaran",
     country: "NG",
     title: "Lead frontend",
-    bio: "React et design systems pour des produits fintech à grande échelle.",
+    bio: "Design systems en React. Si ton bouton n'a pas d'état de focus, je vais le voir.",
     stack: ["React", "TypeScript", "Tailwind"],
-    githubUrl: "https://github.com/chidi-okafor",
     openToOpportunities: false,
     credentials: [
       {
         type: "education",
-        organization: "Université de Lagos",
+        organization: "Université d'Ibadan",
         title: "Licence en informatique",
         startDate: "2017-09-01",
         endDate: "2020-07-01",
@@ -160,20 +155,19 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "zaneleMokoena",
-    email: "zanele.mokoena@demo.kemet.africa",
-    name: "Zanele Mokoena",
-    handle: "zanele-mokoena",
+    key: "kgomotsoMahlangu",
+    email: "kgomotso.mahlangu@demo.kemetlabs.dev",
+    name: "Kgomotso Mahlangu",
+    handle: "kgomotso-mahlangu",
     country: "ZA",
     title: "Data engineer",
-    bio: "Pipelines de données et entrepôts analytiques pour le e-commerce.",
+    bio: "Airflow et Spark pour un site de e-commerce à Johannesburg. J'ai appris à surveiller la mémoire avant les logs.",
     stack: ["Python", "Airflow", "Spark"],
-    githubUrl: "https://github.com/zanele-mokoena",
     openToOpportunities: true,
     credentials: [
       {
         type: "job",
-        organization: "Takealot",
+        organization: "Kasi Market",
         title: "Data engineer",
         startDate: "2021-02-01",
         status: "verified",
@@ -182,20 +176,19 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "yassineTrabelsi",
-    email: "yassine.trabelsi@demo.kemet.africa",
-    name: "Yassine Trabelsi",
-    handle: "yassine-trabelsi",
+    key: "skanderJaziri",
+    email: "skander.jaziri@demo.kemetlabs.dev",
+    name: "Skander Jaziri",
+    handle: "skander-jaziri",
     country: "TN",
-    title: "Développeur full-stack",
-    bio: "Du schéma de base de données à l'interface, sans détour.",
+    title: "Full-stack en freelance",
+    bio: "Sites et back-offices pour des PME de Sfax. Node, Vue, MySQL, et des devis qui tiennent sur une page.",
     stack: ["Node.js", "Vue", "MySQL"],
-    githubUrl: "https://github.com/yassine-trabelsi",
     openToOpportunities: false,
     credentials: [
       {
         type: "internship",
-        organization: "InstaDeep",
+        organization: "Medina Soft",
         title: "Stage développeur full-stack",
         startDate: "2019-02-01",
         endDate: "2019-08-01",
@@ -204,21 +197,20 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "aissatouToure",
-    email: "aissatou.toure@demo.kemet.africa",
-    name: "Aïssatou Touré",
-    handle: "aissatou-toure",
+    key: "ahouKouadio",
+    email: "ahou.kouadio@demo.kemetlabs.dev",
+    name: "Ahou Kouadio",
+    handle: "ahou-kouadio",
     country: "CI",
-    title: "Développeuse jeux vidéo",
-    bio: "Moteurs de jeu en C++ et expériences interactives pour mobile.",
+    title: "Étudiante en génie logiciel, jeux vidéo",
+    bio: "En dernière année à Yamoussoukro. Je fais des jeux mobiles en Unity le soir et j'en publie un par semestre.",
     stack: ["C++", "Unity", "C#"],
-    githubUrl: "https://github.com/aissatou-toure",
     openToOpportunities: true,
     credentials: [
       {
         type: "job",
-        organization: "Kiro'o Games",
-        title: "Développeuse gameplay",
+        organization: "Studio Akwaba",
+        title: "Développeuse gameplay, en alternance",
         startDate: "2022-11-01",
         status: "verified",
         verificationMethod: "Attestation employeur",
@@ -226,21 +218,20 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "samuelMwangi",
-    email: "samuel.mwangi@demo.kemet.africa",
-    name: "Samuel Mwangi",
-    handle: "samuel-mwangi",
+    key: "kipronoLangat",
+    email: "kiprono.langat@demo.kemetlabs.dev",
+    name: "Kiprono Langat",
+    handle: "kiprono-langat",
     country: "KE",
     title: "Architecte logiciel",
-    bio: "Quinze ans à concevoir des systèmes de paiement mobile résilients.",
+    bio: "Quinze ans de paiement mobile à Nairobi. Mon sujet préféré : ce qui se passe quand le même paiement arrive deux fois.",
     stack: ["Java", "Spring", "Kafka"],
-    githubUrl: "https://github.com/samuel-mwangi",
     openToOpportunities: false,
     credentials: [
       {
         type: "job",
-        organization: "Safaricom",
-        title: "Architecte logiciel, plateforme M-Pesa",
+        organization: "PesaRails",
+        title: "Architecte logiciel, plateforme de paiement",
         startDate: "2012-04-01",
         status: "verified",
         verificationMethod: "Attestation employeur",
@@ -248,28 +239,27 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "nadiaHassan",
-    email: "nadia.hassan@demo.kemet.africa",
-    name: "Nadia Hassan",
-    handle: "nadia-hassan",
-    country: "EG",
-    title: "Développeuse IA",
-    bio: "Modèles de recommandation et traitement du langage naturel en arabe.",
+    key: "ghizlaneAmrani",
+    email: "ghizlane.amrani@demo.kemetlabs.dev",
+    name: "Ghizlane Amrani",
+    handle: "ghizlane-amrani",
+    country: "MA",
+    title: "Doctorante en traitement du langage",
+    bio: "Thèse sur la darija écrite en lettres latines. Je collectionne les corpus que personne n'a encore nettoyés.",
     stack: ["Python", "PyTorch", "FastAPI"],
-    githubUrl: "https://github.com/nadia-hassan",
     openToOpportunities: true,
     credentials: [
       {
         type: "job",
-        organization: "InstaDeep",
-        title: "Développeuse IA",
+        organization: "Laboratoire LIMS, Rabat",
+        title: "Doctorante en NLP",
         startDate: "2021-07-01",
         status: "verified",
         verificationMethod: "Attestation employeur",
       },
       {
         type: "education",
-        organization: "Université américaine du Caire",
+        organization: "Université Mohammed V de Rabat",
         title: "Master en intelligence artificielle",
         startDate: "2019-09-01",
         endDate: "2021-06-01",
@@ -279,21 +269,20 @@ export const DEMO_ACCOUNTS: DemoAccountSeed[] = [
     ],
   },
   {
-    key: "jeanMarcMukendi",
-    email: "jean-marc.mukendi@demo.kemet.africa",
-    name: "Jean-Marc Mukendi",
-    handle: "jean-marc-mukendi",
+    key: "heritierKabeya",
+    email: "heritier.kabeya@demo.kemetlabs.dev",
+    name: "Héritier Kabeya",
+    handle: "heritier-kabeya",
     country: "CD",
-    title: "Développeur embarqué",
-    bio: "Firmware pour capteurs agricoles connectés en zone rurale.",
+    title: "Développeur embarqué junior",
+    bio: "Premier poste, à Lubumbashi. Firmware pour des capteurs agricoles qui doivent tenir une saison sur une batterie.",
     stack: ["C", "Rust", "FreeRTOS"],
-    githubUrl: "https://github.com/jean-marc-mukendi",
     openToOpportunities: false,
     credentials: [
       {
         type: "job",
-        organization: "Gorilla Technology",
-        title: "Développeur firmware",
+        organization: "Shamba Sense",
+        title: "Développeur firmware junior",
         startDate: "2023-01-01",
         status: "declared",
       },
@@ -329,7 +318,6 @@ export async function createDemoAccounts(db: DbOrTx, passwordHash: string): Prom
         title: demoAccount.title,
         bio: demoAccount.bio,
         stack: demoAccount.stack,
-        githubUrl: demoAccount.githubUrl,
         avatarUrl: avatarDataUri(demoAccount.handle),
         openToOpportunities: demoAccount.openToOpportunities,
         isDemo: true,

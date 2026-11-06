@@ -12,19 +12,19 @@ export const OFFLINE_SYNC_MATCH_RECORDING: WorkMatchRecording = {
   subjectWorkSlug: "synchronisation-hors-ligne-banque-mobile",
   suggestions: [
     {
-      handle: "yassine-trabelsi",
+      handle: "skander-jaziri",
       workSlug: "stock-boutique-hors-ligne",
       justification:
         "Son application de stock pour boutiques de quartier enregistre les ventes hors ligne et les renvoie à la reconnexion, le même problème de file d'attente locale.",
     },
     {
-      handle: "samuel-mwangi",
+      handle: "kiprono-langat",
       workSlug: "idempotence-paiements-mobile-money",
       justification:
         "Son article explique comment rejouer une opération de paiement sans la compter deux fois, ce que demande une resynchronisation après une coupure.",
     },
     {
-      handle: "nadia-hassan",
+      handle: "ghizlane-amrani",
       workSlug: "maladies-manioc-vision-mobile",
       justification:
         "Son mémoire fait tourner un modèle sur des téléphones sans réseau et synchronise les résultats plus tard, avec les mêmes contraintes de terrain.",
