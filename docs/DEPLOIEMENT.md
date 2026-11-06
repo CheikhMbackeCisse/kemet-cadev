@@ -118,7 +118,7 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
 1. Se connecter au serveur et cloner le dépôt :
 
    ```
-   ssh <utilisateur>@<hôte>
+   ssh <utilisateur>@kemetlabs.dev
    git clone <url du dépôt> /tmp/kemet-setup
    sudo /tmp/kemet-setup/infra/server/setup.sh
    ```
@@ -161,12 +161,13 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    Remplir en particulier :
    - `POSTGRES_PASSWORD` et `BETTER_AUTH_SECRET` : générés par exemple avec
      `openssl rand -base64 32`.
-   - `PUBLIC_HOST` : le sous-domaine fourni par Datacloud, ou un nom
-     `sslip.io` si aucun domaine n'est disponible (il encode l'IP du
-     serveur, par exemple `203-0-113-10.sslip.io` pour l'IP
+   - `PUBLIC_HOST=kemetlabs.dev`. L'enregistrement DNS `A` du domaine doit
+     déjà pointer vers l'IP du serveur, sinon Caddy ne peut pas obtenir son
+     certificat. En attendant le DNS, un nom `sslip.io` fait l'affaire (il
+     encode l'IP du serveur, par exemple `203-0-113-10.sslip.io` pour l'IP
      `203.0.113.10`). Ne pas mettre `:80` ici : ce réglage n'est que pour le
      test en local.
-   - `BETTER_AUTH_URL` et `WEB_APP_URL` : `https://<PUBLIC_HOST>`.
+   - `BETTER_AUTH_URL` et `WEB_APP_URL` : `https://kemetlabs.dev`.
    - `KEMET_IMAGE_PREFIX=ghcr.io/cheikhmbackecisse/kemet`.
    - `BACKUP_AGE_RECIPIENT` : voir "Sauvegardes" plus bas.
    - les identifiants OAuth, SMTP et les clés d'IA
@@ -203,10 +204,10 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    déploiement :
 
    ```
-   infra/deploy.sh <utilisateur>@<hôte> https://<PUBLIC_HOST>
+   infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev
    ```
 
-6. Visiter `https://<PUBLIC_HOST>` : Caddy doit avoir obtenu seul un
+6. Visiter `https://kemetlabs.dev` : Caddy doit avoir obtenu seul un
    certificat Let's Encrypt (peut prendre une minute la première fois). Si
    la page ne charge pas, lire les journaux de Caddy :
 
@@ -216,7 +217,7 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
 
    Les causes les plus courantes : le port 80 ou 443 est bloqué par le
    pare-feu du panneau Datacloud, ou `PUBLIC_HOST` ne pointe pas réellement
-   vers l'IP du serveur (vérifier avec `nslookup <PUBLIC_HOST>`).
+   vers l'IP du serveur (vérifier avec `nslookup kemetlabs.dev`).
 
 ## Comptes de démonstration et administrateur
 
@@ -258,7 +259,7 @@ Depuis le poste de l'administrateur, à la racine du dépôt, une fois le workfl
 `Images` du commit voulu terminé :
 
 ```
-infra/deploy.sh <utilisateur>@<hôte> https://<PUBLIC_HOST>
+infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev
 ```
 
 Sans troisième argument, le script déploie le dernier commit de
@@ -332,7 +333,7 @@ Mise en place, une seule fois :
      branches and tags"), pour qu'un workflow modifié sur une autre branche
      ne puisse pas lire ses secrets ;
    - dans cet environnement, les secrets `BACKUP_SSH_KEY` (clé privée créée
-     à l'étape 2) et `DEPLOY_KNOWN_HOSTS` (sortie de `ssh-keyscan <hôte>`,
+     à l'étape 2) et `DEPLOY_KNOWN_HOSTS` (sortie de `ssh-keyscan kemetlabs.dev`,
      comparée une fois à l'empreinte affichée sur le serveur par
      `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`).
 
@@ -345,8 +346,8 @@ clé privée ne va jamais sur le serveur, et aucun fichier en clair n'y est
 écrit hors du volume concerné.
 
 ```
-age -d -i kemet-backup.key kemet-<date>.dump.age   | ssh <utilisateur>@<hôte> 'cd /opt/kemet && infra/server/restore.sh --confirm database'
-age -d -i kemet-backup.key kemet-<date>.uploads.tar.age   | ssh <utilisateur>@<hôte> 'cd /opt/kemet && infra/server/restore.sh --confirm uploads'
+age -d -i kemet-backup.key kemet-<date>.dump.age   | ssh <utilisateur>@kemetlabs.dev 'cd /opt/kemet && infra/server/restore.sh --confirm database'
+age -d -i kemet-backup.key kemet-<date>.uploads.tar.age   | ssh <utilisateur>@kemetlabs.dev 'cd /opt/kemet && infra/server/restore.sh --confirm uploads'
 ```
 
 Le script arrête api, realtime et worker, remplace la base ou les fichiers,
@@ -356,6 +357,13 @@ change rien. Les fichiers sont extraits à côté des fichiers en place, qui
 ne sont remplacés qu'une fois l'extraction réussie, et une archive qui
 contient un chemin absolu ou `..` est refusée. Le job CI `backup-restore`
 joue cet aller-retour pour de vrai à chaque pull request.
+
+## Supervision
+
+Une sonde externe gratuite (UptimeRobot, offre gratuite, vérification
+toutes les 5 minutes) surveille `https://kemetlabs.dev/` et
+`https://kemetlabs.dev/api/health`, avec une alerte par email. Compte à
+créer par l'administrateur une fois l'adresse de production connue.
 
 ## Problèmes courants
 
