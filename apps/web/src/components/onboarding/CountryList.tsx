@@ -28,7 +28,10 @@ export function CountryList({ value, onChange }: CountryListProps) {
       value: country.code,
       label: (
         <>
-          <Flag countryCode={country.code} />
+          {/* Le nom suit : le drapeau répété ferait lire le pays deux fois. */}
+          <span aria-hidden="true" className="inline-flex">
+            <Flag countryCode={country.code} />
+          </span>
           {country.name}
         </>
       ),
