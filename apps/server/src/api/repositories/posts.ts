@@ -81,8 +81,11 @@ export async function listPourToiFeed(db: Db, limit: number) {
     (select count(*) from ${postReactions} where ${postReactions.postId} = ${posts.id}) * 2 +
     (select count(*) from ${postFeedback} where ${postFeedback.postId} = ${posts.id}) * 3
   )`;
+  // Le score reste hors du select : dans une requête sur une seule table,
+  // Drizzle y écrit les colonnes sans leur table et la sous-requête compterait
+  // `post_reactions.post_id = post_reactions.id`. Dans le tri, il les qualifie.
   const rows = await db
-    .select({ post: posts, score })
+    .select({ post: posts })
     .from(posts)
     .where(and(isNull(posts.deletedAt), gt(posts.createdAt, since)))
     .orderBy(desc(score), desc(posts.createdAt))

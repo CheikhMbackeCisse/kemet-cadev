@@ -280,4 +280,31 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
     const writeAttempt = await app.inject({ method: "POST", url: "/api/posts", payload: { body: "Je ne devrais pas pouvoir publier" } });
     expect(writeAttempt.statusCode).toBe(401);
   });
+
+  it("fait remonter dans « Pour toi » un post marqué Utile ou testé, même plus ancien", async () => {
+    const author = await createMember("ranking-author@test.kemet", "rankingauthor");
+    const reader = await createMember("ranking-reader@test.kemet", "rankingreader");
+    const tested = await createPost(author.cookie, {
+      body: "À tester.",
+      format: "a_tester",
+      testUrl: "https://example.com/demo",
+    });
+    const useful = await createPost(author.cookie, { body: "Un post utile." });
+    const newest = await createPost(author.cookie, { body: "Le plus récent, sans retour." });
+    const [testedId, usefulId, newestId] = [tested, useful, newest].map((post) => post.json().post.id as string);
+
+    const before = await app.inject({ method: "GET", url: "/api/posts?tab=pour-toi" });
+    expect(before.json().items.map((item: { id: string }) => item.id)).toEqual([newestId, usefulId, testedId]);
+
+    await app.inject({ method: "PUT", url: `/api/posts/${usefulId}/reactions`, headers: { cookie: reader.cookie } });
+    await app.inject({
+      method: "POST",
+      url: `/api/posts/${testedId}/feedback`,
+      headers: { cookie: reader.cookie },
+      payload: { body: "Fonctionne sur mobile." },
+    });
+
+    const after = await app.inject({ method: "GET", url: "/api/posts?tab=pour-toi" });
+    expect(after.json().items.map((item: { id: string }) => item.id)).toEqual([testedId, usefulId, newestId]);
+  });
 });
