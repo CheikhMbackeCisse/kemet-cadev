@@ -24,6 +24,7 @@ jobs:
   backup:
     if: vars.DEPLOY_HOST != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # Réservé à main dans les réglages de l'environnement : un workflow
     # modifié sur une autre branche ne lit pas la clé.
     environment: production

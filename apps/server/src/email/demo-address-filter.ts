@@ -1,4 +1,4 @@
-import { isDemoEmailAddress } from "@kemet/db";
+import { isDemoEmailAddress } from "@kemet/shared";
 import type { EmailMessage, EmailSender } from "./email-sender.js";
 
 /**

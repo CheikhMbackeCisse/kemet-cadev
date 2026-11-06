@@ -20,3 +20,4 @@ export * from "./schemas/work.js";
 export * from "./schemas/competition.js";
 export * from "./schemas/moderation.js";
 export * from "./data/countries.js";
+export * from "./demo-email.js";

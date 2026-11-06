@@ -1,6 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import type { Db } from "@kemet/db";
+import { DEMO_EMAIL_REJECTED_CODE, isDemoEmailAddress } from "@kemet/shared";
 import { DemoAddressFilter } from "../email/demo-address-filter.js";
 import type { EmailSender } from "../email/email-sender.js";
 import { hashPassword, verifyPassword } from "./password.js";
@@ -22,6 +24,17 @@ export interface AuthConfig {
 
 /** En-tête posé par l'API (jamais par le client) avec l'adresse résolue par Fastify. */
 export const CLIENT_IP_HEADER = "x-kemet-client-ip";
+
+// Aucune boîte n'existe derrière ce domaine (voir DemoAddressFilter) : un
+// compte créé avec une telle adresse ne pourrait jamais être vérifié.
+function rejectDemoEmail(email: unknown) {
+  if (typeof email === "string" && isDemoEmailAddress(email)) {
+    throw new APIError("BAD_REQUEST", {
+      code: DEMO_EMAIL_REJECTED_CODE,
+      message: "Les adresses du domaine de démonstration ne peuvent pas créer de compte.",
+    });
+  }
+}
 
 export function createAuth(config: AuthConfig) {
   const emailSender = new DemoAddressFilter(config.emailSender);
@@ -68,14 +81,30 @@ export function createAuth(config: AuthConfig) {
       ...(config.google && { google: config.google }),
       ...(config.linkedin && { linkedin: config.linkedin }),
     },
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === "/sign-up/email") rejectDemoEmail(ctx.body?.email);
+        if (ctx.path === "/change-email") rejectDemoEmail(ctx.body?.newEmail);
+      }),
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (newUser) => {
+            rejectDemoEmail(newUser.email);
+          },
+        },
+      },
+    },
     advanced: {
       ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
     },
     rateLimit: {
       enabled: config.rateLimitEnabled ?? true,
+      // /request-password-reset garde la règle par défaut de Better Auth
+      // (3 par minute), vérifiée par un test d'intégration.
       customRules: {
         "/sign-in/email": { window: 60, max: 5 },
-        "/forget-password": { window: 60, max: 3 },
       },
     },
   });

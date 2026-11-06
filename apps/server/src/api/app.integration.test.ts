@@ -1,5 +1,7 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
 import { createDb, user } from "@kemet/db";
+import { DEMO_EMAIL_REJECTED_CODE } from "@kemet/shared";
+import { ilike } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -253,19 +255,30 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
     expect(emailSender.findByRecipient(demoEmail)).toHaveLength(0);
   });
 
-  it("n'envoie jamais d'email de vérification à une adresse de démonstration", async () => {
-    const demoEmail = "nouveau@demo.kemetlabs.dev";
+  it("refuse l'inscription sur le domaine de démonstration et ses sous-domaines, sans email envoyé", async () => {
+    const demoEmails = ["nouveau@demo.kemetlabs.dev", "Nouveau@Equipe.Demo.Kemetlabs.dev"];
     const realEmail = "nouvelle-personne@test.kemet";
-    for (const email of [demoEmail, realEmail]) {
-      await app.inject({
+    const signUp = (email: string) =>
+      app.inject({
         method: "POST",
         url: "/api/auth/sign-up/email",
         payload: { email, password: "une-passphrase-solide", name: "Nouveau" },
       });
+
+    for (const email of demoEmails) {
+      const response = await signUp(email);
+      expect(response.statusCode).toBe(400);
+      expect(response.json().code).toBe(DEMO_EMAIL_REJECTED_CODE);
     }
+    expect((await signUp(realEmail)).statusCode).toBe(200);
 
     await vi.waitFor(() => expect(emailSender.findByRecipient(realEmail)).toHaveLength(1));
-    expect(emailSender.findByRecipient(demoEmail)).toHaveLength(0);
+    const created = await deps.db
+      .select({ email: user.email })
+      .from(user)
+      .where(ilike(user.email, "%demo.kemetlabs.dev"));
+    expect(created).toEqual([]);
+    for (const email of demoEmails) expect(emailSender.findByRecipient(email)).toHaveLength(0);
   });
 });
 
@@ -292,6 +305,36 @@ describe.skipIf(!databaseUrl)("limite de tentatives sur la connexion", () => {
     const results = [];
     for (let i = 0; i < 6; i += 1) results.push(await attempt());
 
+    expect(results.some((response) => response.statusCode === 429)).toBe(true);
+  });
+
+  it("envoie le lien de réinitialisation, puis bloque les demandes rapprochées", async () => {
+    await resetTestDatabase(databaseUrl!);
+    const db = createDb(databaseUrl!);
+    const emailSender = new InMemoryEmailSender();
+    const auth = createAuth({
+      db,
+      emailSender,
+      baseUrl: "http://localhost:3001",
+      webAppUrl: "http://localhost:5173",
+      secret: "test-secret-at-least-32-characters-long",
+    });
+    const app = buildApp({ db, auth });
+    const email = "oubli@test.kemet";
+    await db.insert(user).values({ id: "forgetful-user", name: "Oubli", email, emailVerified: true });
+
+    const request = () =>
+      app.inject({
+        method: "POST",
+        url: "/api/auth/request-password-reset",
+        payload: { email, redirectTo: "http://localhost:5173/reinitialiser-mot-de-passe" },
+      });
+
+    expect((await request()).statusCode).toBe(200);
+    await vi.waitFor(() => expect(emailSender.findByRecipient(email)).toHaveLength(1));
+
+    const results = [];
+    for (let i = 0; i < 4; i += 1) results.push(await request());
     expect(results.some((response) => response.statusCode === 429)).toBe(true);
   });
 });

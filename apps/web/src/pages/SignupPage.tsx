@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { DEMO_EMAIL_REJECTED_CODE, isDemoEmailAddress } from "@kemet/shared";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
 import { Button } from "../components/ui/Button.js";
@@ -19,6 +20,7 @@ export function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [awaitingVerification, setAwaitingVerification] = useState(false);
+  const isDemoEmail = isDemoEmailAddress(email);
 
   useEffect(() => {
     if (status === "ready") window.location.href = "/fil";
@@ -34,6 +36,7 @@ export function SignupPage() {
       setAwaitingVerification(true);
     } catch (err) {
       if (err instanceof ChatApiError && (err.statusCode === 409 || err.statusCode === 422)) setError(fr.auth.emailAlreadyUsedError);
+      else if (err instanceof ChatApiError && err.code === DEMO_EMAIL_REJECTED_CODE) setError(fr.auth.demoEmailError);
       else setError(fr.auth.signupError);
     } finally {
       setSubmitting(false);
@@ -89,10 +92,24 @@ export function SignupPage() {
             {fr.auth.nameLabel}
             <Input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.auth.emailLabel}
-            <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-          </label>
+          <div className="flex flex-col gap-1">
+            <label className="flex flex-col gap-1 text-sm text-text-2">
+              {fr.auth.emailLabel}
+              <Input
+                type="email"
+                autoComplete="email"
+                value={email}
+                aria-invalid={isDemoEmail || undefined}
+                aria-describedby={isDemoEmail ? "signup-email-error" : undefined}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            {isDemoEmail && (
+              <p id="signup-email-error" className="text-sm text-danger">
+                {fr.auth.demoEmailError}
+              </p>
+            )}
+          </div>
           <label className="flex flex-col gap-1 text-sm text-text-2">
             {fr.auth.passwordLabel}
             <Input type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} />
@@ -110,7 +127,9 @@ export function SignupPage() {
                 [name, fr.auth.nameLabel],
                 [email, fr.auth.emailLabel],
                 [password, fr.auth.passwordLabel],
-              ]) ?? (password.length < 8 ? fr.auth.passwordTooShort : null)
+              ]) ??
+              (isDemoEmail ? fr.auth.demoEmailReason : null) ??
+              (password.length < 8 ? fr.auth.passwordTooShort : null)
             }
           />
         </form>

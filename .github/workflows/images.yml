@@ -28,6 +28,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       actions: read
@@ -66,6 +67,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.mode == 'build'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
       packages: write
@@ -124,6 +126,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.mode == 'retag'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: write
@@ -158,6 +161,7 @@ jobs:
   prune:
     needs: publish
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     concurrency: ghcr-prune
     permissions:
       packages: write

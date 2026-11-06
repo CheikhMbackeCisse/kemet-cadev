@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createDb } from "../client.js";
-import { isDemoEmailAddress } from "../demo-email.js";
+import { isDemoEmailAddress } from "@kemet/shared";
 import { getTestDatabaseUrl, resetTestDatabase } from "../testing.js";
 import { assistantInvocations, messages, pointsLedger, profiles, user } from "../schema/index.js";
 import { DEMO_ACCOUNTS } from "./accounts.js";

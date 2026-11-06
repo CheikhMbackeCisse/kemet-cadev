@@ -48,9 +48,21 @@ envoyés sans configurer de vrai relais.
 Better Auth, aucune configuration `advanced.useSecureCookies` n'a été
 nécessaire.
 
-**Limite de tentatives** sur `/sign-in/email` (5 par minute) et
-`/forget-password` (3 par minute), via `rateLimit.customRules` de Better
-Auth plutôt qu'un middleware écrit à la main.
+**Limite de tentatives** sur `/sign-in/email` (5 par minute, via
+`rateLimit.customRules` de Better Auth plutôt qu'un middleware écrit à la
+main) et `/request-password-reset` (3 par minute, la règle par défaut de
+Better Auth pour ce chemin). L'app web appelait `/forget-password`, ancien
+nom de cette route, qui n'existe plus dans Better Auth 1.7 : la demande de
+lien répondait 404.
+
+**Domaine des comptes de démonstration** : aucune boîte n'existe derrière
+`demo.kemetlabs.dev`, et le serveur n'y envoie jamais d'email. Un compte créé
+avec une telle adresse ne pourrait donc jamais être vérifié. L'inscription
+refuse ce domaine et ses sous-domaines (`hooks.before` sur `/sign-up/email`
+et `/change-email`, `databaseHooks.user.create.before` pour les connexions
+sociales), avec le code `DEMO_EMAIL_DOMAIN`. La page d'inscription affiche la
+raison sous le champ avant tout envoi. `isDemoEmailAddress` vit dans
+`packages/shared` pour être partagée par le serveur, le seed et l'app web.
 
 **Intégration Fastify** : Better Auth n'a pas d'adaptateur Fastify officiel.
 Son gestionnaire HTTP standard (`toNodeHandler`) est monté sur une route

@@ -21,6 +21,7 @@ jobs:
   ci:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       stack: ${{ steps.changes.outputs.stack }}
     # gitleaks-action liste les commits de la pull request par l'API GitHub :
@@ -86,6 +87,7 @@ jobs:
 
   integration-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: ci
     if: needs.ci.outputs.stack == 'true'
     services:
@@ -127,6 +129,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: ci
     if: needs.ci.outputs.stack == 'true'
     steps:
@@ -200,14 +203,27 @@ jobs:
           docker compose -f infra/docker-compose.yml --env-file .env
           --profile dev up -d --wait --wait-timeout 180
 
+      - name: Lire la version de Playwright
+        id: playwright
+        working-directory: apps/web
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # Clé sur la version de Playwright, pas sur tout le lockfile : le
+      # navigateur ne change qu'avec elle.
       - name: Garder les navigateurs Playwright en cache
+        id: playwright-cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
+      # Sans --with-deps : l'image ubuntu-latest embarque déjà Google Chrome
+      # et ses bibliothèques. Les paquets système de Playwright (polices
+      # surtout) passaient par les miroirs apt d'Azure, jusqu'à 15 minutes
+      # par run pour 2 minutes de tests.
       - name: Installer les navigateurs Playwright
-        run: pnpm --filter @kemet/web exec playwright install --with-deps chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @kemet/web exec playwright install chromium
 
       - name: Lancer les parcours Playwright (bureau et mobile)
         env:
@@ -243,6 +259,7 @@ jobs:
 
   infra-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: ci
     if: needs.ci.outputs.stack == 'true'
     steps:
@@ -349,6 +366,7 @@ jobs:
   # infra/server/restore.sh, qui doit ramener exactement l'état sauvegardé.
   backup-restore:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: ci
     if: needs.ci.outputs.stack == 'true'
     steps:

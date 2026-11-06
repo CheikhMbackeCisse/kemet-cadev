@@ -220,6 +220,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@kemet/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@node-rs/argon2':
         specifier: ^2.2.0
         version: 2.2.2

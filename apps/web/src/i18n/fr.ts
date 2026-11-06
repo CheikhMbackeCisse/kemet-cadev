@@ -78,6 +78,9 @@ export const fr = {
     emailNotVerifiedError: "Vérifie ton adresse email avant de te connecter.",
     signupError: "Ce compte n'a pas pu être créé.",
     emailAlreadyUsedError: "Cette adresse email est déjà utilisée.",
+    demoEmailError:
+      "Cette adresse appartient aux comptes de démonstration de Kemet. Inscris-toi avec ta propre adresse email.",
+    demoEmailReason: "Choisis une autre adresse email.",
     checkYourEmailTitle: "Vérifie ton adresse email",
     checkYourEmailBody: (email: string) =>
       `Un lien de vérification a été envoyé à ${email}. Ouvre-le, puis reviens te connecter.`,

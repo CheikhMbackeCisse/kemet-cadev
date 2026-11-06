@@ -81,8 +81,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
+    // Better Auth répond { code, message } à plat, les routes de Kemet { error: { code, message } }.
     throw new ChatApiError(
-      body?.error?.code ?? "unknown_error",
+      body?.error?.code ?? body?.code ?? "unknown_error",
       body?.error?.message ?? "Une erreur est survenue.",
       response.status,
     );
@@ -438,7 +439,7 @@ export async function signInWithSocialProvider(
 }
 
 export function forgotPassword(email: string, redirectTo: string) {
-  return request<{ status: boolean }>("/api/auth/forget-password", {
+  return request<{ status: boolean }>("/api/auth/request-password-reset", {
     method: "POST",
     body: JSON.stringify({ email, redirectTo }),
   });

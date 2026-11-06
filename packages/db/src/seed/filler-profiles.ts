@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { DbOrTx } from "../client.js";
-import { DEMO_EMAIL_DOMAIN } from "../demo-email.js";
+import { DEMO_EMAIL_DOMAIN } from "@kemet/shared";
 import { profiles, user } from "../schema/index.js";
 import { avatarDataUri } from "./avatar.js";
 import { chunk } from "./chunk.js";
