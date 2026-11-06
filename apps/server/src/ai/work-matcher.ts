@@ -21,9 +21,11 @@ import {
   type WorkRow,
 } from "../api/repositories/works.js";
 import { serializeWorkPerson, toExcerpt } from "../api/work-serializers.js";
+import { estimatePromptTokens } from "./llm-chain.js";
 import {
-  BothProvidersUnavailableError,
+  AllProvidersUnavailableError,
   LlmProviderError,
+  type JsonOutputRequest,
   type LlmMessage,
   type LlmProviderName,
   type StreamingLlmProvider,
@@ -33,6 +35,14 @@ import type { WorkRetriever } from "./work-retriever.js";
 
 const CANDIDATE_SUMMARY_LENGTH = 500;
 const SUBJECT_PROMPT_LENGTH = 1500;
+// Groq refuse toute requête au-delà de 8 000 tokens par minute, réponse et
+// réflexion de gpt-oss comprises : le prompt garde 2 000 tokens de marge.
+// Une présélection pleine (20 travaux aux résumés longs et aux nombreux
+// auteurs) peut dépasser ce budget : on retire alors la fin du classement,
+// la moins pertinente, plutôt que de perdre Groq comme secours.
+const MATCH_PROMPT_TOKEN_BUDGET = 6_000;
+
+const WORK_MATCH_JSON: JsonOutputRequest = { name: "work_match", schema: workMatchModelOutputSchema };
 
 const WORK_TYPE_LABELS: Record<WorkType, string> = {
   class_project: "projet de classe",
@@ -79,7 +89,7 @@ export interface MatchCandidate {
 }
 
 function isProviderUnavailable(error: unknown): boolean {
-  return error instanceof LlmProviderError || error instanceof BothProvidersUnavailableError;
+  return error instanceof LlmProviderError || error instanceof AllProvidersUnavailableError;
 }
 
 // Un résumé qui contient "</travaux>", ou une forme approchée, ne doit pas
@@ -103,10 +113,7 @@ export function renderCandidates(candidates: MatchCandidate[]): string {
     .join("\n\n");
 }
 
-export function buildMatchMessages(
-  subjectText: string,
-  candidates: MatchCandidate[],
-): LlmMessage[] {
+function renderMatchMessages(subjectText: string, candidates: MatchCandidate[]): LlmMessage[] {
   const context = [
     `<sujet>\n${neutralizeTags(subjectText.slice(0, SUBJECT_PROMPT_LENGTH))}\n</sujet>`,
     `<travaux>\n${renderCandidates(candidates)}\n</travaux>`,
@@ -115,6 +122,24 @@ export function buildMatchMessages(
     { role: "system", content: WORK_MATCH_SYSTEM_PROMPT },
     { role: "user", content: context },
   ];
+}
+
+/**
+ * Messages envoyés au modèle, et les candidats qu'ils contiennent : ceux du
+ * début du classement qui tiennent dans `MATCH_PROMPT_TOKEN_BUDGET`, au
+ * moins un.
+ */
+export function buildMatchMessages(
+  subjectText: string,
+  candidates: MatchCandidate[],
+): { messages: LlmMessage[]; candidates: MatchCandidate[] } {
+  let kept = candidates;
+  let messages = renderMatchMessages(subjectText, kept);
+  while (kept.length > 1 && estimatePromptTokens(messages) > MATCH_PROMPT_TOKEN_BUDGET) {
+    kept = kept.slice(0, -1);
+    messages = renderMatchMessages(subjectText, kept);
+  }
+  return { messages, candidates: kept };
 }
 
 /**
@@ -202,12 +227,15 @@ export class WorkMatcher {
     const quota = await checkDailyQuota(this.db, viewer.id, this.options.dailyQuotaOverride);
     if (!quota.allowed) return this.fullText(candidates, "quota_exceeded");
 
+    const prompt = buildMatchMessages(subject.text, candidates);
     let text = "";
     let provider: LlmProviderName | null = null;
     try {
-      for await (const chunk of this.provider.streamResponse(
-        buildMatchMessages(subject.text, candidates),
-      )) {
+      // La chaîne valide le JSON avec Zod et passe au modèle suivant si la
+      // réponse n'a pas la forme attendue.
+      for await (const chunk of this.provider.streamResponse(prompt.messages, {
+        json: WORK_MATCH_JSON,
+      })) {
         text += chunk.delta;
         provider = chunk.provider;
       }
@@ -223,7 +251,7 @@ export class WorkMatcher {
       return result;
     }
 
-    const accepted = parseModelSuggestions(text, candidates);
+    const accepted = parseModelSuggestions(text, prompt.candidates);
     const result: WorkMatchResult = accepted
       ? {
           mode: "assistant",

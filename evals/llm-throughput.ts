@@ -7,8 +7,8 @@
  * Usage :
  *   GOOGLE_GENERATIVE_AI_API_KEY=... OPENROUTER_API_KEY=... pnpm tsx evals/llm-throughput.ts
  *
- * GEMINI_MODEL et OPENROUTER_MODEL choisissent les modèles testés, avec les
- * mêmes valeurs par défaut que le serveur.
+ * Teste le premier modèle Gemini et le premier modèle OpenRouter de la
+ * configuration du serveur (GEMINI_MODEL, OPENROUTER_MODELS).
  */
 
 import { resolveLlmModels } from "../apps/server/src/ai/create-llm-provider.js";
@@ -29,7 +29,7 @@ const providers: Provider[] = [
     apiKeyEnvVar: "GOOGLE_GENERATIVE_AI_API_KEY",
     ping: (apiKey) =>
       fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models.gemini)}:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models.gemini[0]!)}:generateContent`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
@@ -48,7 +48,7 @@ const providers: Provider[] = [
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: models.openrouter,
+          model: models.openrouter[0],
           messages: [{ role: "user", content: "ping" }],
           max_tokens: 1,
         }),

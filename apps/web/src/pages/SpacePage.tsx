@@ -28,6 +28,7 @@ import { takeDraftFocusRequest, useChannelDraft } from "../lib/chat/useChannelDr
 import { useMessageListScroll } from "../lib/chat/useMessageListScroll.js";
 import { DaySeparator, UnreadSeparator } from "../components/chat/TimelineSeparator.js";
 import { MessageAttachments } from "../components/chat/MessageAttachments.js";
+import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
@@ -263,6 +264,9 @@ export function SpacePage() {
     olderError,
     loadOlder,
     assistantStream,
+    assistantFailure,
+    retryAssistantQuestion,
+    dismissAssistantFailure,
     assistantMetaByMessageId,
     reload: reloadMessages,
     outgoing,
@@ -271,7 +275,7 @@ export function SpacePage() {
     discard,
     react,
     giveAssistantFeedback,
-  } = useChannelMessages(activeChannelId, canInteract);
+  } = useChannelMessages(activeChannelId, canInteract, undefined, profile?.id ?? null);
 
   const spaceItems: SpaceItem[] = useMemo(
     () =>
@@ -898,9 +902,6 @@ export function SpacePage() {
                         }
                         hideFeedback
                         recorded={assistantStream.recorded}
-                        readSummary={
-                          assistantStream.failed ? fr.chat.assistantUnavailable : undefined
-                        }
                       />
                     </div>
                   )}
@@ -958,6 +959,24 @@ export function SpacePage() {
                     </span>
                   ))}
                 </div>
+              )}
+              {assistantFailure && (
+                <AssistantFailureNotice
+                  errorCode={assistantFailure.errorCode}
+                  // Les deux boutons démontent la notice : le focus revient au
+                  // composeur au lieu de tomber sur le document.
+                  onRetry={
+                    retryAssistantQuestion &&
+                    (() => {
+                      retryAssistantQuestion();
+                      composerRef.current?.focus();
+                    })
+                  }
+                  onDismiss={() => {
+                    dismissAssistantFailure();
+                    composerRef.current?.focus();
+                  }}
+                />
               )}
               {composerPaste.notice}
               <div className="relative flex gap-2">

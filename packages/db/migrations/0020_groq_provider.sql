@@ -1,0 +1,1 @@
+ALTER TYPE "public"."llm_provider_name" ADD VALUE 'groq' BEFORE 'openrouter';

@@ -170,18 +170,32 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    - `KEMET_IMAGE_PREFIX=ghcr.io/cheikhmbackecisse/kemet`.
    - `BACKUP_AGE_RECIPIENT` : voir "Sauvegardes" plus bas.
    - les identifiants OAuth, SMTP et les clés d'IA
-     (`GOOGLE_GENERATIVE_AI_API_KEY`, `OPENROUTER_API_KEY`). `GEMINI_MODEL`
-     et `OPENROUTER_MODEL` peuvent rester vides : le serveur prend alors
-     `gemini-flash-latest` et `meta-llama/llama-3.3-70b-instruct:free`. Les
-     renseigner seulement si un modèle est arrêté ou si son quota gratuit ne
-     suffit plus, sans reconstruire les images : un redémarrage de `api`
-     suffit. Le 03/11/2026, `gemini-flash-latest` ne répondait plus avant
-     60 secondes sur l'offre gratuite, `gemini-2.5-flash` n'existait plus et
-     `gemini-3.5-flash` répondait en moins de 5 secondes : renseigner
-     `GEMINI_MODEL=gemini-3.5-flash` en production.
+     (`GOOGLE_GENERATIVE_AI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`).
+     L'assistant passe d'un fournisseur au suivant dans cet ordre : Gemini,
+     Gemini Lite, Groq, OpenRouter. Une clé vide retire son fournisseur sans
+     empêcher le démarrage ; avec une seule clé, l'assistant fonctionne déjà.
+   - les modèles, qui peuvent rester vides :
+     - `GEMINI_MODEL` (vide : `gemini-flash-latest`). Le 03/11/2026,
+       `gemini-flash-latest` ne répondait plus avant 60 secondes sur l'offre
+       gratuite et `gemini-3.5-flash` répondait en moins de 7 secondes :
+       renseigner `GEMINI_MODEL=gemini-3.5-flash` en production.
+     - `GEMINI_LITE_MODEL` (vide : `gemini-flash-lite-latest`), appelé quand
+       le premier modèle Gemini ne répond pas. Son quota gratuit est séparé.
+     - `GROQ_MODELS` (vide : `openai/gpt-oss-120b,openai/gpt-oss-20b`).
+     - `OPENROUTER_MODELS` (vide : `google/gemma-4-26b-a4b-it:free`), liste
+       de modèles gratuits dans l'ordre d'appel.
+     - Les anciens noms `GROQ_MODEL` et `OPENROUTER_MODEL` sont encore lus
+       quand le nom au pluriel est vide.
+
+     Changer un modèle ne demande pas de reconstruire les images : un
+     redémarrage de `api` suffit.
+   - `OPENROUTER_DAILY_LIMIT` (vide : 45) : appels OpenRouter permis par jour,
+     sous les 50 de l'offre gratuite. Le compteur vit dans Valkey et repart à
+     minuit UTC. Une fois atteint, la chaîne saute OpenRouter, sans bloquer
+     Gemini ni Groq.
    - `ASSISTANT_RECORDED_ANSWERS` : vide en temps normal. `true` le jour
      d'une démonstration, pour qu'une question de démo connue reçoive sa
-     réponse enregistrée si Gemini et OpenRouter sont tous deux saturés
+     réponse enregistrée si toute la chaîne de fournisseurs est saturée
      (voir `docs/adr/0022-reponses-enregistrees.md`). Un redémarrage de
      `api` suffit à l'activer ou la couper.
 

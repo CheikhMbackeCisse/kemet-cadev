@@ -56,6 +56,10 @@ export const chatEventSchema = z.discriminatedUnion("type", [
     channelId: z.string().uuid(),
     invocationId: z.string().uuid(),
     errorCode: z.string(),
+    // Le salon entier reçoit l'événement, mais seule la personne qui a posé
+    // la question le voit et peut la reposer : le client filtre sur ce champ.
+    requestedBy: z.string().uuid(),
+    triggerMessageId: z.string().uuid(),
   }),
 ]);
 

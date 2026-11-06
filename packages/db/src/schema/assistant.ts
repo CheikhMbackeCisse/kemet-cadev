@@ -22,7 +22,7 @@ export const assistantInvocationStatusEnum = pgEnum("assistant_invocation_status
   "done",
   "failed",
 ]);
-export const llmProviderNameEnum = pgEnum("llm_provider_name", ["gemini", "openrouter"]);
+export const llmProviderNameEnum = pgEnum("llm_provider_name", ["gemini", "groq", "openrouter"]);
 
 // Tenu à jour par un trigger plutôt qu'une colonne générée : deux
 // configurations (french, english) pondérées par champ, illisibles en

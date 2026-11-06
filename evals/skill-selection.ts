@@ -4,11 +4,14 @@
  * présélectionnés. Lancé à la main, jamais en CI : dépend d'un vrai appel
  * au modèle.
  *
- * Usage :
- *   GOOGLE_GENERATIVE_AI_API_KEY=... OPENROUTER_API_KEY=... pnpm tsx evals/skill-selection.ts
+ * Usage (au moins une clé d'API dans l'environnement) :
+ *   pnpm tsx --env-file=.env evals/skill-selection.ts [--provider=gemini|groq|openrouter]
+ * Voir evals/eval-chain.ts pour les options.
  */
-import { createLlmProviderFromEnv } from "../apps/server/src/ai/create-llm-provider.js";
 import type { LlmMessage } from "../apps/server/src/ai/llm-provider.js";
+import { createEvalRunner } from "./eval-chain.js";
+
+const runner = createEvalRunner("skill-selection");
 
 interface Candidate {
   slug: string;
@@ -47,28 +50,25 @@ function buildClassifyMessages(question: string): LlmMessage[] {
 }
 
 async function runCase(testCase: Case): Promise<boolean> {
-  const provider = createLlmProviderFromEnv(process.env);
-  let output = "";
-  for await (const chunk of provider.streamResponse(buildClassifyMessages(testCase.question))) output += chunk.delta;
+  const answer = await runner.ask(buildClassifyMessages(testCase.question));
+  const output = answer.text;
   const slug = output.trim().toLowerCase().split("\n")[0]?.trim();
   const matched = CANDIDATES.find((candidate) => candidate.slug === slug)?.slug ?? null;
 
-  const passed = matched === testCase.expectedSlug;
+  const passed = !answer.unavailable && matched === testCase.expectedSlug;
   console.log(`\nQuestion : ${testCase.question}`);
   console.log(`Attendu : ${testCase.expectedSlug ?? "aucun"} — Obtenu : ${matched ?? "aucun"} (réponse brute : "${output.trim()}")`);
-  console.log(passed ? "PASS" : "FAIL");
+  console.log(answer.unavailable ? "NON JUGÉ" : passed ? "PASS" : "FAIL");
   return passed;
 }
 
 async function main() {
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY || !process.env.OPENROUTER_API_KEY) {
-    console.error("GOOGLE_GENERATIVE_AI_API_KEY et OPENROUTER_API_KEY sont requises pour cette suite.");
-    process.exit(1);
-  }
-  let allPassed = true;
+  let passedCount = 0;
   for (const testCase of CASES) {
-    allPassed = (await runCase(testCase)) && allPassed;
+    if (await runCase(testCase)) passedCount += 1;
   }
+  runner.summarize(passedCount, CASES.length);
+  const allPassed = passedCount === CASES.length;
   console.log(allPassed ? "\nTous les cas sont corrects." : "\nAu moins un cas est incorrect.");
   process.exit(allPassed ? 0 : 1);
 }

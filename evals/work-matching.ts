@@ -4,12 +4,16 @@
  * d'une présélection fixe. Lancé à la main, jamais en CI : dépend d'un vrai
  * appel au modèle.
  *
- * Usage :
- *   GOOGLE_GENERATIVE_AI_API_KEY=... OPENROUTER_API_KEY=... pnpm tsx evals/work-matching.ts
+ * Usage (au moins une clé d'API dans l'environnement) :
+ *   pnpm tsx --env-file=.env evals/work-matching.ts [--provider=gemini|groq|openrouter]
+ * Voir evals/eval-chain.ts pour les options.
  */
-import { createLlmProviderFromEnv } from "../apps/server/src/ai/create-llm-provider.js";
 import { buildMatchMessages, parseModelSuggestions } from "../apps/server/src/ai/work-matcher.js";
+import { workMatchModelOutputSchema } from "../packages/shared/src/index.js";
+import { createEvalRunner } from "./eval-chain.js";
 import { toCandidates } from "./work-match-fixtures.js";
+
+const runner = createEvalRunner("work-matching");
 
 const CANDIDATES = toCandidates([
   {
@@ -58,19 +62,18 @@ const CASES: Case[] = [
 ];
 
 async function runCase(testCase: Case): Promise<boolean> {
-  const provider = createLlmProviderFromEnv(process.env);
-  let output = "";
-  for await (const chunk of provider.streamResponse(
-    buildMatchMessages(testCase.subject, CANDIDATES),
-  )) {
-    output += chunk.delta;
-  }
-  const accepted = parseModelSuggestions(output, CANDIDATES);
+  const prompt = buildMatchMessages(testCase.subject, CANDIDATES);
+  // Même demande qu'en production : la chaîne valide le JSON avec Zod.
+  const answer = await runner.ask(prompt.messages, {
+    json: { name: "work_match", schema: workMatchModelOutputSchema },
+  });
+  const accepted = parseModelSuggestions(answer.text, prompt.candidates);
   const handles = accepted?.map((entry) => entry.person.handle) ?? null;
 
   // Chaque personne attendue doit être retenue ; une suggestion de plus est
   // tolérée si elle reste justifiable, sauf quand aucune n'est attendue.
   const passed =
+    !answer.unavailable &&
     handles !== null &&
     testCase.expected.every((handle) => handles.includes(handle)) &&
     (testCase.expected.length > 0 || handles.length === 0);
@@ -78,23 +81,18 @@ async function runCase(testCase: Case): Promise<boolean> {
   console.log(
     `Attendu : ${testCase.expected.join(", ") || "personne"} — Obtenu : ${handles?.join(", ") ?? "réponse illisible"}`,
   );
-  for (const entry of accepted ?? [])
-    console.log(`  @${entry.person.handle} : ${entry.justification}`);
-  console.log(passed ? "PASS" : "FAIL");
+  for (const entry of accepted ?? []) console.log(`  @${entry.person.handle} : ${entry.justification}`);
+  console.log(answer.unavailable ? "NON JUGÉ" : passed ? "PASS" : "FAIL");
   return passed;
 }
 
 async function main() {
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY || !process.env.OPENROUTER_API_KEY) {
-    console.error(
-      "GOOGLE_GENERATIVE_AI_API_KEY et OPENROUTER_API_KEY sont requises pour cette suite.",
-    );
-    process.exit(1);
-  }
-  let allPassed = true;
+  let passedCount = 0;
   for (const testCase of CASES) {
-    allPassed = (await runCase(testCase)) && allPassed;
+    if (await runCase(testCase)) passedCount += 1;
   }
+  runner.summarize(passedCount, CASES.length);
+  const allPassed = passedCount === CASES.length;
   console.log(allPassed ? "\nTous les cas sont corrects." : "\nAu moins un cas est incorrect.");
   process.exit(allPassed ? 0 : 1);
 }

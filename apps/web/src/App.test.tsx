@@ -103,6 +103,7 @@ describe("App", () => {
       await screen.findByRole("heading", { level: 1, name: "Confidentialité" }, { timeout: 10000 }),
     ).toBeInTheDocument();
     expect(screen.getByText(/Google peut se servir de ces données/)).toBeInTheDocument();
+    expect(screen.getByText(/puis Groq si Gemini ne répond pas, puis OpenRouter/)).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Contact" })).not.toBeInTheDocument();
   });
 

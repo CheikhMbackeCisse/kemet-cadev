@@ -5,7 +5,9 @@ import { createChatPublisher } from "../chat/pubsub.js";
 import { SmtpEmailSender } from "../email/smtp-email-sender.js";
 import { loadAttachmentLimits } from "../storage/config.js";
 import { LocalDiskStorage } from "../storage/file-storage.js";
-import { createLlmProviderFromEnv } from "../ai/create-llm-provider.js";
+import Redis from "ioredis";
+import { createLlmChainFromEnv, resolveOpenRouterDailyLimit } from "../ai/create-llm-provider.js";
+import { RedisDailyBudget } from "../ai/daily-budget.js";
 import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { FullTextRetriever } from "../ai/skill-retriever.js";
 import { RedisResponseCache } from "../ai/response-cache.js";
@@ -67,16 +69,28 @@ const chat = createChatPublisher(valkeyUrl);
 const storage = new LocalDiskStorage(process.env.UPLOADS_DIR ?? "/data/uploads");
 const attachmentLimits = loadAttachmentLimits();
 
-// Sans les deux clés, l'assistant reste inerte (NoopAssistantOrchestrator,
-// voir buildApp) plutôt que de faire échouer le démarrage du serveur :
-// utile en développement local avant d'avoir créé les comptes Gemini et
-// OpenRouter. Avec ASSISTANT_RECORDED_ANSWERS, il répond quand même aux
-// questions de démo connues, par leur réponse enregistrée.
-const hasLlmKeys = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.OPENROUTER_API_KEY);
+// Chaque clé d'API absente retire son fournisseur de la chaîne de secours
+// (Gemini, Groq, OpenRouter) sans empêcher le démarrage. Sans aucune clé,
+// l'assistant reste inerte (NoopAssistantOrchestrator, voir buildApp), sauf
+// avec ASSISTANT_RECORDED_ANSWERS : il répond alors quand même aux questions
+// de démo connues, par leur réponse enregistrée.
+const llmChain = createLlmChainFromEnv(process.env, {
+  openRouterBudget: process.env.OPENROUTER_API_KEY?.trim() ? createOpenRouterBudget() : undefined,
+});
+// Un client à part, qui échoue vite si Valkey ne répond pas : la chaîne
+// saute alors OpenRouter (raison "budget_unavailable") au lieu d'attendre.
+function createOpenRouterBudget(): RedisDailyBudget {
+  const client = new Redis(valkeyUrl, { maxRetriesPerRequest: 1, enableOfflineQueue: false });
+  client.on("error", () => console.warn(JSON.stringify({ event: "llm_budget_store_unreachable" })));
+  return new RedisDailyBudget(client, "openrouter", resolveOpenRouterDailyLimit(process.env));
+}
+
 const recordedAnswersEnabled = process.env.ASSISTANT_RECORDED_ANSWERS === "true";
-const llmProvider = hasLlmKeys ? createLlmProviderFromEnv(process.env) : new UnavailableLlmProvider();
+// Une seule chaîne pour l'assistant et les Travaux : les pauses d'un modèle
+// après un 429 et le budget OpenRouter du jour valent pour les deux.
+const llmProvider = llmChain ?? new UnavailableLlmProvider();
 const assistant =
-  hasLlmKeys || recordedAnswersEnabled
+  llmChain || recordedAnswersEnabled
     ? new KemetAssistantOrchestrator(
         db,
         chat,

@@ -25,6 +25,7 @@ export function toCandidates(works: FixtureWork[]): MatchCandidate[] {
       stack: work.stack,
       year: 2024,
     } as WorkRow,
+    levels: new Map(),
     people: [
       { id: `profil-${work.handle}`, handle: work.handle, displayName: work.handle } as ProfileRow,
     ],

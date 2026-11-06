@@ -16,13 +16,15 @@ import {
   type OutgoingMessage,
 } from "./outgoing.js";
 import { joinChannel, leaveChannel, onChatEvent } from "./socket.js";
+import {
+  appendAssistantChunk,
+  dropFailedStream,
+  failureForViewer,
+  type AssistantFailure,
+  type AssistantStream,
+} from "./assistantStream.js";
 
-export interface AssistantStream {
-  invocationId: string;
-  text: string;
-  failed: boolean;
-  recorded: boolean;
-}
+export type { AssistantFailure, AssistantStream } from "./assistantStream.js";
 
 export interface AssistantMeta {
   invocationId: string;
@@ -45,6 +47,11 @@ export interface UseChannelMessagesResult {
   olderError: boolean;
   loadOlder: () => Promise<void>;
   assistantStream: AssistantStream | null;
+  /** Échec du dernier appel à @kemet de la personne connectée, dans ce salon. */
+  assistantFailure: AssistantFailure | null;
+  /** Renvoie la question qui a échoué ; null si elle n'est plus chargée. */
+  retryAssistantQuestion: (() => void) | null;
+  dismissAssistantFailure: () => void;
   assistantMetaByMessageId: Record<string, AssistantMeta>;
   reload: () => void;
   /** Messages partis du composeur que le serveur n'a pas encore renvoyés. */
@@ -76,6 +83,7 @@ export function useChannelMessages(
   hasProfile = true,
   /** Appelé une fois la lecture enregistrée, pour mettre à jour les pastilles. */
   onMarkedRead?: () => void,
+  viewerProfileId: string | null = null,
 ): UseChannelMessagesResult {
   const [messages, setMessages] = useState<Message[]>([]);
   const [outgoing, setOutgoing] = useState<OutgoingMessage[]>([]);
@@ -87,6 +95,7 @@ export function useChannelMessages(
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [olderError, setOlderError] = useState(false);
   const [assistantStream, setAssistantStream] = useState<AssistantStream | null>(null);
+  const [assistantFailure, setAssistantFailure] = useState<AssistantFailure | null>(null);
   const [assistantMetaByMessageId, setAssistantMetaByMessageId] = useState<
     Record<string, AssistantMeta>
   >({});
@@ -110,6 +119,7 @@ export function useChannelMessages(
     setLoading(true);
     setError(false);
     setAssistantStream(null);
+    setAssistantFailure(null);
     let cancelled = false;
     const markRead = (messageId: string) => {
       if (!hasProfile) return;
@@ -171,16 +181,7 @@ export function useChannelMessages(
         );
       } else if (event.type === "assistant:chunk") {
         if (event.channelId !== channelId) return;
-        setAssistantStream((current) =>
-          current?.invocationId === event.invocationId
-            ? { ...current, text: current.text + event.delta }
-            : {
-                invocationId: event.invocationId,
-                text: event.delta,
-                failed: false,
-                recorded: event.recorded,
-              },
-        );
+        setAssistantStream((current) => appendAssistantChunk(current, event));
       } else if (event.type === "assistant:done") {
         if (event.channelId !== channelId) return;
         setAssistantStream((current) =>
@@ -198,9 +199,9 @@ export function useChannelMessages(
         markRead(event.message.id);
       } else if (event.type === "assistant:failed") {
         if (event.channelId !== channelId) return;
-        setAssistantStream((current) =>
-          current?.invocationId === event.invocationId ? { ...current, failed: true } : current,
-        );
+        setAssistantStream((current) => dropFailedStream(current, event));
+        const failure = failureForViewer(event, viewerProfileId);
+        if (failure) setAssistantFailure(failure);
       }
     });
     return () => {
@@ -208,7 +209,7 @@ export function useChannelMessages(
       unsubscribe();
       leaveChannel(channelId);
     };
-  }, [channelId, reloadToken, hasProfile]);
+  }, [channelId, reloadToken, hasProfile, viewerProfileId]);
 
   useEffect(() => {
     // Le socle (skill cité, étoile "Utile") n'est jamais recalculé sur le
@@ -280,6 +281,7 @@ export function useChannelMessages(
 
   const send = useCallback(
     (body: string, parentMessageId: string | null = null, attachmentIds: string[] = []) => {
+      setAssistantFailure(null);
       void deliver({
         clientId: crypto.randomUUID(),
         body,
@@ -300,6 +302,19 @@ export function useChannelMessages(
     },
     [outgoing, deliver],
   );
+
+  const failedQuestion = assistantFailure
+    ? messages.find((message) => message.id === assistantFailure.triggerMessageId)
+    : undefined;
+  // Un quota atteint ne se règle pas en reposant la question, et les fichiers
+  // joints ne se renvoient pas : ils sont déjà rattachés au premier message.
+  const retryAssistantQuestion =
+    failedQuestion &&
+    failedQuestion.attachments.length === 0 &&
+    assistantFailure?.errorCode !== "quota_exceeded"
+      ? () => send(failedQuestion.body, failedQuestion.parentMessageId)
+      : null;
+  const dismissAssistantFailure = useCallback(() => setAssistantFailure(null), []);
 
   const discard = useCallback((clientId: string) => {
     setOutgoing((current) => removeOutgoing(current, clientId));
@@ -334,6 +349,9 @@ export function useChannelMessages(
     olderError,
     loadOlder,
     assistantStream,
+    assistantFailure,
+    retryAssistantQuestion,
+    dismissAssistantFailure,
     assistantMetaByMessageId,
     reload,
     outgoing,

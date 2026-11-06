@@ -7,6 +7,7 @@ import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
 import {
   LlmProviderError,
   type LlmMessage,
+  type LlmRequestOptions,
   type LlmStreamChunk,
   type StreamingLlmProvider,
 } from "../ai/llm-provider.js";
@@ -18,13 +19,15 @@ const databaseUrl = getTestDatabaseUrl();
 
 class ScriptedProvider implements StreamingLlmProvider {
   calls: LlmMessage[][] = [];
+  options: (LlmRequestOptions | undefined)[] = [];
   constructor(private readonly reply: (messages: LlmMessage[]) => string | Error) {}
 
-  async *streamResponse(messages: LlmMessage[]): AsyncGenerator<LlmStreamChunk> {
+  async *streamResponse(messages: LlmMessage[], options?: LlmRequestOptions): AsyncGenerator<LlmStreamChunk> {
     this.calls.push(messages);
+    this.options.push(options);
     const reply = this.reply(messages);
     if (reply instanceof Error) throw reply;
-    yield { provider: "gemini", delta: reply };
+    yield { provider: "gemini", model: "gemini-test", delta: reply };
   }
 }
 
@@ -216,10 +219,12 @@ describe.skipIf(!databaseUrl)("Qui a travaillé sur ce sujet ? (base Postgres r�
         }),
       ],
     });
+    // La chaîne valide la forme du JSON et passe au modèle suivant sinon.
+    expect(provider.options[0]?.json?.name).toBe("work_match");
   });
 
   it("se replie sur la recherche plein texte quand les fournisseurs sont saturés", async () => {
-    rebuild(new ScriptedProvider(() => new LlmProviderError("gemini", true, "quota")));
+    rebuild(new ScriptedProvider(() => new LlmProviderError("gemini", "rate_limited", "quota")));
     const { viewer } = await seedNeighbours();
 
     const response = await ask(viewer.cookie, { type: "work", slug: "sujet-sync" });
@@ -234,7 +239,7 @@ describe.skipIf(!databaseUrl)("Qui a travaillé sur ce sujet ? (base Postgres r�
   });
 
   it("ne compte pas dans le quota quand aucun fournisseur ne répond", async () => {
-    rebuild(new ScriptedProvider(() => new LlmProviderError("gemini", true, "quota")), {
+    rebuild(new ScriptedProvider(() => new LlmProviderError("gemini", "rate_limited", "quota")), {
       recordedAnswers: false,
       dailyQuotaOverride: 1,
     });
@@ -279,7 +284,7 @@ describe.skipIf(!databaseUrl)("Qui a travaillé sur ce sujet ? (base Postgres r�
   });
 
   it("rejoue la réponse enregistrée d'un travail de démo, marquée comme telle", async () => {
-    rebuild(new ScriptedProvider(() => new LlmProviderError("gemini", true, "quota")), {
+    rebuild(new ScriptedProvider(() => new LlmProviderError("gemini", "rate_limited", "quota")), {
       recordedAnswers: true,
     });
     const viewer = await createMember("lectrice");

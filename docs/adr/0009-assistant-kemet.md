@@ -105,3 +105,5 @@ vers quelqu'un qui n'y a pas accès.
   `meta-llama/llama-3.3-70b-instruct:free`) : l'arrêt de
   `gemini-2.0-flash` par Google le 1er juin 2026 se règle ainsi par une
   variable d'environnement, sans nouvelle image.
+- Depuis le 03/11/2026, `FallbackLlmProvider` est remplacé par une chaîne
+  de plusieurs fournisseurs et modèles : voir l'ADR 0027.

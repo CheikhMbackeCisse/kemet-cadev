@@ -8,7 +8,7 @@ export function mentionsAssistant(body: string): boolean {
 }
 
 /**
- * La mention de l'envoi vers Google ou OpenRouter s'affiche jusqu'au premier
+ * La mention de l'envoi vers Google, Groq ou OpenRouter s'affiche jusqu'au premier
  * appel envoyé, puis plus jamais sur ce navigateur.
  */
 export function shouldShowAssistantNotice(draft: string): boolean {

@@ -1,4 +1,6 @@
-export type LlmProviderName = "gemini" | "openrouter";
+import type { ZodType } from "zod";
+
+export type LlmProviderName = "gemini" | "groq" | "openrouter";
 
 export interface LlmMessage {
   role: "system" | "user" | "assistant";
@@ -7,86 +9,91 @@ export interface LlmMessage {
 
 export interface LlmStreamChunk {
   provider: LlmProviderName;
+  model: string;
   delta: string;
 }
 
 /**
- * Erreur normalisée pour que l'appelant distingue un quota dépassé (429,
- * bascule possible sur le secours) d'une autre panne (réseau, 5xx côté
- * fournisseur, toujours une bascule) sans dépendre de la forme de l'erreur
- * propre à chaque SDK.
+ * Demande une réponse JSON conforme à `schema`. La chaîne attend alors la
+ * réponse entière, la valide, et passe au modèle suivant si elle ne l'est pas.
+ */
+export interface JsonOutputRequest {
+  /** Nom court du format, transmis aux API qui gèrent les sorties structurées. */
+  name: string;
+  schema: ZodType<unknown>;
+}
+
+export interface LlmRequestOptions {
+  json?: JsonOutputRequest;
+}
+
+/**
+ * Raison pour laquelle un modèle n'a pas répondu. Elle est journalisée
+ * telle quelle et décide si le modèle est mis en pause pour les requêtes
+ * suivantes (voir `LlmChain`).
+ */
+export type LlmFailureCause =
+  | "rate_limited"
+  | "prompt_too_large"
+  | "server_error"
+  | "timeout"
+  | "invalid_json"
+  | "model_unavailable"
+  | "payment_required"
+  | "rejected"
+  | "network";
+
+/**
+ * Erreur normalisée d'un fournisseur. Le message ne reprend jamais le corps
+ * de la requête : les erreurs des SDK le gardent (`requestBodyValues`), et
+ * il contient le prompt, qui ne doit pas finir dans un journal.
  */
 export class LlmProviderError extends Error {
   constructor(
     public readonly provider: LlmProviderName,
-    public readonly quotaExceeded: boolean,
+    public readonly failureCause: LlmFailureCause,
     message: string,
+    /** Délai demandé par le fournisseur avant de le rappeler, quand il en donne un. */
+    public readonly retryAfterMs?: number,
   ) {
     super(message);
   }
 }
 
+/** Contexte d'un appel : `signal` est déclenché par la chaîne quand le délai est dépassé. */
+export interface LlmCallContext extends LlmRequestOptions {
+  signal: AbortSignal;
+}
+
+/** Un modèle chez un fournisseur : un maillon de la chaîne de secours. */
 export interface LlmProvider {
   readonly name: LlmProviderName;
-  streamResponse(messages: LlmMessage[]): AsyncIterable<string>;
+  readonly model: string;
+  streamResponse(messages: LlmMessage[], context: LlmCallContext): AsyncIterable<string>;
 }
 
-/** Séparé de `FallbackLlmProvider` pour accepter un faux fournisseur dans les tests. */
+/** Ce que consomment l'orchestrateur et ses tests : la chaîne, ou un faux. */
 export interface StreamingLlmProvider {
-  streamResponse(messages: LlmMessage[]): AsyncIterable<LlmStreamChunk>;
+  streamResponse(
+    messages: LlmMessage[],
+    options?: LlmRequestOptions,
+  ): AsyncIterable<LlmStreamChunk>;
 }
 
-/**
- * Bascule automatique du principal vers le secours en cas d'erreur de
- * quota (429) ou d'indisponibilité. Un échec après le premier morceau n'est
- * pas rejoué : l'utilisateur recevrait une réponse à moitié écrite, puis une
- * autre.
- */
-export class FallbackLlmProvider {
-  constructor(
-    private readonly primary: LlmProvider,
-    private readonly fallback: LlmProvider,
-  ) {}
-
-  async *streamResponse(messages: LlmMessage[]): AsyncGenerator<LlmStreamChunk> {
-    let started = false;
-    try {
-      for await (const delta of this.primary.streamResponse(messages)) {
-        started = true;
-        yield { provider: this.primary.name, delta };
-      }
-      return;
-    } catch (error) {
-      if (started || !(error instanceof LlmProviderError)) throw error;
-    }
-
-    for await (const delta of this.fallback.streamResponse(messages)) {
-      yield { provider: this.fallback.name, delta };
-    }
-  }
-}
-
-export class BothProvidersUnavailableError extends Error {
+export class AllProvidersUnavailableError extends Error {
   constructor() {
-    super("L'assistant est momentanément indisponible : les deux fournisseurs d'IA sont saturés.");
+    super("Aucun fournisseur d'IA n'a pu répondre.");
   }
 }
 
 /**
- * Remplace les fournisseurs quand aucune clé d'API n'est configurée mais que
- * les réponses enregistrées sont activées : chaque appel échoue, et seule une
+ * Remplace la chaîne quand aucune clé d'API n'est configurée mais que les
+ * réponses enregistrées sont activées : chaque appel échoue, et seule une
  * question de démo connue reçoit une réponse.
  */
 export class UnavailableLlmProvider implements StreamingLlmProvider {
   // eslint-disable-next-line require-yield -- échoue toujours, avant tout morceau.
   async *streamResponse(): AsyncGenerator<LlmStreamChunk> {
-    throw new BothProvidersUnavailableError();
+    throw new AllProvidersUnavailableError();
   }
-}
-
-export function extractHttpStatusCode(error: unknown): number | undefined {
-  if (typeof error !== "object" || error === null) return undefined;
-  const candidate = error as { statusCode?: unknown; status?: unknown };
-  const value = candidate.statusCode ?? candidate.status;
-  return typeof value === "number" ? value : undefined;
 }

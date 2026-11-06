@@ -32,8 +32,8 @@ class RecordingChatPublisher implements ChatPublisher {
 
 class ProviderFailingAfterFirstChunk {
   async *streamResponse(): AsyncGenerator<LlmStreamChunk> {
-    yield { provider: "gemini", delta: "Début" };
-    throw new LlmProviderError("gemini", true, "quota");
+    yield { provider: "gemini", model: "gemini-test", delta: "Début" };
+    throw new LlmProviderError("gemini", "rate_limited", "quota");
   }
 }
 
@@ -44,7 +44,7 @@ class FakeStreamingProvider {
   constructor(private readonly chunks: string[]) {}
   async *streamResponse(messages: LlmMessage[]): AsyncGenerator<LlmStreamChunk> {
     this.capturedMessages.push(messages);
-    for (const delta of this.chunks) yield { provider: "gemini", delta };
+    for (const delta of this.chunks) yield { provider: "gemini", model: "gemini-test", delta };
   }
 }
 
@@ -238,6 +238,8 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     expect(failedEvent).toBeDefined();
     if (failedEvent?.type !== "assistant:failed") throw new Error("événement inattendu");
     expect(failedEvent.errorCode).toBe("quota_exceeded");
+    expect(failedEvent.requestedBy).toBe(profileId);
+    expect(failedEvent.triggerMessageId).toBe(secondTrigger);
   });
 
   it("marquer une réponse Utile rapporte des points à l'auteur du skill cité", async () => {
@@ -482,6 +484,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
       });
 
       expect(chat.events.map((event) => event.type)).toEqual(["assistant:chunk", "assistant:failed"]);
+      expect(chat.events[1]).toMatchObject({ requestedBy: profileId, triggerMessageId });
       const [chunk] = chat.events;
       expect(chunk?.type === "assistant:chunk" && chunk.recorded).toBe(false);
     });

@@ -224,10 +224,11 @@ export const fr = {
     ],
     assistantTitle: "Tes questions à @kemet",
     assistant: [
-      "Quand tu mentionnes @kemet, ta question, les 10 derniers messages du salon et le skill choisi sont envoyés à Google, qui fait tourner le modèle Gemini.",
-      "Kemet utilise l'offre gratuite de Gemini : Google peut se servir de ces données pour améliorer ses modèles.",
-      "Tes messages dans un salon peuvent aussi partir chez Google quand une autre personne y appelle @kemet.",
-      "Si Gemini ne répond pas, la même demande part chez OpenRouter, qui la transmet à un modèle gratuit dont le fournisseur peut aussi garder la demande.",
+      "Quand tu mentionnes @kemet, ta question, les 10 derniers messages du salon et le skill choisi sont envoyés à un fournisseur d'IA, qui fait tourner le modèle.",
+      "Kemet passe par trois fournisseurs, dans cet ordre : Google (modèles Gemini), puis Groq si Gemini ne répond pas, puis OpenRouter en dernier recours. Chaque demande part chez un seul d'entre eux à la fois, mais elle peut passer au suivant si le premier ne répond pas.",
+      "OpenRouter transmet la demande à un modèle gratuit hébergé par un autre fournisseur.",
+      "Kemet utilise les offres gratuites de ces fournisseurs, qui peuvent garder ces données. Google peut se servir de ces données pour améliorer ses modèles.",
+      "Tes messages dans un salon peuvent aussi partir chez ces fournisseurs quand une autre personne y appelle @kemet.",
       "N'écris donc jamais d'information personnelle ou confidentielle dans une question à @kemet.",
     ],
     retentionTitle: "Combien de temps",
@@ -259,7 +260,7 @@ export const fr = {
     contact: "Pour toute question sur tes données, écris au responsable du traitement :",
   },
   assistantNotice: {
-    text: "Ta question et les 10 derniers messages du salon partent chez Google (Gemini), ou chez OpenRouter en secours.",
+    text: "Ta question et les 10 derniers messages du salon partent chez Google (Gemini), ou chez Groq ou OpenRouter en secours.",
     link: "Lire la politique de confidentialité",
   },
   chat: {
@@ -319,7 +320,12 @@ export const fr = {
     removeAttachment: (name: string) => `Retirer ${name}`,
     attachmentUploadError: "L'envoi du fichier a échoué.",
     downloadFile: (name: string) => `Télécharger ${name}`,
-    assistantUnavailable: "L'assistant ne répond pas pour l'instant.",
+    assistantUnavailable: "@kemet est très sollicité. Réessaie dans quelques minutes.",
+    assistantFailed: "@kemet n'a pas pu répondre. Repose ta question.",
+    assistantQuotaReached:
+      "Tu as utilisé toutes tes questions à @kemet pour aujourd'hui. Elles reviennent à minuit.",
+    retryAssistantQuestion: "Reposer la question",
+    dismissAssistantFailure: "Masquer ce message",
     assistantRecorded: "Réponse enregistrée",
   },
   spaces: {
