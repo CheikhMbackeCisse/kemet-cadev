@@ -1,4 +1,4 @@
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { follows, profiles, spaceMembers, spaces, type Db } from "@kemet/db";
 import {
   INTEREST_KEYWORDS,
@@ -15,9 +15,6 @@ type SpaceRow = typeof spaces.$inferSelect;
 export const ALWAYS_SUGGESTED_SPACE_SLUG = "cadev-2026";
 
 const MAX_SPACE_SUGGESTIONS = 6;
-// Les suggestions sont classées en mémoire : au-delà, les profils les plus
-// récents ne sont pas examinés. Large pour le volume visé avant la soumission.
-const MAX_PEOPLE_CANDIDATES = 1000;
 
 export async function updateOnboarding(db: Db, profileId: string, input: UpdateOnboardingInput) {
   const [row] = await db
@@ -82,16 +79,35 @@ export async function suggestSpaces(db: Db, profileId: string, interests: readon
   }[];
 }
 
-function personText(profile: ProfileRow): string {
-  return [profile.title, profile.bio, ...profile.stack].filter(Boolean).join(" ");
+// Mêmes accents retirés en SQL qu'en JavaScript par normalize(), pour les
+// lettres que l'on rencontre dans une spécialité ou une bio en français.
+const ACCENTED = "àâäáãéèêëíìîïóòôöõúùûüçñ";
+const UNACCENTED = "aaaaaeeeeiiiiooooouuuucn";
+
+function personTextSql() {
+  return sql`translate(lower(concat_ws(' ', ${profiles.title}, ${profiles.bio}, array_to_string(${profiles.stack}, ' '))), ${ACCENTED}, ${UNACCENTED})`;
+}
+
+function personScoreSql(viewer: ProfileRow) {
+  const text = personTextSql();
+  const interestPoints = (viewer.interests as Interest[]).map(
+    (interest) => sql`(case when ${text} ~ ${KEYWORD_PATTERNS[interest].source} then 2 else 0 end)`,
+  );
+  const countryPoint =
+    viewer.country === "" ? sql`0` : sql`(case when ${profiles.country} = ${viewer.country} then 1 else 0 end)`;
+  return sql<number>`${sql.join([...interestPoints, countryPoint], sql` + `)}`;
 }
 
 /**
- * Cinq personnes à suivre : un point par sujet commun trouvé dans la
- * spécialité, la bio ou la stack, un de plus pour le même pays. Aucun appel à
- * l'assistant, qui n'est jamais proposé, pas plus qu'un compte suspendu ou supprimé.
+ * Cinq personnes à suivre : deux points par sujet commun trouvé dans la
+ * spécialité, la bio ou la stack, un de plus pour le même pays, puis les
+ * plus suivies. Aucun appel à l'assistant, qui n'est jamais proposé, pas
+ * plus qu'un compte suspendu ou supprimé. Classé par PostgreSQL : la base
+ * de démonstration compte plus de douze mille profils.
  */
 export async function suggestPeople(db: Db, viewer: ProfileRow) {
+  const score = personScoreSql(viewer);
+  const followerCount = sql<number>`(select count(*) from ${follows} where ${follows.followeeId} = ${profiles.id})`;
   const rows = await db
     .select({ profile: profiles, followId: follows.id })
     .from(profiles)
@@ -104,17 +120,7 @@ export async function suggestPeople(db: Db, viewer: ProfileRow) {
         isNull(profiles.suspendedAt),
       ),
     )
-    .limit(MAX_PEOPLE_CANDIDATES);
-
-  const interests = viewer.interests as Interest[];
-  return rows
-    .map((row) => ({
-      profile: row.profile,
-      isFollowed: row.followId !== null,
-      score:
-        2 * countMatchedInterests(personText(row.profile), interests) +
-        (viewer.country !== "" && row.profile.country === viewer.country ? 1 : 0),
-    }))
-    .sort((a, b) => b.score - a.score || a.profile.createdAt.getTime() - b.profile.createdAt.getTime())
-    .slice(0, ONBOARDING_PEOPLE_SUGGESTIONS);
+    .orderBy(desc(score), desc(followerCount), asc(profiles.createdAt))
+    .limit(ONBOARDING_PEOPLE_SUGGESTIONS);
+  return rows.map((row) => ({ profile: row.profile, isFollowed: row.followId !== null }));
 }
