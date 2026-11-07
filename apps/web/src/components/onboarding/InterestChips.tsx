@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { INTERESTS, type Interest } from "@kemet/shared";
 import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
@@ -26,12 +27,13 @@ export function InterestChips({ value, onChange }: InterestChipsProps) {
             />
             <span
               className={cn(
-                "inline-flex min-h-control-mobile items-center rounded-full bg-surface-2 px-4 text-sm text-text md:min-h-control",
-                "hover:brightness-95",
+                "inline-flex min-h-control-mobile items-center gap-1.5 rounded-full bg-surface-2 px-4 text-base text-text md:min-h-control",
+                "hover:bg-border",
                 "peer-checked:bg-primary peer-checked:text-white",
                 "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary",
               )}
             >
+              {value.includes(interest) && <Check aria-hidden="true" className="h-4 w-4" />}
               {fr.onboarding.interests[interest]}
             </span>
           </label>

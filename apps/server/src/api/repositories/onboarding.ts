@@ -1,7 +1,8 @@
 import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
-import { follows, profiles, spaceMembers, spaces, type Db } from "@kemet/db";
+import { follows, profileBlocks, profiles, spaceMembers, spaces, type Db } from "@kemet/db";
 import {
   INTEREST_KEYWORDS,
+  interestSchema,
   ONBOARDING_PEOPLE_SUGGESTIONS,
   type Interest,
   type UpdateOnboardingInput,
@@ -30,6 +31,14 @@ export async function updateOnboarding(db: Db, profileId: string, input: UpdateO
     .where(eq(profiles.id, profileId))
     .returning();
   return row!;
+}
+
+/** Sujets enregistrés, réduits à ceux que le code connaît encore. */
+export function knownInterests(values: readonly string[]): Interest[] {
+  return values.flatMap((value) => {
+    const parsed = interestSchema.safeParse(value);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 function normalize(text: string): string {
@@ -91,7 +100,7 @@ function personTextSql() {
 
 function personScoreSql(viewer: ProfileRow) {
   const text = personTextSql();
-  const interestPoints = (viewer.interests as Interest[]).map(
+  const interestPoints = knownInterests(viewer.interests).map(
     (interest) => sql`(case when ${text} ~ ${KEYWORD_PATTERNS[interest].source} then 2 else 0 end)`,
   );
   const countryPoints =
@@ -105,7 +114,7 @@ function personScoreSql(viewer: ProfileRow) {
  * Cinq personnes à suivre : deux points par sujet commun trouvé dans la
  * spécialité, la bio ou la stack, un de plus pour le même pays, puis les
  * plus suivies. Aucun appel à l'assistant, qui n'est jamais proposé, pas
- * plus qu'un compte suspendu ou supprimé. Classé par PostgreSQL : la base
+ * plus qu'un compte suspendu ou supprimé, ni un blocage dans un sens ou l'autre. Classé par PostgreSQL : la base
  * de démonstration compte plus de douze mille profils.
  */
 export async function suggestPeople(db: Db, viewer: ProfileRow) {
@@ -121,6 +130,7 @@ export async function suggestPeople(db: Db, viewer: ProfileRow) {
         ne(profiles.id, KEMET_ASSISTANT_PROFILE_ID),
         isNull(profiles.deletedAt),
         isNull(profiles.suspendedAt),
+        sql`not exists (select 1 from ${profileBlocks} where (${profileBlocks.blockerId} = ${viewer.id} and ${profileBlocks.blockedId} = ${profiles.id}) or (${profileBlocks.blockerId} = ${profiles.id} and ${profileBlocks.blockedId} = ${viewer.id}))`,
       ),
     )
     .orderBy(desc(score), desc(followerCount), asc(profiles.createdAt))

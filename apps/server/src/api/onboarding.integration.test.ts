@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, profiles, spaces, type Db } from "@kemet/db";
+import { createDb, profileBlocks, profiles, spaces, type Db } from "@kemet/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
@@ -166,6 +166,44 @@ describe.skipIf(!databaseUrl)("Onboarding (base Postgres réelle)", () => {
 
     await db.update(spaces).set({ archivedAt: new Date() }).where(eq(spaces.id, cadev));
     expect((await join(cadev)).statusCode).toBe(403);
+  });
+
+  it("refuse de rejoindre un espace public qui n'est pas communautaire", async () => {
+    const owner = await createProfile("hote", { country: "SN" });
+    const system = await createSpace(owner.cookie, "Discussions", "discussions", "public");
+    await db.update(spaces).set({ kind: "work_discussions" }).where(eq(spaces.id, system));
+    const { cookie } = await createProfile("awa");
+
+    const response = await app.inject({ method: "POST", url: `/api/spaces/${system}/join`, headers: { cookie } });
+    expect(response.statusCode).toBe(404);
+  });
+
+  it("refuse de rejoindre un espace sans profil ou avec un compte suspendu", async () => {
+    const owner = await createProfile("hote", { country: "SN" });
+    const cadev = await createSpace(owner.cookie, "CADEV 2026", "cadev-2026", "public");
+    const join = (cookie: string) =>
+      app.inject({ method: "POST", url: `/api/spaces/${cadev}/join`, headers: { cookie } });
+
+    expect((await join(await signIn("sansprofil"))).statusCode).toBe(400);
+
+    const suspended = await createProfile("awa");
+    await db.update(profiles).set({ suspendedAt: new Date() }).where(eq(profiles.id, suspended.profileId));
+    expect((await join(suspended.cookie)).statusCode).toBe(403);
+  });
+
+  it("ne suggère personne qui bloque ou qui est bloqué", async () => {
+    const blocker = await createProfile("bloqueur");
+    const blocked = await createProfile("bloque");
+    await createProfile("ami");
+    const viewer = await createProfile("awa");
+    await db.insert(profileBlocks).values([
+      { blockerId: blocker.profileId, blockedId: viewer.profileId },
+      { blockerId: viewer.profileId, blockedId: blocked.profileId },
+    ]);
+
+    const response = await app.inject({ method: "GET", url: "/api/me/onboarding/people", headers: { cookie: viewer.cookie } });
+    const handles = response.json().items.map((item: { profile: { handle: string } }) => item.profile.handle);
+    expect(handles).toEqual(["ami"]);
   });
 
   it("suggère cinq personnes classées par sujets communs et pays, jamais soi-même ni l'assistant", async () => {

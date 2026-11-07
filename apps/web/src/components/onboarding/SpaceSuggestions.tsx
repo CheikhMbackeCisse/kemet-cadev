@@ -72,19 +72,23 @@ export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) 
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-text">{space.name}</p>
               {space.description && <p className="line-clamp-2 text-sm text-text-2">{space.description}</p>}
-              <p className="text-xs text-subtle">{fr.onboarding.memberCount(space.memberCount)}</p>
+              <p className="text-sm text-subtle">{fr.onboarding.memberCount(space.memberCount)}</p>
             </div>
-            <Button
-              type="button"
-              variant={space.role ? "secondary" : "primary"}
-              aria-label={space.role ? fr.onboarding.leaveLabel(space.name) : fr.onboarding.joinLabel(space.name)}
-              loading={pendingId === space.id}
-              disabled={manages}
-              onClick={() => void toggle(space)}
-              className="shrink-0"
-            >
-              {space.role ? fr.onboarding.joined : fr.onboarding.join}
-            </Button>
+            {manages ? (
+              <p className="shrink-0 text-sm text-text-2">{fr.onboarding.spaceManaged}</p>
+            ) : (
+              <Button
+                type="button"
+                variant={space.role ? "secondary" : "primary"}
+                aria-label={fr.onboarding.joinLabel(space.name)}
+                aria-pressed={Boolean(space.role)}
+                loading={pendingId === space.id}
+                onClick={() => void toggle(space)}
+                className="shrink-0"
+              >
+                {space.role ? fr.onboarding.joined : fr.onboarding.join}
+              </Button>
+            )}
           </li>
         );
       })}

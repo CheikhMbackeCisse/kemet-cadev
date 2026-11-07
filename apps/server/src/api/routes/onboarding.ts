@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import { updateOnboardingSchema, type Interest, type OnboardingState } from "@kemet/shared";
+import { updateOnboardingSchema, type OnboardingState } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden } from "../../errors.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
-import { suggestPeople, suggestSpaces, updateOnboarding } from "../repositories/onboarding.js";
+import { knownInterests, suggestPeople, suggestSpaces, updateOnboarding } from "../repositories/onboarding.js";
 import { computeProfilesPoints } from "../repositories/points.js";
 import { countSpaceMembersBatch } from "../repositories/chat.js";
 import { serializeSpace } from "../chat-serializers.js";
@@ -17,7 +17,7 @@ export function serializeOnboarding(row: ProfileRow): OnboardingState {
   return {
     step: row.onboardingStep,
     completed: row.onboardingCompletedAt !== null,
-    interests: row.interests as Interest[],
+    interests: knownInterests(row.interests),
   };
 }
 
@@ -43,10 +43,13 @@ export function registerOnboardingRoutes(app: FastifyInstance, { db, auth }: App
     },
   );
 
-  app.get("/api/me/onboarding/spaces", async (request) => {
+  // Chaque suggestion parcourt tous les espaces ou tous les profils.
+  const suggestionLimit = { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } };
+
+  app.get("/api/me/onboarding/spaces", suggestionLimit, async (request) => {
     const userId = await requireSessionUserId(auth, request);
     const profile = await requireOwnProfile(db, userId);
-    const suggestions = await suggestSpaces(db, profile.id, profile.interests as Interest[]);
+    const suggestions = await suggestSpaces(db, profile.id, knownInterests(profile.interests));
     const memberCounts = await countSpaceMembersBatch(
       db,
       suggestions.map((row) => row.space.id),
@@ -58,7 +61,7 @@ export function registerOnboardingRoutes(app: FastifyInstance, { db, auth }: App
     };
   });
 
-  app.get("/api/me/onboarding/people", async (request) => {
+  app.get("/api/me/onboarding/people", suggestionLimit, async (request) => {
     const userId = await requireSessionUserId(auth, request);
     const profile = await requireOwnProfile(db, userId);
     const suggestions = await suggestPeople(db, profile);

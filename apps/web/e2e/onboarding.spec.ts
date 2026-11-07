@@ -46,15 +46,15 @@ test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ pag
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expectStep(page, 5, "Rejoins des espaces");
-  await page.getByRole("button", { name: `Rejoindre ${spaceName}` }).click();
-  await expect(page.getByRole("button", { name: `Quitter ${spaceName}` })).toBeVisible();
+  await page.getByRole("button", { name: `Rejoindre ${spaceName}`, pressed: false }).click();
+  await expect(page.getByRole("button", { name: `Rejoindre ${spaceName}`, pressed: true })).toBeVisible();
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expectStep(page, 6, "Suis quelques personnes");
-  const follow = page.getByRole("button", { name: /^Suivre / }).first();
+  const follow = page.getByRole("button", { name: /^Suivre /, pressed: false }).first();
   await expect(follow).toBeVisible();
   await follow.click();
-  await expect(page.getByRole("button", { name: /^Ne plus suivre / }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Suivre /, pressed: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Ouvrir le fil" }).click();
 
   await expect(page).toHaveURL(/\/fil$/);

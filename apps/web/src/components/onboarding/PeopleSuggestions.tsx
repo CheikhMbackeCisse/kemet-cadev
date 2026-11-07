@@ -78,11 +78,8 @@ export function PeopleSuggestions({ onError }: PeopleSuggestionsProps) {
           <Button
             type="button"
             variant={person.isFollowed ? "secondary" : "primary"}
-            aria-label={
-              person.isFollowed
-                ? fr.onboarding.unfollowLabel(person.profile.displayName)
-                : fr.onboarding.followLabel(person.profile.displayName)
-            }
+            aria-label={fr.onboarding.followLabel(person.profile.displayName)}
+            aria-pressed={person.isFollowed}
             loading={pendingId === person.profile.id}
             onClick={() => void toggle(person)}
             className="shrink-0"

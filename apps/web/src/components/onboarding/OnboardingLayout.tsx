@@ -1,6 +1,7 @@
-import { useId, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, type FormEvent, type ReactNode } from "react";
 import { KemetWordmark } from "../ui/KemetWordmark.js";
 import { Button } from "../ui/Button.js";
+import { Skeleton } from "../ui/Skeleton.js";
 import { fr } from "../../i18n/fr.js";
 
 export interface OnboardingLayoutProps {
@@ -42,6 +43,18 @@ export function OnboardingLayout({
   const titleId = useId();
   const reasonId = useId();
   const reason = disabledReason && !submitting ? disabledReason : null;
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  // Le bouton cliqué disparaît avec l'écran : le focus passe au nouveau titre
+  // plutôt que de retomber sur la page. Pas au premier affichage.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    titleRef.current?.focus();
+  }, [current]);
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -79,7 +92,9 @@ export function OnboardingLayout({
         className="mx-auto flex w-full max-w-xl flex-1 flex-col px-4 pb-32 pt-6 md:pb-12"
       >
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-subtle">{fr.onboarding.progress(current, total)}</p>
+          <p aria-hidden="true" className="text-sm text-subtle">
+            {fr.onboarding.progress(current, total)}
+          </p>
           <div
             role="progressbar"
             aria-label={fr.onboarding.progress(current, total)}
@@ -92,7 +107,7 @@ export function OnboardingLayout({
           </div>
         </div>
 
-        <h1 id={titleId} className="mt-8 text-xl font-bold text-text">
+        <h1 id={titleId} ref={titleRef} tabIndex={-1} className="mt-8 text-lg font-bold text-text focus:outline-none">
           {title}
         </h1>
         <p className="mt-1 text-sm text-text-2">{subtitle}</p>
@@ -117,13 +132,27 @@ export function OnboardingLayout({
               {submitLabel}
             </Button>
             {reason && (
-              <p id={reasonId} className="text-center text-xs text-subtle md:text-left">
+              <p id={reasonId} className="text-center text-sm text-subtle md:text-left">
                 {reason}
               </p>
             )}
           </div>
         </div>
       </form>
+    </div>
+  );
+}
+
+/** Pendant le chargement du compte : la place de la progression, du titre et des choix. */
+export function OnboardingSkeleton() {
+  return (
+    <div role="status" aria-label={fr.onboarding.loading} className="mx-auto flex w-full max-w-xl flex-col gap-3 px-4 pt-16 sm:pt-20">
+      <Skeleton className="h-1 w-full" />
+      <Skeleton className="mt-6 h-7 w-2/3" />
+      <Skeleton className="h-4 w-full" />
+      {[0, 1, 2, 3].map((index) => (
+        <Skeleton key={index} className="h-11 w-full" />
+      ))}
     </div>
   );
 }

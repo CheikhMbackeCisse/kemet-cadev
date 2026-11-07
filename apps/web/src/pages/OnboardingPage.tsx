@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ONBOARDING_STEPS, type Interest, type OnboardingStep, type ProfileRole } from "@kemet/shared";
-import { OnboardingLayout } from "../components/onboarding/OnboardingLayout.js";
+import { OnboardingLayout, OnboardingSkeleton } from "../components/onboarding/OnboardingLayout.js";
 import { CountryList } from "../components/onboarding/CountryList.js";
 import { RadioList } from "../components/onboarding/RadioList.js";
 import { InterestChips } from "../components/onboarding/InterestChips.js";
@@ -59,7 +59,7 @@ export function OnboardingPage() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  if (!initialized || !step || !profile) return null;
+  if (!initialized || !step || !profile) return <OnboardingSkeleton />;
 
   async function goTo(target: OnboardingStep | null, save?: () => Promise<unknown>) {
     setError(null);
