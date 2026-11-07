@@ -62,9 +62,9 @@ for port in $ssh_ports; do
   ufw allow "$port/tcp"
 done
 ufw allow 80/tcp
+# Pas de 443/udp : infra/docker-compose.yml ne publie Caddy qu'en TCP,
+# HTTP/3 n'est donc pas servi.
 ufw allow 443/tcp
-# HTTP/3, servi par Caddy sur le même port en UDP.
-ufw allow 443/udp
 ufw --force enable
 
 echo "SSH par clé uniquement"

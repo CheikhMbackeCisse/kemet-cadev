@@ -333,6 +333,12 @@ jobs:
             "http://localhost/socket.io/?EIO=4&transport=polling")
           test "$status" = "200"
 
+      - name: Vérifier /realtime/health à travers Caddy
+        run: |
+          set -euo pipefail
+          body=$(curl --fail --silent --show-error http://localhost/realtime/health)
+          echo "$body" | grep -q '"service":"realtime"'
+
       - name: Consigner l'état et la mémoire des services dans le résumé
         if: always()
         run: |

@@ -56,7 +56,9 @@ jobs:
               echo "Chemin inattendu : $file" >&2
               exit 1
             fi
-            ssh_backup fetch "$file" > "backup/$(basename "$file")"
+            # Sans < /dev/null, ssh lit la suite de backup-files sur son
+            # entrée standard et la boucle s'arrête après le premier fichier.
+            ssh_backup fetch "$file" < /dev/null > "backup/$(basename "$file")"
             count=$((count + 1))
           done < backup-files
           test "$count" = 2

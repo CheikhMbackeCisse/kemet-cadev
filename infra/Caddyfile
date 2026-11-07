@@ -19,8 +19,11 @@
 	}
 
 	# /realtime/health existe uniquement pour que la page d'accueil puisse
-	# vérifier l'état du service realtime depuis le navigateur.
-	handle_path /realtime/health {
+	# vérifier l'état du service realtime depuis le navigateur. Le serveur
+	# realtime répond sur /health : handle_path /realtime/health retirait le
+	# chemin entier et renvoyait vers /, d'où une 404.
+	handle /realtime/health {
+		rewrite * /health
 		reverse_proxy realtime:3002
 	}
 
@@ -31,9 +34,19 @@
 
 	# style-src garde 'unsafe-inline' : MobileTabBar.tsx et les composants
 	# Radix positionnés par Popper posent des attributs style à l'exécution.
+	# font-src accepte data: : Vite insère en base64 les plus petits fichiers
+	# de police de @fontsource, bloqués sinon.
 	# L'API pose sa propre politique, plus stricte.
 	handle {
-		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 		reverse_proxy web:8080
 	}
+}
+
+# Redirige www vers l'adresse principale, avec son propre certificat.
+# WWW_HOST vaut www.kemetlabs.dev en production. Sa valeur par défaut
+# (infra/docker-compose.yml) est un nom local en HTTP simple, jamais
+# appelé, pour garder un Caddyfile valide en local et en CI.
+{$WWW_HOST} {
+	redir https://{$PUBLIC_HOST}{uri} permanent
 }

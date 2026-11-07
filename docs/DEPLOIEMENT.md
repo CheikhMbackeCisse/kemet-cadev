@@ -105,9 +105,8 @@ démarrage de l'api.
 
 Voir `docs/adr/0020-deploiement-production.md` pour le pourquoi.
 
-Ce document n'a pas encore été déroulé sur le vrai serveur Datacloud : les
-étapes ci-dessous seront corrigées là où la réalité diffère (version
-d'Ubuntu, ports ouverts par Systalink, WebSockets).
+Ces étapes ont été déroulées le 07/11/2026 sur le serveur Datacloud
+(Ubuntu 24.04, 4 Go de RAM) et corrigées là où la réalité différait.
 
 ## Production : premier déploiement
 
@@ -119,6 +118,7 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
 
    ```
    ssh <utilisateur>@kemetlabs.dev
+   sudo apt-get install -y git   # si git manque : setup.sh ne l'installe qu'après ce clone
    git clone <url du dépôt> /tmp/kemet-setup
    sudo /tmp/kemet-setup/infra/server/setup.sh
    ```
@@ -158,9 +158,17 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    nano .env
    ```
 
+   Si le fichier est préparé sur Windows puis copié, retirer les fins de
+   ligne CRLF sur le serveur (`sed -i 's/$//' .env`) et le protéger
+   (`chmod 600 .env`).
+
    Remplir en particulier :
-   - `POSTGRES_PASSWORD` et `BETTER_AUTH_SECRET` : générés par exemple avec
-     `openssl rand -base64 32`.
+   - `POSTGRES_PASSWORD` : `openssl rand -hex 32`. Pas `-base64` : un `/`
+     dans le mot de passe casse l'adresse `postgres://` que
+     `infra/docker-compose.yml` construit avec, et l'api ne démarre pas. À
+     fixer avant le premier démarrage : Postgres ne lit cette variable qu'à
+     la création du volume.
+   - `BETTER_AUTH_SECRET` : `openssl rand -base64 32`.
    - `PUBLIC_HOST=kemetlabs.dev`. L'enregistrement DNS `A` du domaine doit
      déjà pointer vers l'IP du serveur, sinon Caddy ne peut pas obtenir son
      certificat. En attendant le DNS, un nom `sslip.io` fait l'affaire (il
@@ -169,8 +177,17 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
      test en local.
    - `BETTER_AUTH_URL` et `WEB_APP_URL` : `https://kemetlabs.dev`.
    - `KEMET_IMAGE_PREFIX=ghcr.io/cheikhmbackecisse/kemet`.
+   - `WWW_HOST=www.kemetlabs.dev` si l'enregistrement DNS `www` existe :
+     Caddy obtient un second certificat et redirige vers `PUBLIC_HOST`.
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` et `EMAIL_FROM`
+     (une adresse du domaine validé chez l'expéditeur, par exemple
+     `Kemet <noreply@kemetlabs.dev>`). Pas facultatifs : avec `SMTP_HOST`
+     vide, aucun email de vérification ne part et personne ne peut finir
+     son inscription par email.
+   - `PRIVACY_CONTACT_NAME` et `PRIVACY_CONTACT_EMAIL` : sans les deux, la
+     section Contact de `/confidentialite` est masquée.
    - `BACKUP_AGE_RECIPIENT` : voir "Sauvegardes" plus bas.
-   - les identifiants OAuth, SMTP et les clés d'IA
+   - les identifiants OAuth et les clés d'IA
      (`GOOGLE_GENERATIVE_AI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`).
      L'assistant passe d'un fournisseur au suivant dans cet ordre : Gemini,
      Gemini Lite, Groq, OpenRouter. Une clé vide retire son fournisseur sans
@@ -206,6 +223,12 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    ```
    infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev
    ```
+
+   Il n'y a pas d'étape de migration à lancer : l'api joue les migrations
+   à son démarrage, et le script attend qu'elle soit saine. Au tout premier
+   déploiement, `.deploy-history` est vide : si les services ne deviennent
+   pas sains ou si le test de fumée échoue, le script sort en erreur sans
+   retour arrière possible. Lire alors les journaux (`logs api`).
 
 6. Visiter `https://kemetlabs.dev` : Caddy doit avoir obtenu seul un
    certificat Let's Encrypt (peut prendre une minute la première fois). Si
