@@ -77,7 +77,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    // Fastify refuse en 400 un corps vide annoncé comme JSON : un POST sans corps
+    // (suivre, rejoindre) ne doit pas porter cet en-tête.
+    headers: { ...(init?.body !== undefined && { "Content-Type": "application/json" }), ...init?.headers },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
