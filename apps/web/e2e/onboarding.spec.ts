@@ -13,13 +13,13 @@ async function newAccount(page: Page, prefix: string, projectName: string) {
   return handle;
 }
 
-test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ page }, testInfo) => {
+test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ page, request }, testInfo) => {
+  // L'hôte de l'espace a sa propre session, séparée de celle du navigateur.
   const owner = uniqueHandle("e2eonbhote", testInfo.project.name);
   const spaceName = `Mobile ${owner}`;
-  await signUpVerifyAndSignIn(page.request, `${owner}@test.kemet`, owner);
-  await createPublicSpace(page.request, spaceName, `mobile-${owner}`);
-  await page.request.patch("/api/me/onboarding", { data: { completed: true } });
-  await page.request.post("/api/auth/sign-out");
+  await signUpVerifyAndSignIn(request, `${owner}@test.kemet`, owner);
+  await createPublicSpace(request, spaceName, `mobile-${owner}`, "Applications mobiles et paiement");
+  await request.patch("/api/me/onboarding", { data: { completed: true } });
 
   const handle = await newAccount(page, "e2eonb", testInfo.project.name);
   await page.goto("/");
@@ -36,7 +36,7 @@ test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ pag
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expectStep(page, 3, "Quelle est ta spécialité ?");
-  await page.getByLabel("Ta spécialité").fill("Développeuse Flutter");
+  await page.getByRole("textbox", { name: "Ta spécialité" }).fill("Développeuse Flutter");
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expectStep(page, 4, "Quels sujets t'intéressent ?");
@@ -88,7 +88,8 @@ test("Passer sur chaque écran termine le parcours sans rien imposer", async ({ 
   await expect(page).toHaveURL(/\/fil$/);
 
   const me = await (await page.request.get("/api/me")).json();
-  expect(me.profile).toMatchObject({ country: "", role: null, title: null });
+  // Le pays vient de la création du compte de test, pas du parcours.
+  expect(me.profile).toMatchObject({ country: "SN", role: null, title: null });
   expect(me.onboarding.completed).toBe(true);
 });
 

@@ -71,7 +71,8 @@ export async function suggestSpaces(db: Db, profileId: string, interests: readon
   const always = scored.find((row) => row.space.slug === ALWAYS_SUGGESTED_SPACE_SLUG);
   const others = scored
     .filter((row) => row !== always && row.score > 0)
-    .sort((a, b) => b.score - a.score || a.space.createdAt.getTime() - b.space.createdAt.getTime());
+    // À égalité, le plus récent d'abord : un nouvel espace a besoin d'être vu.
+    .sort((a, b) => b.score - a.score || b.space.createdAt.getTime() - a.space.createdAt.getTime());
   return [...(always ? [always] : []), ...others].slice(0, MAX_SPACE_SUGGESTIONS) as {
     space: SpaceRow;
     role: (typeof spaceMembers.$inferSelect)["role"] | null;
@@ -93,9 +94,11 @@ function personScoreSql(viewer: ProfileRow) {
   const interestPoints = (viewer.interests as Interest[]).map(
     (interest) => sql`(case when ${text} ~ ${KEYWORD_PATTERNS[interest].source} then 2 else 0 end)`,
   );
-  const countryPoint =
-    viewer.country === "" ? sql`0` : sql`(case when ${profiles.country} = ${viewer.country} then 1 else 0 end)`;
-  return sql<number>`${sql.join([...interestPoints, countryPoint], sql` + `)}`;
+  const countryPoints =
+    viewer.country === "" ? [] : [sql`(case when ${profiles.country} = ${viewer.country} then 1 else 0 end)`];
+  // Toujours une expression : un ORDER BY sur le seul littéral 0, sans sujet ni
+  // pays, serait lu par PostgreSQL comme un numéro de colonne et refusé.
+  return sql<number>`${sql.join([sql`0::int`, ...interestPoints, ...countryPoints], sql` + `)}`;
 }
 
 /**

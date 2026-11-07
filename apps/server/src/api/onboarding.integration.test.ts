@@ -194,4 +194,14 @@ describe.skipIf(!databaseUrl)("Onboarding (base Postgres réelle)", () => {
     expect(items.find((item) => item.profile.handle === "web-sn")!.isFollowed).toBe(true);
     expect(items[0]!.level).toBe("apprenti");
   });
+
+  it("suggère des personnes sans sujet ni pays choisis", async () => {
+    await createProfile("ami", { country: "SN" });
+    const { cookie } = await createProfile("awa");
+
+    const response = await app.inject({ method: "GET", url: "/api/me/onboarding/people", headers: { cookie } });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items.map((item: { profile: { handle: string } }) => item.profile.handle)).toEqual(["ami"]);
+  });
 });
