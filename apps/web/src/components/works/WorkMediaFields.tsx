@@ -1,5 +1,5 @@
 import { Film, ImagePlus, PlaySquare, Plus, Video, X } from "lucide-react";
-import { useId, useRef, useState, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import {
   DEFAULT_MAX_WORK_VIDEO_BYTES,
   MAX_WORK_GALLERY_IMAGES,
@@ -91,6 +91,28 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
   const [pending, setPending] = useState<"cover" | "gallery" | "video" | null>(null);
   const [youtubeDraft, setYoutubeDraft] = useState("");
   const [youtubeError, setYoutubeError] = useState<string | null>(null);
+  const coverSection = useRef<HTMLFieldSetElement>(null);
+  const gallerySection = useRef<HTMLFieldSetElement>(null);
+  const videoSection = useRef<HTMLFieldSetElement>(null);
+  // Aperçus locaux créés ici, libérés au retrait et au démontage.
+  const objectUrls = useRef(new Set<string>());
+
+  useEffect(() => {
+    const urls = objectUrls.current;
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
+
+  function release(image: ImageDraft | null) {
+    if (image && objectUrls.current.delete(image.previewUrl)) URL.revokeObjectURL(image.previewUrl);
+  }
+
+  // Le bouton Retirer disparaît avec l'élément : le focus va au bouton
+  // d'ajout de la section plutôt que de retomber sur la page.
+  function focusSection(section: RefObject<HTMLFieldSetElement>) {
+    requestAnimationFrame(() =>
+      section.current?.querySelector<HTMLButtonElement>("button[data-add]:not(:disabled)")?.focus(),
+    );
+  }
 
   const galleryFull = value.gallery.length >= MAX_WORK_GALLERY_IMAGES;
   const videosFull = value.videos.length >= MAX_WORK_VIDEOS;
@@ -105,8 +127,18 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
           toast.show(fr.works.videoTooLarge(MAX_VIDEO_MEGABYTES), "danger");
           continue;
         }
-        const media = await uploadWorkMedia(file);
         const expected = target === "video" ? "video" : "image";
+        const accepted = (target === "video" ? VIDEO_ACCEPT : IMAGE_ACCEPT).split(",");
+        // Le serveur vérifie le contenu ; ce premier tri évite d'envoyer, et
+        // de compter dans le quota, un fichier qui serait refusé.
+        if (!accepted.includes(file.type)) {
+          toast.show(
+            expected === "video" ? fr.works.expectedVideo : fr.works.expectedImage,
+            "danger",
+          );
+          continue;
+        }
+        const media = await uploadWorkMedia(file);
         if (media.kind !== expected) {
           toast.show(
             expected === "video" ? fr.works.expectedVideo : fr.works.expectedImage,
@@ -133,13 +165,16 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
           name: media.originalName,
           previewUrl: URL.createObjectURL(file),
         };
-        onChange((current) =>
-          target === "cover"
-            ? { ...current, cover: image }
-            : current.gallery.length >= MAX_WORK_GALLERY_IMAGES
-              ? current
-              : { ...current, gallery: [...current.gallery, image] },
-        );
+        objectUrls.current.add(image.previewUrl);
+        onChange((current) => {
+          if (target === "cover") {
+            release(current.cover);
+            return { ...current, cover: image };
+          }
+          return current.gallery.length >= MAX_WORK_GALLERY_IMAGES
+            ? current
+            : { ...current, gallery: [...current.gallery, image] };
+        });
       }
     } catch (error) {
       toast.show(
@@ -187,6 +222,9 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
           const files = [...(event.target.files ?? [])];
           const room =
             target === "gallery" ? MAX_WORK_GALLERY_IMAGES - value.gallery.length : files.length;
+          if (files.length > room) {
+            toast.show(fr.works.galleryFull(MAX_WORK_GALLERY_IMAGES), "danger");
+          }
           void upload(target, files.slice(0, Math.max(room, 0)));
         }}
       />
@@ -196,10 +234,12 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
   return (
     <fieldset className="flex flex-col gap-4">
       <legend className="text-md font-semibold text-text">{fr.works.mediaTitle}</legend>
-      <p className="-mt-2 text-xs text-subtle">{fr.works.mediaHint}</p>
+      <p className="-mt-2 text-xs text-subtle">
+        {fr.works.mediaHint(MAX_WORK_GALLERY_IMAGES, MAX_WORK_VIDEOS, MAX_VIDEO_MEGABYTES)}
+      </p>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-text-2">{fr.works.coverLabel}</span>
+      <fieldset ref={coverSection} className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-medium text-text-2">{fr.works.coverLabel}</legend>
         {value.cover && (
           <div className="relative w-full max-w-sm overflow-hidden rounded-card border border-border">
             <img
@@ -210,7 +250,13 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
             <IconButton
               type="button"
               aria-label={fr.works.coverRemove}
-              onClick={() => onChange((current) => ({ ...current, cover: null }))}
+              onClick={() => {
+                onChange((current) => {
+                  release(current.cover);
+                  return { ...current, cover: null };
+                });
+                focusSection(coverSection);
+              }}
               className="absolute right-2 top-2 bg-bg"
             >
               <X className="size-4" aria-hidden="true" />
@@ -225,20 +271,21 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
           loading={pending === "cover"}
           disabled={pending !== null && pending !== "cover"}
           onClick={() => coverInput.current?.click()}
+          data-add=""
         >
           <ImagePlus className="size-4" aria-hidden="true" />
           {value.cover ? fr.works.coverReplace : fr.works.coverChoose}
         </Button>
-      </div>
+      </fieldset>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-text-2">{fr.works.galleryLabel}</span>
+      <fieldset ref={gallerySection} className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-medium text-text-2">{fr.works.galleryLabel}</legend>
         {value.gallery.length > 0 && (
           <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {value.gallery.map((image) => (
               <li
                 key={image.id}
-                className="relative overflow-hidden rounded-control border border-border"
+                className="relative overflow-hidden rounded-card border border-border"
               >
                 <img
                   src={image.previewUrl}
@@ -248,12 +295,14 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
                 <IconButton
                   type="button"
                   aria-label={fr.works.removeMedia(image.name)}
-                  onClick={() =>
+                  onClick={() => {
+                    release(image);
                     onChange((current) => ({
                       ...current,
                       gallery: current.gallery.filter((item) => item.id !== image.id),
-                    }))
-                  }
+                    }));
+                    focusSection(gallerySection);
+                  }}
                   className="absolute right-1 top-1 bg-bg"
                 >
                   <X className="size-4" aria-hidden="true" />
@@ -270,19 +319,24 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
             loading={pending === "gallery"}
             disabled={galleryFull || (pending !== null && pending !== "gallery")}
             onClick={() => galleryInput.current?.click()}
+            data-add=""
           >
             <Plus className="size-4" aria-hidden="true" />
             {fr.works.galleryAdd}
           </Button>
-          {galleryFull && <span className="text-xs text-subtle">{fr.works.galleryFull}</span>}
+          {galleryFull && (
+            <span className="text-xs text-subtle">
+              {fr.works.galleryFull(MAX_WORK_GALLERY_IMAGES)}
+            </span>
+          )}
         </div>
-      </div>
+      </fieldset>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-text-2">{fr.works.videosLabel}</span>
+      <fieldset ref={videoSection} className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-medium text-text-2">{fr.works.videosLabel}</legend>
         {value.videos.length > 0 && (
           <ul className="flex flex-col gap-1">
-            {value.videos.map((video) => (
+            {value.videos.map((video, index) => (
               <li
                 key={video.kind === "file" ? video.id : video.key}
                 className="flex items-center gap-2 text-sm text-text"
@@ -293,21 +347,22 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
                   <PlaySquare className="size-4 shrink-0 text-muted" aria-hidden="true" />
                 )}
                 <span className="min-w-0 flex-1 truncate">
-                  {video.kind === "file"
-                    ? video.name
-                    : `${fr.works.youtubeVideo} (${video.youtubeId})`}
+                  {video.kind === "file" ? video.name : fr.works.youtubeVideo(index + 1)}
                 </span>
                 <IconButton
                   type="button"
-                  aria-label={fr.works.removeMedia(
-                    video.kind === "file" ? video.name : fr.works.youtubeVideo,
-                  )}
-                  onClick={() =>
+                  aria-label={
+                    video.kind === "file"
+                      ? fr.works.removeMedia(video.name)
+                      : fr.works.removeYoutube(index + 1)
+                  }
+                  onClick={() => {
                     onChange((current) => ({
                       ...current,
                       videos: current.videos.filter((item) => item !== video),
-                    }))
-                  }
+                    }));
+                    focusSection(videoSection);
+                  }}
                 >
                   <X className="size-4" aria-hidden="true" />
                 </IconButton>
@@ -323,11 +378,14 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
             loading={pending === "video"}
             disabled={videosFull || (pending !== null && pending !== "video")}
             onClick={() => videoInput.current?.click()}
+            data-add=""
           >
             <Video className="size-4" aria-hidden="true" />
             {fr.works.videoAdd}
           </Button>
-          {videosFull && <span className="text-xs text-subtle">{fr.works.videosFull}</span>}
+          {videosFull && (
+            <span className="text-xs text-subtle">{fr.works.videosFull(MAX_WORK_VIDEOS)}</span>
+          )}
         </div>
         <label htmlFor={youtubeId} className="mt-1 text-sm text-text-2">
           {fr.works.youtubeLabel}
@@ -342,7 +400,10 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
             disabled={videosFull}
             aria-invalid={youtubeError ? true : undefined}
             aria-describedby={youtubeError ? `${youtubeId}-error` : undefined}
-            onChange={(event) => setYoutubeDraft(event.target.value)}
+            onChange={(event) => {
+              setYoutubeDraft(event.target.value);
+              setYoutubeError(null);
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -356,6 +417,7 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
             variant="secondary"
             disabled={videosFull || !youtubeDraft.trim()}
             onClick={addYoutube}
+            data-add=""
           >
             {fr.works.youtubeAdd}
           </Button>
@@ -365,7 +427,7 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
             {youtubeError}
           </p>
         )}
-      </div>
+      </fieldset>
     </fieldset>
   );
 }

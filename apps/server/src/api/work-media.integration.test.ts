@@ -1,5 +1,6 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, type Db } from "@kemet/db";
+import { createDb, profiles, type Db } from "@kemet/db";
+import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -89,7 +90,7 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     return String(value).split(";")[0]!;
   }
 
-  async function createMember(handle: string): Promise<{ cookie: string }> {
+  async function createMember(handle: string): Promise<{ cookie: string; profileId: string }> {
     const email = `${handle}@test.kemet`;
     await app.inject({
       method: "POST",
@@ -105,13 +106,13 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
       payload: { email, password: "une-passphrase-solide" },
     });
     const cookie = extractCookie(signIn);
-    await app.inject({
+    const me = await app.inject({
       method: "PATCH",
       url: "/api/me/profile",
       headers: { cookie },
       payload: { handle, displayName: handle, country: "SN" },
     });
-    return { cookie };
+    return { cookie, profileId: me.json().profile.id as string };
   }
 
   function upload(
@@ -336,5 +337,74 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     expect(
       (await app.inject({ method: "GET", url: `/api/work-media/${cover}/content` })).statusCode,
     ).toBe(404);
+  });
+  it("ne déplace pas un fichier d'un travail à un autre", async () => {
+    const author = await createMember("autrice");
+    const cover = await uploadId(author.cookie, PNG_BYTES, "couverture.png");
+    await createWork(author.cookie, { media: [{ id: cover, role: "cover" }], youtubeUrls: [] });
+    const second = await createWork(
+      author.cookie,
+      { media: [{ id: cover, role: "cover" }], youtubeUrls: [] },
+      "second-travail",
+    );
+    expect(second.statusCode).toBe(400);
+  });
+
+  it("refuse l'envoi à un compte suspendu et la modification des médias à un coauteur", async () => {
+    const suspended = await createMember("suspendu");
+    await db
+      .update(profiles)
+      .set({ suspendedAt: new Date() })
+      .where(eq(profiles.id, suspended.profileId));
+    expect((await upload(suspended.cookie, PNG_BYTES, "image.png")).statusCode).toBe(403);
+
+    const author = await createMember("autrice");
+    const coauthor = await createMember("coautrice");
+    await createWork(author.cookie);
+    await app.inject({
+      method: "POST",
+      url: "/api/works/travail-media/authors",
+      headers: { cookie: author.cookie },
+      payload: { handle: "coautrice" },
+    });
+    await app.inject({
+      method: "PUT",
+      url: "/api/works/travail-media/invitation",
+      headers: { cookie: coauthor.cookie },
+      payload: { accepted: true },
+    });
+    const image = await uploadId(coauthor.cookie, PNG_BYTES, "image.png");
+    const patched = await app.inject({
+      method: "PATCH",
+      url: "/api/works/travail-media",
+      headers: { cookie: coauthor.cookie },
+      payload: { media: { media: [{ id: image, role: "cover" }], youtubeUrls: [] } },
+    });
+    expect(patched.statusCode).toBe(403);
+  });
+
+  it("efface les médias avec le compte de leur auteur", async () => {
+    const author = await createMember("autrice");
+    const cover = await uploadId(author.cookie, PNG_BYTES, "couverture.png");
+    const video = await uploadId(author.cookie, MP4_BYTES, "demo.mp4");
+    await createWork(author.cookie, {
+      media: [
+        { id: cover, role: "cover" },
+        { id: video, role: "video" },
+      ],
+      youtubeUrls: ["https://youtu.be/dQw4w9WgXcQ"],
+    });
+    const deletion = await app.inject({
+      method: "DELETE",
+      url: "/api/me",
+      headers: { cookie: author.cookie },
+      payload: { password: "une-passphrase-solide" },
+    });
+    expect(deletion.statusCode).toBe(204);
+    for (const id of [cover, video]) {
+      expect(
+        (await app.inject({ method: "GET", url: `/api/work-media/${id}/content` })).statusCode,
+      ).toBe(404);
+    }
   });
 });

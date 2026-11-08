@@ -81,7 +81,7 @@ test("un travail montre sa couverture, sa galerie et sa vidéo YouTube chargée 
   await page.goto(`/travaux/${slug}`);
   await expect(page.getByRole("img", { name: "Couverture de Un travail illustré" })).toBeVisible();
   await expect(page.locator("iframe")).toHaveCount(0);
-  await page.getByRole("button", { name: /Lire la vidéo YouTube/ }).click();
+  await page.getByRole("button", { name: /sur YouTube/ }).click();
   await expect(page.locator("iframe")).toHaveAttribute(
     "src",
     /^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ/,

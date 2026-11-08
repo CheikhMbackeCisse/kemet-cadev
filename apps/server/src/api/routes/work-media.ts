@@ -141,24 +141,32 @@ export function registerWorkMediaRoutes(
       }
 
       const storageKey = randomUUID();
-      const media = await db.transaction(async (tx) => {
-        await lockUserStorageQuota(tx, profile.id);
-        if (
-          (await sumTotalUserStorageBytes(tx, profile.id)) + buffer.length >
-          attachmentLimits.maxUserStorageBytes
-        ) {
-          throw badRequest("Quota de stockage de fichiers atteint.");
-        }
-        await storage.save(storageKey, buffer);
-        return insertPendingWorkMedia(tx, {
-          authorId: profile.id,
-          kind: detected.kind,
-          storageKey,
-          mimeType: detected.mimeType,
-          originalName: sanitizeFilename(part.filename),
-          byteSize: buffer.length,
+      let saved = false;
+      const media = await db
+        .transaction(async (tx) => {
+          await lockUserStorageQuota(tx, profile.id);
+          if (
+            (await sumTotalUserStorageBytes(tx, profile.id)) + buffer.length >
+            attachmentLimits.maxUserStorageBytes
+          ) {
+            throw badRequest("Quota de stockage de fichiers atteint.");
+          }
+          await storage.save(storageKey, buffer);
+          saved = true;
+          return insertPendingWorkMedia(tx, {
+            authorId: profile.id,
+            kind: detected.kind,
+            storageKey,
+            mimeType: detected.mimeType,
+            originalName: sanitizeFilename(part.filename),
+            byteSize: buffer.length,
+          });
+        })
+        // Sans ligne en base, le nettoyage des orphelins ne verrait jamais ce fichier.
+        .catch(async (error: unknown) => {
+          if (saved) await storage.delete(storageKey);
+          throw error;
         });
-      });
       return {
         media: {
           id: media.id,

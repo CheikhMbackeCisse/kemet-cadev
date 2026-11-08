@@ -8,7 +8,7 @@ describe("WorkVideo", () => {
       <WorkVideo video={{ kind: "youtube", id: "x", youtubeId: "dQw4w9WgXcQ" }} title="Démo" />,
     );
     expect(container.querySelector("iframe")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Lire la vidéo YouTube/ }));
+    fireEvent.click(screen.getByRole("button", { name: /sur YouTube/ }));
     const frame = container.querySelector("iframe")!;
     expect(frame.getAttribute("src")).toMatch(
       /^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ\?/,

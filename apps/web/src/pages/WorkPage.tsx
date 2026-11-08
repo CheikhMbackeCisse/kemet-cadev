@@ -1,6 +1,12 @@
 import { ArrowLeft, FileDown, Mail, MessagesSquare } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { isDeletedAccountHandle, workMediaContentPath, type WorkDetail, type WorkLink, type WorkPerson } from "@kemet/shared";
+import {
+  isDeletedAccountHandle,
+  workMediaContentPath,
+  type WorkDetail,
+  type WorkLink,
+  type WorkPerson,
+} from "@kemet/shared";
 import {
   ChatApiError,
   decideWorkInvitation,
@@ -143,7 +149,9 @@ export function WorkPage() {
     changeTab("discussion");
     // Sur mobile, les onglets sont au-dessus de cette colonne : on les ramène à l'écran.
     requestAnimationFrame(() => {
-      const trigger = tabsRef.current?.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+      const trigger = tabsRef.current?.querySelector<HTMLElement>(
+        '[role="tab"][data-state="active"]',
+      );
       tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
       trigger?.focus({ preventScroll: true });
     });
@@ -157,7 +165,9 @@ export function WorkPage() {
       window.location.href = `/messages/${conversation.id}`;
     } catch (err) {
       toast.show(
-        err instanceof ChatApiError && err.statusCode < 500 ? err.message : fr.works.writeToTeamError,
+        err instanceof ChatApiError && err.statusCode < 500
+          ? err.message
+          : fr.works.writeToTeamError,
         "danger",
       );
       setTeamBusy(false);
@@ -298,7 +308,11 @@ export function WorkPage() {
         <AsideSection title={fr.works.videosTitle}>
           <div className="flex flex-col gap-4">
             {work.videos.map((video, index) => (
-              <WorkVideo key={video.id} video={video} title={fr.works.videoTitle(work.title, index + 1)} />
+              <WorkVideo
+                key={video.id}
+                video={video}
+                title={fr.works.videoTitle(work.title, index + 1)}
+              />
             ))}
           </div>
         </AsideSection>
@@ -314,7 +328,7 @@ export function WorkPage() {
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label={fr.works.openImage(index + 1)}
-                  className="block overflow-hidden rounded-control border border-border hover:border-border-strong"
+                  className="block overflow-hidden rounded-card border border-border hover:border-border-strong"
                 >
                   <img
                     src={workMediaContentPath(image.id)}

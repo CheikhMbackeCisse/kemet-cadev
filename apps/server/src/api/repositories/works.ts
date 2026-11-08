@@ -188,6 +188,9 @@ export async function softDeleteWork(db: Db, workId: string) {
     // La discussion part avec le travail : un titre masqué après signalement
     // ne doit pas rester public par son salon.
     if (work?.channelId) await tx.delete(channels).where(eq(channels.id, work.channelId));
+    // Images et vidéos libérées : le nettoyage horaire les efface et elles
+    // sortent du quota de l'auteur.
+    await tx.update(workMedia).set({ workId: null, role: null }).where(eq(workMedia.workId, workId));
     await tx
       .update(posts)
       .set({ deletedAt: now })

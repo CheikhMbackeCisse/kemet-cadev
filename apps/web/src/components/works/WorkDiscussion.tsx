@@ -208,7 +208,9 @@ export function WorkDiscussion({ work, viewer }: WorkDiscussionProps) {
 
       {viewer ? (
         <div className="flex flex-col gap-2 border-t border-border pt-4">
-          {showSuggestions && <SuggestionChips suggestions={suggestedMessages(work)} onPick={applySuggestion} />}
+          {showSuggestions && (
+            <SuggestionChips suggestions={suggestedMessages(work)} onPick={applySuggestion} />
+          )}
           {paste.notice}
           <div className="flex items-end gap-2">
             <CodeButton textareaRef={composerRef} onChange={setDraft} />

@@ -146,7 +146,7 @@ export function WorksPage() {
         {status !== "visitor" && (
           <a
             href="/travaux/nouveau"
-            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-medium text-white hover:bg-primary-hover"
+            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
           >
             <Plus className="size-4" aria-hidden="true" />
             {fr.works.create}
@@ -215,7 +215,11 @@ export function WorksPage() {
             onBlur={() => tagDraft.trim().toLowerCase() !== tag && applyTag(tagDraft)}
           />
           {tag && (
-            <IconButton type="button" aria-label={fr.works.clearTag(tag)} onClick={() => applyTag("")}>
+            <IconButton
+              type="button"
+              aria-label={fr.works.clearTag(tag)}
+              onClick={() => applyTag("")}
+            >
               <X className="size-4" aria-hidden="true" />
             </IconButton>
           )}

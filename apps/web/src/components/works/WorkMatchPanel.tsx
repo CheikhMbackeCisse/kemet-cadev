@@ -118,7 +118,10 @@ export function WorkMatchPanel({ subject, signedIn, className }: WorkMatchPanelP
                   </a>
                   <div className="min-w-0 flex-1">
                     <a href={`/u/${suggestion.person.handle}`} className="hover:underline">
-                      <UserName name={suggestion.person.displayName} level={suggestion.person.level} />
+                      <UserName
+                        name={suggestion.person.displayName}
+                        level={suggestion.person.level}
+                      />
                     </a>
                     {suggestion.justification && (
                       <p className="mt-0.5 text-sm text-text-2">{suggestion.justification}</p>

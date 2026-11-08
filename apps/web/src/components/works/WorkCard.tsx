@@ -28,7 +28,7 @@ export function WorkCard({
 }) {
   const people = [work.publisher, ...work.coauthors].slice(0, MAX_AVATARS);
   return (
-    <li className="relative flex h-full flex-col overflow-hidden rounded-card border border-border bg-bg transition-colors duration-150 hover:border-border-strong">
+    <li className="relative flex h-full flex-col overflow-hidden rounded-card border border-border bg-bg transition-colors duration-150 hover:border-border-strong has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-primary">
       {work.coverMediaId ? (
         <img
           src={workMediaContentPath(work.coverMediaId)}
@@ -42,7 +42,7 @@ export function WorkCard({
           aria-hidden="true"
           className="flex aspect-[16/9] w-full items-center justify-center border-b border-border bg-surface-2 text-subtle"
         >
-          <BookOpen className="size-8" />
+          <BookOpen className="size-5" />
         </div>
       )}
       <div className="flex flex-1 flex-col gap-2 p-4">
@@ -57,7 +57,7 @@ export function WorkCard({
           {work.title}
         </a>
         <div className="flex min-w-0 items-center gap-2">
-          <span className="flex shrink-0 -space-x-1.5">
+          <span aria-hidden="true" className="flex shrink-0 -space-x-2">
             {people.map((person) => (
               <Avatar
                 key={person.id}
@@ -71,7 +71,7 @@ export function WorkCard({
           <span className="truncate text-xs text-muted">{authorsLine(work)}</span>
         </div>
         {work.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {work.tags.slice(0, MAX_TAGS).map((tag) =>
               onTagClick ? (
                 <button
@@ -79,9 +79,9 @@ export function WorkCard({
                   type="button"
                   onClick={() => onTagClick(tag)}
                   aria-label={fr.works.filterByTag(tag)}
-                  className="relative z-10 rounded-full max-md:min-h-control-mobile"
+                  className="group relative z-10 rounded-full max-md:min-h-control-mobile max-md:min-w-control-mobile"
                 >
-                  <Badge className="hover:bg-accent-soft">{tag}</Badge>
+                  <Badge className="group-hover:bg-accent-soft">{tag}</Badge>
                 </button>
               ) : (
                 <Badge key={tag}>{tag}</Badge>
@@ -96,7 +96,7 @@ export function WorkCard({
             )}
             {work.messageCount > 0 && (
               <span className="inline-flex items-center gap-1">
-                <MessagesSquare className="size-3.5" aria-hidden="true" />
+                <MessagesSquare className="size-4" aria-hidden="true" />
                 {fr.works.messageCount(work.messageCount)}
               </span>
             )}

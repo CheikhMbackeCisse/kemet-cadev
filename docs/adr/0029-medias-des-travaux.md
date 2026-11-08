@@ -44,3 +44,10 @@ stockage par compte, et une CSP qui n'acceptait aucune origine tierce.
 - Un fichier retiré d'un travail redevient libre et part avec le nettoyage
   horaire des orphelins, après une heure.
 - Les médias sont effacés avec le compte de leur auteur, comme le PDF.
+- Un travail supprimé libère ses médias : ils ne sont plus servis, partent
+  avec le nettoyage horaire et sortent du quota de l'auteur.
+- Une vidéo est lue entière en mémoire avant la détection de son type, comme
+  les autres fichiers : jusqu'à 50 Mo par envoi. La limite de débit est par
+  compte ; sur un serveur de 4 Go, plusieurs comptes qui envoient en même
+  temps pèsent. Écrire le flux sur le disque et ne lire que les premiers Ko
+  pour la détection est l'amélioration à faire si la charge l'exige.
