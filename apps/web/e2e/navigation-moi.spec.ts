@@ -45,7 +45,7 @@ test("la page Moi montre le compte et mène aux paramètres", async ({ page, req
   await page.goto("/parametres/profil");
   await page.getByLabel("Bio").fill("Je construis des API de paiement.");
   await page.getByRole("button", { name: "Enregistrer" }).click();
-  await expect(page.getByText("Enregistré.")).toBeVisible();
+  await expect(page.getByText("Enregistré.", { exact: true }).first()).toBeVisible();
   const me = await (await page.request.get("/api/me")).json();
   expect(me.profile.bio).toBe("Je construis des API de paiement.");
 });
