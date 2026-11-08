@@ -122,8 +122,8 @@
 /**
  * Fond de marque des écrans de compte (connexion, inscription, mot de passe).
  * Dégradé et halos : seule exception à la liste « Ce qui est interdit » de
- * DESIGN.md, voir docs/adr/0019-fond-des-ecrans-de-compte.md. Ne pas
- * réutiliser ailleurs.
+ * DESIGN.md, voir docs/adr/0019-fond-des-ecrans-de-compte.md. Partagé
+ * par l'écran d'accueil d'une première visite (/decouvrir), nulle part ailleurs.
  */
 :root {
   --auth-bg-from: #0b2f78;
@@ -134,6 +134,8 @@
   --auth-tile: #15306b;
   --auth-text: #ffffff;
   --auth-text-muted: rgba(255, 255, 255, 0.72);
+  /* Bouton principal posé sur le fond de marque : blanc, texte du fond. */
+  --auth-button-hover: #dbe6fb;
 }
 
 @media (prefers-color-scheme: dark) {

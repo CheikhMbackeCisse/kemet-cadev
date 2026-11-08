@@ -22,9 +22,15 @@ export interface IntroAnswers {
 interface Stored {
   seen: boolean;
   answers: IntroAnswers;
+  /** Date des réponses, en millisecondes. */
+  savedAt?: number;
 }
 
 const STORAGE_KEY = "kemet.intro";
+
+// Sur un poste partagé, les réponses d'un visiteur ne doivent pas finir sur
+// le compte créé par quelqu'un d'autre le lendemain.
+const ANSWERS_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
 function parseList<T>(value: unknown, parse: (item: unknown) => T | null): T[] | undefined {
   if (!Array.isArray(value)) return undefined;
@@ -38,12 +44,14 @@ function parseList<T>(value: unknown, parse: (item: unknown) => T | null): T[] |
 // partagés, et ce qui ne passe pas est simplement oublié.
 function parseStored(raw: unknown): Stored {
   if (typeof raw !== "object" || raw === null) return { seen: false, answers: {} };
-  const record = raw as { seen?: unknown; answers?: Record<string, unknown> };
-  const answers = typeof record.answers === "object" && record.answers !== null ? record.answers : {};
+  const record = raw as { seen?: unknown; answers?: Record<string, unknown>; savedAt?: unknown };
+  const fresh = typeof record.savedAt === "number" && Date.now() - record.savedAt < ANSWERS_LIFETIME_MS;
+  const answers = fresh && typeof record.answers === "object" && record.answers !== null ? record.answers : {};
   const role = profileRoleSchema.safeParse(answers.role);
   const country = typeof answers.country === "string" && COUNTRY_CODES.includes(answers.country) ? answers.country : undefined;
   return {
     seen: record.seen === true,
+    ...(fresh && { savedAt: record.savedAt as number }),
     answers: {
       ...(role.success && { role: role.data }),
       ...(country && { country }),
@@ -87,7 +95,7 @@ export function readIntroAnswers(): IntroAnswers {
 }
 
 export function saveIntroAnswers(answers: IntroAnswers): void {
-  write({ ...read(), answers });
+  write({ ...read(), answers, savedAt: Date.now() });
 }
 
 export function clearIntroAnswers(): void {
