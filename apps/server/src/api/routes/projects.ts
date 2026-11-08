@@ -48,6 +48,8 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
 
 export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
   const projectsConfig: ProjectsConfig = loadProjectsConfig();
+  // Lectures publiques : sans session, la limite est la seule borne.
+  const publicReadLimit = { config: { rateLimit: { max: 120, timeWindow: "1 minute" } } };
 
   async function toProjectSummary(row: Awaited<ReturnType<typeof findProjectBySlug>> & object) {
     const [owner, openHelpRequestCount] = await Promise.all([
@@ -57,7 +59,7 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     return serializeProjectSummary(row, owner!, openHelpRequestCount);
   }
 
-  app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/projects", async (request) => {
+  app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/projects", publicReadLimit, async (request) => {
     const query = paginationQuerySchema.parse(request.query);
     const page = await listProjects(db, query.cursor, query.limit);
     const items = await Promise.all(page.items.map((row) => toProjectSummary(row)));
@@ -74,7 +76,7 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     return { project: serializeProjectDetail(project, profile, 0, projectsConfig.datacloudReferralUrl) };
   });
 
-  app.get<{ Params: { slug: string } }>("/api/projects/:slug", async (request) => {
+  app.get<{ Params: { slug: string } }>("/api/projects/:slug", publicReadLimit, async (request) => {
     const project = await findProjectBySlug(db, request.params.slug);
     if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
     const [owner, openHelpRequestCount] = await Promise.all([
@@ -114,7 +116,7 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     },
   );
 
-  app.get<{ Params: { slug: string } }>("/api/projects/:slug/help-requests", async (request) => {
+  app.get<{ Params: { slug: string } }>("/api/projects/:slug/help-requests", publicReadLimit, async (request) => {
     const project = await findProjectBySlug(db, request.params.slug);
     if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
     const rows = await listHelpRequestsForProject(db, project.id);
