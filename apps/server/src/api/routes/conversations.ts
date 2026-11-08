@@ -26,6 +26,7 @@ import {
   hasBlocked,
   insertConversation,
   isBlockedEitherWay,
+  listBlockedProfiles,
   knowsSender,
   listConversationMembers,
   listConversationsForViewer,
@@ -37,6 +38,7 @@ import { findProfileByHandle, findProfileByUserId } from "../repositories/profil
 import { findWorkBySlug, listWorkAccountAuthorIds } from "../repositories/works.js";
 import { computeLevels } from "../repositories/points.js";
 import { serializeConversation } from "../conversation-serializers.js";
+import { serializeProfileSummary } from "../serializers.js";
 import type { ChatAppDeps } from "../app.js";
 
 const MAX_CONVERSATIONS_PER_MINUTE = 10;
@@ -272,6 +274,13 @@ export function registerConversationRoutes(app: FastifyInstance, { db, auth, cha
       return { left: true };
     },
   );
+
+  app.get("/api/me/blocks", async (request) => {
+    const userId = await requireSessionUserId(auth, request);
+    const viewer = await requireViewer(db, userId);
+    const rows = await listBlockedProfiles(db, viewer.id);
+    return { items: rows.map((row) => serializeProfileSummary(row.profile)) };
+  });
 
   app.get<{ Params: { handle: string } }>("/api/users/:handle/block", async (request) => {
     const userId = await requireSessionUserId(auth, request);

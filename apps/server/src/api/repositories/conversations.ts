@@ -192,6 +192,16 @@ export async function hasBlocked(db: Db, blockerId: string, blockedId: string) {
   return row != null;
 }
 
+/** Profils bloqués par une personne, du plus récent au plus ancien. */
+export async function listBlockedProfiles(db: Db, blockerId: string) {
+  return db
+    .select({ profile: profiles })
+    .from(profileBlocks)
+    .innerJoin(profiles, eq(profiles.id, profileBlocks.blockedId))
+    .where(eq(profileBlocks.blockerId, blockerId))
+    .orderBy(desc(profileBlocks.createdAt));
+}
+
 export async function blockProfile(db: Db, blockerId: string, blockedId: string) {
   await db.insert(profileBlocks).values({ blockerId, blockedId }).onConflictDoNothing();
 }

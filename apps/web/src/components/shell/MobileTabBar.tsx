@@ -1,11 +1,8 @@
-import { Flag, LogOut } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
 import { useSession } from "../../session/SessionProvider.js";
-import { Avatar } from "../ui/Avatar.js";
-import { Sheet } from "../ui/Sheet.js";
-import { MOBILE_TABS, MOI_SHEET_ITEMS, MOI_TAB_ID, mobileTabHref } from "./mobileTabs.js";
+import { MOBILE_TABS, mobileTabHref } from "./mobileTabs.js";
 
 export interface MobileTabBarProps {
   activeTabId: string;
@@ -20,8 +17,7 @@ export interface MobileTabBarProps {
  * marge basse des pages par `--mobile-visitor-bar` (index.css).
  */
 export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarProps) {
-  const { status, profile, isPlatformAdmin, signOut } = useSession();
-  const [moiOpen, setMoiOpen] = useState(false);
+  const { status } = useSession();
   const isVisitor = status === "visitor";
 
   useEffect(() => {
@@ -83,20 +79,7 @@ export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarPro
                 {unread > 0 && <span className="sr-only">{fr.messages.unreadPrivateSuffix(unread)}</span>}
               </>
             );
-            // "Moi" ouvre une feuille : c'est un bouton, les autres onglets
-            // changent de page et sont donc des liens.
-            return tab.id === MOI_TAB_ID ? (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setMoiOpen(true)}
-                aria-current={isActive ? "true" : undefined}
-                aria-haspopup="dialog"
-                className={className}
-              >
-                {content}
-              </button>
-            ) : (
+            return (
               <a
                 key={tab.id}
                 href={mobileTabHref(tab.id)}
@@ -110,55 +93,7 @@ export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarPro
         </nav>
       </div>
 
-      <Sheet open={moiOpen} onOpenChange={setMoiOpen} side="bottom" title={fr.moi.title}>
-        <ul className="flex flex-col">
-          {profile && (
-            <li>
-              <a href={`/u/${profile.handle}`} className={SHEET_ROW_CLASS}>
-                <Avatar
-                  name={profile.displayName}
-                  src={profile.avatarUrl ?? undefined}
-                  size={24}
-                  className="-mx-0.5"
-                />
-                {fr.moi.myProfile}
-              </a>
-            </li>
-          )}
-          {MOI_SHEET_ITEMS.map((item) => (
-            <li key={item.id}>
-              <a href={item.href} className={SHEET_ROW_CLASS}>
-                <item.icon className="size-5 text-muted" aria-hidden="true" />
-                {item.label}
-              </a>
-            </li>
-          ))}
-          {isPlatformAdmin && (
-            <li>
-              <a href="/moderation" className={SHEET_ROW_CLASS}>
-                <Flag className="size-5 text-muted" aria-hidden="true" />
-                {fr.moderation.navLink}
-              </a>
-            </li>
-          )}
-          {/* Seule déconnexion des pages mobiles sans menu de compte dans l'en-tête. */}
-          {profile && (
-            <li>
-              <button
-                type="button"
-                onClick={() => void signOut()}
-                className={`${SHEET_ROW_CLASS} w-full text-danger`}
-              >
-                <LogOut className="size-5" aria-hidden="true" />
-                {fr.auth.signOut}
-              </button>
-            </li>
-          )}
-        </ul>
-      </Sheet>
     </>
   );
 }
 
-const SHEET_ROW_CLASS =
-  "flex h-control-mobile items-center gap-3 rounded-control px-2 text-md text-text hover:bg-surface-2";

@@ -15,8 +15,8 @@ export const MOBILE_TABS: MobileTabItem[] = [
   { id: MOI_TAB_ID, label: "Moi", icon: User },
 ];
 
-/** Lignes de la feuille ouverte par "Moi", après le profil. */
-export const MOI_SHEET_ITEMS: RailNavItem[] = [
+/** Sections sans onglet, atteintes depuis la page "Moi". */
+export const MOI_ITEMS: RailNavItem[] = [
   ...NAV_SECTIONS.filter((section) => section.mobile === "moi"),
   SETTINGS_NAV,
   RAIL_FOOTER_NAV,
@@ -31,7 +31,10 @@ export function mobileTabFor(sectionId: string): string {
   return sectionId;
 }
 
-/** Destination d'un onglet mobile ("Moi" ouvre une feuille, pas une page). */
+export const MOI_PATH = "/moi";
+
+/** Destination d'un onglet mobile. */
 export function mobileTabHref(id: string): string {
+  if (id === MOI_TAB_ID) return MOI_PATH;
   return NAV_SECTIONS.find((section) => section.id === id)?.href ?? "/fil";
 }

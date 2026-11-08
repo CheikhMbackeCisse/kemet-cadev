@@ -1,0 +1,51 @@
+import { expect, test } from "@playwright/test";
+import { signInBrowser, signUpVerifyAndSignIn, uniqueHandle } from "./support/accounts.js";
+
+test("sur mobile, l'onglet Salons liste les espaces et leurs salons, un salon s'ouvre en plein écran", async ({
+  page,
+  request,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "comportement propre au mobile");
+  const handle = uniqueHandle("e2enav", testInfo.project.name);
+  const email = `${handle}@test.kemet`;
+  await signUpVerifyAndSignIn(request, email, handle);
+  await signInBrowser(page, email);
+
+  await page.goto("/salons/nouveau");
+  await page.getByLabel("Nom").fill(`Espace ${handle}`);
+  await page.getByRole("button", { name: "Créer", exact: true }).click();
+  await expect(page.getByPlaceholder("Écrire un message…")).toBeVisible();
+
+  await page.getByRole("button", { name: "Retour aux salons" }).click();
+  await expect(page.getByRole("button", { name: `Espace ${handle}` })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Créer un espace" })).toBeVisible();
+  await page.getByRole("button", { name: "mèmes" }).click();
+  await expect(page.getByPlaceholder("Écrire un message…")).toBeVisible();
+
+  await page.goto("/salons");
+  await expect(page.getByPlaceholder("Écrire un message…")).toBeHidden();
+  await expect(page.getByRole("button", { name: "général" }).first()).toBeVisible();
+});
+
+test("la page Moi montre le compte et mène aux paramètres", async ({ page, request }, testInfo) => {
+  const handle = uniqueHandle("e2emoi", testInfo.project.name);
+  const email = `${handle}@test.kemet`;
+  await signUpVerifyAndSignIn(request, email, handle);
+  await signInBrowser(page, email);
+
+  await page.goto("/moi");
+  await expect(page.getByText(`@${handle}`)).toBeVisible();
+  await page.getByRole("link", { name: "Paramètres" }).filter({ visible: true }).last().click();
+  await expect(page).toHaveURL(/\/parametres$/);
+
+  await page.getByLabel("Chercher un réglage").fill("thème");
+  await page.getByRole("link", { name: /Apparence/ }).click();
+  await expect(page.getByRole("heading", { name: "Apparence" })).toBeVisible();
+
+  await page.goto("/parametres/profil");
+  await page.getByLabel("Bio").fill("Je construis des API de paiement.");
+  await page.getByRole("button", { name: "Enregistrer" }).click();
+  await expect(page.getByText("Enregistré.")).toBeVisible();
+  const me = await (await page.request.get("/api/me")).json();
+  expect(me.profile.bio).toBe("Je construis des API de paiement.");
+});

@@ -784,6 +784,33 @@ export function unblockUser(handle: string) {
   return request<{ blocked: boolean }>(`/api/users/${handle}/block`, { method: "DELETE" });
 }
 
+export function listBlockedUsers() {
+  return request<{ items: ProfileSummary[] }>("/api/me/blocks");
+}
+
+export function changePassword(input: { currentPassword: string; newPassword: string }) {
+  return request<{ status: boolean }>("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ ...input, revokeOtherSessions: true }),
+  });
+}
+
+/** Rattache un compte GitHub, Google ou LinkedIn au compte connecté : renvoie vers le fournisseur. */
+export async function linkSocialProvider(provider: SocialProvider, callbackURL: string) {
+  const result = await request<{ url: string }>("/api/auth/link-social", {
+    method: "POST",
+    body: JSON.stringify({ provider, callbackURL }),
+  });
+  window.location.href = result.url;
+}
+
+export function unlinkSocialProvider(provider: SocialProvider) {
+  return request<{ status: boolean }>("/api/auth/unlink-account", {
+    method: "POST",
+    body: JSON.stringify({ providerId: provider }),
+  });
+}
+
 export { ChatApiError };
 
 export function listWorks(

@@ -107,6 +107,22 @@ const OnboardingPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("./pages/SettingsPage.js").then((m) => ({ default: m.SettingsPage })),
 );
+const AccountSettingsPage = lazy(() =>
+  import("./pages/settings/AccountSettingsPage.js").then((m) => ({ default: m.AccountSettingsPage })),
+);
+const ProfileSettingsPage = lazy(() =>
+  import("./pages/settings/ProfileSettingsPage.js").then((m) => ({ default: m.ProfileSettingsPage })),
+);
+const AppearanceSettingsPage = lazy(() =>
+  import("./pages/settings/AppearanceSettingsPage.js").then((m) => ({ default: m.AppearanceSettingsPage })),
+);
+const DataSettingsPage = lazy(() =>
+  import("./pages/settings/DataSettingsPage.js").then((m) => ({ default: m.DataSettingsPage })),
+);
+const HelpSettingsPage = lazy(() =>
+  import("./pages/settings/HelpSettingsPage.js").then((m) => ({ default: m.HelpSettingsPage })),
+);
+const MoiPage = lazy(() => import("./pages/MoiPage.js").then((m) => ({ default: m.MoiPage })));
 const DeleteAccountPage = lazy(() =>
   import("./pages/DeleteAccountPage.js").then((m) => ({ default: m.DeleteAccountPage })),
 );
@@ -209,6 +225,12 @@ function resolvePage(pathname: string) {
   if (pathname === ONBOARDING_BASE_PATH || pathname.startsWith(`${ONBOARDING_BASE_PATH}/`)) return <OnboardingPage />;
   if (pathname === "/parametres") return <SettingsPage />;
   if (pathname === "/parametres/supprimer-mon-compte") return <DeleteAccountPage />;
+  if (pathname === "/parametres/compte") return <AccountSettingsPage />;
+  if (pathname === "/parametres/profil") return <ProfileSettingsPage />;
+  if (pathname === "/parametres/apparence") return <AppearanceSettingsPage />;
+  if (pathname === "/parametres/donnees") return <DataSettingsPage />;
+  if (pathname === "/parametres/aide") return <HelpSettingsPage />;
+  if (pathname === "/moi") return <MoiPage />;
   if (pathname === "/confidentialite") return <PrivacyPage />;
   if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
   if (pathname === "/salons/nouveau") return <NewSpacePage />;

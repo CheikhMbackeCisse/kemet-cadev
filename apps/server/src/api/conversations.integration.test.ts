@@ -523,6 +523,11 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
 
     const status = await app.inject({ method: "GET", url: "/api/users/awa/block", headers: { cookie: binta.cookie } });
     expect(status.json()).toEqual({ blocked: true });
+    const blocks = await app.inject({ method: "GET", url: "/api/me/blocks", headers: { cookie: binta.cookie } });
+    expect(blocks.json().items.map((item: { handle: string }) => item.handle)).toEqual(["awa"]);
+    const othersBlocks = await app.inject({ method: "GET", url: "/api/me/blocks", headers: { cookie: awa.cookie } });
+    expect(othersBlocks.json().items).toEqual([]);
+    expect((await app.inject({ method: "GET", url: "/api/me/blocks" })).statusCode).toBe(401);
     await app.inject({ method: "DELETE", url: "/api/users/awa/block", headers: { cookie: binta.cookie } });
     expect((await openConversation(awa, binta, coumba)).statusCode).toBe(200);
   });
