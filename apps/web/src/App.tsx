@@ -123,6 +123,7 @@ const HelpSettingsPage = lazy(() =>
   import("./pages/settings/HelpSettingsPage.js").then((m) => ({ default: m.HelpSettingsPage })),
 );
 const MoiPage = lazy(() => import("./pages/MoiPage.js").then((m) => ({ default: m.MoiPage })));
+const SavedPostsPage = lazy(() => import("./pages/SavedPostsPage.js").then((m) => ({ default: m.SavedPostsPage })));
 const DeleteAccountPage = lazy(() =>
   import("./pages/DeleteAccountPage.js").then((m) => ({ default: m.DeleteAccountPage })),
 );
@@ -231,6 +232,7 @@ function resolvePage(pathname: string) {
   if (pathname === "/parametres/donnees") return <DataSettingsPage />;
   if (pathname === "/parametres/aide") return <HelpSettingsPage />;
   if (pathname === "/moi") return <MoiPage />;
+  if (pathname === "/enregistres") return <SavedPostsPage />;
   if (pathname === "/confidentialite") return <PrivacyPage />;
   if (pathname.startsWith("/salons/invite/")) return <InvitePage />;
   if (pathname === "/salons/nouveau") return <NewSpacePage />;

@@ -33,6 +33,7 @@ import type {
   Report,
   ResolveReportInput,
   PostFeedbackEntry,
+  PostBookmarkResult,
   PostReactionResult,
   PostReply,
   PostSummary,
@@ -511,11 +512,16 @@ export function deletePost(postId: string) {
   return request<{ deleted: boolean }>(`/api/posts/${postId}`, { method: "DELETE" });
 }
 
-export function sharePost(postId: string, body = "") {
-  return request<{ post: PostSummary }>(`/api/posts/${postId}/share`, {
-    method: "POST",
-    body: JSON.stringify({ body }),
+export function setPostBookmark(postId: string, saved: boolean) {
+  return request<PostBookmarkResult>(`/api/posts/${postId}/bookmark`, {
+    method: "PUT",
+    body: JSON.stringify({ saved }),
   });
+}
+
+export function listBookmarkedPosts(cursor?: string): Promise<Page<PostSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/me/bookmarks${query}`);
 }
 
 export function togglePostReaction(postId: string) {

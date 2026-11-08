@@ -6,7 +6,7 @@ import {
   createPostFeedback,
   deletePost,
   listPosts,
-  sharePost,
+  setPostBookmark,
   togglePostReaction,
 } from "../lib/chat/api.js";
 import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
@@ -30,7 +30,7 @@ function PostListItem({
   canInteract,
   viewerProfileId,
   onReact,
-  onShare,
+  onSave,
   onFeedback,
   onDeleteRequest,
 }: {
@@ -38,7 +38,7 @@ function PostListItem({
   canInteract: boolean;
   viewerProfileId: string | null;
   onReact: (postId: string) => void;
-  onShare: (postId: string) => void;
+  onSave: (postId: string) => void;
   onFeedback: (postId: string) => void;
   onDeleteRequest: (postId: string) => void;
 }) {
@@ -55,7 +55,7 @@ function PostListItem({
       canFeedback={canInteract && post.format === "a_tester"}
       canReport={canInteract && !post.deletedAt}
       onReact={() => onReact(post.id)}
-      onShare={() => onShare(post.id)}
+      onSave={() => onSave(post.id)}
       onFeedback={() => onFeedback(post.id)}
       onDelete={() => onDeleteRequest(post.id)}
     />
@@ -123,13 +123,16 @@ export function FeedPage() {
     }
   }
 
-  async function handleShare(postId: string) {
+  async function handleSave(postId: string) {
+    const target = posts.find((post) => post.id === postId);
+    if (!target) return;
     try {
-      await sharePost(postId);
-      toast.show(fr.feed.shared, "success");
-      load(tab);
+      const result = await setPostBookmark(postId, !target.savedByMe);
+      setPosts((current) =>
+        current.map((post) => (post.id === postId ? { ...post, savedByMe: result.savedByMe } : post)),
+      );
     } catch {
-      toast.show(fr.feed.shareError, "danger");
+      toast.show(fr.feed.saveError, "danger");
     }
   }
 
@@ -185,7 +188,7 @@ export function FeedPage() {
             canInteract={canInteract}
             viewerProfileId={profile?.id ?? null}
             onReact={handleReact}
-            onShare={handleShare}
+            onSave={handleSave}
             onFeedback={setFeedbackPostId}
             onDeleteRequest={setPostToDelete}
           />

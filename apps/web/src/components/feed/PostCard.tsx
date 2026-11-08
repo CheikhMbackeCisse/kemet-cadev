@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react";
-import { CheckCircle2, MessageSquare, Share2, ThumbsUp } from "lucide-react";
+import { Bookmark, CheckCircle2, Heart, MessageSquare, Share2 } from "lucide-react";
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
@@ -13,6 +13,10 @@ import { PostImages } from "./PostImages.js";
 import { RichText } from "../content/RichText.js";
 import { WORK_TYPE_LABELS } from "../works/workLabels.js";
 import { cn } from "../../lib/cn.js";
+import { formatCount } from "../../lib/formatCount.js";
+import { formatFullDate, formatRelativeTime } from "../../lib/relativeTime.js";
+import { shareLink } from "../../lib/shareLink.js";
+import { useToast } from "../ui/Toast.js";
 import { fr } from "../../i18n/fr.js";
 import { authorLevel, ProfileLink } from "../ui/ProfileLink.js";
 
@@ -21,15 +25,6 @@ const FORMAT_LABELS: Record<PostFormat, string> = {
   a_tester: fr.feed.formatATester,
   question: fr.feed.formatQuestion,
 };
-
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
   if (!post) return null;
@@ -53,7 +48,9 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
           countryCode={post.authorCountry}
         />
         <UserName name={post.authorDisplayName} level={post.authorLevel} />
-        <span className="text-xs text-subtle">{formatTime(post.createdAt)}</span>
+        <time dateTime={post.createdAt} title={formatFullDate(post.createdAt)} className="text-xs text-subtle">
+          {formatRelativeTime(post.createdAt)}
+        </time>
       </div>
       <p className="mt-1 text-sm text-text-2">{post.body}</p>
       <PostImages attachments={post.attachments} />
@@ -92,7 +89,7 @@ export interface PostCardProps {
   canFeedback: boolean;
   canReport: boolean;
   onReact: () => void;
-  onShare: () => void;
+  onSave: () => void;
   onFeedback: () => void;
   onDelete: () => void;
   onReply?: () => void;
@@ -108,7 +105,7 @@ export function PostCard({
   canFeedback,
   canReport,
   onReact,
-  onShare,
+  onSave,
   onFeedback,
   onDelete,
   onReply,
@@ -126,9 +123,17 @@ export function PostCard({
     }
     window.location.href = bodyHref;
   }
+  const toast = useToast();
+  async function share() {
+    const outcome = await shareLink(`${window.location.origin}/fil/${post.id}`, fr.feed.shareTitle(post.authorDisplayName));
+    if (outcome === "copied") toast.show(fr.feed.linkCopied, "success");
+    if (outcome === "failed") toast.show(fr.feed.shareFailed, "danger");
+  }
+
   const replyLabel = fr.feed.replyAriaLabel(post.replyCount);
-  const replyClassName =
+  const actionClassName =
     "inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted hover:bg-surface-2 hover:text-text";
+  const relativeTime = formatRelativeTime(post.createdAt);
 
   const Tag = as;
   return (
@@ -153,17 +158,6 @@ export function PostCard({
                 level={authorLevel(post.authorHandle, post.authorLevel)}
               />
             </ProfileLink>
-            {bodyHref ? (
-              <a
-                href={bodyHref}
-                aria-label={fr.feed.openPost(post.authorDisplayName, formatTime(post.createdAt))}
-                className="text-xs text-subtle hover:underline"
-              >
-                {formatTime(post.createdAt)}
-              </a>
-            ) : (
-              <span className="text-xs text-subtle">{formatTime(post.createdAt)}</span>
-            )}
             {post.format && <Badge>{FORMAT_LABELS[post.format]}</Badge>}
             {post.work && !post.deletedAt && (
               <span className="text-xs text-subtle">{fr.works.feedAnnouncement}</span>
@@ -193,49 +187,55 @@ export function PostCard({
           )}
           {post.testAsk && <p className="mt-1 text-sm text-subtle">{post.testAsk}</p>}
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-1">
             {replyHref ? (
-              <a href={replyHref} aria-label={replyLabel} className={replyClassName}>
+              <a href={replyHref} aria-label={replyLabel} className={actionClassName}>
                 <MessageSquare className="size-4" aria-hidden="true" />
-                {post.replyCount}
+                {formatCount(post.replyCount)}
               </a>
             ) : (
-              <button
-                type="button"
-                onClick={onReply}
-                aria-label={replyLabel}
-                className={replyClassName}
-              >
+              <button type="button" onClick={onReply} aria-label={replyLabel} className={actionClassName}>
                 <MessageSquare className="size-4" aria-hidden="true" />
-                {post.replyCount}
+                {formatCount(post.replyCount)}
               </button>
             )}
-            {canInteract && (
-              <IconButton aria-label={fr.feed.share} onClick={onShare}>
-                <Share2 className="size-4" aria-hidden="true" />
-              </IconButton>
-            )}
+            {/* Le cœur garde le sens et les points de "Utile". */}
             {canInteract ? (
               <button
                 type="button"
                 onClick={onReact}
                 aria-pressed={post.reactedByMe}
                 aria-label={fr.feed.utileAriaLabel(post.utileCount)}
-                className={cn(
-                  "inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs hover:bg-surface-2",
-                  post.reactedByMe ? "text-primary" : "text-muted hover:text-text",
-                )}
+                title={fr.feed.utile}
+                className={cn(actionClassName, post.reactedByMe && "text-danger hover:text-danger")}
               >
-                <ThumbsUp className="size-4" aria-hidden="true" />
-                <span className="max-md:hidden">{fr.feed.utile}</span>
-                {post.utileCount}
+                <Heart className={cn("size-4", post.reactedByMe && "fill-current")} aria-hidden="true" />
+                {formatCount(post.utileCount)}
               </button>
             ) : (
-              <span className="inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted">
-                <ThumbsUp className="size-4" aria-hidden="true" />
-                <span className="max-md:hidden">{fr.feed.utile}</span>
-                {post.utileCount}
+              <span
+                title={fr.feed.utile}
+                aria-label={fr.feed.utileCount(post.utileCount)}
+                className="inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted"
+              >
+                <Heart className="size-4" aria-hidden="true" />
+                {formatCount(post.utileCount)}
               </span>
+            )}
+            {canInteract && !post.deletedAt && (
+              <IconButton
+                aria-label={post.savedByMe ? fr.feed.unsave : fr.feed.save}
+                aria-pressed={post.savedByMe}
+                onClick={onSave}
+                className={cn(post.savedByMe && "text-text")}
+              >
+                <Bookmark className={cn("size-4", post.savedByMe && "fill-current")} aria-hidden="true" />
+              </IconButton>
+            )}
+            {!post.deletedAt && (
+              <IconButton aria-label={fr.feed.share} onClick={() => void share()}>
+                <Share2 className="size-4" aria-hidden="true" />
+              </IconButton>
             )}
             {canFeedback && (
               <Button variant="ghost" className="whitespace-nowrap px-2 text-xs" onClick={onFeedback}>
@@ -264,6 +264,24 @@ export function PostCard({
               )
             )}
           </div>
+          {bodyHref ? (
+            <a
+              href={bodyHref}
+              aria-label={fr.feed.openPost(post.authorDisplayName, formatFullDate(post.createdAt))}
+              title={formatFullDate(post.createdAt)}
+              className="mt-1 inline-block px-2 text-xs text-subtle hover:underline"
+            >
+              <time dateTime={post.createdAt}>{relativeTime}</time>
+            </a>
+          ) : (
+            <time
+              dateTime={post.createdAt}
+              title={formatFullDate(post.createdAt)}
+              className="mt-1 inline-block px-2 text-xs text-subtle"
+            >
+              {relativeTime}
+            </time>
+          )}
         </div>
       </div>
     </Tag>

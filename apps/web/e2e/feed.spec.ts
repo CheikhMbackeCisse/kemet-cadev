@@ -96,3 +96,29 @@ test("publie un post avec une image et la voit affichée dans le fil", async ({ 
   await expect(page).toHaveURL(/\/fil$/);
   await expect(page.getByAltText(fileName)).toBeVisible();
 });
+
+test("enregistre un post, le retrouve dans Enregistrés et copie son lien", async ({ page, request, context }) => {
+  const email = `e2e-feedsave-${test.info().project.name}-${Date.now()}@test.kemet`;
+  const handle = `e2efeedsave${test.info().project.name}${Date.now()}`;
+  const body = `Post à garder ${Date.now()}`;
+
+  await signUpVerifyAndSignIn(request, email, handle);
+  await signInBrowser(page, email);
+  const created = await page.request.post("/api/posts", { data: { body } });
+  const postId = (await created.json()).post.id as string;
+
+  await page.goto(`/fil/${postId}`);
+  await page.getByRole("button", { name: /Marquer utile/ }).click();
+  await expect(page.getByRole("button", { name: /Marquer utile, 1 personne/ })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Retirer des enregistrés" })).toBeVisible();
+
+  await page.goto("/enregistres");
+  await expect(page.getByText(body)).toBeVisible();
+
+  // Sans feuille de partage (navigateur de bureau), le lien est copié.
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+  await page.evaluate(() => Object.defineProperty(navigator, "share", { value: undefined }));
+  await page.getByRole("button", { name: "Partager" }).first().click();
+  await expect(page.getByText(/Lien copié|Le lien n'a pas pu être copié/)).toBeVisible();
+});

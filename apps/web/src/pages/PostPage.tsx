@@ -16,7 +16,7 @@ import {
   listPostFeedback,
   listPostReplies,
   markPostReplySolution,
-  sharePost,
+  setPostBookmark,
   togglePostReaction,
 } from "../lib/chat/api.js";
 import { Avatar } from "../components/ui/Avatar.js";
@@ -118,13 +118,13 @@ export function PostPage() {
     }
   }
 
-  async function handleShare() {
+  async function handleSave() {
     if (!post) return;
     try {
-      await sharePost(post.id);
-      toast.show(fr.feed.shared, "success");
+      const result = await setPostBookmark(post.id, !post.savedByMe);
+      setPost({ ...post, savedByMe: result.savedByMe });
     } catch {
-      toast.show(fr.feed.shareError, "danger");
+      toast.show(fr.feed.saveError, "danger");
     }
   }
 
@@ -253,7 +253,7 @@ export function PostPage() {
           canFeedback={canInteract && post.format === "a_tester" && !hasGivenFeedback}
           canReport={canInteract && !post.deletedAt}
           onReact={handleReact}
-          onShare={handleShare}
+          onSave={handleSave}
           onFeedback={() => setFeedbackOpen(true)}
           onDelete={() => setDeleteOpen(true)}
           onReply={() => replyTextareaRef.current?.focus()}
