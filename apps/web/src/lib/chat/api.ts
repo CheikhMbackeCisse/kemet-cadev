@@ -26,6 +26,9 @@ import type {
   CreateReportInput,
   MeResponse,
   Message,
+  OnboardingState,
+  PersonSuggestion,
+  UpdateOnboardingInput,
   ModerationActionEntry,
   Report,
   ResolveReportInput,
@@ -160,6 +163,10 @@ export function addSpaceMember(spaceId: string, handle: string) {
     method: "POST",
     body: JSON.stringify({ handle }),
   });
+}
+
+export function joinSpace(spaceId: string) {
+  return request<{ joined: boolean }>(`/api/spaces/${spaceId}/join`, { method: "POST" });
 }
 
 export function removeSpaceMember(spaceId: string, profileId: string) {
@@ -367,6 +374,21 @@ export function acceptInvite(code: string) {
 
 export function getMe() {
   return request<MeResponse>("/api/me");
+}
+
+export function updateOnboarding(input: UpdateOnboardingInput) {
+  return request<{ onboarding: OnboardingState }>("/api/me/onboarding", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function getOnboardingSpaces() {
+  return request<{ items: Space[] }>("/api/me/onboarding/spaces");
+}
+
+export function getOnboardingPeople() {
+  return request<{ items: PersonSuggestion[] }>("/api/me/onboarding/people");
 }
 
 export function updateMyProfile(input: UpdateProfileInput) {

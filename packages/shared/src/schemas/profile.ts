@@ -18,6 +18,9 @@ export function isDeletedAccountHandle(handle: string): boolean {
 
 export const countryCodeSchema = z.enum(COUNTRY_CODES);
 
+/** Pays d'un profil : vide tant qu'il n'a pas été choisi, ou après la suppression du compte. */
+export const profileCountrySchema = z.union([countryCodeSchema, z.literal("")]);
+
 export const stackSchema = z.array(z.string().min(1).max(40)).max(20);
 
 export const profileRoleSchema = z.enum(["developer", "designer", "hr", "student", "project_manager", "other"]);
@@ -46,7 +49,7 @@ export const profileSchema = z.object({
   id: z.string().uuid(),
   handle: handleSchema,
   displayName: z.string(),
-  country: countryCodeSchema,
+  country: profileCountrySchema,
   role: profileRoleSchema.nullable(),
   title: z.string().nullable(),
   bio: z.string().nullable(),

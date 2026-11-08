@@ -11,6 +11,15 @@ export const profileRoleEnum = pgEnum("profile_role", [
   "other",
 ]);
 
+export const onboardingStepEnum = pgEnum("onboarding_step", [
+  "country",
+  "role",
+  "specialty",
+  "interests",
+  "spaces",
+  "people",
+]);
+
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   // Vide une fois le compte supprimé : le profil reste, anonymisé, pour que
@@ -30,6 +39,13 @@ export const profiles = pgTable("profiles", {
   // Jamais accepté du client : seul le seed en pose un.
   avatarUrl: text("avatar_url"),
   openToOpportunities: boolean("open_to_opportunities").notNull().default(false),
+  // Sujets choisis à l'onboarding, valeurs de INTERESTS (@kemet/shared). Ne
+  // servent qu'aux suggestions d'espaces et de personnes.
+  interests: text("interests").array().notNull().default([]),
+  // Écran où reprendre l'onboarding. Le parcours est terminé (ou entièrement
+  // passé) dès que onboardingCompletedAt est posé : on n'y renvoie plus.
+  onboardingStep: onboardingStepEnum("onboarding_step").notNull().default("country"),
+  onboardingCompletedAt: timestamp("onboarding_completed_at"),
   isDemo: boolean("is_demo").notNull().default(false),
   // Validation des compétitions et modération. Attribué seulement par
   // `pnpm db:promote-admin`, jamais par l'interface ni par le seed.

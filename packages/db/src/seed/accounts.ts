@@ -321,6 +321,8 @@ export async function createDemoAccounts(db: DbOrTx, passwordHash: string): Prom
         avatarUrl: avatarDataUri(demoAccount.handle),
         openToOpportunities: demoAccount.openToOpportunities,
         isDemo: true,
+        // Un compte de démonstration ouvre directement le fil, jamais l'onboarding.
+        onboardingCompletedAt: new Date(),
       })
       .returning({ id: profiles.id });
     ids[demoAccount.key] = profile!.id;

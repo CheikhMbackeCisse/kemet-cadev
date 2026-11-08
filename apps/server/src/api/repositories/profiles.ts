@@ -30,14 +30,15 @@ export async function listCredentials(db: Db, profileId: string) {
 export async function upsertProfile(db: Db, userId: string, patch: UpdateProfileInput) {
   const existing = await findProfileByUserId(db, userId);
   if (!existing) {
-    // Validé par l'appelant : handle, displayName et country sont requis à la création.
+    // Validé par l'appelant : handle et displayName sont requis à la création.
+    // Pays vide tant qu'il n'est pas choisi, comme pour un compte supprimé.
     const [created] = await db
       .insert(profiles)
       .values({
         userId,
         handle: patch.handle!,
         displayName: patch.displayName!,
-        country: patch.country!,
+        country: patch.country ?? "",
         role: patch.role,
         title: patch.title,
         bio: patch.bio,

@@ -15,10 +15,11 @@ export async function createPublicSpace(
   request: APIRequestContext,
   name: string,
   slug: string,
+  description?: string,
 ): Promise<CreatedSpace> {
   for (let attempt = 1; ; attempt++) {
     const response = await request.post("/api/spaces", {
-      data: { name, slug, visibility: "public" },
+      data: { name, slug, visibility: "public", description },
     });
     if (response.status() === 429 && attempt < MAX_ATTEMPTS) {
       const waitMs = (Number(response.headers()["retry-after"] ?? "60") + 1) * 1000;

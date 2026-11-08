@@ -70,7 +70,8 @@ export function SettingsPage() {
       await updateMyProfile({
         handle: handle.toLowerCase(),
         displayName,
-        country,
+        // Un pays jamais choisi (onboarding passé) reste vide sans bloquer le reste.
+        ...(country && { country }),
         role: role === "none" ? null : (role as ProfileRole),
         title: specialty.trim() || null,
       });
@@ -160,7 +161,6 @@ export function SettingsPage() {
                   : missingFieldsReason([
                       [handle, fr.auth.handleLabel],
                       [displayName, fr.auth.displayNameLabel],
-                      [country, fr.auth.countryLabel],
                     ])
               }
             />

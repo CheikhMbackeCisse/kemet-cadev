@@ -14,6 +14,7 @@ import { buildAccountExport } from "../repositories/account-export.js";
 import { findPasswordHash, listSocialProviders } from "../repositories/account-deletion.js";
 import { serializeCredential, serializeProfile } from "../serializers.js";
 import type { AppDeps } from "../app.js";
+import { serializeOnboarding } from "./onboarding.js";
 
 export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): void {
   app.get("/api/me", async (request) => {
@@ -37,6 +38,7 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       isSuspended: profile?.suspendedAt != null,
       hasPassword: passwordHash !== null,
       socialProviders,
+      onboarding: profile ? serializeOnboarding(profile) : null,
     };
   });
 
@@ -69,8 +71,10 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       // profil existant est bloquée, comme toute autre écriture.
       if (existing?.suspendedAt) throw forbidden("Ce compte est suspendu.");
 
-      if (!existing && (!patch.handle || !patch.country || !patch.displayName)) {
-        throw badRequest("L'identifiant, le pays et le nom affiché sont requis à la création du profil.");
+      // Le pays se choisit au premier écran de l'onboarding, qui peut se
+      // passer : il n'est pas requis ici.
+      if (!existing && (!patch.handle || !patch.displayName)) {
+        throw badRequest("L'identifiant et le nom affiché sont requis à la création du profil.");
       }
 
       if (patch.openToOpportunities) {
