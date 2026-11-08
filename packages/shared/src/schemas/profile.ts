@@ -56,6 +56,7 @@ export const profileSchema = z.object({
   stack: z.array(z.string()),
   githubUrl: z.string().nullable(),
   avatarUrl: z.string().nullable(),
+  bannerUrl: z.string().nullable(),
   openToOpportunities: z.boolean(),
   isDemo: z.boolean(),
   level: levelSchema,
