@@ -405,6 +405,10 @@ describe.skipIf(!databaseUrl)("Compétitions (base Postgres réelle)", () => {
     expect(detail.json().competition.reviewNote).toBeNull();
     const hidden = await app.inject({ method: "GET", url: "/api/competitions/en-attente" });
     expect(hidden.statusCode).toBe(404);
+    for (const path of ["teams", "submissions", "results"]) {
+      const hiddenPart = await app.inject({ method: "GET", url: `/api/competitions/en-attente/${path}` });
+      expect(hiddenPart.statusCode).toBe(404);
+    }
 
     const teams = await app.inject({ method: "GET", url: "/api/competitions/cadev-test/teams" });
     expect(teams.statusCode).toBe(200);
