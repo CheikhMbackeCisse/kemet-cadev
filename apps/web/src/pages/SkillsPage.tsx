@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import type { SkillSummary } from "@kemet/shared";
 import { RailPage } from "../components/layout/RailPage.js";
 import { SkillCard } from "../components/skills/SkillCard.js";
+import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { Input } from "../components/ui/Input.js";
@@ -18,7 +19,10 @@ export function SkillsPage() {
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
   const [skills, setSkills] = useState<SkillSummary[]>([]);
+  // Squelettes au premier chargement seulement : pendant une recherche, les
+  // résultats précédents restent affichés.
   const [loading, setLoading] = useState(true);
+  const [loadedOnce, setLoadedOnce] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -33,7 +37,11 @@ export function SkillsPage() {
     listSkills(search)
       .then((page) => current && setSkills(page.items))
       .catch(() => current && setError(true))
-      .finally(() => current && setLoading(false));
+      .finally(() => {
+        if (!current) return;
+        setLoading(false);
+        setLoadedOnce(true);
+      });
     return () => {
       current = false;
     };
@@ -73,7 +81,7 @@ export function SkillsPage() {
         />
       </div>
 
-      {loading ? (
+      {loading && !loadedOnce ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[0, 1, 2].map((index) => (
             <Skeleton key={index} className="h-56 w-full rounded-card" />
@@ -83,7 +91,12 @@ export function SkillsPage() {
         <ErrorState message={fr.skills.loadingError} retry={{ label: fr.chat.retry, onClick: () => load(appliedQuery) }} />
       ) : skills.length === 0 ? (
         appliedQuery ? (
-          <p className="text-base text-text-2">{fr.skills.searchNoResult(appliedQuery)}</p>
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-base text-text-2">{fr.skills.searchNoResult(appliedQuery)}</p>
+            <Button variant="secondary" onClick={() => setQuery("")}>
+              {fr.skills.clearSearch}
+            </Button>
+          </div>
         ) : (
           <EmptyState
             icon={Star}

@@ -37,6 +37,7 @@ Le thème suit le réglage du système (`prefers-color-scheme`), avec un choix m
 | `--level-scribe` | #0E7490 | #3CC0D8 | Icône et nom du niveau Scribe |
 | `--level-architecte` | #1265DD | #7FB0F7 | Icône et nom du niveau Architecte |
 | `--level-legende` | #7C3AED | #B794F6 | Icône et nom du niveau Légende |
+| `--rating-star` | #A14F00 | #E8A33C | Étoile remplie de la note d'un skill |
 | `--assistant-bg` | #F5F8FF | #121C30 | Fond du bloc de réponse de l'assistant |
 | `--assistant-border` | #D0E2FF | #26406E | Bordure du bloc de l'assistant |
 | `--success` | #1E8205 | #4CC26A | Vérifié, actif |
@@ -74,14 +75,14 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
   - 16 px (`--radius-panel`) : dialogues, feuilles, menus, popovers ;
   - pastilles et avatars entièrement arrondis.
 - Un élément posé dans un autre garde un rayon concentrique : rayon extérieur moins le rembourrage, 6 px au minimum (les éléments d'un menu de 16 px avec 4 px de rembourrage ont 12 px).
-- Cadres : un cadre sépare un objet du reste de la page (champ de saisie, bloc de code, réponse de `@kemet`, menu flottant, dialogue, feuille, image). Il ne sert jamais à regrouper : les éléments d'une liste (posts, skills, projets, travaux, compétitions, équipes, soumissions) sont des lignes séparées par un filet `--border`, et les pastilles sont remplies, sans bordure.
+- Cadres : un cadre sépare un objet du reste de la page (champ de saisie, bloc de code, réponse de `@kemet`, menu flottant, dialogue, feuille, image). Il ne sert jamais à regrouper : les éléments d'une liste (posts, projets, travaux, compétitions, équipes, soumissions) sont des lignes séparées par un filet `--border`, sauf les skills, en cartes (voir « Skill »), et les pastilles sont remplies, sans bordure.
 - Ombres : aucune sur les éléments posés dans la page. Une seule ombre douce pour ce qui flotte (menus, fenêtres, notifications). Un menu porte en plus un filet `--border-strong` : en clair, son fond `--surface` se distingue à peine du blanc de la page.
 
 ## Mise en page
 
 **Bureau (à partir de 1024 px) :**
 
-- Barre d'activité : 56 px, sur le modèle de VS Code. Le logo (vers le fil), puis une icône par section (Fil, Travaux, Salons, Skills, Projets, Compétitions), et au pied Confidentialité, Paramètres et le compte (avatar qui ouvre le menu du compte, ou "Se connecter" pour un visiteur). Infobulle au survol et au focus, indicateur de 2 px `--primary` à gauche de l'icône active. Ses sections se parcourent aux flèches haut et bas, Début et Fin, en un seul arrêt de tabulation ; le logo et le compte sont deux arrêts à part. L'indicateur marque la page ouverte, le fond `--accent-soft` le panneau déplié. Une section qui a des non-lus porte une pastille `--primary` au texte blanc de 12 px, en haut à droite de l'icône, plafonnée à "9+" et annoncée dans le nom de l'icône. Kemet Pro n'y figure pas.
+- Barre d'activité : 56 px, sur le modèle de VS Code. Le logo (vers le fil), puis une icône par section (Fil, Travaux, Salons, Skills, Projets, Compétitions), et au pied Confidentialité, Paramètres, l'icône "Données de démonstration" quand elle est active, et le compte (avatar qui ouvre le menu du compte, ou "Se connecter" pour un visiteur). Infobulle au survol et au focus, indicateur de 2 px `--primary` à gauche de l'icône active. Ses sections se parcourent aux flèches haut et bas, Début et Fin, en un seul arrêt de tabulation ; le logo et le compte sont deux arrêts à part. L'indicateur marque la page ouverte, le fond `--accent-soft` le panneau déplié. Une section qui a des non-lus porte une pastille `--primary` au texte blanc de 12 px, en haut à droite de l'icône, plafonnée à "9+" et annoncée dans le nom de l'icône. Kemet Pro n'y figure pas.
 - Panneau latéral : 264 px, titré du nom de la section. Les salons y montrent leurs espaces en arbre : un espace par ligne (monogramme et nom, point de non-lus), l'espace ouvert déplié sur ses salons, "Créer un espace" en pied. Un clic sur l'icône de la section ouverte, ou Ctrl+B (Cmd+B sur Mac), le replie et le rouvre ; le choix est mémorisé. Replié par défaut sous 1280 px. Une page sans panneau garde ses icônes en liens, et Ctrl+B y garde son sens habituel. Pas de redimensionnement à la souris.
 - Contenu : fluide. Toutes les pages partagent ce cadre (`AppFrame`).
 - Panneau de détails à droite : 300 px, affiché en permanence sur grand écran. Sous 1024 px il devient une feuille, ouverte depuis la barre du haut. Il n'est pas refermable sur grand écran : sa bascule encombrait la barre du haut, et une fois fermé rien ne permettait de le rouvrir.
@@ -107,7 +108,7 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 - **Fil d'un salon :** il s'ouvre sur le dernier message, ou sur le premier message non lu précédé d'un séparateur "Nouveaux messages" : traits en `--primary`, libellé en `--link`, qui garde 4,5:1 sur `--bg` en sombre (seul séparateur coloré, il signale une position et non une erreur). Les messages plus anciens se chargent en remontant, sans déplacer ce qui est à l'écran ni les annoncer comme nouveaux ; un bouton "Charger les messages précédents" en tête de liste les rend joignables au clavier et au lecteur d'écran. Un message qui arrive pendant qu'on lit plus haut ne fait pas défiler la liste : un bouton flottant "Aller au dernier message" apparaît, sur fond `--surface` ; il rend le focus à la liste, ou au composeur s'il est activé au clavier (au toucher, le clavier virtuel cacherait les messages atteints). Le composeur garde un brouillon par salon et le focus après l'envoi ; son bouton d'envoi fait 44 px sur mobile.
 - **Bloc de réponse de l'assistant :** fond `--assistant-bg`, bordure `--assistant-border`, icône Kemet, nom "kemet", ligne "Basé sur le skill wave-paiements d'Awa Ndiaye" (lien vers le skill et le profil), mention de ce que l'assistant a lu, boutons "Utile" et "Pas utile". C'est le seul bloc coloré de l'interface.
 - **Échec de l'assistant :** jamais dans le fil du salon, où il se lirait comme une réponse. Notice au-dessus du composeur, vue seulement par la personne qui a posé la question : fond `--danger-soft`, icône en `--danger`, texte en `--text` de taille normale, bouton "Reposer la question" (masqué pour un quota atteint) et croix pour la masquer. Le focus revient au composeur après l'un ou l'autre.
-- **Post du fil :** ton détendu, texte court, images et mèmes, code. Étiquette de format seulement si l'auteur en a choisi un (Astuce, À tester, Question). Actions, sous le texte : répondre, cœur, enregistrer, partager, et "J'ai testé" sur les posts À tester ; la date en temps relatif ("il y a 3 h", date complète au survol) sur la ligne du dessous. Nos propres icônes et notre propre mise en page : rien qui rappelle X. Un post n'est pas une carte : c'est une ligne de la colonne de lecture, séparée de la suivante par un filet `--border`, fond `--surface-2` au survol sur bureau seulement. Même composant (`PostCard`) dans le fil et sur la page du post. Sur un post, "Utile" se marque d'un cœur (`--danger`, rempli une fois donné) : même sens et mêmes points qu'avant, "Utile" en `title` et dans l'`aria-label`. Les réponses de `@kemet` gardent le pouce levé. Enregistrer (signet, rempli une fois fait) range le post dans "Enregistrés", sous Moi. Partager ouvre la feuille de partage du téléphone, sinon copie le lien ; il n'y a pas de republication. Les étincelles restent l'icône de Kemet Pro.
+- **Post du fil :** ton détendu, texte court, images et mèmes, code. Étiquette de format seulement si l'auteur en a choisi un (Astuce, À tester, Question). Actions, sous le texte : répondre, cœur, enregistrer, partager, et "J'ai testé" sur les posts À tester ; la date en temps relatif ("il y a 3 h", date complète au survol) sur la ligne du dessous. Un post n'est pas une carte : c'est une ligne de la colonne de lecture, séparée de la suivante par un filet `--border`, fond `--surface-2` au survol sur bureau seulement. Même composant (`PostCard`) dans le fil et sur la page du post. Sur un post, "Utile" se marque d'un cœur (`--danger`, rempli une fois donné) : même sens et mêmes points qu'avant, "Utile" en `title` et dans l'`aria-label`. Les réponses de `@kemet` gardent le pouce levé. Enregistrer (signet, rempli une fois fait) range le post dans "Enregistrés", sous Moi. Partager ouvre la feuille de partage du téléphone, sinon copie le lien ; il n'y a pas de republication. Les étincelles restent l'icône de Kemet Pro.
 - **Mention "Données de démonstration" :** tant que `DEMO_CONTENT_NOTICE` vaut `true`, une icône `FlaskConical` en `--subtle` au pied de la barre d'activité sur bureau, une ligne en 12 px au bas de la page Moi sur mobile, toutes deux liées à `/donnees-de-demo`.
 - **Skill :** carte, sur le modèle des Quêtes de Discord, en grille (une colonne sur mobile, deux puis trois sur bureau) : bannière de 80 px, icône du domaine posée à cheval, nom, auteur, deux lignes de description, étoiles (moyenne et nombre d'avis, "Pas encore noté" seulement sans aucune note), nombre de réponses de @kemet qui l'ont retenu en format court (869, 11,2k), bouton "Voir". La carte entière est un lien, bordure `--border`, `--border-strong` au survol, sans ombre. La bannière est un dégradé propre au domaine du skill (paiements, IA, données, infra, front, back, autre, déduit de ses tags et de son texte) avec un motif de caractères de code en blanc à 20 % : deuxième exception à l'interdit des dégradés après les écrans de compte, demandée pour ces seules bannières, sans aucun texte posé dessus. La page d'un skill reprend la même bannière en tête. Une barre de recherche au-dessus de la grille. Les étoiles n'existent que sur les skills.
 - **Onglets :** un seul composant (`Tabs`) partout. L'onglet actif est souligné de 2 px `--primary`, texte `--text` ; les autres sont en `--muted`. Pas de conteneur gris ni de fond plein sous l'onglet actif.
@@ -141,7 +142,7 @@ Chaque écran et chaque liste a quatre états dessinés :
 
 Ces choix font "interface générée par une IA" :
 
-- dégradés décoratifs, effet verre dépoli, halos lumineux (une seule exception, les écrans de compte, voir ci-dessous) ;
+- dégradés décoratifs, effet verre dépoli, halos lumineux (deux exceptions, les écrans de compte et les bannières de skill, voir ci-dessous) ;
 - emojis utilisés comme icônes ;
 - cartes toutes identiques avec la même ombre grise ;
 - bordure colorée à gauche des cartes ;
@@ -150,7 +151,9 @@ Ces choix font "interface générée par une IA" :
 - animations d'apparition sur chaque section ;
 - polices Inter, Roboto, Arial.
 
-### La seule exception : les écrans de compte
+### Les exceptions
+
+#### Écrans de compte
 
 Les écrans de compte (connexion, inscription, mot de passe oublié, réinitialisation)
 ont droit à un fond de marque avec dégradé et halos lumineux. L'interdit a été levé
@@ -170,10 +173,19 @@ animation continue : des symboles de code qui montent lentement dans les
 marges, demandés explicitement pour cet écran, arrêtés par
 `prefers-reduced-motion`.
 
+#### Bannières de skill
+
+La bannière en tête d'une carte de skill et de la page d'un skill est un
+dégradé propre au domaine du skill, avec un motif de caractères de code,
+demandé explicitement le 08/11/2026. Voir
+`docs/adr/0028-bannieres-de-skill.md`. Le dégradé reste dans la bannière :
+aucun texte n'y est posé, le reste de la carte est ordinaire, et aucun autre
+élément du produit n'en bénéficie.
+
 ## Mouvement
 
 - 150 à 200 ms, uniquement pour montrer un changement d'état (ouverture d'un tiroir, envoi d'un message, nouvelle réaction).
-- Une seule exception, l'écran d'accueil d'une première visite (voir « La seule exception : les écrans de compte »).
+- Une seule exception, l'écran d'accueil d'une première visite (voir « Les exceptions »).
 - `prefers-reduced-motion` respecté partout.
 
 ## Accessibilité

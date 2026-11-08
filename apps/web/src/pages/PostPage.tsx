@@ -123,6 +123,7 @@ export function PostPage() {
     try {
       const result = await setPostBookmark(post.id, !post.savedByMe);
       setPost({ ...post, savedByMe: result.savedByMe });
+      toast.show(result.savedByMe ? fr.feed.savedToast : fr.feed.unsavedToast, "success");
     } catch {
       toast.show(fr.feed.saveError, "danger");
     }

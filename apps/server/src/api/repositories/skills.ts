@@ -46,7 +46,9 @@ export async function createSkill(db: Db, authorId: string, input: CreateSkillIn
       content: input.content,
       tags: input.tags,
       visibility: input.visibility,
-      spaceId: input.spaceId ?? null,
+      // Un skill qui n'est pas limité à un espace n'en garde aucun : sinon la
+      // liste le montrerait aux membres de cet espace.
+      spaceId: input.visibility === "space" ? (input.spaceId ?? null) : null,
     })
     .returning();
   return skill!;
@@ -62,6 +64,7 @@ export async function updateSkill(db: Db, skillId: string, input: UpdateSkillInp
       ...(input.tags !== undefined ? { tags: input.tags } : {}),
       ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
       ...(input.spaceId !== undefined ? { spaceId: input.spaceId } : {}),
+      ...(input.visibility !== undefined && input.visibility !== "space" ? { spaceId: null } : {}),
     })
     .where(eq(skills.id, skillId))
     .returning();
@@ -78,8 +81,8 @@ function escapeLike(value: string) {
 
 /**
  * `profileId` nul pour un visiteur : seuls les skills publics. Avec une
- * recherche : plein texte sur `search_vector` (comme pour @kemet), plus le
- * début d'un nom, que le plein texte ne trouve pas ("wav" pour "wave").
+ * recherche : plein texte sur `search_vector` (comme pour @kemet), plus un
+ * morceau du nom, que le plein texte ne trouve pas ("wav" pour "wave").
  */
 export async function listSkillsForViewer(
   db: Db,
@@ -90,7 +93,7 @@ export async function listSkillsForViewer(
   const visibility = !profileId
     ? eq(skills.visibility, "public")
     : memberSpaceIds.length > 0
-      ? or(eq(skills.visibility, "public"), eq(skills.authorId, profileId), inArray(skills.spaceId, memberSpaceIds))
+      ? or(eq(skills.visibility, "public"), eq(skills.authorId, profileId), and(eq(skills.visibility, "space"), inArray(skills.spaceId, memberSpaceIds)))
       : or(eq(skills.visibility, "public"), eq(skills.authorId, profileId));
   const trimmed = query?.trim();
   const matches = trimmed

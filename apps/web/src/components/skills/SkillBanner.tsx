@@ -44,7 +44,7 @@ export function SkillBanner({ domain, seed, className }: SkillBannerProps) {
   const glyphs = Array.from({ length: 6 }, (_, index) => CODE_MOTIF[(offset + index * 3) % CODE_MOTIF.length]!);
   return (
     <div aria-hidden="true" className={cn("relative overflow-hidden", DOMAIN_GRADIENTS[domain], className)}>
-      <div className="absolute inset-0 grid grid-cols-3 place-items-center font-mono text-md font-semibold text-white/20">
+      <div className="absolute inset-0 grid grid-cols-3 place-items-center font-mono text-base font-semibold text-white/20">
         {glyphs.map((glyph, index) => (
           <span key={index} className={index % 2 === offset % 2 ? "translate-y-2" : "-translate-y-2"}>
             {glyph}

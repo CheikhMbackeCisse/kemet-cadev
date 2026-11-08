@@ -245,4 +245,35 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     const detail = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
     expect(detail.json().skill.usageCount).toBe(2);
   });
+
+  it("ne montre jamais un skill privé d'un autre dans la liste ni la recherche, même avec un ancien espace", async () => {
+    const author = await createMember("private-author@test.kemet", "autrice");
+    const member = await createMember("private-member@test.kemet", "membre");
+    const space = (
+      await app.inject({
+        method: "POST",
+        url: "/api/spaces",
+        headers: { cookie: author },
+        payload: { name: "atelier", slug: "atelier", visibility: "public" },
+      })
+    ).json().space as { id: string };
+    await app.inject({ method: "POST", url: `/api/spaces/${space.id}/join`, headers: { cookie: member } });
+    await createSkill(author, { slug: "secret-interne", name: "secret-interne", visibility: "space", spaceId: space.id });
+    await app.inject({
+      method: "PATCH",
+      url: "/api/skills/secret-interne",
+      headers: { cookie: author },
+      payload: { visibility: "private" },
+    });
+
+    for (const cookie of [member, undefined]) {
+      const headers = cookie ? { cookie } : {};
+      const list = await app.inject({ method: "GET", url: "/api/skills", headers });
+      expect(list.json().items.map((skill: { slug: string }) => skill.slug)).not.toContain("secret-interne");
+      const search = await app.inject({ method: "GET", url: "/api/skills?q=secret", headers });
+      expect(search.json().items).toEqual([]);
+    }
+    const own = await app.inject({ method: "GET", url: "/api/skills?q=secret", headers: { cookie: author } });
+    expect(own.json().items.map((skill: { slug: string }) => skill.slug)).toEqual(["secret-interne"]);
+  });
 });

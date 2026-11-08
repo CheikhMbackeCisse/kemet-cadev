@@ -131,6 +131,7 @@ export function FeedPage() {
       setPosts((current) =>
         current.map((post) => (post.id === postId ? { ...post, savedByMe: result.savedByMe } : post)),
       );
+      toast.show(result.savedByMe ? fr.feed.savedToast : fr.feed.unsavedToast, "success");
     } catch {
       toast.show(fr.feed.saveError, "danger");
     }

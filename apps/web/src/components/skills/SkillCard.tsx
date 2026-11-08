@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { SkillSummary } from "@kemet/shared";
 import { formatCount } from "../../lib/formatCount.js";
 import { skillDomain } from "../../lib/skills/skillDomain.js";
@@ -11,16 +12,20 @@ import { SkillRating } from "./SkillRating.js";
  */
 export function SkillCard({ skill }: { skill: SkillSummary }) {
   const domain = skillDomain(skill);
+  const nameId = useId();
   return (
     <a
       href={`/skills/${skill.slug}`}
+      aria-labelledby={nameId}
       className="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-bg transition-colors duration-150 hover:border-border-strong"
     >
       <SkillBanner domain={domain} seed={skill.slug} className="h-20" />
       <div className="flex flex-1 flex-col gap-2 px-4 pb-4">
         <SkillDomainIcon domain={domain} className="-mt-6" />
         <div className="flex flex-col gap-0.5">
-          <span className="line-clamp-2 break-words text-base font-semibold text-text">{skill.name}</span>
+          <span id={nameId} className="line-clamp-2 break-words text-base font-semibold text-text">
+            {skill.name}
+          </span>
           <span className="truncate text-xs text-subtle">{fr.skills.byAuthor(skill.authorDisplayName)}</span>
         </div>
         <p className="line-clamp-2 text-base text-text-2">{skill.description}</p>

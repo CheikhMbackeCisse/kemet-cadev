@@ -105,7 +105,7 @@ export function SkillPage() {
       <div className="flex items-center justify-between">
         <a
           href="/skills"
-          className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
+          className="inline-flex items-center gap-1.5 text-base text-link hover:underline"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           {fr.skills.back}
@@ -113,7 +113,7 @@ export function SkillPage() {
       </div>
 
       <div className="overflow-hidden rounded-card border border-border">
-        <SkillBanner domain={skillDomain(skill)} seed={skill.slug} className="h-28" />
+        <SkillBanner domain={skillDomain(skill)} seed={skill.slug} className="h-20" />
         <div className="px-4 pb-4">
           <SkillDomainIcon domain={skillDomain(skill)} className="-mt-6" />
           <div className="mt-2 flex items-start justify-between gap-2">
@@ -148,7 +148,7 @@ export function SkillPage() {
       {status === "visitor" ? (
         <a
           href="/connexion"
-          className="inline-flex h-control max-md:h-control-mobile items-center justify-center self-start rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+          className="inline-flex h-control max-md:h-control-mobile items-center justify-center self-start rounded-control bg-primary px-4 text-base font-medium text-white hover:bg-primary-hover"
         >
           {fr.skills.askKemetSignIn}
         </a>
@@ -184,7 +184,7 @@ export function SkillPage() {
         )}
       </div>
       {actionError && (
-        <p className="text-sm text-danger" role="alert">
+        <p className="text-base text-danger" role="alert">
           {actionError}
         </p>
       )}

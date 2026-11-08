@@ -4,10 +4,11 @@ import type { PostSummary } from "@kemet/shared";
 import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { Button } from "../components/ui/Button.js";
+import { Dialog } from "../components/ui/Dialog.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { useToast } from "../components/ui/Toast.js";
-import { listBookmarkedPosts, setPostBookmark, togglePostReaction } from "../lib/chat/api.js";
+import { deletePost, listBookmarkedPosts, setPostBookmark, togglePostReaction } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
@@ -17,7 +18,8 @@ import { fr } from "../i18n/fr.js";
  * trop se rattrape sur place.
  */
 export function SavedPostsPage() {
-  const { status, isSuspended } = useSession();
+  const { status, isSuspended, profile } = useSession();
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const toast = useToast();
   const [posts, setPosts] = useState<PostSummary[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -61,7 +63,9 @@ export function SavedPostsPage() {
 
   async function handleSave(post: PostSummary) {
     try {
-      update(post.id, await setPostBookmark(post.id, !post.savedByMe));
+      const result = await setPostBookmark(post.id, !post.savedByMe);
+      update(post.id, result);
+      toast.show(result.savedByMe ? fr.feed.savedToast : fr.feed.unsavedToast, "success");
     } catch {
       toast.show(fr.feed.saveError, "danger");
     }
@@ -72,6 +76,18 @@ export function SavedPostsPage() {
       update(post.id, await togglePostReaction(post.id));
     } catch {
       toast.show(fr.feed.reactError, "danger");
+    }
+  }
+
+  async function handleDelete() {
+    if (!postToDelete) return;
+    const postId = postToDelete;
+    setPostToDelete(null);
+    try {
+      await deletePost(postId);
+      setPosts((current) => current?.filter((post) => post.id !== postId) ?? null);
+    } catch {
+      toast.show(fr.feed.postDeleteError, "danger");
     }
   }
 
@@ -91,7 +107,11 @@ export function SavedPostsPage() {
           <PostCardSkeleton />
         </div>
       ) : posts.length === 0 ? (
-        <EmptyState icon={Bookmark} message={fr.saved.empty} />
+        <EmptyState
+          icon={Bookmark}
+          message={fr.saved.empty}
+          action={{ label: fr.saved.goToFeed, onClick: () => (window.location.href = "/fil") }}
+        />
       ) : (
         <div className="flex flex-col gap-3">
           <ul className="flex flex-col divide-y divide-border">
@@ -103,13 +123,14 @@ export function SavedPostsPage() {
                 bodyHref={`/fil/${post.id}`}
                 replyHref={`/fil/${post.id}`}
                 canInteract={canInteract}
-                isOwnPost={false}
-                canFeedback={false}
-                canReport={false}
+                isOwnPost={profile?.id === post.authorId && !post.deletedAt}
+                canFeedback={canInteract && post.format === "a_tester"}
+                canReport={canInteract && !post.deletedAt}
                 onReact={() => void handleReact(post)}
                 onSave={() => void handleSave(post)}
-                onFeedback={() => {}}
-                onDelete={() => {}}
+                // Le retour structuré se donne depuis la page du post.
+                onFeedback={() => (window.location.href = `/fil/${post.id}`)}
+                onDelete={() => setPostToDelete(post.id)}
               />
             ))}
           </ul>
@@ -120,6 +141,21 @@ export function SavedPostsPage() {
           )}
         </div>
       )}
+      <Dialog
+        open={postToDelete !== null}
+        onOpenChange={(open) => !open && setPostToDelete(null)}
+        title={fr.feed.delete}
+        description={fr.feed.deleteConfirm}
+      >
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setPostToDelete(null)}>
+            {fr.feed.cancel}
+          </Button>
+          <Button variant="danger" onClick={() => void handleDelete()}>
+            {fr.feed.delete}
+          </Button>
+        </div>
+      </Dialog>
     </ReadingPage>
   );
 }
