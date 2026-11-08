@@ -184,10 +184,7 @@ export function ModerationPage() {
   return (
     <RailPage className="gap-6 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
-        <div>
-          <h1 className="text-lg font-bold text-text">{fr.moderation.title}</h1>
-          <p className="text-sm text-subtle">{fr.moderation.subtitle}</p>
-        </div>
+        <h1 className="text-lg font-bold text-text">{fr.moderation.title}</h1>
         <div className="flex items-center gap-2">
           <AccountMenu />
         </div>

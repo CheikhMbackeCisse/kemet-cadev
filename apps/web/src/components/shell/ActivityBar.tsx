@@ -4,6 +4,7 @@ import { cn } from "../../lib/cn.js";
 import { KemetSymbol } from "../ui/KemetSymbol.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { AccountMenu } from "./AccountMenu.js";
+import { ActivityBarDemoNotice } from "./DemoNotice.js";
 import { RAIL_FOOTER_NAV, RAIL_NAV, SETTINGS_NAV, type RailNavItem } from "./railNav.js";
 import { SIDE_PANEL_ID, useSidePanel } from "./sidePanel.js";
 
@@ -146,6 +147,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
         </ul>
       </nav>
 
+      <ActivityBarDemoNotice />
       <div className="mt-2 flex w-full justify-center">
         <AccountMenu variant="activityBar" />
       </div>

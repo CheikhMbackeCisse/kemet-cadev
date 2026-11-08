@@ -1,3 +1,4 @@
+import { loadSiteConfig, type SiteConfig } from "../config/site-config.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import multipart from "@fastify/multipart";
@@ -49,6 +50,7 @@ export interface AppDeps {
   assistant?: AssistantOrchestrator;
   authConfig?: AuthConfig;
   privacyContact?: PrivacyContact | null;
+  siteConfig?: SiteConfig;
   antiSpamConfig?: AntiSpamConfig;
   workMatcher?: WorkMatcher;
 }
@@ -69,6 +71,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const authConfig = deps.authConfig ?? loadAuthConfig();
   const privacyContact = deps.privacyContact === undefined ? loadPrivacyContact() : deps.privacyContact;
   const antiSpamConfig = deps.antiSpamConfig ?? loadAntiSpamConfig();
+  const siteConfig = deps.siteConfig ?? loadSiteConfig();
   // Sans fournisseur d'IA, la mise en relation garde la recherche plein texte.
   const workMatcher =
     deps.workMatcher ?? new WorkMatcher(deps.db, new UnavailableLlmProvider(), new FullTextWorkRetriever(deps.db));
@@ -119,6 +122,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
     // Public : la page de confidentialité est lisible avant l'inscription.
     app.get("/api/privacy-contact", async () => ({ contact: privacyContact }));
+
+    // Public : réglages d'affichage valables pour tous, visiteur compris.
+    app.get("/api/site-config", async () => siteConfig);
 
     const authHandler = toNodeHandler(deps.auth);
     app.register(async (scope) => {

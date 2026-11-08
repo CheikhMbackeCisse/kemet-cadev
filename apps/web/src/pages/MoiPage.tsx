@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import type { PublicProfileResponse } from "@kemet/shared";
 import { RailPage } from "../components/layout/RailPage.js";
+import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
 import { MOI_ITEMS } from "../components/shell/mobileTabs.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
@@ -139,6 +140,7 @@ export function MoiPage() {
           )}
         </ul>
       </nav>
+      <DemoNoticeLine className="px-4 lg:hidden" />
     </RailPage>
   );
 }

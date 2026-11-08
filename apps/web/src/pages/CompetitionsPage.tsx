@@ -91,10 +91,7 @@ export function CompetitionsPage() {
   return (
     <RailPage activeSection="competitions" className="gap-6 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
-        <div>
-          <h1 className="text-lg font-bold text-text">{fr.competitions.title}</h1>
-          <p className="text-sm text-subtle">{fr.competitions.subtitle}</p>
-        </div>
+        <h1 className="text-lg font-bold text-text">{fr.competitions.title}</h1>
         <div className="flex items-center gap-2">
           <a
             href={isVisitor ? SIGN_UP_PATH : "/competitions/nouvelle"}

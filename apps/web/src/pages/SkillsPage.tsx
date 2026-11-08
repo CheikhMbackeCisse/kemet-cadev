@@ -27,10 +27,7 @@ export function SkillsPage() {
   return (
     <RailPage activeSection="skills" className="gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-text">{fr.skills.title}</h1>
-          <p className="text-sm text-subtle">{fr.skills.subtitle}</p>
-        </div>
+        <h1 className="text-lg font-bold text-text">{fr.skills.title}</h1>
         <a
           href="/skills/nouveau"
           className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"

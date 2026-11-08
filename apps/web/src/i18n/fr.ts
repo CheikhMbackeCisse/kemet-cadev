@@ -235,6 +235,19 @@ export const fr = {
     visitorText: "Avec un compte, tu retrouves ici ton profil, tes enregistrements et tes messages.",
     loadError: "Ton profil n'a pas pu être chargé.",
   },
+  demo: {
+    notice: "Données de démonstration",
+    title: "Données de démonstration",
+    paragraphs: [
+      "Une partie de ce que tu vois ici a été créée pour montrer Kemet : des comptes, des posts, des travaux, des skills et leurs chiffres (notes, utilisations, abonnés).",
+      "Ces comptes sont fictifs. Leurs adresses ne reçoivent aucun email et aucun d'eux n'est administrateur. Les compétitions d'exemple le disent en tête de leur description.",
+      "Ce que tu publies avec ton propre compte est réel et le reste. Cette mention disparaîtra quand la communauté aura remplacé le contenu de démonstration.",
+    ],
+  },
+  levels: {
+    prefix: "Niveau",
+    label: (level: string) => `Niveau ${level}`,
+  },
   saved: {
     title: "Enregistrés",
     empty: "Rien d'enregistré pour l'instant. Touche le signet d'un post pour le retrouver ici.",
@@ -520,7 +533,6 @@ export const fr = {
   },
   skills: {
     title: "Skills",
-    subtitle: "Les notes que la communauté partage avec l'assistant @kemet.",
     principle:
       "Un skill est une note écrite une fois. @kemet s'en sert pour répondre et cite toujours son auteur.",
     browse: "Voir les skills",
@@ -636,7 +648,6 @@ export const fr = {
   },
   projects: {
     title: "Projets",
-    subtitle: "Les projets de la communauté, leurs demandes d'aide et de collaboration.",
     createTitle: "Publier un projet",
     createSubtitle: "Montre ce que tu construis, et demande de l'aide quand tu en as besoin.",
     create: "Publier",
@@ -700,7 +711,6 @@ export const fr = {
   },
   works: {
     title: "Travaux",
-    subtitle: "Projets de classe, stages, mémoires, applications et articles de la communauté.",
     create: "Publier un travail",
     createTitle: "Publier un travail",
     createSubtitle: "Un projet de classe, un stage, un mémoire, une application ou un article.",
@@ -888,7 +898,6 @@ export const fr = {
   },
   competitions: {
     title: "Compétitions",
-    subtitle: "Inscription, soumission, vote et jury : les compétitions de la communauté.",
     back: "Retour aux compétitions",
     salonsLink: "Salons",
     noCompetitions: "Aucune compétition pour l'instant.",
@@ -1024,7 +1033,6 @@ export const fr = {
     reportError: "Ce signalement n'a pas pu être envoyé.",
     navLink: "Modération",
     title: "Modération",
-    subtitle: "File de signalements et journal d'audit, réservés aux administrateurs.",
     queueTitle: "Signalements en attente",
     queueEmpty: "Aucun signalement en attente.",
     loadingError: "Impossible de charger la modération.",

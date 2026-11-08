@@ -39,6 +39,11 @@ export default {
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
         "level-badge-text": "var(--level-badge-text)",
+        "level-apprenti": "var(--level-apprenti)",
+        "level-artisan": "var(--level-artisan)",
+        "level-scribe": "var(--level-scribe)",
+        "level-architecte": "var(--level-architecte)",
+        "level-legende": "var(--level-legende)",
         "assistant-bg": "var(--assistant-bg)",
         "assistant-border": "var(--assistant-border)",
         success: {

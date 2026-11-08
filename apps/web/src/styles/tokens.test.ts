@@ -48,3 +48,16 @@ describe("monogramme d'espace inactif", () => {
     expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+const LEVELS = ["apprenti", "artisan", "scribe", "architecte", "legende"] as const;
+
+describe("icônes de niveau", () => {
+  // Couleur de l'icône et du nom du niveau sur le profil : texte compris.
+  it.each(Object.entries(themes))("gardent 4,5:1 sur le fond et au survol en thème %s", (_theme, source) => {
+    for (const level of LEVELS) {
+      for (const background of ["bg", "surface", "surface-2"]) {
+        expect(contrast(token(source, `level-${level}`), token(source, background))).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+});

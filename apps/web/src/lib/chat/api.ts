@@ -428,6 +428,10 @@ export function getAuthConfig() {
 }
 
 /** Responsable des données personnelles, null tant que le serveur ne le configure pas. */
+export function getSiteConfig() {
+  return request<{ demoContentNotice: boolean }>("/api/site-config");
+}
+
 export function getPrivacyContact() {
   return request<{ contact: { name: string; email: string } | null }>("/api/privacy-contact");
 }

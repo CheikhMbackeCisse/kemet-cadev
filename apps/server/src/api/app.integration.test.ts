@@ -85,6 +85,13 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
     expect(response.json()).toEqual({ contact });
   });
 
+  it("expose la mention de démonstration sans session", async () => {
+    const withNotice = buildApp({ ...deps, siteConfig: { demoContentNotice: true } });
+    const response = await withNotice.inject({ method: "GET", url: "/api/site-config" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ demoContentNotice: true });
+  });
+
   it("refuse la connexion avant la vérification de l'email", async () => {
     const email = "non-verifie@test.kemet";
     await app.inject({

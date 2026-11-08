@@ -293,7 +293,7 @@ export function UserPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-text">{profile.displayName}</h1>
-              <LevelBadge level={profile.level} />
+              <LevelBadge level={profile.level} showLabel />
             </div>
             <p className="text-sm text-subtle">
               {[profile.role ? ROLE_LABELS[profile.role] : null, profile.title]
