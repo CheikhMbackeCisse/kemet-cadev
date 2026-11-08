@@ -71,7 +71,9 @@ export async function signInBrowser(page: Page, email: string): Promise<void> {
 }
 
 /**
- * Identifiant unique par projet et par essai. Pas de troncature de
+ * Identifiant unique par projet et par essai. Le préfixe tient en 10
+ * caractères : avec "desktop" et les 13 chiffres de Date.now(), l'identifiant
+ * atteint la limite de 30 de handleSchema. Pas de troncature de
  * Date.now() : un essai et sa relance en CI, à quelques dizaines de ms
  * d'écart, entreraient en conflit sur l'identifiant.
  */

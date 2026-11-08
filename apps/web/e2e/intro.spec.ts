@@ -59,7 +59,7 @@ test("les réponses de l'accueil rejoignent le profil après l'inscription", asy
 });
 
 test("un compte existant qui se connecte ne voit jamais l'accueil", async ({ page, request }, testInfo) => {
-  const handle = uniqueHandle("e2eintroexist", testInfo.project.name);
+  const handle = uniqueHandle("e2eintrox", testInfo.project.name);
   const email = `${handle}@test.kemet`;
   await signUpVerifyAndSignIn(request, email, handle);
   await request.patch("/api/me/onboarding", { data: { completed: true } });
