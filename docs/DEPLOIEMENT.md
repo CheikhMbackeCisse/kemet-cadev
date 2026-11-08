@@ -321,6 +321,38 @@ Si le dépôt n'est pas dans `/opt/kemet` sur le serveur, le préciser avec
 Une fois l'adresse connue, une sonde UptimeRobot gratuite vérifie `/` et
 `/api/health` toutes les cinq minutes et prévient par email.
 
+## Secours : construction sur le serveur
+
+Quand les images GHCR ne sont pas disponibles (CI indisponible ou épuisée,
+aperçu d'une branche qui n'est pas encore sur `main`), le même script
+construit les images sur le serveur au lieu de les télécharger. La branche
+doit être poussée sur `origin`, sans pull request ouverte : aucun workflow
+ne se déclenche alors (`ci.yml` ne réagit qu'à `main` et aux pull requests,
+`images.yml` qu'à la CI de `main`).
+
+```
+KEMET_BUILD_ON_SERVER=1 infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev $(git rev-parse <branche>)
+```
+
+Différences avec le déploiement normal :
+
+- les quatre images (api, realtime, worker, web) sont construites une par
+  une pendant que la pile tourne, pour ménager la mémoire (4 Go, pas de
+  swap). Compter une dizaine de minutes la première fois, moins ensuite
+  grâce au cache de construction ;
+- elles portent le préfixe `kemet-local` au lieu de
+  `ghcr.io/cheikhmbackecisse/kemet`, écrit avec le commit dans
+  `.env.deployed` ;
+- le commit n'est pas noté dans `.deploy-history`. En cas d'échec, le
+  retour arrière repart donc du dernier commit déployé depuis GHCR.
+
+Le seed se lance ensuite comme d'habitude (commande de la section
+"Comptes de démonstration et administrateur", qui lit `.env.deployed`).
+
+Pour revenir aux images GHCR, il suffit d'un déploiement normal :
+`infra/deploy.sh` sans `KEMET_BUILD_ON_SERVER` réécrit `.env.deployed` sans
+le préfixe local, et supprime les images `kemet-local-*`.
+
 ## Sauvegardes
 
 Chaque nuit à 2h30 (heure de Dakar), le workflow `Backup`
