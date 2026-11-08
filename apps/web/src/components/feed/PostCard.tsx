@@ -261,13 +261,15 @@ export function PostCard({
               </IconButton>
             )}
             {canFeedback && (
+              // Icône seule sur téléphone : la rangée d'actions tient alors sur une ligne.
               <Button
                 variant="ghost"
                 className="whitespace-nowrap px-2 text-xs"
                 onClick={onFeedback}
+                aria-label={fr.feed.iTested}
               >
                 <CheckCircle2 className="size-4" aria-hidden="true" />
-                {fr.feed.iTested}
+                <span className="max-md:sr-only">{fr.feed.iTested}</span>
               </Button>
             )}
             {isOwnPost ? (

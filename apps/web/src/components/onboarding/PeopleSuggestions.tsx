@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { PersonSuggestion } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Button } from "../ui/Button.js";
+import { GlassState } from "./GlassState.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { LevelBadge } from "../ui/LevelBadge.js";
 import { followUser, getOnboardingPeople, unfollowUser } from "../../lib/chat/api.js";
@@ -9,22 +10,6 @@ import { fr } from "../../i18n/fr.js";
 
 export interface PeopleSuggestionsProps {
   onError: (message: string | null) => void;
-}
-
-function GlassState({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div
-      role={onRetry ? "alert" : undefined}
-      className="flex flex-col items-center gap-3 py-6 text-center text-base text-auth-text"
-    >
-      <p>{message}</p>
-      {onRetry && (
-        <Button type="button" variant="inverse-ghost" onClick={onRetry}>
-          {fr.onboarding.retry}
-        </Button>
-      )}
-    </div>
-  );
 }
 
 /** Sur la carte en verre dépoli de l'onboarding : texte blanc dans les deux thèmes. */

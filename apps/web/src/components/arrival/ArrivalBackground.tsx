@@ -98,14 +98,28 @@ function FloatingContentView({
   }
 }
 
+/**
+ * Place horizontale d'un élément. Sur l'accueil, le continent occupe le tiers
+ * central du bureau : les éléments sont repoussés dans les deux bandes de
+ * côté. Sur téléphone, il couvre toute la largeur ; on garde seulement les
+ * éléments entiers dans l'écran.
+ */
+function floatLeft(item: FloatingItem, motion: ArrivalMotion): { mobile: number; desktop: number } {
+  if (motion === "calm") return { mobile: item.left, desktop: item.left };
+  const desktop = item.left < 50 ? 2 + item.left * 0.44 : 76 + (item.left - 50) * 0.4;
+  return { mobile: Math.min(item.left, 84), desktop };
+}
+
 function floatStyle(item: FloatingItem, motion: ArrivalMotion): CSSProperties {
   const { amplitude, pace } = MOTION[motion];
   // Les bouts de code restent en retrait des logos, même sur l'accueil.
   const dim = motion === "rich" && item.content.kind === "code" ? 0.45 : 1;
   const low = MOTION[motion].low * dim;
   const high = MOTION[motion].high * dim;
+  const left = floatLeft(item, motion);
   return {
-    left: `${item.left}%`,
+    "--float-left": `${left.mobile}%`,
+    "--float-left-md": `${left.desktop}%`,
     top: `${item.top}%`,
     "--float-dx": `${item.dx * amplitude}px`,
     "--float-dy": `${item.dy * amplitude}px`,
@@ -182,7 +196,10 @@ export function ArrivalBackground({ motion }: { motion: ArrivalMotion }) {
       {FLOATING_ITEMS.map((item, index) => (
         <span
           key={index}
-          className={cn("arrival-float absolute text-auth-text", !item.mobile && "max-md:hidden")}
+          className={cn(
+            "arrival-float absolute left-[var(--float-left)] text-auth-text md:left-[var(--float-left-md)]",
+            !item.mobile && "max-md:hidden",
+          )}
           style={floatStyle(item, motion)}
         >
           <FloatingContentView
