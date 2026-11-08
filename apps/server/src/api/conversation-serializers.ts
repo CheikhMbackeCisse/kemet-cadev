@@ -44,6 +44,7 @@ export function serializeConversation(
           authorId: row.lastMessage.authorId,
           body: deleted ? "" : row.lastMessage.body,
           hasAttachments: !deleted && row.lastMessage.hasAttachments,
+          hasVoice: !deleted && row.lastMessage.hasVoice,
           deleted,
           createdAt: row.lastMessage.createdAt.toISOString(),
         }

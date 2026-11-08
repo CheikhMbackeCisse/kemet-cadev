@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import {
   ArrowDown,
   Hash,
@@ -28,12 +29,12 @@ import { takeDraftFocusRequest, useChannelDraft } from "../lib/chat/useChannelDr
 import { useMessageListScroll } from "../lib/chat/useMessageListScroll.js";
 import { DaySeparator, UnreadSeparator } from "../components/chat/TimelineSeparator.js";
 import { MessageAttachments } from "../components/chat/MessageAttachments.js";
+import { useVoiceMessage } from "../components/chat/VoiceRecorder.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
 import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { RichText } from "../components/content/RichText.js";
-import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { AppShell } from "../components/shell/AppShell.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { OutgoingMessages } from "../components/chat/OutgoingMessages.js";
@@ -392,6 +393,11 @@ export function SpacePage() {
     if (mentionsAssistant(body)) markAssistantNoticeSeen();
   }
 
+  const voice = useVoiceMessage({
+    channelId: activeChannelId,
+    onRecorded: (attachmentId) => send("", null, [attachmentId]),
+  });
+
   async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -477,7 +483,6 @@ export function SpacePage() {
           onSelect: switchChannel,
         }}
         activeMobileTabId="salons"
-        topBarExtra={<AccountMenu />}
         rightPanel={
           !canInteract
             ? undefined
@@ -613,7 +618,7 @@ export function SpacePage() {
                   message={fr.spaces.noSpaces}
                   action={{
                     label: fr.spaces.createTitle,
-                    onClick: () => (window.location.href = "/salons/nouveau"),
+                    onClick: () => navigate("/salons/nouveau"),
                   }}
                 />
               ) : channelsLoading ? (
@@ -676,7 +681,8 @@ export function SpacePage() {
                   )}
                   {timeline.map((item) => {
                     if (item.type === "unread") return <UnreadSeparator key={item.key} />;
-                    if (item.type === "day") return <DaySeparator key={item.key} label={item.label} />;
+                    if (item.type === "day")
+                      return <DaySeparator key={item.key} label={item.label} />;
                     const { group } = item;
                     return group.authorHandle === KEMET_HANDLE ? (
                       <AssistantMessage
@@ -761,12 +767,14 @@ export function SpacePage() {
                             <div className="min-w-0 flex-1">
                               {index === 0 && (
                                 <div className="flex flex-wrap items-baseline gap-x-2">
-                                  <ProfileLink handle={group.authorHandle} className="min-w-0 max-w-full">
-                                    <UserName
-                                      name={group.authorDisplayName}
-                                      level={group.authorLevel && authorLevel(group.authorHandle, group.authorLevel)}
-                                    />
-                                  </ProfileLink>
+                                  <UserName
+                                    name={group.authorDisplayName}
+                                    handle={group.authorHandle}
+                                    level={
+                                      group.authorLevel &&
+                                      authorLevel(group.authorHandle, group.authorLevel)
+                                    }
+                                  />
                                   <span className="text-xs text-subtle">
                                     {formatTime(message.createdAt)}
                                   </span>
@@ -983,6 +991,7 @@ export function SpacePage() {
               )}
               {composerPaste.notice}
               <div className="relative flex gap-2">
+                {voice.overlay}
                 <p className="sr-only" aria-live="polite">
                   {mentions.suggestions.length > 0
                     ? fr.chat.mentionCount(mentions.suggestions.length)
@@ -1056,17 +1065,24 @@ export function SpacePage() {
                   variant="composer"
                   className="max-md:min-h-11 flex-1 rounded-card"
                 />
-                <Button
-                  onClick={handleSend}
-                  // Garde le focus (et le clavier mobile ouvert) dans le composeur.
-                  onPointerDown={(event) => event.preventDefault()}
-                  aria-label={fr.chat.send}
-                  disabled={!activeChannelId || uploadingAttachment}
-                  className="max-md:size-control-mobile max-md:px-0"
-                >
-                  <Send className="size-4" aria-hidden="true" />
-                </Button>
+                {/* Le micro prend la place de l'envoi tant qu'il n'y a rien à envoyer :
+                    sur un téléphone étroit, le champ garde sa largeur. */}
+                {voice.button && !draft.trim() && pendingAttachments.length === 0 ? (
+                  voice.button
+                ) : (
+                  <Button
+                    onClick={handleSend}
+                    // Garde le focus (et le clavier mobile ouvert) dans le composeur.
+                    onPointerDown={(event) => event.preventDefault()}
+                    aria-label={fr.chat.send}
+                    disabled={!activeChannelId || uploadingAttachment}
+                    className="max-md:size-control-mobile max-md:px-0"
+                  >
+                    <Send className="size-4" aria-hidden="true" />
+                  </Button>
+                )}
               </div>
+              {voice.notice}
               {showAssistantNotice && (
                 <p id="assistant-notice" className="text-xs text-subtle">
                   {fr.assistantNotice.text}{" "}

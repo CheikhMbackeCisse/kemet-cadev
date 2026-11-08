@@ -52,7 +52,10 @@ ressources sont notées dans `THIRD_PARTY_LICENSES.md` par
   comme sur l'inscription, plus longue image de 17 ms.
 - Les écrans de compte perdent leur carte opaque. Le texte posé sur la carte
   utilise les couleurs `--auth-*`, jamais les tokens de texte ordinaires.
-- L'onboarding après l'inscription (`/bienvenue`) reste une page ordinaire :
-  le visiteur est alors devenu membre, il entre dans l'application.
+- L'onboarding après l'inscription (`/completer-profil` et les six écrans
+  de `/bienvenue`) a d'abord été une page ordinaire. Depuis le 08/11/2026,
+  à la demande du porteur du projet, il partage le même fond et la même carte
+  en verre, sans sous-titre ni "Étape X sur 6" visible : l'arrivée se lit
+  comme un seul parcours jusqu'au fil.
 - Le reste de la liste « Ce qui est interdit » s'applique toujours sur ces
   écrans, et aucun autre écran n'hérite de ces exceptions.

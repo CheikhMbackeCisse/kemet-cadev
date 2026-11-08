@@ -12,7 +12,7 @@ export interface VendoredAsset {
 
 export const VENDORED_ASSETS: readonly VendoredAsset[] = [
   {
-    name: "Simple Icons 16.37.0 (Python, JavaScript, React, Flutter, Node.js, Go, Docker, Linux)",
+    name: "Simple Icons 16.37.0 (Python, JavaScript, TypeScript, React, Flutter, Node.js, Go, Docker, Linux, HTML5, CSS, Kotlin, Swift)",
     source: "https://simpleicons.org",
     license: "CC0-1.0",
     usedIn: "apps/web/src/components/arrival/techLogos.ts",

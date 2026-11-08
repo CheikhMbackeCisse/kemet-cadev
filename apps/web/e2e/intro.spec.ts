@@ -4,7 +4,7 @@ import { signInBrowser, signUpVerifyAndSignIn, uniqueHandle } from "./support/ac
 test("une première visite ouvre l'accueil, Explorer sans compte mène au fil", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/decouvrir$/);
-  await expect(page.getByRole("heading", { name: "Bienvenue chez les développeurs africains" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bienvenue dans le salon des développeurs africains" })).toBeVisible();
 
   await page.getByRole("link", { name: "Explorer sans compte" }).click();
   await expect(page).toHaveURL(/\/fil$/);
@@ -27,8 +27,9 @@ test("les quatre questions mènent à l'inscription, Passer compris", async ({ p
   await expect(page.getByRole("heading", { name: "Ta nationalité" })).toBeVisible();
   await expect(page.getByText("Sénégal", { exact: true })).toBeVisible();
   await expect(page.getByText("France", { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Autre pays" }).click();
-  await expect(page.getByText("France", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Autre pays" })).toHaveCount(0);
+  await page.getByRole("searchbox").fill("France");
+  await expect(page.getByText("France", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Passer" }).click();
 
   await expect(page.getByRole("heading", { name: "Que viens-tu faire sur Kemet ?" })).toBeVisible();

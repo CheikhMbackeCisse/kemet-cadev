@@ -19,8 +19,10 @@ export function conversationExcerpt(conversation: Conversation, viewerId: string
     ? fr.messages.deletedMessage
     : last.body.trim()
       ? last.body.replace(/\s+/g, " ").trim()
-      : last.hasAttachments
-        ? fr.messages.attachmentOnly
+      : last.hasVoice
+        ? fr.chat.voiceMessage
+        : last.hasAttachments
+          ? fr.messages.attachmentOnly
         : "";
   const short = text.length > EXCERPT_LENGTH ? `${text.slice(0, EXCERPT_LENGTH)}…` : text;
   return last.authorId === viewerId ? `${fr.messages.you} : ${short}` : short;

@@ -16,7 +16,7 @@ import { profiles } from "./profiles.js";
 import { conversations } from "./messaging.js";
 
 export const spaceVisibilityEnum = pgEnum("space_visibility", ["public", "private"]);
-export const attachmentKindEnum = pgEnum("attachment_kind", ["image", "file"]);
+export const attachmentKindEnum = pgEnum("attachment_kind", ["image", "file", "voice"]);
 // Un espace "work_discussions" porte les salons de discussion des travaux :
 // il n'apparaît jamais dans la liste des espaces.
 export const spaceKindEnum = pgEnum("space_kind", ["community", "work_discussions"]);
@@ -145,6 +145,10 @@ export const messageAttachments = pgTable(
     mimeType: text("mime_type").notNull(),
     originalName: text("original_name").notNull(),
     byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+    // Message vocal seulement : durée annoncée par le navigateur qui l'a
+    // enregistré, bornée par le serveur. Un WebM de MediaRecorder n'en
+    // porte souvent aucune lisible.
+    durationMs: integer("duration_ms"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

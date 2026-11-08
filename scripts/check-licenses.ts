@@ -9,6 +9,7 @@ const FORBIDDEN = ["GPL", "AGPL", "LGPL"];
 const OFL_ALLOWED_PACKAGES = new Set([
   "@fontsource/plus-jakarta-sans",
   "@fontsource-variable/geist-mono",
+  "@fontsource-variable/space-grotesk",
 ]);
 
 // Plateforme des images de production (node:22-alpine, musl) et de la CI

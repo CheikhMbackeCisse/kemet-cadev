@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -32,7 +33,6 @@ import { useToast } from "../components/ui/Toast.js";
 import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
 import { RichText } from "../components/content/RichText.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
-import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
@@ -134,7 +134,7 @@ export function PostPage() {
     setDeleteOpen(false);
     try {
       await deletePost(post.id);
-      window.location.href = "/fil";
+      navigate("/fil");
     } catch {
       toast.show(fr.feed.postDeleteError, "danger");
     }
@@ -202,9 +202,6 @@ export function PostPage() {
         <ArrowLeft className="size-4" aria-hidden="true" />
         {fr.feed.back}
       </a>
-      <div className="flex items-center gap-2">
-        <AccountMenu />
-      </div>
     </div>
   );
 
@@ -220,7 +217,7 @@ export function PostPage() {
               ? {
                   kind: "notFound",
                   message: fr.feed.postNotFound,
-                  retry: { label: fr.feed.back, onClick: () => (window.location.href = "/fil") },
+                  retry: { label: fr.feed.back, onClick: () => navigate("/fil") },
                 }
               : {
                   kind: "error",
@@ -308,12 +305,11 @@ export function PostPage() {
                 </ProfileLink>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <ProfileLink handle={reply.authorHandle} className="min-w-0 max-w-full">
-                      <UserName
-                        name={reply.authorDisplayName}
-                        level={authorLevel(reply.authorHandle, reply.authorLevel)}
-                      />
-                    </ProfileLink>
+                    <UserName
+                      name={reply.authorDisplayName}
+                      handle={reply.authorHandle}
+                      level={authorLevel(reply.authorHandle, reply.authorLevel)}
+                    />
                     <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
                     {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
                   </div>

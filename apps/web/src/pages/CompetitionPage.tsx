@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { CompetitionDetail, Submission, SubmissionResult, Team } from "@kemet/shared";
@@ -159,7 +160,7 @@ export function CompetitionPage() {
 
   if (loading) {
     return (
-      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+      <RailPage activeSection="competitions" className="gap-4 px-4 pt-3 lg:pt-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-32 w-full" />
       </RailPage>
@@ -168,12 +169,12 @@ export function CompetitionPage() {
 
   if (notFound) {
     return (
-      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+      <RailPage activeSection="competitions" className="gap-4 px-4 pt-3 lg:pt-6">
         <ErrorState
           message={fr.competitions.competitionNotFound}
           retry={{
             label: fr.competitions.back,
-            onClick: () => (window.location.href = "/competitions"),
+            onClick: () => navigate("/competitions"),
           }}
         />
       </RailPage>
@@ -182,7 +183,7 @@ export function CompetitionPage() {
 
   if (error || !competition) {
     return (
-      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+      <RailPage activeSection="competitions" className="gap-4 px-4 pt-3 lg:pt-6">
         <ErrorState
           message={fr.competitions.loadingError}
           retry={{ label: fr.chat.retry, onClick: loadCompetition }}
@@ -192,7 +193,7 @@ export function CompetitionPage() {
   }
 
   return (
-    <RailPage activeSection="competitions" className="gap-6 px-4 py-8">
+    <RailPage activeSection="competitions" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex items-center justify-between">
         <a
           href="/competitions"
@@ -314,14 +315,17 @@ export function CompetitionPage() {
                         </div>
                         <p className="mt-1 text-sm text-text-2">{submission.pitch}</p>
                         {submission.description && (
-                          <RichText source={submission.description} className="mt-2 text-sm text-text" />
+                          <RichText
+                            source={submission.description}
+                            className="mt-2 text-sm text-text"
+                          />
                         )}
                         {submission.viewerIsTeamMember && competition.phase === "submission" && (
                           <Button
                             variant="secondary"
                             className="mt-2 text-xs"
                             onClick={() =>
-                              (window.location.href = `/competitions/${slug}/soumettre?modifier=${submission.id}`)
+                              navigate(`/competitions/${slug}/soumettre?modifier=${submission.id}`)
                             }
                           >
                             {fr.competitions.editSubmission}

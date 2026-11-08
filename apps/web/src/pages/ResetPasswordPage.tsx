@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { Button } from "../components/ui/Button.js";
@@ -46,7 +47,7 @@ export function ResetPasswordPage() {
       <AuthLayout title={fr.auth.resetPasswordTitle}>
         <div className="flex flex-col gap-3">
           <p className="text-sm text-auth-text">{fr.auth.resetPasswordSuccess}</p>
-          <Button type="button" variant="inverse" onClick={() => (window.location.href = "/connexion")}>
+          <Button type="button" variant="inverse" onClick={() => navigate("/connexion")}>
             {fr.auth.loginSubmit}
           </Button>
         </div>

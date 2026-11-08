@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { FileText, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { WorkAttachment, WorkDetail, WorkLinkType, WorkStatus, WorkType } from "@kemet/shared";
@@ -84,7 +85,7 @@ export function WorkFormPage() {
   );
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export function WorkFormPage() {
       <RailPage activeSection="travaux">
         <ErrorState
           message={loadState === "forbidden" ? fr.works.notFound : fr.works.loadingError}
-          retry={{ label: fr.works.back, onClick: () => (window.location.href = "/travaux") }}
+          retry={{ label: fr.works.back, onClick: () => navigate("/travaux") }}
         />
       </RailPage>
     );
@@ -273,7 +274,7 @@ function WorkForm({
       const { work } = isEdit
         ? await updateWork(existing.slug, fields)
         : await createWork({ ...fields, slug, publishRightConfirmed: true, coauthorHandles });
-      window.location.href = `/travaux/${work.slug}`;
+      navigate(`/travaux/${work.slug}`);
     } catch (err) {
       if (err instanceof ChatApiError && err.statusCode === 409) setError(fr.works.slugTaken);
       else if (err instanceof ChatApiError && err.code === "invalid_input")
@@ -302,7 +303,9 @@ function WorkForm({
       submitLabel={isEdit ? fr.works.save : fr.works.publish}
       submitting={submitting}
       submitDisabled={uploading || mediaUploading}
-      submitDisabledReason={uploading ? fr.works.pdfUploading : mediaUploading ? fr.works.mediaUploading : missing}
+      submitDisabledReason={
+        uploading ? fr.works.pdfUploading : mediaUploading ? fr.works.mediaUploading : missing
+      }
       error={error}
       onSubmit={handleSubmit}
     >

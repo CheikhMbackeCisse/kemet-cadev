@@ -64,12 +64,16 @@ export function ConversationMessages({
               className={cn(
                 "group/message relative -mx-2 flex gap-3 rounded-control px-2 py-0.5 lg:hover:bg-surface-2",
                 canReact && "[@media(pointer:coarse)]:select-none",
-                (selectedMessageId === message.id || actionsMessageId === message.id) && "bg-surface-2",
+                (selectedMessageId === message.id || actionsMessageId === message.id) &&
+                  "bg-surface-2",
               )}
             >
               <div className="flex w-8 shrink-0 items-start justify-center">
                 {index === 0 ? (
-                  <a href={`/u/${group.authorHandle}`} aria-label={fr.profile.viewProfile(group.authorDisplayName)}>
+                  <a
+                    href={`/u/${group.authorHandle}`}
+                    aria-label={fr.profile.viewProfile(group.authorDisplayName)}
+                  >
                     <Avatar
                       name={group.authorDisplayName}
                       src={group.authorAvatarUrl ?? undefined}
@@ -77,15 +81,19 @@ export function ConversationMessages({
                     />
                   </a>
                 ) : (
-                  <span className="pt-1 text-xs leading-none text-subtle">{formatTime(message.createdAt)}</span>
+                  <span className="pt-1 text-xs leading-none text-subtle">
+                    {formatTime(message.createdAt)}
+                  </span>
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 {index === 0 && (
                   <div className="flex flex-wrap items-baseline gap-x-2">
-                    <a href={`/u/${group.authorHandle}`} className="min-w-0 max-w-full hover:underline">
-                      <UserName name={group.authorDisplayName} level={group.authorLevel} />
-                    </a>
+                    <UserName
+                      name={group.authorDisplayName}
+                      handle={group.authorHandle}
+                      level={group.authorLevel}
+                    />
                     <span className="text-xs text-subtle">{formatTime(message.createdAt)}</span>
                   </div>
                 )}
@@ -97,7 +105,11 @@ export function ConversationMessages({
                       <RichText
                         source={message.body}
                         className="mt-0.5 text-base text-text"
-                        suffix={message.editedAt && <span className="text-xs text-subtle">({fr.chat.edited})</span>}
+                        suffix={
+                          message.editedAt && (
+                            <span className="text-xs text-subtle">({fr.chat.edited})</span>
+                          )
+                        }
                       />
                     )}
                     <MessageAttachments attachments={message.attachments} />
@@ -107,7 +119,10 @@ export function ConversationMessages({
                   <div className="mt-1 flex flex-wrap items-center gap-1">
                     {message.reactions.map((reaction) => {
                       const names = reaction.profileIds.map((profileId) => nameById.get(profileId));
-                      const label = fr.chat.reactionLabel(reaction.emoji, reaction.profileIds.length);
+                      const label = fr.chat.reactionLabel(
+                        reaction.emoji,
+                        reaction.profileIds.length,
+                      );
                       // Tous les membres sont connus : la liste des noms est toujours complète.
                       const tooltip = names.every(Boolean) ? names.join(", ") : label;
                       return (
@@ -142,11 +157,17 @@ export function ConversationMessages({
                     selectedMessageId === message.id && "pointer-events-auto opacity-100",
                   )}
                 >
-                  <IconButton aria-label={fr.chat.addReaction} onClick={() => onReact(message.id, "👍")}>
+                  <IconButton
+                    aria-label={fr.chat.addReaction}
+                    onClick={() => onReact(message.id, "👍")}
+                  >
                     <SmilePlus className="size-4" aria-hidden="true" />
                   </IconButton>
                   {!isOwn && (
-                    <IconButton aria-label={fr.moderation.reportAction} onClick={() => onReport(message)}>
+                    <IconButton
+                      aria-label={fr.moderation.reportAction}
+                      onClick={() => onReport(message)}
+                    >
                       <Flag className="size-4" aria-hidden="true" />
                     </IconButton>
                   )}

@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { BookOpen } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { PendingWorkInvitation, ProfileWork } from "@kemet/shared";
@@ -161,7 +162,7 @@ export function ProfileWorks({ handle, isOwnProfile, reloadKey }: ProfileWorksPr
           isOwnProfile
             ? {
                 label: fr.works.createTitle,
-                onClick: () => (window.location.href = "/travaux/nouveau"),
+                onClick: () => navigate("/travaux/nouveau"),
               }
             : undefined
         }

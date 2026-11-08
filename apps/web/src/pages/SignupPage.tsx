@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { DEMO_EMAIL_REJECTED_CODE, isDemoEmailAddress } from "@kemet/shared";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
@@ -25,7 +26,8 @@ export function SignupPage() {
   const isDemoEmail = isDemoEmailAddress(email);
 
   useEffect(() => {
-    if (status === "ready" || status === "incomplete") window.location.href = landingPath(status, onboarding);
+    if (status === "ready" || status === "incomplete")
+      navigate(landingPath(status, onboarding), { replace: true });
   }, [status, onboarding]);
 
   async function handleSubmit(event: FormEvent) {
@@ -36,8 +38,10 @@ export function SignupPage() {
       await signUp({ name, email, password });
       setAwaitingVerification(true);
     } catch (err) {
-      if (err instanceof ChatApiError && (err.statusCode === 409 || err.statusCode === 422)) setError(fr.auth.emailAlreadyUsedError);
-      else if (err instanceof ChatApiError && err.code === DEMO_EMAIL_REJECTED_CODE) setError(fr.auth.demoEmailError);
+      if (err instanceof ChatApiError && (err.statusCode === 409 || err.statusCode === 422))
+        setError(fr.auth.emailAlreadyUsedError);
+      else if (err instanceof ChatApiError && err.code === DEMO_EMAIL_REJECTED_CODE)
+        setError(fr.auth.demoEmailError);
       else setError(fr.auth.signupError);
     } finally {
       setSubmitting(false);
@@ -91,7 +95,11 @@ export function SignupPage() {
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <label className="flex flex-col gap-1 text-sm">
             {fr.auth.nameLabel}
-            <Input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
+            <Input
+              autoComplete="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
           </label>
           <div className="flex flex-col gap-1">
             <label className="flex flex-col gap-1 text-sm">

@@ -3,7 +3,7 @@ import { signUpVerifyAndSignIn, uniqueHandle } from "./support/accounts.js";
 import { createPublicSpace } from "./support/spaces.js";
 
 async function expectStep(page: Page, step: number, title: string) {
-  await expect(page.getByText(`Étape ${step} sur 6`)).toBeVisible();
+  await expect(page.getByRole("progressbar", { name: `Étape ${step} sur 6` })).toBeAttached();
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
 }
 
@@ -82,7 +82,7 @@ test("Passer sur chaque écran termine le parcours sans rien imposer", async ({ 
   await newAccount(page, "e2eonbpass", testInfo.project.name);
   await page.goto("/");
   for (let step = 1; step <= 6; step += 1) {
-    await expect(page.getByText(`Étape ${step} sur 6`)).toBeVisible();
+    await expect(page.getByRole("progressbar", { name: `Étape ${step} sur 6` })).toBeAttached();
     await page.getByRole("button", { name: "Passer" }).click();
   }
   await expect(page).toHaveURL(/\/fil$/);

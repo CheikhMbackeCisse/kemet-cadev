@@ -53,13 +53,18 @@ const LEVELS = ["apprenti", "artisan", "scribe", "architecte", "legende"] as con
 
 describe("icônes de niveau", () => {
   // Couleur de l'icône et du nom du niveau sur le profil : texte compris.
-  it.each(Object.entries(themes))("gardent 4,5:1 sur le fond et au survol en thème %s", (_theme, source) => {
-    for (const level of LEVELS) {
-      for (const background of ["bg", "surface", "surface-2"]) {
-        expect(contrast(token(source, `level-${level}`), token(source, background))).toBeGreaterThanOrEqual(4.5);
+  it.each(Object.entries(themes))(
+    "gardent 4,5:1 sur le fond et au survol en thème %s",
+    (_theme, source) => {
+      for (const level of LEVELS) {
+        for (const background of ["bg", "surface", "surface-2"]) {
+          expect(
+            contrast(token(source, `level-${level}`), token(source, background)),
+          ).toBeGreaterThanOrEqual(4.5);
+        }
       }
-    }
-  });
+    },
+  );
 });
 
 describe("carte en verre dépoli du parcours d'arrivée", () => {
@@ -78,7 +83,9 @@ describe("carte en verre dépoli du parcours d'arrivée", () => {
   /** `top` posé à l'opacité `alpha` sur `bottom`. */
   function over(top: string, alpha: number, bottom: string): string {
     const [a, b] = [rgb(top), rgb(bottom)];
-    return hex([0, 1, 2].map((i) => a[i]! * alpha + b[i]! * (1 - alpha)) as [number, number, number]);
+    return hex(
+      [0, 1, 2].map((i) => a[i]! * alpha + b[i]! * (1 - alpha)) as [number, number, number],
+    );
   }
 
   function number(name: string): number {
@@ -100,10 +107,23 @@ describe("carte en verre dépoli du parcours d'arrivée", () => {
     expect(contrast(token(root, "auth-danger"), card)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("ne dépasse jamais l'opacité prévue pour les éléments flottants", () => {
-    const component = readFileSync(new URL("../components/arrival/ArrivalBackground.tsx", import.meta.url), "utf8");
-    const highs = [...component.matchAll(/high: ([0-9.]+)/g)].map((match) => Number(match[1]));
-    expect(highs.length).toBeGreaterThan(0);
-    for (const high of highs) expect(high).toBeLessThanOrEqual(number("auth-float-opacity"));
+  it("garde 3:1 pour un insigne de niveau posé sur la carte", () => {
+    const onDark = block(".level-on-dark");
+    for (const level of LEVELS) {
+      expect(contrast(token(onDark, `level-${level}`), card)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("ne dépasse jamais l'opacité prévue pour les éléments flottants derrière un formulaire", () => {
+    const component = readFileSync(
+      new URL("../components/arrival/ArrivalBackground.tsx", import.meta.url),
+      "utf8",
+    );
+    // Sur l'accueil (mouvement riche), les logos sont en couleur sur une
+    // pastille blanche et peuvent monter plus haut : seul le mouvement calme,
+    // derrière les formulaires, reste sous ce plafond.
+    const calm = /calm: \{[^}]*high: ([0-9.]+)/.exec(component);
+    expect(calm).not.toBeNull();
+    expect(Number(calm![1])).toBeLessThanOrEqual(number("auth-float-opacity"));
   });
 });

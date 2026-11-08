@@ -16,6 +16,7 @@ export function serializePostAttachment(row: PostAttachmentRow, removed = false)
     mimeType: row.mimeType,
     originalName: row.originalName,
     byteSize: row.byteSize,
+    durationMs: null,
     createdAt: row.createdAt.toISOString(),
     removed,
   };

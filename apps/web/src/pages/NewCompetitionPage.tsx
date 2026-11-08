@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { Input } from "../components/ui/Input.js";
 import { useToast } from "../components/ui/Toast.js";
@@ -23,7 +24,7 @@ export function NewCompetitionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   async function handleSubmit(event: FormEvent) {
@@ -41,7 +42,7 @@ export function NewCompetitionPage() {
         votingClosesAt: new Date(votingClosesAt).toISOString(),
       });
       toast.show(fr.competitions.requestSent, "success");
-      window.location.href = "/competitions";
+      navigate("/competitions");
     } catch (err) {
       setError(err instanceof ChatApiError ? err.message : fr.competitions.requestError);
       setSubmitting(false);

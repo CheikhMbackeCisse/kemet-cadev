@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { Plus, Trophy } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { CompetitionDetail, CompetitionSummary } from "@kemet/shared";
@@ -16,6 +17,7 @@ import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { useSession } from "../session/SessionProvider.js";
 import { goToSignUp, SIGN_UP_PATH } from "../session/signUpInvite.js";
@@ -89,17 +91,13 @@ export function CompetitionsPage() {
   }
 
   return (
-    <RailPage activeSection="competitions" className="gap-6 px-4 py-8">
+    <RailPage activeSection="competitions" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <h1 className="text-lg font-bold text-text">{fr.competitions.title}</h1>
         <div className="flex items-center gap-2">
-          <a
-            href={isVisitor ? SIGN_UP_PATH : "/competitions/nouvelle"}
-            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
-          >
-            <Plus className="size-4" aria-hidden="true" />
+          <HeaderActionLink href={isVisitor ? SIGN_UP_PATH : "/competitions/nouvelle"} icon={Plus}>
             {fr.competitions.requestTitle}
-          </a>
+          </HeaderActionLink>
         </div>
       </div>
 
@@ -165,7 +163,7 @@ export function CompetitionsPage() {
           message={fr.competitions.noCompetitions}
           action={{
             label: fr.competitions.requestTitle,
-            onClick: isVisitor ? goToSignUp : () => (window.location.href = "/competitions/nouvelle"),
+            onClick: isVisitor ? goToSignUp : () => navigate("/competitions/nouvelle"),
           }}
         />
       ) : (

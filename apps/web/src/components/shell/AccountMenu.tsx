@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { LogIn } from "lucide-react";
 import { useSession } from "../../session/SessionProvider.js";
 import { Avatar } from "../ui/Avatar.js";
@@ -6,23 +7,16 @@ import { Menu } from "../ui/Menu.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { fr } from "../../i18n/fr.js";
 
-export interface AccountMenuProps {
-  /**
-   * "header" : dans l'en-tête d'une page, sous lg seulement (au-dessus, le
-   * compte vit dans la barre d'activité). "activityBar" : au pied de la barre.
-   */
-  variant?: "header" | "activityBar";
-}
-
-export function AccountMenu({ variant = "header" }: AccountMenuProps) {
+/**
+ * Compte de la personne, au pied de la barre d'activité sur bureau. Sous lg,
+ * l'onglet "Moi" et la barre visiteur jouent ce rôle.
+ */
+export function AccountMenu() {
   const { status, profile, isPlatformAdmin, signOut } = useSession();
-  const inActivityBar = variant === "activityBar";
 
   if (status === "loading") return null;
 
   if (status !== "ready" || !profile) {
-    // Sous lg, la barre visiteur au-dessus des onglets invite déjà à se connecter.
-    if (!inActivityBar) return null;
     return (
       <Tooltip label={fr.auth.signInCta} side="right">
         <a
@@ -38,12 +32,12 @@ export function AccountMenu({ variant = "header" }: AccountMenuProps) {
 
   return (
     <Menu
-      side={inActivityBar ? "right" : "bottom"}
+      side="right"
       trigger={
         <Button
           variant="ghost"
           aria-label={fr.auth.accountMenuLabel(profile.displayName)}
-          className={inActivityBar ? "size-control px-0" : "px-2 lg:hidden"}
+          className="size-control px-0"
         >
           <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={24} />
         </Button>
@@ -51,16 +45,13 @@ export function AccountMenu({ variant = "header" }: AccountMenuProps) {
       items={[
         { value: "profile", label: fr.moi.myProfile },
         { value: "saved", label: fr.moi.saved },
-        // Sur bureau, Paramètres a déjà son icône dans la barre d'activité.
-        ...(inActivityBar ? [] : [{ value: "settings", label: fr.settings.navLink }]),
         ...(isPlatformAdmin ? [{ value: "moderation", label: fr.moderation.navLink }] : []),
         { value: "sign-out", label: fr.auth.signOut, danger: true },
       ]}
       onSelect={(value) => {
-        if (value === "profile") window.location.href = `/u/${profile.handle}`;
-        if (value === "saved") window.location.href = "/enregistres";
-        if (value === "settings") window.location.href = "/parametres";
-        if (value === "moderation") window.location.href = "/moderation";
+        if (value === "profile") navigate(`/u/${profile.handle}`);
+        if (value === "saved") navigate("/enregistres");
+        if (value === "moderation") navigate("/moderation");
         if (value === "sign-out") void signOut();
       }}
     />

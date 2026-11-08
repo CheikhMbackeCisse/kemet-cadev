@@ -154,15 +154,11 @@ export function WorkDiscussion({ work, viewer }: WorkDiscussionProps) {
                 </a>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <a
-                      href={`/u/${item.group.authorHandle}`}
-                      className="min-w-0 max-w-full hover:underline"
-                    >
-                      <UserName
-                        name={item.group.authorDisplayName}
-                        level={item.group.authorLevel}
-                      />
-                    </a>
+                    <UserName
+                      name={item.group.authorDisplayName}
+                      handle={item.group.authorHandle}
+                      level={item.group.authorLevel}
+                    />
                     {authorIds.has(item.group.authorId) && <Badge>{fr.works.authorTag}</Badge>}
                     <time
                       dateTime={item.group.messages[0]!.createdAt}

@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { Hash } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { Channel, Space } from "@kemet/shared";
@@ -58,7 +59,7 @@ export function AskKemetDialog({ skillSlug, open, onOpenChange }: AskKemetDialog
 
   function openChannel(space: Space, channel: Channel) {
     storeChannelDraft(channel.id, fr.skills.askKemetDraft(skillSlug));
-    window.location.href = `/salons?space=${space.id}&channel=${channel.id}`;
+    navigate(`/salons?space=${space.id}&channel=${channel.id}`);
   }
 
   return (

@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { Bookmark } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { PostSummary } from "@kemet/shared";
@@ -8,7 +9,12 @@ import { Dialog } from "../components/ui/Dialog.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { useToast } from "../components/ui/Toast.js";
-import { deletePost, listBookmarkedPosts, setPostBookmark, togglePostReaction } from "../lib/chat/api.js";
+import {
+  deletePost,
+  listBookmarkedPosts,
+  setPostBookmark,
+  togglePostReaction,
+} from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
@@ -27,8 +33,8 @@ export function SavedPostsPage() {
   const canInteract = status === "ready" && !isSuspended;
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "visitor") navigate("/connexion");
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   const load = useCallback(() => {
@@ -58,7 +64,10 @@ export function SavedPostsPage() {
   }
 
   function update(postId: string, change: Partial<PostSummary>) {
-    setPosts((current) => current?.map((post) => (post.id === postId ? { ...post, ...change } : post)) ?? null);
+    setPosts(
+      (current) =>
+        current?.map((post) => (post.id === postId ? { ...post, ...change } : post)) ?? null,
+    );
   }
 
   async function handleSave(post: PostSummary) {
@@ -110,7 +119,7 @@ export function SavedPostsPage() {
         <EmptyState
           icon={Bookmark}
           message={fr.saved.empty}
-          action={{ label: fr.saved.goToFeed, onClick: () => (window.location.href = "/fil") }}
+          action={{ label: fr.saved.goToFeed, onClick: () => navigate("/fil") }}
         />
       ) : (
         <div className="flex flex-col gap-3">
@@ -129,7 +138,7 @@ export function SavedPostsPage() {
                 onReact={() => void handleReact(post)}
                 onSave={() => void handleSave(post)}
                 // Le retour structuré se donne depuis la page du post.
-                onFeedback={() => (window.location.href = `/fil/${post.id}`)}
+                onFeedback={() => navigate(`/fil/${post.id}`)}
                 onDelete={() => setPostToDelete(post.id)}
               />
             ))}

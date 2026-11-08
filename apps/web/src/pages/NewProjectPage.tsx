@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { Input } from "../components/ui/Input.js";
 import { FormPage } from "../components/layout/FormPage.js";
@@ -28,7 +29,7 @@ export function NewProjectPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   async function handleSubmit(event: FormEvent) {
@@ -45,7 +46,7 @@ export function NewProjectPage() {
         demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
         stack: parseStack(stack),
       });
-      window.location.href = `/projets/${slug}`;
+      navigate(`/projets/${slug}`);
     } catch {
       setError(fr.projects.createError);
       setSubmitting(false);

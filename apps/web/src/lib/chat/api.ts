@@ -10,6 +10,7 @@ import type {
   ConversationDetail,
   ConversationUnreadSummary,
   CreateApplicationInput,
+  LevelsResponse,
   CreateCompetitionRequestInput,
   CreateHelpRequestInput,
   CreatePostInput,
@@ -245,6 +246,31 @@ export async function uploadAttachment(channelId: string, file: File): Promise<A
   return attachment;
 }
 
+const VOICE_EXTENSIONS: Record<string, string> = { "audio/mp4": "m4a", "audio/ogg": "ogg" };
+
+export async function uploadVoiceMessage(channelId: string, blob: Blob, durationMs: number): Promise<Attachment> {
+  const formData = new FormData();
+  // Le serveur lit la durée avant le fichier : elle doit le précéder.
+  formData.append("durationMs", String(Math.round(durationMs)));
+  const baseType = blob.type.split(";")[0] ?? "";
+  formData.append("file", blob, `message-vocal.${VOICE_EXTENSIONS[baseType] ?? "webm"}`);
+  const response = await fetch(`/api/channels/${channelId}/messages/voice`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { attachment } = (await response.json()) as { attachment: Attachment };
+  return attachment;
+}
+
 export function attachmentUrl(attachmentId: string): string {
   return `/api/attachments/${attachmentId}/content`;
 }
@@ -373,6 +399,10 @@ export function acceptInvite(code: string) {
     `/api/invites/${code}/accept`,
     { method: "POST" },
   );
+}
+
+export function getLevels() {
+  return request<LevelsResponse>("/api/levels");
 }
 
 export function getMe() {

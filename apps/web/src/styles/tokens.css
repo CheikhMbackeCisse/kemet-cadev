@@ -187,6 +187,32 @@
   --auth-glass-border: rgba(255, 255, 255, 0.2);
   --auth-float-opacity: 0.35;
   --auth-danger: #ffc9c2;
+  /* Continent et réseau de l'accueil, symboles en couleur, pastille des logos. */
+  --auth-network-fill-from: #3b82f6;
+  --auth-network-fill-to: #0ea5e9;
+  --auth-network-line: #93c5fd;
+  --auth-network-glow: #38bdf8;
+  --auth-network-core: #e0f2fe;
+  --auth-network-pulse: #7dd3fc;
+  --auth-symbol-ai: #7c3aed;
+  --auth-symbol-security: #059669;
+  --auth-symbol-iot: #0891b2;
+  --auth-tile-bg: rgba(255, 255, 255, 0.9);
+  --auth-divider: rgba(255, 255, 255, 0.15);
+  --auth-skeleton: rgba(255, 255, 255, 0.1);
+}
+
+/*
+ * Insigne de niveau posé sur le fond de marque, sombre dans les deux thèmes :
+ * couleurs du thème sombre, motif de la teinte de la carte en verre.
+ */
+.level-on-dark {
+  --level-apprenti: #5cc46b;
+  --level-artisan: #e8a33c;
+  --level-scribe: #3cc0d8;
+  --level-architecte: #7fb0f7;
+  --level-legende: #b794f6;
+  --bg: #061b47;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { MeResponse } from "@kemet/shared";
 import { SocialProviderIcon } from "../../components/auth/SocialProviderIcon.js";
@@ -25,7 +26,11 @@ import { fr } from "../../i18n/fr.js";
 const PAGE_PATH = "/parametres/compte";
 const MIN_PASSWORD_LENGTH = 8;
 
-const PROVIDERS: { id: SocialProvider; label: string; configKey: "githubEnabled" | "googleEnabled" | "linkedinEnabled" }[] = [
+const PROVIDERS: {
+  id: SocialProvider;
+  label: string;
+  configKey: "githubEnabled" | "googleEnabled" | "linkedinEnabled";
+}[] = [
   { id: "github", label: fr.auth.providerGithub, configKey: "githubEnabled" },
   { id: "google", label: fr.auth.providerGoogle, configKey: "googleEnabled" },
   { id: "linkedin", label: fr.auth.providerLinkedin, configKey: "linkedinEnabled" },
@@ -44,15 +49,20 @@ export function AccountSettingsPage() {
   const [busyProvider, setBusyProvider] = useState<SocialProvider | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "visitor") navigate("/connexion");
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   const load = useCallback(() => {
     setError(false);
     Promise.all([getMe(), getAuthConfig()])
       .then(([me, config]) =>
-        setState({ me, enabled: PROVIDERS.filter((provider) => config[provider.configKey]).map((provider) => provider.id) }),
+        setState({
+          me,
+          enabled: PROVIDERS.filter((provider) => config[provider.configKey]).map(
+            (provider) => provider.id,
+          ),
+        }),
       )
       .catch(() => setError(true));
   }, []);
@@ -96,7 +106,10 @@ export function AccountSettingsPage() {
   return (
     <SettingsSubPage title={fr.settings.accountSection}>
       {error ? (
-        <ErrorState message={fr.settings.accountLoadError} retry={{ label: fr.chat.retry, onClick: load }} />
+        <ErrorState
+          message={fr.settings.accountLoadError}
+          retry={{ label: fr.chat.retry, onClick: load }}
+        />
       ) : !state ? (
         <div className="flex max-w-xl flex-col gap-3">
           <Skeleton className="h-12 w-full" />
@@ -109,7 +122,9 @@ export function AccountSettingsPage() {
             <p className="flex flex-wrap items-center gap-2 text-base text-text">
               <span className="break-all">{state.me.user.email}</span>
               <Badge tone={state.me.user.emailVerified ? "success" : "neutral"}>
-                {state.me.user.emailVerified ? fr.settings.emailVerified : fr.settings.emailNotVerified}
+                {state.me.user.emailVerified
+                  ? fr.settings.emailVerified
+                  : fr.settings.emailNotVerified}
               </Badge>
             </p>
           </section>
@@ -127,31 +142,40 @@ export function AccountSettingsPage() {
             <section className="flex max-w-xl flex-col gap-3">
               <h2 className="text-md font-semibold text-text">{fr.settings.linkedSection}</h2>
               <ul className="flex flex-col divide-y divide-border">
-                {PROVIDERS.filter((provider) => state.enabled.includes(provider.id)).map((provider) => {
-                  const linked = state.me.socialProviders.includes(provider.id);
-                  // Le seul moyen de connexion ne se délie pas : le serveur le
-                  // refuserait aussi, on l'explique avant.
-                  const lastWay = linked && !state.me.hasPassword && state.me.socialProviders.length === 1;
-                  return (
-                    <li key={provider.id} className="flex flex-col gap-1 py-3">
-                      <div className="flex items-center gap-3">
-                        <SocialProviderIcon provider={provider.id} />
-                        <span className="flex-1 text-base text-text">{provider.label}</span>
-                        {linked && <Badge tone="success">{fr.settings.linked}</Badge>}
-                        <Button
-                          variant="secondary"
-                          loading={busyProvider === provider.id}
-                          disabled={lastWay}
-                          aria-label={linked ? fr.settings.unlinkLabel(provider.label) : fr.settings.linkLabel(provider.label)}
-                          onClick={() => void (linked ? unlink(provider.id) : link(provider.id))}
-                        >
-                          {linked ? fr.settings.unlink : fr.settings.link}
-                        </Button>
-                      </div>
-                      {lastWay && <p className="text-xs text-subtle">{fr.settings.unlinkLastRefused}</p>}
-                    </li>
-                  );
-                })}
+                {PROVIDERS.filter((provider) => state.enabled.includes(provider.id)).map(
+                  (provider) => {
+                    const linked = state.me.socialProviders.includes(provider.id);
+                    // Le seul moyen de connexion ne se délie pas : le serveur le
+                    // refuserait aussi, on l'explique avant.
+                    const lastWay =
+                      linked && !state.me.hasPassword && state.me.socialProviders.length === 1;
+                    return (
+                      <li key={provider.id} className="flex flex-col gap-1 py-3">
+                        <div className="flex items-center gap-3">
+                          <SocialProviderIcon provider={provider.id} />
+                          <span className="flex-1 text-base text-text">{provider.label}</span>
+                          {linked && <Badge tone="success">{fr.settings.linked}</Badge>}
+                          <Button
+                            variant="secondary"
+                            loading={busyProvider === provider.id}
+                            disabled={lastWay}
+                            aria-label={
+                              linked
+                                ? fr.settings.unlinkLabel(provider.label)
+                                : fr.settings.linkLabel(provider.label)
+                            }
+                            onClick={() => void (linked ? unlink(provider.id) : link(provider.id))}
+                          >
+                            {linked ? fr.settings.unlink : fr.settings.link}
+                          </Button>
+                        </div>
+                        {lastWay && (
+                          <p className="text-xs text-subtle">{fr.settings.unlinkLastRefused}</p>
+                        )}
+                      </li>
+                    );
+                  },
+                )}
               </ul>
             </section>
           )}

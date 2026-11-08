@@ -1,6 +1,7 @@
 import { loadSiteConfig, type SiteConfig } from "../config/site-config.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import multipart from "@fastify/multipart";
+import { MULTIPART_FIELD_LIMITS } from "./multipart-limits.js";
 import helmet from "@fastify/helmet";
 import { toNodeHandler } from "better-auth/node";
 import { ZodError } from "zod";
@@ -20,6 +21,7 @@ import { registerMeRoutes } from "./routes/me.js";
 import { registerOnboardingRoutes } from "./routes/onboarding.js";
 import { registerAccountDeletionRoutes } from "./routes/account-deletion.js";
 import { registerUserRoutes } from "./routes/users.js";
+import { registerLevelRoutes } from "./routes/levels.js";
 import { registerSpaceRoutes } from "./routes/spaces.js";
 import { registerChannelRoutes } from "./routes/channels.js";
 import { registerMessageRoutes } from "./routes/messages.js";
@@ -82,7 +84,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     resolveUserId: (request) => getSessionUserId(deps.auth, request),
     anonymousFactor: antiSpamConfig.anonymousIpFactor,
   });
-  void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
+  // Aucune route n'attend plus d'un petit champ avant son fichier : sans ces
+  // bornes, busboy garderait en mémoire jusqu'à mille champs d'un Mo.
+  void app.register(multipart, {
+    limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1, ...MULTIPART_FIELD_LIMITS },
+  });
   // API JSON seulement : default-src 'none' ne coûte rien. Sans
   // `useDefaults: false`, helmet fusionnerait ses directives par défaut,
   // plus permissives, au lieu de les remplacer.
@@ -150,6 +156,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerMeRoutes(app, deps);
     registerOnboardingRoutes(app, deps);
     registerUserRoutes(app, deps);
+    registerLevelRoutes(app, deps);
 
     const chatDeps: ChatAppDeps = {
       db: deps.db,

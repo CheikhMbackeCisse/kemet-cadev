@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { Input } from "../components/ui/Input.js";
 import { Select } from "../components/ui/Select.js";
@@ -16,7 +17,7 @@ export function NewSpacePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   async function handleSubmit(event: FormEvent) {
@@ -29,7 +30,7 @@ export function NewSpacePage() {
         slug: slugify(name),
         visibility,
       });
-      window.location.href = `/salons?space=${space.id}`;
+      navigate(`/salons?space=${space.id}`);
     } catch {
       setError(fr.spaces.actionError);
       setSubmitting(false);

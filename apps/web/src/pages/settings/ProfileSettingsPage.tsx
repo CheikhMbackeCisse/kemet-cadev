@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import type { ProfileRole } from "@kemet/shared";
 import { SettingsSubPage } from "../../components/settings/SettingsSubPage.js";
@@ -30,8 +31,8 @@ export function ProfileSettingsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "visitor") navigate("/connexion");
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   useEffect(() => {
@@ -47,7 +48,8 @@ export function ProfileSettingsPage() {
 
   if (status !== "ready" || !profile) return null;
 
-  const githubInvalid = githubUrl.trim() !== "" && !/^https:\/\/github\.com\/\S+$/.test(githubUrl.trim());
+  const githubInvalid =
+    githubUrl.trim() !== "" && !/^https:\/\/github\.com\/\S+$/.test(githubUrl.trim());
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -67,7 +69,8 @@ export function ProfileSettingsPage() {
       await refresh();
       toast.show(fr.settings.saved, "success");
     } catch (err) {
-      if (err instanceof ChatApiError && err.statusCode === 409) setError(fr.auth.handleAlreadyTakenError);
+      if (err instanceof ChatApiError && err.statusCode === 409)
+        setError(fr.auth.handleAlreadyTakenError);
       else setError(fr.settings.saveError);
     } finally {
       setSubmitting(false);
@@ -80,7 +83,11 @@ export function ProfileSettingsPage() {
       <form className="flex max-w-sm flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.displayNameLabel}
-          <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} disabled={isSuspended} />
+          <Input
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            disabled={isSuspended}
+          />
         </label>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.handleLabel}

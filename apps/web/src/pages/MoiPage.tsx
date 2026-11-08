@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import {
   BookOpen,
   Bookmark,
@@ -15,7 +16,7 @@ import { MOI_ITEMS } from "../components/shell/mobileTabs.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { useToast } from "../components/ui/Toast.js";
-import { UserName } from "../components/ui/UserName.js";
+import { LevelBadge } from "../components/ui/LevelBadge.js";
 import { getUserProfile } from "../lib/chat/api.js";
 import { formatCount } from "../lib/formatCount.js";
 import { useSession } from "../session/SessionProvider.js";
@@ -37,7 +38,8 @@ function rowsFor(handle: string, isAdmin: boolean): MoiRow[] {
   ];
 }
 
-const ROW_CLASS = "flex min-h-control-mobile w-full items-center gap-3 px-4 py-3 text-base lg:hover:bg-surface-2";
+const ROW_CLASS =
+  "flex min-h-control-mobile w-full items-center gap-3 px-4 py-3 text-base lg:hover:bg-surface-2";
 
 /** Onglet "Moi" : le compte en haut, puis tout ce qui n'a pas de place dans la barre du bas. */
 export function MoiPage() {
@@ -47,7 +49,7 @@ export function MoiPage() {
   const [profileError, setProfileError] = useState(false);
 
   useEffect(() => {
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   const loadCounts = useCallback(() => {
@@ -70,7 +72,7 @@ export function MoiPage() {
   const rows = profile ? rowsFor(profile.handle, isPlatformAdmin) : MOI_ITEMS;
 
   return (
-    <RailPage activeSection="moi" className="gap-6 px-0 py-6 lg:px-4 lg:py-8">
+    <RailPage activeSection="moi" className="gap-6 px-0 pt-3 lg:px-4 lg:pt-6">
       {status === "loading" ? (
         <MoiHeaderSkeleton />
       ) : profile ? (
@@ -82,15 +84,20 @@ export function MoiPage() {
             countryCode={profile.country || undefined}
           />
           <div className="flex flex-col gap-1">
-            <h1 className="text-lg font-bold text-text">
-              <UserName name={profile.displayName} level={profile.level} />
-            </h1>
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="truncate text-lg font-bold text-text">{profile.displayName}</h1>
+              <LevelBadge level={profile.level} link />
+            </div>
             <p className="text-base text-text-2">@{profile.handle}</p>
           </div>
           {profileError ? (
             <p className="flex flex-wrap items-center gap-2 text-base text-text-2" role="alert">
               {fr.moi.loadError}
-              <button type="button" onClick={loadCounts} className="font-medium text-link hover:underline">
+              <button
+                type="button"
+                onClick={loadCounts}
+                className="font-medium text-link hover:underline"
+              >
                 {fr.chat.retry}
               </button>
             </p>
@@ -132,7 +139,11 @@ export function MoiPage() {
           ))}
           {profile && (
             <li>
-              <button type="button" onClick={handleSignOut} className={`${ROW_CLASS} font-medium text-danger`}>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className={`${ROW_CLASS} font-medium text-danger`}
+              >
                 <LogOut className="size-5 shrink-0" aria-hidden="true" />
                 {fr.auth.signOut}
               </button>

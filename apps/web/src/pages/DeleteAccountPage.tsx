@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import type { MeResponse } from "@kemet/shared";
 import { FormPage } from "../components/layout/FormPage.js";
@@ -73,7 +74,7 @@ export function DeleteAccountPage() {
   }
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
     if (status !== "ready" && status !== "incomplete") return;
     loadMe();
   }, [status]);

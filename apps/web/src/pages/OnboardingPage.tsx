@@ -1,5 +1,11 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState } from "react";
-import { ONBOARDING_STEPS, type Interest, type OnboardingStep, type ProfileRole } from "@kemet/shared";
+import {
+  ONBOARDING_STEPS,
+  type Interest,
+  type OnboardingStep,
+  type ProfileRole,
+} from "@kemet/shared";
 import { OnboardingLayout, OnboardingSkeleton } from "../components/onboarding/OnboardingLayout.js";
 import { CountryList } from "../components/onboarding/CountryList.js";
 import { RadioList } from "../components/onboarding/RadioList.js";
@@ -11,7 +17,12 @@ import { Input } from "../components/ui/Input.js";
 import { updateMyProfile, updateOnboarding } from "../lib/chat/api.js";
 import { PROFILE_ROLE_OPTIONS } from "../lib/profileRoles.js";
 import { onboardingPath, stepFromPath, stepIndex } from "../lib/onboarding/steps.js";
-import { clearIntroAnswers, hasIntroAnswers, readIntroAnswers, type IntroAnswers } from "../lib/intro/introStorage.js";
+import {
+  clearIntroAnswers,
+  hasIntroAnswers,
+  readIntroAnswers,
+  type IntroAnswers,
+} from "../lib/intro/introStorage.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
@@ -53,7 +64,9 @@ async function applyIntroAnswers(answers: IntroAnswers): Promise<void> {
  */
 export function OnboardingPage() {
   const { status, profile, onboarding } = useSession();
-  const [step, setStep] = useState<OnboardingStep | null>(() => stepFromPath(window.location.pathname));
+  const [step, setStep] = useState<OnboardingStep | null>(() =>
+    stepFromPath(window.location.pathname),
+  );
   const [country, setCountry] = useState("");
   const [role, setRole] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -65,9 +78,9 @@ export function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
-    if (status === "incomplete") window.location.href = "/completer-profil";
-    if (status === "ready" && onboarding?.completed) window.location.replace(FEED_PATH);
+    if (status === "visitor") navigate("/connexion", { replace: true });
+    if (status === "incomplete") navigate("/completer-profil", { replace: true });
+    if (status === "ready" && onboarding?.completed) navigate(FEED_PATH, { replace: true });
   }, [status, onboarding]);
 
   useEffect(() => {
@@ -86,7 +99,9 @@ export function OnboardingPage() {
       setInterestOther(intro.interestOther ?? onboarding.interestOther ?? "");
       const requested = step ?? onboarding.step;
       const resume = answered.has(requested)
-        ? (ONBOARDING_STEPS.slice(stepIndex(requested)).find((candidate) => !answered.has(candidate)) ?? "people")
+        ? (ONBOARDING_STEPS.slice(stepIndex(requested)).find(
+            (candidate) => !answered.has(candidate),
+          ) ?? "people")
         : requested;
       if (resume !== step) {
         window.history.replaceState(null, "", onboardingPath(resume));
@@ -143,7 +158,9 @@ export function OnboardingPage() {
   }
 
   const current = step;
-  const visibleSteps = ONBOARDING_STEPS.filter((candidate) => !skipped.has(candidate) || candidate === current);
+  const visibleSteps = ONBOARDING_STEPS.filter(
+    (candidate) => !skipped.has(candidate) || candidate === current,
+  );
   const position = visibleSteps.indexOf(current);
   const next = visibleSteps[position + 1] ?? null;
   const back = visibleSteps[position - 1] ?? null;
@@ -163,13 +180,10 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.countryTitle}
-          subtitle={fr.onboarding.countrySubtitle}
           disabledReason={country ? null : fr.onboarding.countryRequired}
-          onSubmit={() =>
-            void goTo(next, () => updateMyProfile({ country }))
-          }
+          onSubmit={() => void goTo(next, () => updateMyProfile({ country }))}
         >
-          <CountryList value={country} onChange={setCountry} />
+          <CountryList value={country} onChange={setCountry} tone="glass" />
         </OnboardingLayout>
       );
     case "role":
@@ -177,7 +191,6 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.roleTitle}
-          subtitle={fr.onboarding.roleSubtitle}
           disabledReason={role ? null : fr.onboarding.roleRequired}
           onSubmit={() => void goTo(next, () => updateMyProfile({ role: role as ProfileRole }))}
         >
@@ -187,6 +200,7 @@ export function OnboardingPage() {
             options={PROFILE_ROLE_OPTIONS}
             value={role}
             onChange={setRole}
+            tone="glass"
           />
         </OnboardingLayout>
       );
@@ -195,11 +209,10 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.specialtyTitle}
-          subtitle={fr.onboarding.specialtySubtitle}
           disabledReason={specialty.trim() ? null : fr.onboarding.specialtyRequired}
           onSubmit={() => void goTo(next, () => updateMyProfile({ title: specialty.trim() }))}
         >
-          <label className="flex flex-col gap-1 text-sm text-text-2">
+          <label className="flex flex-col gap-1 text-sm text-auth-text">
             {fr.onboarding.specialtyLabel}
             <Input
               value={specialty}
@@ -215,24 +228,25 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.interestsTitle}
-          subtitle={fr.onboarding.interestsSubtitle}
           disabledReason={interests.length > 0 ? null : fr.onboarding.interestsRequired}
           onSubmit={() =>
             void goTo(next, () =>
               updateOnboarding({
                 interests,
-                interestOther: interests.includes("other") && interestOther.trim() ? interestOther.trim() : null,
+                interestOther:
+                  interests.includes("other") && interestOther.trim() ? interestOther.trim() : null,
               }),
             )
           }
         >
-          <DomainGrid value={interests} onChange={setInterests} />
+          <DomainGrid value={interests} onChange={setInterests} tone="glass" />
           {interests.includes("other") && (
             <OtherAnswerField
               label={fr.onboarding.interestOtherLabel}
               placeholder={fr.onboarding.interestOtherPlaceholder}
               value={interestOther}
               onChange={setInterestOther}
+              tone="glass"
             />
           )}
         </OnboardingLayout>
@@ -242,7 +256,6 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.spacesTitle}
-          subtitle={fr.onboarding.spacesSubtitle}
           onSubmit={() => void goTo(next)}
         >
           <SpaceSuggestions profileId={profile.id} onError={setError} />
@@ -253,7 +266,6 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.peopleTitle}
-          subtitle={fr.onboarding.peopleSubtitle}
           onSubmit={() => void goTo(next)}
         >
           <PeopleSuggestions onError={setError} />

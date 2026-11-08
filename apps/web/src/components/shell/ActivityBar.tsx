@@ -149,7 +149,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
 
       <ActivityBarDemoNotice />
       <div className="mt-2 flex w-full justify-center">
-        <AccountMenu variant="activityBar" />
+        <AccountMenu />
       </div>
     </div>
   );

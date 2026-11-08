@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { Input } from "../components/ui/Input.js";
@@ -16,8 +17,8 @@ export function CompleteProfilePage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
-    if (status === "ready") window.location.href = landingPath(status, onboarding);
+    if (status === "visitor") navigate("/connexion", { replace: true });
+    if (status === "ready") navigate(landingPath(status, onboarding), { replace: true });
   }, [status, onboarding]);
 
   async function handleSubmit(event: FormEvent) {
@@ -28,7 +29,8 @@ export function CompleteProfilePage() {
       await updateMyProfile({ handle: handle.toLowerCase(), displayName });
       window.location.href = onboardingPath("country");
     } catch (err) {
-      if (err instanceof ChatApiError && err.statusCode === 409) setError(fr.auth.handleAlreadyTakenError);
+      if (err instanceof ChatApiError && err.statusCode === 409)
+        setError(fr.auth.handleAlreadyTakenError);
       else setError(fr.auth.completeProfileError);
     } finally {
       setSubmitting(false);
@@ -40,7 +42,11 @@ export function CompleteProfilePage() {
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.displayNameLabel}
-          <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus />
+          <Input
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            autoFocus
+          />
         </label>
         <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.handleLabel}

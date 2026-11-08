@@ -17,3 +17,9 @@ if (typeof window !== "undefined" && !window.matchMedia) {
       dispatchEvent: () => false,
     }) satisfies MediaQueryList;
 }
+
+// jsdom n'implémente pas non plus le défilement, que le routeur remet en
+// haut à chaque navigation.
+if (typeof window !== "undefined") {
+  window.scrollTo = () => {};
+}

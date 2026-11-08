@@ -60,6 +60,7 @@ export function serializeAttachment(row: AttachmentRow, removed = false): Attach
     mimeType: row.mimeType,
     originalName: row.originalName,
     byteSize: row.byteSize,
+    durationMs: row.durationMs,
     createdAt: row.createdAt.toISOString(),
     removed,
   };

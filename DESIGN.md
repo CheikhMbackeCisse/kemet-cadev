@@ -9,7 +9,7 @@ Règles d'interface de Kemet. Elles s'appliquent à chaque écran, sans exceptio
 3. **Un seul élément marquant.** Le bloc de réponse de l'assistant @kemet est le seul élément visuellement fort. Tout le reste est discret.
 4. **Pensé pour le téléphone et les connexions lentes.** Chaque écran est conçu en taille mobile en même temps qu'en taille bureau.
 5. **L'ergonomie partout**, pas seulement dans les formulaires : états vides, chargements, erreurs, clavier, premier lancement.
-6. **Pas d'originalité à tout prix.** On peut reprendre un mécanisme *et* une apparence d'un autre produit (Discord, X, LinkedIn, GitHub, Linear, Slack…) quand ça rend l'écran plus clair ou plus soigné, au cas par cas. Ce qui ne bouge jamais : les tokens de couleur, Plus Jakarta Sans/Geist Mono, les icônes Lucide, la grille 4px, et la liste « Ce qui est interdit » ci-dessous — ces interdits visent à éviter l'air générique IA, pas la ressemblance avec un produit existant, donc ils restent en vigueur même quand on copie. Jamais le logo, les couleurs de marque ou les assets d'un autre produit. Autorisation donnée le 14/10/2026, plus large que celle du lot du rail des espaces : cette fois l'apparence elle-même peut être reprise, pas seulement le mécanisme.
+6. **Pas d'originalité à tout prix.** On peut reprendre un mécanisme *et* une apparence d'un autre produit (Discord, X, LinkedIn, GitHub, Linear, Slack…) quand ça rend l'écran plus clair ou plus soigné, au cas par cas. Ce qui ne bouge jamais : les tokens de couleur, Plus Jakarta Sans/Space Grotesk/Geist Mono, les icônes Lucide, la grille 4px, et la liste « Ce qui est interdit » ci-dessous — ces interdits visent à éviter l'air générique IA, pas la ressemblance avec un produit existant, donc ils restent en vigueur même quand on copie. Jamais le logo, les couleurs de marque ou les assets d'un autre produit. Autorisation donnée le 14/10/2026, plus large que celle du lot du rail des espaces : cette fois l'apparence elle-même peut être reprise, pas seulement le mécanisme.
 
 ## Couleurs
 
@@ -50,7 +50,8 @@ Vérifier chaque couple texte/fond avec un outil de contraste : 4,5:1 minimum po
 
 ## Typographie
 
-- **Plus Jakarta Sans** pour toute l'interface. **Geist Mono** uniquement pour le code. Les deux sont sous licence OFL, à déclarer.
+- **Plus Jakarta Sans** pour le texte courant de l'interface : très lisible en petite taille. **Space Grotesk** pour les titres (`h1` à `h3`) et les textes importants (classe `font-display` : nom d'un niveau, montants). **Geist Mono** uniquement pour le code et les durées. Les trois sont sous licence OFL-1.1, servies depuis notre serveur (`@fontsource`), jamais depuis un service tiers.
+- Space Grotesk ajoutée le 08/11/2026 : Plus Jakarta Sans seule donnait des titres sans caractère. Elle ne sert jamais pour un paragraphe, où ses formes géométriques fatiguent la lecture.
 - Taille de base : **14 px**. Interligne de 1,5 pour le texte, 1,25 pour les titres.
 
 | Rôle | Taille | Graisse |
@@ -104,7 +105,7 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 - **Nom d'utilisateur :** prénom et nom, icône de niveau. Pas de drapeau ici : il est porté par l'avatar (voir ci-dessous). Jamais de total de points à côté d'un nom.
 - **Avatar :** photo ou motif généré, en 24, 32 ou 40 px. À 32 et 40 px, le drapeau du pays s'ajoute en badge sur le coin inférieur droit de la photo (SVG flag-icons, avec le nom du pays en `title` et pour les lecteurs d'écran). Jamais à 24 px, où le badge ne laisserait plus voir la photo. C'est le seul endroit où le drapeau apparaît : la règle précédente le mettait aussi à côté du nom, ce qui affichait deux drapeaux par message et par post. Corrigé le 20/10/2026. Là où aucun avatar n'est rendu (aperçu d'un post partagé, retour structuré), on affiche un avatar de 32 px plutôt qu'un drapeau isolé.
 - **Bannière de profil :** sur le profil public seulement, en tête de page, au format 4:1 (160 px de haut au plus), coins `--radius-card`, fond `--surface-2` pendant le chargement. Image décorative (`alt` vide) : le nom et l'avatar juste en dessous portent l'information. Pas de texte posé dessus. Elle n'apparaît ni dans le fil, ni dans un salon, ni sur la page Moi. Un profil sans bannière n'a pas d'emplacement vide. Aujourd'hui posée seulement par les données de démonstration : aucun envoi par l'utilisateur.
-- **Niveau :** une icône Lucide de 16 px, de la couleur propre au niveau, à côté du nom : Apprenti `Sprout`, Artisan `Hammer`, Scribe `Feather`, Architecte `Compass`, Légende `Crown`. Le nom du niveau est en `title` au survol et en `aria-label` ("Niveau Scribe"). Il n'est écrit en toutes lettres, à côté de l'icône, que sur le profil. Chaque couleur garde 4,5:1 sur `--bg`, `--surface` et `--surface-2` dans les deux thèmes (`tokens.test.ts`). Les pastilles de format (Astuce, À tester, Question) restent neutres, en `--surface-2`.
+- **Niveau :** un insigne dessiné pour Kemet (`LevelInsignia`), de 16 px à côté du nom, de la couleur propre au niveau. Chaque niveau a sa forme et son motif, pour rester reconnaissable sans compter sur la couleur : Apprenti, un cercle et une graine qui germe ; Artisan, un carré arrondi et un outil ; Scribe, un hexagone et une plume ; Architecte, un écu et une pyramide ; Légende, un soleil. Le motif prend la couleur du fond de page. Le nom du niveau est en `title` au survol et en `aria-label` ("Niveau Scribe"). Il n'est écrit en toutes lettres, à côté de l'insigne, que sur le profil. Toucher un insigne mène à `/niveaux` (zone d'appui élargie à 44 px sur mobile) : les cinq niveaux avec leurs insignes, les points nécessaires, le nombre de membres de chacun, ce qui rapporte des points, et la position de la personne connectée (barre de progression vers le niveau suivant). Chaque couleur garde 4,5:1 sur `--bg`, `--surface` et `--surface-2` dans les deux thèmes (`tokens.test.ts`). Les pastilles de format (Astuce, À tester, Question) restent neutres, en `--surface-2`.
 - **Message :** avatar de 32 px, nom, heure, contenu. Les messages successifs d'une même personne sont regroupés sous un seul avatar, jamais par-delà minuit. Un séparateur nomme chaque jour ("Aujourd'hui", "Hier", "18 octobre"). Les actions (réagir, signaler) vivent dans une petite barre posée sur le coin du message, visible au survol et au focus sur bureau, à l'appui sur écran tactile : jamais en permanence sous chaque message. Les réactions déjà posées restent affichées, elles font partie du contenu.
 - **Fil d'un salon :** il s'ouvre sur le dernier message, ou sur le premier message non lu précédé d'un séparateur "Nouveaux messages" : traits en `--primary`, libellé en `--link`, qui garde 4,5:1 sur `--bg` en sombre (seul séparateur coloré, il signale une position et non une erreur). Les messages plus anciens se chargent en remontant, sans déplacer ce qui est à l'écran ni les annoncer comme nouveaux ; un bouton "Charger les messages précédents" en tête de liste les rend joignables au clavier et au lecteur d'écran. Un message qui arrive pendant qu'on lit plus haut ne fait pas défiler la liste : un bouton flottant "Aller au dernier message" apparaît, sur fond `--surface` ; il rend le focus à la liste, ou au composeur s'il est activé au clavier (au toucher, le clavier virtuel cacherait les messages atteints). Le composeur garde un brouillon par salon et le focus après l'envoi ; son bouton d'envoi fait 44 px sur mobile.
 - **Bloc de réponse de l'assistant :** fond `--assistant-bg`, bordure `--assistant-border`, icône Kemet, nom "kemet", ligne "Basé sur le skill wave-paiements d'Awa Ndiaye" (lien vers le skill et le profil), mention de ce que l'assistant a lu, boutons "Utile" et "Pas utile". C'est le seul bloc coloré de l'interface.
@@ -112,7 +113,9 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 - **Post du fil :** ton détendu, texte court, images et mèmes, code. Étiquette de format seulement si l'auteur en a choisi un (Astuce, À tester, Question). Actions, sous le texte : répondre, cœur, enregistrer, partager, et "J'ai testé" sur les posts À tester ; la date en temps relatif ("il y a 3 h", date complète au survol) sur la ligne du dessous. Un post n'est pas une carte : c'est une ligne de la colonne de lecture, séparée de la suivante par un filet `--border`, fond `--surface-2` au survol sur bureau seulement. Même composant (`PostCard`) dans le fil et sur la page du post. Sur un post, "Utile" se marque d'un cœur (`--danger`, rempli une fois donné) : même sens et mêmes points qu'avant, "Utile" en `title` et dans l'`aria-label`. Les réponses de `@kemet` gardent le pouce levé. Enregistrer (signet, rempli une fois fait) range le post dans "Enregistrés", sous Moi. Partager ouvre la feuille de partage du téléphone, sinon copie le lien ; il n'y a pas de republication. Les étincelles restent l'icône de Kemet Pro.
 - **Mention "Données de démonstration" :** tant que `DEMO_CONTENT_NOTICE` vaut `true`, une icône `FlaskConical` en `--subtle` au pied de la barre d'activité sur bureau, une ligne en 12 px au bas de la page Moi sur mobile, toutes deux liées à `/donnees-de-demo`.
 - **Skill :** carte, sur le modèle des Quêtes de Discord, en grille (une colonne sur mobile, deux puis trois sur bureau) : bannière de 80 px, icône du domaine posée à cheval, nom, auteur, deux lignes de description, étoiles (moyenne et nombre d'avis, "Pas encore noté" seulement sans aucune note), nombre de réponses de @kemet qui l'ont retenu en format court (869, 11,2k), bouton "Voir". La carte entière est un lien, bordure `--border`, `--border-strong` au survol, sans ombre. La bannière est un dégradé propre au domaine du skill (paiements, IA, données, infra, front, back, autre, déduit de ses tags et de son texte) avec un motif de caractères de code en blanc à 20 % : deuxième exception à l'interdit des dégradés après les écrans de compte, demandée pour ces seules bannières, sans aucun texte posé dessus. La page d'un skill reprend la même bannière en tête. Une barre de recherche au-dessus de la grille. Les étoiles n'existent que sur les skills.
-- **Onglets :** un seul composant (`Tabs`) partout. L'onglet actif est souligné de 2 px `--primary`, texte `--text` ; les autres sont en `--muted`. Pas de conteneur gris ni de fond plein sous l'onglet actif.
+- **Onglets :** un seul composant (`Tabs`) partout. L'onglet actif est souligné de 2 px `--primary`, texte `--text` ; les autres sont en `--muted`. Pas de conteneur gris ni de fond plein sous l'onglet actif. Variante `centered` pour les deux onglets du fil ("Pour toi", "Abonnements") : centrés, 48 px de haut, texte de 14 px en graisse 600, soulignement de 3 px.
+- **En-tête de page :** pas de grand espace au-dessus du titre (12 px sur mobile, 24 px sur bureau). Le bouton d'action de l'en-tête (Publier, Créer un skill…) est un bouton de taille normale (`HeaderActionLink`, hauteur de contrôle, texte de 13 px). Pas d'avatar du compte en haut à droite du fil ni d'un salon : le compte vit au pied de la barre d'activité sur bureau et dans l'onglet Moi sur mobile.
+- **Message vocal :** un micro à la place du bouton d'envoi tant que le message est vide, dans un salon comme dans un message privé. Sur écran tactile, on le maintient pour enregistrer et on relâche pour envoyer ; glisser vers la gauche annule. Un appui bref (moins de 0,3 s, double appui d'un lecteur d'écran) démarre l'enregistrement comme un clic. À la souris ou au clavier, un clic démarre, puis "Envoyer" ou la corbeille (ou Échap). Pendant l'enregistrement, une barre recouvre le composeur : point `--danger` qui clignote (fixe avec `prefers-reduced-motion`), durée en Geist Mono. Deux minutes au plus, arrêt et envoi automatiques. Un micro refusé s'explique en une ligne sous le composeur. Le lecteur : bouton rond `--primary` lecture et pause, barre de progression qui permet d'avancer, durée ; rien n'est téléchargé avant l'appui, jamais de lecture automatique, un seul message vocal joue à la fois.
 - **Code :** Geist Mono 13 px, coloration syntaxique avec Shiki, bouton "Copier", défilement horizontal plutôt que retour à la ligne.
 - **Champ de texte long :** un seul composant (`Textarea`). Il part d'une ligne dans un salon ou un fil, de trois dans un formulaire, grandit avec le texte sans barre de défilement jusqu'à 6 lignes (salon) ou 10 (formulaire), puis défile à l'intérieur, et redescend quand on efface. Jamais de poignée de redimensionnement. Dans un salon, la liste des messages rétrécit quand le composeur grandit et garde le dernier message visible.
 - **Page d'un travail :** titre (20 px), pastille de statut ("Terminé" neutre, "En cours" accent), puis trois onglets soulignés, liés à `?onglet=` : Présentation (résumé, liens avec une icône Lucide par type : GitHub `GitBranch`, GitLab `GitMerge`, Drive `HardDrive`, site `Globe`, vidéo `Video`, article `Newspaper`, autre `Link` ; PDF en téléchargement, tags, stack), Discussion et Équipe (auteurs avec leur niveau, auteurs sans compte). Sur bureau, une colonne de droite (17 rem, séparée par un filet) porte "Rejoindre la discussion" (bouton principal) avec le nombre de personnes qui y ont écrit, "Écrire à l'équipe en privé" (bouton secondaire, pour un compte qui n'est pas le seul auteur) et le bouton "Qui a travaillé sur ce sujet ?". Une seule colonne sur mobile, la colonne de droite passe sous les onglets ; "Rejoindre la discussion" ramène les onglets à l'écran.
@@ -158,19 +161,39 @@ Ces choix font "interface générée par une IA" :
 #### Parcours d'arrivée
 
 L'accueil d'une première visite (`/decouvrir`), les quatre questions posées
-avant l'inscription, la connexion, l'inscription et les écrans de mot de passe
+avant l'inscription, la connexion, l'inscription, les écrans de mot de passe,
+et depuis le 08/11/2026 (demandé explicitement) la fin du profil
+(`/completer-profil`) et les six écrans d'onboarding (`/bienvenue`)
 partagent un même fond de marque : dégradé et halos (levés le 20/10/2026, voir
 `docs/adr/0019-fond-des-ecrans-de-compte.md`), silhouette de l'Afrique, et
-seize éléments au plus qui flottent lentement (huit logos de langages et
-d'outils en blanc, trois symboles IA, cybersécurité et IoT, cinq bouts de code
-en Geist Mono). Le logo Kemet est en haut à gauche.
+vingt et un éléments au plus qui flottent lentement (treize logos de langages
+et d'outils, trois symboles IA, cybersécurité et IoT, cinq bouts de code en
+Geist Mono), onze sur mobile. Le logo Kemet est en haut à gauche, sauf sur
+l'accueil.
+
+L'accueil met le continent au centre (70 % de la hauteur sur mobile) : un
+point lumineux sur trente-trois capitales qui pulse à tour de rôle, et un
+réseau de liaisons courbes dont une s'allume puis s'éteint toutes les 0,6 s.
+Les logos y sont dans leurs vraies couleurs (Simple Icons), posés sur une
+pastille blanche qui garde le contraste sur le fond sombre, et les symboles
+IA, cybersécurité et IoT en couleur. La carte en verre est en bas, avec le
+logo Kemet complet ("kemet") au lieu du symbole seul. Tout en bas de l'écran,
+"Propulsé par" en blanc, puis "Systalink" écrit en texte dans la couleur de
+Systalink (#1265dd) sur une pastille blanche : ni leur logo ni leur police.
 
 Le contenu de chaque écran est posé sur une carte en verre dépoli (teinte du
 fond à 60 %, flou de 16 px, bord blanc à 20 %), demandée explicitement le
 08/11/2026. Le texte de la carte est blanc dans les deux thèmes (`--auth-*`),
 les champs gardent leurs couleurs ordinaires, le bouton principal est blanc.
 Aucun texte descriptif sous les titres, une barre de progression sans
-« Étape X sur 4 » sur les questions. Voir
+« Étape X sur N » sur les questions et l'onboarding. Sur l'onboarding seulement,
+la raison d'un bouton Continuer bloqué est écrite sous lui (une liste longue
+peut la cacher). Un insigne de niveau posé sur la carte prend les couleurs
+du thème sombre dans les deux thèmes (`LevelBadge tone="onDark"`), et les
+couleurs propres au fond (réseau, symboles, pastilles, séparateurs) sont des
+variables `--auth-*` de `tokens.css`. Le fond de `html` est écrit en dur dans
+`index.html`, la feuille de style n'étant pas encore chargée au premier
+octet. Voir
 `docs/adr/0030-parcours-d-arrivee.md`.
 
 Deux intensités de mouvement : riche sur l'accueil, calme ailleurs. Seuls
@@ -178,8 +201,9 @@ Deux intensités de mouvement : riche sur l'accueil, calme ailleurs. Seuls
 caché et devient une image fixe avec `prefers-reduced-motion`.
 
 Les logos de Simple Icons sont la seule exception au « jamais le logo d'un
-autre produit » du principe 6 : décor qui dit de quoi on parle, en blanc,
-jamais dans les couleurs de la marque, jamais cliquable. Aucun autre écran
+autre produit » du principe 6 : décor qui dit de quoi on parle, jamais
+cliquable, en blanc sur les écrans calmes et dans leurs vraies couleurs sur
+l'accueil seulement (demandé le 08/11/2026). Aucun autre écran
 n'hérite de ces exceptions.
 
 #### Bannières de skill

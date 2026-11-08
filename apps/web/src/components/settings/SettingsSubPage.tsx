@@ -11,7 +11,7 @@ export interface SettingsSubPageProps {
 /** Une section des paramètres, sur sa propre page, avec le retour vers la liste. */
 export function SettingsSubPage({ title, children }: SettingsSubPageProps) {
   return (
-    <RailPage activeSection="parametres" className="gap-6 px-4 py-6 lg:py-8">
+    <RailPage activeSection="parametres" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-col gap-2">
         <a
           href="/parametres"

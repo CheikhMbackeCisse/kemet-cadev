@@ -2,7 +2,6 @@ import { ShieldAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { ModerationActionEntry, Report } from "@kemet/shared";
 import { listModerationLog, listPendingReports, resolveReport } from "../lib/chat/api.js";
-import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
@@ -182,12 +181,9 @@ export function ModerationPage() {
   }
 
   return (
-    <RailPage className="gap-6 px-4 py-8">
+    <RailPage className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <h1 className="text-lg font-bold text-text">{fr.moderation.title}</h1>
-        <div className="flex items-center gap-2">
-          <AccountMenu />
-        </div>
       </div>
 
       <div className="flex flex-col gap-3">

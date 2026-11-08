@@ -38,7 +38,17 @@ export const ATTACHMENT_TEXT_EXTENSIONS = [
 export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
 export const MAX_POST_ATTACHMENTS = 4;
 
-export const attachmentKindSchema = z.enum(["image", "file"]);
+/** Message vocal : deux minutes au plus, enregistrées par le navigateur. */
+export const VOICE_MAX_DURATION_MS = 2 * 60 * 1000;
+/**
+ * Deux minutes d'Opus ou d'AAC à 32 kbit/s pèsent environ 500 ko ; la marge
+ * couvre un navigateur qui ignore le débit demandé.
+ */
+export const VOICE_MAX_BYTES = 4 * 1024 * 1024;
+
+export const voiceDurationSchema = z.coerce.number().int().min(1).max(VOICE_MAX_DURATION_MS);
+
+export const attachmentKindSchema = z.enum(["image", "file", "voice"]);
 
 export const attachmentSchema = z.object({
   id: z.string().uuid(),
@@ -46,6 +56,8 @@ export const attachmentSchema = z.object({
   mimeType: z.string(),
   originalName: z.string(),
   byteSize: z.number().int().nonnegative(),
+  /** Durée d'un message vocal, nulle pour tout autre fichier. */
+  durationMs: z.number().int().nullable(),
   createdAt: z.string().datetime(),
   // Fichier effacé du disque avec le compte de son auteur : la ligne reste
   // pour afficher "Fichier supprimé" plutôt qu'un lien cassé.

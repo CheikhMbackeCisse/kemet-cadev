@@ -47,16 +47,13 @@ describe("IntroQuestionsPage", () => {
 
   it("la dernière question mène à l'inscription et marque l'accueil comme vu", () => {
     window.history.replaceState(null, "", "/decouvrir/objectifs");
-    const assign = vi.fn();
-    vi.stubGlobal("location", { ...window.location, pathname: "/decouvrir/objectifs", set href(value: string) { assign(value); } });
     render(<IntroQuestionsPage />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: fr.intro.intents.showcase_work }));
     fireEvent.click(screen.getByRole("button", { name: fr.intro.finish }));
 
-    expect(assign).toHaveBeenCalledWith("/inscription");
+    expect(window.location.pathname).toBe("/inscription");
     expect(hasSeenIntro()).toBe(true);
     expect(readIntroAnswers().intents).toEqual(["showcase_work"]);
-    vi.unstubAllGlobals();
   });
 });

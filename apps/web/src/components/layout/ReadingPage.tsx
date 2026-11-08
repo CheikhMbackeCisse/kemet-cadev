@@ -42,7 +42,7 @@ export function ReadingPage({
     <AppFrame activeSection={activeSection} activeMobileTab={activeTab}>
       <main
         className={cn(
-          "mx-auto flex w-full max-w-reading flex-col gap-6 px-4 py-8",
+          "mx-auto flex w-full max-w-reading flex-col gap-6 px-4 pt-3 lg:pt-6",
           "pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8",
           className,
         )}

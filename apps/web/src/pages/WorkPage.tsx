@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, FileDown, Mail, MessagesSquare } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -162,7 +163,7 @@ export function WorkPage() {
     setTeamBusy(true);
     try {
       const { conversation } = await openTeamConversation(work.slug);
-      window.location.href = `/messages/${conversation.id}`;
+      navigate(`/messages/${conversation.id}`);
     } catch (err) {
       toast.show(
         err instanceof ChatApiError && err.statusCode < 500
@@ -203,7 +204,7 @@ export function WorkPage() {
     setDeleteOpen(false);
     try {
       await deleteWork(slug);
-      window.location.href = "/travaux";
+      navigate("/travaux");
     } catch {
       toast.show(fr.works.deleteError, "danger");
     }
@@ -234,7 +235,7 @@ export function WorkPage() {
                   message: fr.works.notFound,
                   retry: {
                     label: fr.works.back,
-                    onClick: () => (window.location.href = "/travaux"),
+                    onClick: () => navigate("/travaux"),
                   },
                 }
               : {
@@ -273,7 +274,7 @@ export function WorkPage() {
     );
 
   function onMenuSelect(value: string) {
-    if (value === "edit") window.location.href = `/travaux/${work!.slug}/modifier`;
+    if (value === "edit") navigate(`/travaux/${work!.slug}/modifier`);
     if (value === "delete") setDeleteOpen(true);
     if (value === "withdraw") setWithdrawOpen(true);
     if (value === "report") setReportOpen(true);

@@ -1,11 +1,10 @@
-import { ChevronDown, Globe } from "lucide-react";
-import { useId, useMemo, useRef, useState } from "react";
-import { AFRICAN_COUNTRY_CODES, COUNTRIES, type Country } from "@kemet/shared";
+import { useId, useMemo, useState } from "react";
+import { AFRICAN_COUNTRY_CODES, COUNTRIES } from "@kemet/shared";
 import { cn } from "../../lib/cn.js";
 import { Flag } from "../ui/Flag.js";
 import { Input } from "../ui/Input.js";
 import { RadioList } from "./RadioList.js";
-import { choiceFrameClass, choiceIconClass, type ChoiceTone } from "./choiceTone.js";
+import type { ChoiceTone } from "./choiceTone.js";
 import { fr } from "../../i18n/fr.js";
 
 function normalize(text: string): string {
@@ -18,7 +17,6 @@ function normalize(text: string): string {
 
 const AFRICAN = new Set(AFRICAN_COUNTRY_CODES);
 const AFRICAN_COUNTRIES = COUNTRIES.filter((country) => AFRICAN.has(country.code));
-const OTHER_COUNTRIES = COUNTRIES.filter((country) => !AFRICAN.has(country.code));
 
 export interface CountryListProps {
   value: string;
@@ -27,21 +25,20 @@ export interface CountryListProps {
 }
 
 /**
- * Les 54 pays d'Afrique d'abord, puis une ligne "Autre pays" qui ouvre la
- * liste complète. Une recherche, sans accent ni casse, parcourt tous les pays.
+ * Les 54 pays d'Afrique, avec une recherche sans accent ni casse. Kemet
+ * réunit les développeurs africains : aucun autre pays n'est proposé.
  */
 export function CountryList({ value, onChange, tone = "page" }: CountryListProps) {
   const searchId = useId();
   const [query, setQuery] = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
-  const [showAll, setShowAll] = useState(() => value !== "" && !AFRICAN.has(value));
   const needle = normalize(query);
-  const searching = needle !== "";
 
   const options = useMemo(() => {
-    const pool: readonly Country[] =
-      searching || showAll ? [...AFRICAN_COUNTRIES, ...OTHER_COUNTRIES] : AFRICAN_COUNTRIES;
-    return pool
+    // Un pays déjà choisi hors d'Afrique (profil plus ancien) reste affiché et coché.
+    const current = AFRICAN.has(value)
+      ? undefined
+      : COUNTRIES.find((country) => country.code === value);
+    return (current ? [current, ...AFRICAN_COUNTRIES] : AFRICAN_COUNTRIES)
       .filter((country) => normalize(country.name).includes(needle))
       .map((country) => ({
         value: country.code,
@@ -55,7 +52,7 @@ export function CountryList({ value, onChange, tone = "page" }: CountryListProps
           </>
         ),
       }));
-  }, [needle, searching, showAll]);
+  }, [needle, value]);
 
   return (
     <>
@@ -66,7 +63,6 @@ export function CountryList({ value, onChange, tone = "page" }: CountryListProps
         {fr.onboarding.countrySearchLabel}
       </label>
       <Input
-        ref={searchRef}
         id={searchId}
         type="search"
         autoComplete="off"
@@ -88,28 +84,6 @@ export function CountryList({ value, onChange, tone = "page" }: CountryListProps
             onChange={onChange}
             tone={tone}
           />
-        )}
-        {!searching && !showAll && (
-          <button
-            type="button"
-            aria-expanded={false}
-            onClick={() => {
-              // Le bouton disparaît : le focus reprend dans la recherche.
-              setShowAll(true);
-              searchRef.current?.focus();
-            }}
-            className={cn(
-              "mt-2 flex min-h-control-mobile w-full items-center gap-3 px-3 text-left text-base md:min-h-control",
-              choiceFrameClass(tone),
-            )}
-          >
-            <Globe aria-hidden="true" className={cn("size-5 shrink-0", choiceIconClass(tone))} />
-            {fr.onboarding.countryOther}
-            <ChevronDown
-              aria-hidden="true"
-              className={cn("ml-auto size-4 shrink-0", choiceIconClass(tone))}
-            />
-          </button>
         )}
       </div>
     </>

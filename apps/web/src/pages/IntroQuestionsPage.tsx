@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState } from "react";
 import type { Intent, Interest, ProfileRole } from "@kemet/shared";
 import { IntroStepLayout } from "../components/intro/IntroStepLayout.js";
@@ -93,7 +94,7 @@ export function IntroQuestionsPage() {
     saveIntroAnswers(withoutStaleOther(updated));
     if (!target) {
       markIntroSeen();
-      window.location.href = SIGN_UP_PATH;
+      navigate(SIGN_UP_PATH);
       return;
     }
     window.history.pushState(null, "", introQuestionPath(target));
@@ -109,7 +110,7 @@ export function IntroQuestionsPage() {
   const common = {
     current: index + 1,
     total: INTRO_QUESTIONS.length,
-    onBack: previous ? () => goTo(previous) : () => (window.location.href = INTRO_BASE_PATH),
+    onBack: previous ? () => goTo(previous) : () => navigate(INTRO_BASE_PATH),
     onSkip: () => goTo(next, readIntroAnswers()),
     onSubmit: () => goTo(next),
     submitLabel: next ? fr.onboarding.continue : fr.intro.finish,

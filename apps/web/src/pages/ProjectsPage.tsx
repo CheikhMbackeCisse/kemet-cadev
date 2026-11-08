@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { FolderGit2, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { ProjectSummary } from "@kemet/shared";
@@ -7,6 +8,7 @@ import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { fr } from "../i18n/fr.js";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { useSession } from "../session/SessionProvider.js";
 import { goToSignUp, SIGN_UP_PATH } from "../session/signUpInvite.js";
@@ -31,17 +33,13 @@ export function ProjectsPage() {
   useEffect(() => load(), [load]);
 
   return (
-    <RailPage activeSection="projets" className="gap-6 px-4 py-8">
+    <RailPage activeSection="projets" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <h1 className="text-lg font-bold text-text">{fr.projects.title}</h1>
         <div className="flex items-center gap-2">
-          <a
-            href={isVisitor ? SIGN_UP_PATH : "/projets/nouveau"}
-            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
-          >
-            <Plus className="size-4" aria-hidden="true" />
+          <HeaderActionLink href={isVisitor ? SIGN_UP_PATH : "/projets/nouveau"} icon={Plus}>
             {fr.projects.create}
-          </a>
+          </HeaderActionLink>
         </div>
       </div>
 
@@ -63,7 +61,7 @@ export function ProjectsPage() {
           message={fr.projects.noProjects}
           action={{
             label: fr.projects.createTitle,
-            onClick: isVisitor ? goToSignUp : () => (window.location.href = "/projets/nouveau"),
+            onClick: isVisitor ? goToSignUp : () => navigate("/projets/nouveau"),
           }}
         />
       ) : (

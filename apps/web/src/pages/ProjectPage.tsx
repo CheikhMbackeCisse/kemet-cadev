@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, Check, ExternalLink, Rocket, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -109,7 +110,7 @@ export function ProjectPage() {
     setDeleteOpen(false);
     try {
       await deleteProject(project.slug);
-      window.location.href = "/projets";
+      navigate("/projets");
     } catch {
       toast.show(fr.projects.loadingError, "danger");
     }
@@ -164,7 +165,7 @@ export function ProjectPage() {
 
   if (loading) {
     return (
-      <RailPage activeSection="projets" className="gap-4 px-4 py-8">
+      <RailPage activeSection="projets" className="gap-4 px-4 pt-3 lg:pt-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-32 w-full" />
       </RailPage>
@@ -173,10 +174,10 @@ export function ProjectPage() {
 
   if (notFound) {
     return (
-      <RailPage activeSection="projets" className="gap-4 px-4 py-8">
+      <RailPage activeSection="projets" className="gap-4 px-4 pt-3 lg:pt-6">
         <ErrorState
           message={fr.projects.projectNotFound}
-          retry={{ label: fr.projects.back, onClick: () => (window.location.href = "/projets") }}
+          retry={{ label: fr.projects.back, onClick: () => navigate("/projets") }}
         />
       </RailPage>
     );
@@ -184,7 +185,7 @@ export function ProjectPage() {
 
   if (error || !project) {
     return (
-      <RailPage activeSection="projets" className="gap-4 px-4 py-8">
+      <RailPage activeSection="projets" className="gap-4 px-4 pt-3 lg:pt-6">
         <ErrorState
           message={fr.projects.loadingError}
           retry={{ label: fr.chat.retry, onClick: loadProject }}
@@ -194,7 +195,7 @@ export function ProjectPage() {
   }
 
   return (
-    <RailPage activeSection="projets" className="gap-6 px-4 py-8">
+    <RailPage activeSection="projets" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex items-center justify-between">
         <a
           href="/projets"
@@ -342,7 +343,10 @@ export function ProjectPage() {
                     </>
                   ) : (
                     helpRequest.status === "open" && (
-                      <Button className="text-xs" onClick={isVisitor ? goToSignUp : () => setApplyFor(helpRequest)}>
+                      <Button
+                        className="text-xs"
+                        onClick={isVisitor ? goToSignUp : () => setApplyFor(helpRequest)}
+                      >
                         {fr.projects.apply}
                       </Button>
                     )
@@ -394,7 +398,10 @@ export function ProjectPage() {
                 className="flex flex-col gap-1 border-b border-border pb-3 last:border-b-0"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <UserName name={application.applicantDisplayName} level={application.applicantLevel} />
+                  <UserName
+                    name={application.applicantDisplayName}
+                    level={application.applicantLevel}
+                  />
                   <Badge
                     tone={
                       application.status === "accepted"

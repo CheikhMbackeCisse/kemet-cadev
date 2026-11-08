@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ChevronRight, LogOut } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { RailPage } from "../components/layout/RailPage.js";
@@ -26,7 +27,7 @@ export function SettingsPage() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   if (status === "incomplete") return null;
@@ -40,7 +41,7 @@ export function SettingsPage() {
   })).filter((group) => group.sections.length > 0);
 
   return (
-    <RailPage activeSection="parametres" className="gap-6 px-4 py-6 lg:py-8">
+    <RailPage activeSection="parametres" className="gap-6 px-4 pt-3 lg:pt-6">
       <h1 className="text-lg font-bold text-text">{fr.settings.title}</h1>
       {isSuspended && <SuspendedBanner />}
 
@@ -68,7 +69,10 @@ export function SettingsPage() {
         <p className="text-base text-text-2">{fr.settings.searchNoResult(query.trim())}</p>
       ) : (
         groups.map((group) => (
-          <ul key={group.id} className="flex max-w-xl flex-col divide-y divide-border border-y border-border">
+          <ul
+            key={group.id}
+            className="flex max-w-xl flex-col divide-y divide-border border-y border-border"
+          >
             {group.sections.map((section) => (
               <li key={section.id}>
                 <a

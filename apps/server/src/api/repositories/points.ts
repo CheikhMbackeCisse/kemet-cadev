@@ -1,5 +1,5 @@
-import { and, eq, gte, inArray, ne, sql } from "drizzle-orm";
-import { pointsLedger, type DbOrTx } from "@kemet/db";
+import { and, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
+import { pointsLedger, profiles, type DbOrTx } from "@kemet/db";
 import { levelForPoints, type Level } from "@kemet/shared";
 
 export {
@@ -202,4 +202,29 @@ export async function computeUtileAwardAmount(
   if (accountAgeDays < UTILE_RECENCY_THRESHOLD_DAYS) return 0;
   const { level } = await computeProfilePoints(db, giver.id);
   return Math.max(1, Math.round(baseAmount * UTILE_LEVEL_MULTIPLIER[level]));
+}
+
+/**
+ * Nombre de membres à chaque niveau, calculé comme le niveau de chacun : à
+ * partir du registre. Un profil sans aucune ligne au registre est Apprenti.
+ * Ni l'assistant ni un compte supprimé ne comptent.
+ */
+export async function countMembersByLevel(db: DbOrTx, excludedProfileId: string): Promise<Record<Level, number>> {
+  const counts: Record<Level, number> = { apprenti: 0, artisan: 0, scribe: 0, architecte: 0, legende: 0 };
+  const [members] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(profiles)
+    .where(and(isNull(profiles.deletedAt), ne(profiles.id, excludedProfileId)));
+  const withPoints = await db
+    .selectDistinct({ profileId: pointsLedger.profileId })
+    .from(pointsLedger)
+    .innerJoin(profiles, eq(profiles.id, pointsLedger.profileId))
+    .where(and(isNull(profiles.deletedAt), ne(profiles.id, excludedProfileId)));
+  const points = await computeProfilesPoints(
+    db,
+    withPoints.map((row) => row.profileId),
+  );
+  for (const entry of points.values()) counts[entry.level] += 1;
+  counts.apprenti += (members?.total ?? 0) - points.size;
+  return counts;
 }

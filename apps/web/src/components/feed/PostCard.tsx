@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import type { MouseEvent } from "react";
 import { Bookmark, CheckCircle2, Heart, MessageSquare, Share2 } from "lucide-react";
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
@@ -48,7 +49,11 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
           countryCode={post.authorCountry}
         />
         <UserName name={post.authorDisplayName} level={post.authorLevel} />
-        <time dateTime={post.createdAt} title={formatFullDate(post.createdAt)} className="text-xs text-subtle">
+        <time
+          dateTime={post.createdAt}
+          title={formatFullDate(post.createdAt)}
+          className="text-xs text-subtle"
+        >
           {formatRelativeTime(post.createdAt)}
         </time>
       </div>
@@ -121,11 +126,14 @@ export function PostCard({
       window.open(bodyHref, "_blank", "noopener");
       return;
     }
-    window.location.href = bodyHref;
+    navigate(bodyHref);
   }
   const toast = useToast();
   async function share() {
-    const outcome = await shareLink(`${window.location.origin}/fil/${post.id}`, fr.feed.shareTitle(post.authorDisplayName));
+    const outcome = await shareLink(
+      `${window.location.origin}/fil/${post.id}`,
+      fr.feed.shareTitle(post.authorDisplayName),
+    );
     if (outcome === "copied") toast.show(fr.feed.linkCopied, "success");
     if (outcome === "failed") toast.show(fr.feed.shareFailed, "danger");
   }
@@ -137,7 +145,12 @@ export function PostCard({
 
   const Tag = as;
   return (
-    <Tag className={cn(POST_ROW_CLASS, bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2")}>
+    <Tag
+      className={cn(
+        POST_ROW_CLASS,
+        bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2",
+      )}
+    >
       <div className="flex gap-3">
         <ProfileLink
           handle={post.authorHandle}
@@ -152,12 +165,11 @@ export function PostCard({
         </ProfileLink>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <ProfileLink handle={post.authorHandle} className="min-w-0 max-w-full">
-              <UserName
-                name={post.authorDisplayName}
-                level={authorLevel(post.authorHandle, post.authorLevel)}
-              />
-            </ProfileLink>
+            <UserName
+              name={post.authorDisplayName}
+              handle={post.authorHandle}
+              level={authorLevel(post.authorHandle, post.authorLevel)}
+            />
             {post.format && <Badge>{FORMAT_LABELS[post.format]}</Badge>}
             {post.work && !post.deletedAt && (
               <span className="text-xs text-subtle">{fr.works.feedAnnouncement}</span>
@@ -194,7 +206,12 @@ export function PostCard({
                 {formatCount(post.replyCount)}
               </a>
             ) : (
-              <button type="button" onClick={onReply} aria-label={replyLabel} className={actionClassName}>
+              <button
+                type="button"
+                onClick={onReply}
+                aria-label={replyLabel}
+                className={actionClassName}
+              >
                 <MessageSquare className="size-4" aria-hidden="true" />
                 {formatCount(post.replyCount)}
               </button>
@@ -209,7 +226,10 @@ export function PostCard({
                 title={fr.feed.utile}
                 className={cn(actionClassName, post.reactedByMe && "text-danger hover:text-danger")}
               >
-                <Heart className={cn("size-4", post.reactedByMe && "fill-current")} aria-hidden="true" />
+                <Heart
+                  className={cn("size-4", post.reactedByMe && "fill-current")}
+                  aria-hidden="true"
+                />
                 {formatCount(post.utileCount)}
               </button>
             ) : (
@@ -229,7 +249,10 @@ export function PostCard({
                 onClick={onSave}
                 className={cn(post.savedByMe && "text-text")}
               >
-                <Bookmark className={cn("size-4", post.savedByMe && "fill-current")} aria-hidden="true" />
+                <Bookmark
+                  className={cn("size-4", post.savedByMe && "fill-current")}
+                  aria-hidden="true"
+                />
               </IconButton>
             )}
             {!post.deletedAt && (
@@ -238,7 +261,11 @@ export function PostCard({
               </IconButton>
             )}
             {canFeedback && (
-              <Button variant="ghost" className="whitespace-nowrap px-2 text-xs" onClick={onFeedback}>
+              <Button
+                variant="ghost"
+                className="whitespace-nowrap px-2 text-xs"
+                onClick={onFeedback}
+              >
                 <CheckCircle2 className="size-4" aria-hidden="true" />
                 {fr.feed.iTested}
               </Button>

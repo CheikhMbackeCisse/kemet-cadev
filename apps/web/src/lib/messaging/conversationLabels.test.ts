@@ -53,19 +53,22 @@ describe("conversationExcerpt", () => {
 
   it("préfixe de Toi un message qu'on a écrit et compacte les retours à la ligne", () => {
     const value = conversation({
-      lastMessage: { authorId: viewerId, body: "Salut\n\nça va ?", hasAttachments: false, deleted: false, createdAt: new Date().toISOString() },
+      lastMessage: { authorId: viewerId, body: "Salut\n\nça va ?", hasAttachments: false, hasVoice: false, deleted: false, createdAt: new Date().toISOString() },
     });
     expect(conversationExcerpt(value, viewerId)).toBe("Toi : Salut ça va ?");
   });
 
   it("dit Fichier joint pour un message sans texte et Message supprimé pour un message retiré", () => {
-    const base = { authorId: crypto.randomUUID(), body: "", createdAt: new Date().toISOString() };
+    const base = { authorId: crypto.randomUUID(), body: "", hasVoice: false, createdAt: new Date().toISOString() };
     expect(conversationExcerpt(conversation({ lastMessage: { ...base, hasAttachments: true, deleted: false } }), viewerId)).toBe(
       "Fichier joint",
     );
     expect(conversationExcerpt(conversation({ lastMessage: { ...base, hasAttachments: false, deleted: true } }), viewerId)).toBe(
       "Message supprimé",
     );
+    expect(
+      conversationExcerpt(conversation({ lastMessage: { ...base, hasAttachments: true, hasVoice: true, deleted: false } }), viewerId),
+    ).toBe("Message vocal");
   });
 });
 

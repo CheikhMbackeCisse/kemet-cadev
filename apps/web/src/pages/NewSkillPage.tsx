@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { Input } from "../components/ui/Input.js";
 import { Select } from "../components/ui/Select.js";
@@ -22,7 +23,7 @@ export function NewSkillPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   async function handleSubmit(event: FormEvent) {
@@ -41,7 +42,7 @@ export function NewSkillPage() {
           .filter(Boolean),
         visibility,
       });
-      window.location.href = "/skills";
+      navigate("/skills");
     } catch {
       setError(fr.skills.createError);
       setSubmitting(false);
@@ -82,16 +83,9 @@ export function NewSkillPage() {
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.skills.descriptionLabel}
-        <Textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
+        <Textarea value={description} onChange={(event) => setDescription(event.target.value)} />
       </label>
-      <CodeTextarea
-        label={fr.skills.contentLabel}
-        value={content}
-        onValueChange={setContent}
-      />
+      <CodeTextarea label={fr.skills.contentLabel} value={content} onValueChange={setContent} />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.skills.tagsLabel}
         <Input value={tags} onChange={(event) => setTags(event.target.value)} />

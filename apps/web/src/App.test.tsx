@@ -87,10 +87,9 @@ describe("App", () => {
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
-    const replace = vi.fn();
-    vi.stubGlobal("location", { ...window.location, pathname: "/", replace });
+    window.history.pushState({}, "", "/");
     render(<App />);
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/decouvrir"));
+    await waitFor(() => expect(window.location.pathname).toBe("/decouvrir"));
   });
 
   it("garde la page de connexion sur /connexion", async () => {

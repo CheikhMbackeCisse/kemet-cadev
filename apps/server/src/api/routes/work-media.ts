@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { MULTIPART_FIELD_LIMITS } from "../multipart-limits.js";
 import type { FastifyInstance } from "fastify";
 import { fileTypeFromBuffer } from "file-type";
 import { z } from "zod";
@@ -114,7 +115,7 @@ export function registerWorkMediaRoutes(
       // Plafond global du greffon multipart relevé pour cette seule route :
       // la limite propre à chaque type est vérifiée une fois le type connu.
       const part = await request.file({
-        limits: { fileSize: Math.max(maxVideoBytes, maxImageBytes), files: 1 },
+        limits: { fileSize: Math.max(maxVideoBytes, maxImageBytes), files: 1, ...MULTIPART_FIELD_LIMITS },
       });
       if (!part) throw badRequest("Aucun fichier envoyé.");
       let buffer: Buffer;

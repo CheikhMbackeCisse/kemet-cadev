@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { Image as ImageIcon, X } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { MAX_POST_ATTACHMENTS, type Attachment, type PostFormat } from "@kemet/shared";
@@ -32,7 +33,7 @@ export function NewPostPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   async function handleImageSelected(event: ChangeEvent<HTMLInputElement>) {
@@ -66,7 +67,7 @@ export function NewPostPage() {
         testAsk: format === "a_tester" ? testAsk.trim() : null,
         attachmentIds: attachments.map((attachment) => attachment.id),
       });
-      window.location.href = "/fil";
+      navigate("/fil");
     } catch (err) {
       setError(err instanceof ChatApiError ? err.message : fr.feed.createError);
       setSubmitting(false);

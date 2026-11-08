@@ -8,18 +8,24 @@ export interface IntroStepLayoutProps {
   current: number;
   total: number;
   title: string;
-  onBack: () => void;
+  /** Absent sur le premier écran après l'inscription : rien avant lui. */
+  onBack: (() => void) | null;
   onSkip: () => void;
   onSubmit: () => void;
   submitLabel: string;
   /** Pourquoi le bouton principal est désactivé : lu par un lecteur d'écran. */
   disabledReason?: string | null;
+  /** Raison écrite sous le bouton plutôt que lue seulement par un lecteur d'écran. */
+  showDisabledReason?: boolean;
   width?: "md" | "lg";
+  /** Enregistrement en cours : boutons bloqués, bouton principal en attente. */
+  submitting?: boolean;
+  error?: string | null;
   children: ReactNode;
 }
 
 /**
- * Une question avant l'inscription, sur la carte en verre dépoli : Retour et
+ * Une question du parcours d'arrivée (avant l'inscription, puis l'onboarding), sur la carte en verre dépoli : Retour et
  * Passer, une barre de progression sans texte, le titre, les choix.
  */
 export function IntroStepLayout({
@@ -31,7 +37,10 @@ export function IntroStepLayout({
   onSubmit,
   submitLabel,
   disabledReason,
+  showDisabledReason = false,
   width = "md",
+  submitting = false,
+  error,
   children,
 }: IntroStepLayoutProps) {
   const titleId = useId();
@@ -51,7 +60,7 @@ export function IntroStepLayout({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!disabledReason) onSubmit();
+    if (!disabledReason && !submitting) onSubmit();
   }
 
   const linkClass =
@@ -61,10 +70,14 @@ export function IntroStepLayout({
     <ArrivalLayout motion="calm" width={width}>
       <form aria-labelledby={titleId} onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="-my-2 flex items-center justify-between">
-          <button type="button" onClick={onBack} className={linkClass}>
-            {fr.onboarding.back}
-          </button>
-          <button type="button" onClick={onSkip} className={linkClass}>
+          {onBack ? (
+            <button type="button" onClick={onBack} disabled={submitting} className={linkClass}>
+              {fr.onboarding.back}
+            </button>
+          ) : (
+            <span />
+          )}
+          <button type="button" onClick={onSkip} disabled={submitting} className={linkClass}>
             {fr.onboarding.skip}
           </button>
         </div>
@@ -93,9 +106,16 @@ export function IntroStepLayout({
 
         <div className="flex flex-col gap-3">{children}</div>
 
+        {error && (
+          <p role="alert" className="text-sm font-medium text-auth-danger">
+            {error}
+          </p>
+        )}
+
         <Button
           type="submit"
           variant="inverse"
+          loading={submitting}
           aria-disabled={Boolean(disabledReason) || undefined}
           aria-describedby={disabledReason ? reasonId : undefined}
           className={disabledReason ? "w-full cursor-not-allowed opacity-50" : "w-full"}
@@ -103,7 +123,10 @@ export function IntroStepLayout({
           {submitLabel}
         </Button>
         {disabledReason && (
-          <p id={reasonId} className="sr-only">
+          <p
+            id={reasonId}
+            className={showDisabledReason ? "text-center text-sm text-auth-text-muted" : "sr-only"}
+          >
             {disabledReason}
           </p>
         )}

@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, ExternalLink, Settings, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -143,9 +144,14 @@ export function UserPage() {
     setMessageBusy(true);
     try {
       const { conversation } = await openConversation([handle]);
-      window.location.href = `/messages/${conversation.id}`;
+      navigate(`/messages/${conversation.id}`);
     } catch (err) {
-      toast.show(err instanceof ChatApiError && err.statusCode === 403 ? err.message : fr.messages.writeError, "danger");
+      toast.show(
+        err instanceof ChatApiError && err.statusCode === 403
+          ? err.message
+          : fr.messages.writeError,
+        "danger",
+      );
       setMessageBusy(false);
     }
   }
@@ -237,7 +243,7 @@ export function UserPage() {
               ? {
                   kind: "notFound",
                   message: fr.profile.notFound,
-                  retry: { label: fr.profile.back, onClick: () => (window.location.href = "/fil") },
+                  retry: { label: fr.profile.back, onClick: () => navigate("/fil") },
                 }
               : {
                   kind: "error",
@@ -295,7 +301,7 @@ export function UserPage() {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-text">{profile.displayName}</h1>
-              <LevelBadge level={profile.level} showLabel />
+              <LevelBadge level={profile.level} showLabel link />
             </div>
             <p className="text-sm text-subtle">
               {[profile.role ? ROLE_LABELS[profile.role] : null, profile.title]
@@ -334,14 +340,18 @@ export function UserPage() {
                       ? { value: "unblock", label: fr.messages.unblock(profile.handle) }
                       : { value: "block", label: fr.messages.block(profile.handle), danger: true },
                   ]}
-                  onSelect={(value) => (value === "unblock" ? void handleToggleBlock() : setBlockConfirmOpen(true))}
+                  onSelect={(value) =>
+                    value === "unblock" ? void handleToggleBlock() : setBlockConfirmOpen(true)
+                  }
                 />
               </div>
             )
           )}
         </div>
 
-        {blocked && <p className="text-sm text-text-2">{fr.messages.blockedNote(profile.handle)}</p>}
+        {blocked && (
+          <p className="text-sm text-text-2">{fr.messages.blockedNote(profile.handle)}</p>
+        )}
 
         {/* Kemet Pro ne vit que sur son propre profil, nulle part ailleurs. */}
         {isOwnProfile && (
@@ -406,8 +416,8 @@ export function UserPage() {
           )}
           {profile.openToOpportunities &&
             isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL) && (
-            <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
-          )}
+              <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
+            )}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { ChatApiError, uploadAttachment } from "../../lib/chat/api.js";
 import { takeDraftFocusRequest, useChannelDraft } from "../../lib/chat/useChannelDraft.js";
 import { fr } from "../../i18n/fr.js";
 import { SuggestionChips } from "../chat/SuggestionChips.js";
+import { useVoiceMessage } from "../chat/VoiceRecorder.js";
 import { CodeButton } from "../content/CodeButton.js";
 import { usePasteAsCode } from "../content/usePasteAsCode.js";
 import { Button } from "../ui/Button.js";
@@ -47,6 +48,11 @@ export function MessageComposer({
   const paste = usePasteAsCode(composerRef, setDraft, "-mb-2");
   const enterSends = useMemo(() => !window.matchMedia("(pointer: coarse)").matches, []);
   const noticeId = `composer-notice-${channelId}`;
+  // Un message vocal part seul, aussitôt enregistré, sans toucher au brouillon.
+  const voice = useVoiceMessage({
+    channelId,
+    onRecorded: (attachmentId) => onSend("", [attachmentId]),
+  });
 
   // Une pièce jointe appartient à son salon : le serveur la refuserait ailleurs.
   useEffect(() => setPendingAttachments([]), [channelId]);
@@ -81,7 +87,10 @@ export function MessageComposer({
       const attachment = await uploadAttachment(channelId, file);
       setPendingAttachments((current) => [...current, attachment]);
     } catch (error) {
-      toast.show(error instanceof ChatApiError ? error.message : fr.chat.attachmentUploadError, "danger");
+      toast.show(
+        error instanceof ChatApiError ? error.message : fr.chat.attachmentUploadError,
+        "danger",
+      );
     } finally {
       setUploading(false);
     }
@@ -114,7 +123,9 @@ export function MessageComposer({
               <IconButton
                 aria-label={fr.chat.removeAttachment(attachment.originalName)}
                 onClick={() =>
-                  setPendingAttachments((current) => current.filter((item) => item.id !== attachment.id))
+                  setPendingAttachments((current) =>
+                    current.filter((item) => item.id !== attachment.id),
+                  )
                 }
                 className="size-control-compact max-md:size-control-mobile"
               >
@@ -125,9 +136,14 @@ export function MessageComposer({
         </div>
       )}
       {paste.notice}
-      <div className="flex gap-2">
+      <div className="relative flex gap-2">
+        {voice.overlay}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
-        <IconButton aria-label={fr.chat.attachFile} onClick={() => fileInputRef.current?.click()} loading={uploading}>
+        <IconButton
+          aria-label={fr.chat.attachFile}
+          onClick={() => fileInputRef.current?.click()}
+          loading={uploading}
+        >
           <Paperclip className="size-4" aria-hidden="true" />
         </IconButton>
         <CodeButton textareaRef={composerRef} onChange={setDraft} />
@@ -141,7 +157,12 @@ export function MessageComposer({
           onPaste={paste.handlePaste}
           enterKeyHint={enterSends ? "send" : "enter"}
           onKeyDown={(event) => {
-            if (enterSends && event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+            if (
+              enterSends &&
+              event.key === "Enter" &&
+              !event.shiftKey &&
+              !event.nativeEvent.isComposing
+            ) {
               event.preventDefault();
               send();
             }
@@ -149,17 +170,23 @@ export function MessageComposer({
           variant="composer"
           className="max-md:min-h-11 flex-1 rounded-card"
         />
-        <Button
-          onClick={send}
-          // Garde le focus (et le clavier mobile ouvert) dans le composeur.
-          onPointerDown={(event) => event.preventDefault()}
-          aria-label={fr.chat.send}
-          disabled={uploading}
-          className="max-md:size-control-mobile max-md:px-0"
-        >
-          <Send className="size-4" aria-hidden="true" />
-        </Button>
+        {/* Le micro prend la place de l'envoi tant qu'il n'y a rien à envoyer. */}
+        {voice.button && !draft.trim() && pendingAttachments.length === 0 ? (
+          voice.button
+        ) : (
+          <Button
+            onClick={send}
+            // Garde le focus (et le clavier mobile ouvert) dans le composeur.
+            onPointerDown={(event) => event.preventDefault()}
+            aria-label={fr.chat.send}
+            disabled={uploading}
+            className="max-md:size-control-mobile max-md:px-0"
+          >
+            <Send className="size-4" aria-hidden="true" />
+          </Button>
+        )}
       </div>
+      {voice.notice}
       {notice && (
         <p id={noticeId} className="text-xs text-subtle">
           {notice}

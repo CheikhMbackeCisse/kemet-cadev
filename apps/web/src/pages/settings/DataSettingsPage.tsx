@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { useCallback, useEffect, useState } from "react";
 import type { ProfileSummary } from "@kemet/shared";
 import { SettingsSubPage } from "../../components/settings/SettingsSubPage.js";
@@ -19,8 +20,8 @@ export function DataSettingsPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "visitor") navigate("/connexion");
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   const load = useCallback(() => {
@@ -51,7 +52,10 @@ export function DataSettingsPage() {
       <section className="flex max-w-xl flex-col gap-3">
         <h2 className="text-md font-semibold text-text">{fr.settings.blockedSection}</h2>
         {error ? (
-          <ErrorState message={fr.settings.blockedError} retry={{ label: fr.chat.retry, onClick: load }} />
+          <ErrorState
+            message={fr.settings.blockedError}
+            retry={{ label: fr.chat.retry, onClick: load }}
+          />
         ) : blocked === null ? (
           <Skeleton className="h-12 w-full" />
         ) : blocked.length === 0 ? (

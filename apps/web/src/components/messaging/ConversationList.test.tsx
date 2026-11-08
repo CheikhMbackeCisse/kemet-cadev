@@ -28,6 +28,7 @@ function conversation(overrides: Partial<Conversation> = {}): Conversation {
       authorId: viewerId,
       body: "On se voit demain ?",
       hasAttachments: false,
+      hasVoice: false,
       deleted: false,
       createdAt: new Date().toISOString(),
     },
@@ -52,17 +53,34 @@ function state(overrides: Partial<ConversationListState> = {}): ConversationList
 describe("liste des conversations", () => {
   it("dit quoi faire quand la boîte est vide, différemment pour les demandes", () => {
     const { rerender } = render(
-      <ConversationList box="inbox" list={state()} activeConversationId={null} viewerId={viewerId} />,
+      <ConversationList
+        box="inbox"
+        list={state()}
+        activeConversationId={null}
+        viewerId={viewerId}
+      />,
     );
     expect(screen.getByRole("button", { name: "Démarrer une conversation" })).toBeInTheDocument();
-    rerender(<ConversationList box="requests" list={state()} activeConversationId={null} viewerId={viewerId} />);
+    rerender(
+      <ConversationList
+        box="requests"
+        list={state()}
+        activeConversationId={null}
+        viewerId={viewerId}
+      />,
+    );
     expect(screen.getByText(/Aucune demande en attente/)).toBeInTheDocument();
   });
 
   it("montre une erreur avec un bouton pour réessayer", () => {
     const reload = vi.fn();
     render(
-      <ConversationList box="inbox" list={state({ status: "error", reload })} activeConversationId={null} viewerId={viewerId} />,
+      <ConversationList
+        box="inbox"
+        list={state({ status: "error", reload })}
+        activeConversationId={null}
+        viewerId={viewerId}
+      />,
     );
     screen.getByRole("button", { name: "Réessayer" }).click();
     expect(reload).toHaveBeenCalled();
@@ -70,7 +88,14 @@ describe("liste des conversations", () => {
 
   it("annonce les non-lus d'une conversation fermée", () => {
     const item = conversation({ unreadCount: 3 });
-    render(<ConversationList box="inbox" list={state({ items: [item] })} activeConversationId={null} viewerId={viewerId} />);
+    render(
+      <ConversationList
+        box="inbox"
+        list={state({ items: [item] })}
+        activeConversationId={null}
+        viewerId={viewerId}
+      />,
+    );
     const link = screen.getByRole("link", { name: /Awa Ndiaye/ });
     expect(link).toHaveAttribute("href", `/messages/${item.id}`);
     expect(link).toHaveTextContent("Toi : On se voit demain ?");
@@ -79,7 +104,14 @@ describe("liste des conversations", () => {
 
   it("marque la conversation ouverte sans compter ses messages, en train d'être lus", () => {
     const item = conversation({ unreadCount: 3 });
-    render(<ConversationList box="inbox" list={state({ items: [item] })} activeConversationId={item.id} viewerId={viewerId} />);
+    render(
+      <ConversationList
+        box="inbox"
+        list={state({ items: [item] })}
+        activeConversationId={item.id}
+        viewerId={viewerId}
+      />,
+    );
     const link = screen.getByRole("link", { name: /Awa Ndiaye/ });
     expect(link).toHaveAttribute("aria-current", "page");
     expect(link).not.toHaveTextContent("non lus");
@@ -88,13 +120,30 @@ describe("liste des conversations", () => {
   it("signale une demande envoyée que personne n'a encore acceptée", () => {
     const [participant] = conversation().participants;
     const item = conversation({ participants: [{ ...participant!, status: "pending" }] });
-    render(<ConversationList box="inbox" list={state({ items: [item] })} activeConversationId={null} viewerId={viewerId} />);
+    render(
+      <ConversationList
+        box="inbox"
+        list={state({ items: [item] })}
+        activeConversationId={null}
+        viewerId={viewerId}
+      />,
+    );
     expect(screen.getByRole("link", { name: /Awa Ndiaye/ })).toHaveTextContent("En attente");
   });
 
   it("rappelle le travail d'une conversation d'équipe", () => {
-    const item = conversation({ isGroup: true, work: { slug: "memoire", title: "Synchronisation hors ligne" } });
-    render(<ConversationList box="requests" list={state({ items: [item] })} activeConversationId={null} viewerId={viewerId} />);
+    const item = conversation({
+      isGroup: true,
+      work: { slug: "memoire", title: "Synchronisation hors ligne" },
+    });
+    render(
+      <ConversationList
+        box="requests"
+        list={state({ items: [item] })}
+        activeConversationId={null}
+        viewerId={viewerId}
+      />,
+    );
     expect(screen.getByRole("link", { name: /Awa Ndiaye/ })).toHaveTextContent(
       "Équipe du travail « Synchronisation hors ligne »",
     );

@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, Star } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { SkillDetail } from "@kemet/shared";
@@ -74,7 +75,7 @@ export function SkillPage() {
     setDeleteOpen(false);
     try {
       await deleteSkill(slug);
-      window.location.href = "/skills";
+      navigate("/skills");
     } catch {
       setActionError(fr.spaces.actionError);
     }
@@ -82,7 +83,7 @@ export function SkillPage() {
 
   if (loading) {
     return (
-      <RailPage activeSection="skills" className="gap-4 px-4 py-8">
+      <RailPage activeSection="skills" className="gap-4 px-4 pt-3 lg:pt-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
       </RailPage>
@@ -91,7 +92,7 @@ export function SkillPage() {
 
   if (error || !skill) {
     return (
-      <RailPage activeSection="skills" className="gap-4 px-4 py-8">
+      <RailPage activeSection="skills" className="gap-4 px-4 pt-3 lg:pt-6">
         <ErrorState
           message={fr.skills.loadingError}
           retry={{ label: fr.chat.retry, onClick: load }}
@@ -101,7 +102,7 @@ export function SkillPage() {
   }
 
   return (
-    <RailPage activeSection="skills" className="gap-4 px-4 py-8">
+    <RailPage activeSection="skills" className="gap-4 px-4 pt-3 lg:pt-6">
       <div className="flex items-center justify-between">
         <a
           href="/skills"

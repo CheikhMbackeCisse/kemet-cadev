@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { ArrowDown, ArrowLeft, MessagesSquare } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { isDeletedAccountHandle, type ConversationDetail, type Message } from "@kemet/shared";
@@ -258,9 +259,8 @@ export function ConversationView({ conversationId, onClosed }: ConversationViewP
   ];
 
   function handleMenu(value: string) {
-    if (value === "work" && conversation?.work)
-      window.location.href = `/travaux/${conversation.work.slug}`;
-    else if (value === "profile" && other) window.location.href = `/u/${other.handle}`;
+    if (value === "work" && conversation?.work) navigate(`/travaux/${conversation.work.slug}`);
+    else if (value === "profile" && other) navigate(`/u/${other.handle}`);
     else if (value === "block") {
       if (conversation!.blockedByViewer) toggleBlock();
       else setConfirmation("block");

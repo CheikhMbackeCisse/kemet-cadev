@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
@@ -18,7 +19,8 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === "ready" || status === "incomplete") window.location.href = landingPath(status, onboarding);
+    if (status === "ready" || status === "incomplete")
+      navigate(landingPath(status, onboarding), { replace: true });
   }, [status, onboarding]);
 
   async function handleSubmit(event: FormEvent) {
@@ -60,7 +62,10 @@ export function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </label>
-          <a href="/mot-de-passe-oublie" className="inline-flex min-h-control-mobile items-center self-end text-sm text-auth-text-muted underline underline-offset-2 hover:text-auth-text md:min-h-control">
+          <a
+            href="/mot-de-passe-oublie"
+            className="inline-flex min-h-control-mobile items-center self-end text-sm text-auth-text-muted underline underline-offset-2 hover:text-auth-text md:min-h-control"
+          >
             {fr.auth.forgotPasswordLink}
           </a>
           {error && (
@@ -81,7 +86,10 @@ export function LoginPage() {
         </form>
         <p className="text-center text-sm text-auth-text-muted">
           {fr.auth.noAccountYet}{" "}
-          <a href="/inscription" className="font-medium text-auth-text underline underline-offset-2">
+          <a
+            href="/inscription"
+            className="font-medium text-auth-text underline underline-offset-2"
+          >
             {fr.auth.signupLink}
           </a>
         </p>

@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Space } from "@kemet/shared";
 import { Button } from "../ui/Button.js";
-import { EmptyState } from "../ui/EmptyState.js";
-import { ErrorState } from "../ui/ErrorState.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { getOnboardingSpaces, joinSpace, removeSpaceMember } from "../../lib/chat/api.js";
 import { fr } from "../../i18n/fr.js";
@@ -12,6 +10,23 @@ export interface SpaceSuggestionsProps {
   onError: (message: string | null) => void;
 }
 
+function GlassState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div
+      role={onRetry ? "alert" : undefined}
+      className="flex flex-col items-center gap-3 py-6 text-center text-base text-auth-text"
+    >
+      <p>{message}</p>
+      {onRetry && (
+        <Button type="button" variant="inverse-ghost" onClick={onRetry}>
+          {fr.onboarding.retry}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** Sur la carte en verre dépoli de l'onboarding : texte blanc dans les deux thèmes. */
 export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) {
   const [spaces, setSpaces] = useState<Space[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -37,7 +52,11 @@ export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) 
         (current) =>
           current?.map((item) =>
             item.id === space.id
-              ? { ...item, role: space.role ? null : "member", memberCount: item.memberCount + (space.role ? -1 : 1) }
+              ? {
+                  ...item,
+                  role: space.role ? null : "member",
+                  memberCount: item.memberCount + (space.role ? -1 : 1),
+                }
               : item,
           ) ?? null,
       );
@@ -49,42 +68,46 @@ export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) 
   }
 
   if (failed) {
-    return <ErrorState message={fr.onboarding.spacesError} retry={{ label: fr.onboarding.retry, onClick: load }} />;
+    return <GlassState message={fr.onboarding.spacesError} onRetry={load} />;
   }
   if (!spaces) {
     return (
       <div className="flex flex-col gap-3" aria-busy="true">
         {[0, 1, 2].map((index) => (
-          <Skeleton key={index} className="h-16 w-full" />
+          <Skeleton key={index} className="h-16 w-full bg-auth-skeleton" />
         ))}
       </div>
     );
   }
-  if (spaces.length === 0) return <EmptyState message={fr.onboarding.spacesEmpty} />;
+  if (spaces.length === 0) return <GlassState message={fr.onboarding.spacesEmpty} />;
 
   return (
-    <ul className="flex flex-col divide-y divide-border">
+    <ul className="flex flex-col divide-y divide-auth-divider">
       {spaces.map((space) => {
         // Un propriétaire ou un administrateur ne quitte pas l'espace depuis ici.
         const manages = space.role === "owner" || space.role === "admin";
         return (
           <li key={space.id} className="flex items-center gap-3 py-3">
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-text">{space.name}</p>
-              {space.description && <p className="line-clamp-2 text-sm text-text-2">{space.description}</p>}
-              <p className="text-sm text-subtle">{fr.onboarding.memberCount(space.memberCount)}</p>
+              <p className="truncate font-medium text-auth-text">{space.name}</p>
+              {space.description && (
+                <p className="line-clamp-1 text-sm text-auth-text-muted">{space.description}</p>
+              )}
+              <p className="text-sm text-auth-text-muted">
+                {fr.onboarding.memberCount(space.memberCount)}
+              </p>
             </div>
             {manages ? (
-              <p className="shrink-0 text-sm text-text-2">{fr.onboarding.spaceManaged}</p>
+              <p className="shrink-0 text-sm text-auth-text-muted">{fr.onboarding.spaceManaged}</p>
             ) : (
               <Button
                 type="button"
-                variant={space.role ? "secondary" : "primary"}
+                variant={space.role ? "inverse-ghost" : "inverse"}
                 aria-label={fr.onboarding.joinLabel(space.name)}
                 aria-pressed={Boolean(space.role)}
                 loading={pendingId === space.id}
                 onClick={() => void toggle(space)}
-                className="shrink-0"
+                className={space.role ? "shrink-0 border border-auth-glass-border" : "shrink-0"}
               >
                 {space.role ? fr.onboarding.joined : fr.onboarding.join}
               </Button>

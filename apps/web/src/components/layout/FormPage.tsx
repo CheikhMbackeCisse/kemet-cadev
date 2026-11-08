@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { ArrowLeft } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { IconButton } from "../ui/IconButton.js";
@@ -47,9 +48,7 @@ export function FormPage({
       <div className="flex items-center gap-3">
         <IconButton
           aria-label={fr.common.back}
-          onClick={() =>
-            window.history.length > 1 ? window.history.back() : (window.location.href = backHref)
-          }
+          onClick={() => (window.history.length > 1 ? window.history.back() : navigate(backHref))}
         >
           <ArrowLeft className="size-5" aria-hidden="true" />
         </IconButton>

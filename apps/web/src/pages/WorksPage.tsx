@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { BookOpen, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { WorkSort, WorkSummary, WorkType } from "@kemet/shared";
@@ -10,6 +11,7 @@ import { Select } from "../components/ui/Select.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { IconButton } from "../components/ui/IconButton.js";
 import { useToast } from "../components/ui/Toast.js";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { WorkCard } from "../components/works/WorkCard.js";
 import { WORK_TYPE_LABELS, WORK_TYPES } from "../components/works/workLabels.js";
@@ -140,17 +142,13 @@ export function WorksPage() {
   const filtered = q !== "" || type !== null || tag !== "";
 
   return (
-    <RailPage activeSection="travaux" className="gap-6 px-4 py-8">
+    <RailPage activeSection="travaux" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <h1 className="text-lg font-bold text-text">{fr.works.title}</h1>
         {status !== "visitor" && (
-          <a
-            href="/travaux/nouveau"
-            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
-          >
-            <Plus className="size-4" aria-hidden="true" />
+          <HeaderActionLink href="/travaux/nouveau" icon={Plus}>
             {fr.works.create}
-          </a>
+          </HeaderActionLink>
         )}
       </div>
 
@@ -254,11 +252,11 @@ export function WorksPage() {
               : status === "visitor"
                 ? {
                     label: fr.works.signInToPublish,
-                    onClick: () => (window.location.href = "/connexion"),
+                    onClick: () => navigate("/connexion"),
                   }
                 : {
                     label: fr.works.createTitle,
-                    onClick: () => (window.location.href = "/travaux/nouveau"),
+                    onClick: () => navigate("/travaux/nouveau"),
                   }
           }
         />

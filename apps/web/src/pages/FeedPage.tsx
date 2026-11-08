@@ -10,6 +10,7 @@ import {
   togglePostReaction,
 } from "../lib/chat/api.js";
 import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
@@ -17,7 +18,6 @@ import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { Tabs } from "../components/ui/Tabs.js";
 import { useToast } from "../components/ui/Toast.js";
-import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { InstallBanner } from "../components/shell/InstallBanner.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
@@ -129,7 +129,9 @@ export function FeedPage() {
     try {
       const result = await setPostBookmark(postId, !target.savedByMe);
       setPosts((current) =>
-        current.map((post) => (post.id === postId ? { ...post, savedByMe: result.savedByMe } : post)),
+        current.map((post) =>
+          post.id === postId ? { ...post, savedByMe: result.savedByMe } : post,
+        ),
       );
       toast.show(result.savedByMe ? fr.feed.savedToast : fr.feed.unsavedToast, "success");
     } catch {
@@ -208,15 +210,10 @@ export function FeedPage() {
       <h1 className="text-lg font-bold text-text">{fr.feed.title}</h1>
       <div className="flex items-center gap-2">
         {canInteract && (
-          <a
-            href="/fil/nouveau"
-            className="inline-flex h-control max-md:h-control-mobile items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
-          >
-            <Plus className="size-4" aria-hidden="true" />
+          <HeaderActionLink href="/fil/nouveau" icon={Plus}>
             {fr.feed.newPostLink}
-          </a>
+          </HeaderActionLink>
         )}
-        <AccountMenu />
       </div>
     </div>
   );
@@ -249,6 +246,7 @@ export function FeedPage() {
           feedContent
         ) : (
           <Tabs
+            layout="centered"
             value={tab}
             onValueChange={(value) => setTab(value as FeedTab)}
             items={[

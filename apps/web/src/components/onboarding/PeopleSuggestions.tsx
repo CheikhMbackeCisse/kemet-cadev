@@ -2,10 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { PersonSuggestion } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Button } from "../ui/Button.js";
-import { EmptyState } from "../ui/EmptyState.js";
-import { ErrorState } from "../ui/ErrorState.js";
 import { Skeleton } from "../ui/Skeleton.js";
-import { UserName } from "../ui/UserName.js";
+import { LevelBadge } from "../ui/LevelBadge.js";
 import { followUser, getOnboardingPeople, unfollowUser } from "../../lib/chat/api.js";
 import { fr } from "../../i18n/fr.js";
 
@@ -13,6 +11,23 @@ export interface PeopleSuggestionsProps {
   onError: (message: string | null) => void;
 }
 
+function GlassState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div
+      role={onRetry ? "alert" : undefined}
+      className="flex flex-col items-center gap-3 py-6 text-center text-base text-auth-text"
+    >
+      <p>{message}</p>
+      {onRetry && (
+        <Button type="button" variant="inverse-ghost" onClick={onRetry}>
+          {fr.onboarding.retry}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** Sur la carte en verre dépoli de l'onboarding : texte blanc dans les deux thèmes. */
 export function PeopleSuggestions({ onError }: PeopleSuggestionsProps) {
   const [people, setPeople] = useState<PersonSuggestion[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -37,7 +52,9 @@ export function PeopleSuggestions({ onError }: PeopleSuggestionsProps) {
       setPeople(
         (current) =>
           current?.map((item) =>
-            item.profile.id === person.profile.id ? { ...item, isFollowed: !person.isFollowed } : item,
+            item.profile.id === person.profile.id
+              ? { ...item, isFollowed: !person.isFollowed }
+              : item,
           ) ?? null,
       );
     } catch {
@@ -48,21 +65,21 @@ export function PeopleSuggestions({ onError }: PeopleSuggestionsProps) {
   }
 
   if (failed) {
-    return <ErrorState message={fr.onboarding.peopleError} retry={{ label: fr.onboarding.retry, onClick: load }} />;
+    return <GlassState message={fr.onboarding.peopleError} onRetry={load} />;
   }
   if (!people) {
     return (
       <div className="flex flex-col gap-3" aria-busy="true">
         {[0, 1, 2, 3, 4].map((index) => (
-          <Skeleton key={index} className="h-14 w-full" />
+          <Skeleton key={index} className="h-14 w-full bg-auth-skeleton" />
         ))}
       </div>
     );
   }
-  if (people.length === 0) return <EmptyState message={fr.onboarding.peopleEmpty} />;
+  if (people.length === 0) return <GlassState message={fr.onboarding.peopleEmpty} />;
 
   return (
-    <ul className="flex flex-col divide-y divide-border">
+    <ul className="flex flex-col divide-y divide-auth-divider">
       {people.map((person) => (
         <li key={person.profile.id} className="flex items-center gap-3 py-3">
           <Avatar
@@ -72,17 +89,24 @@ export function PeopleSuggestions({ onError }: PeopleSuggestionsProps) {
             countryCode={person.profile.country || undefined}
           />
           <div className="min-w-0 flex-1">
-            <UserName name={person.profile.displayName} level={person.level} />
-            {person.profile.title && <p className="truncate text-sm text-text-2">{person.profile.title}</p>}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate font-medium text-auth-text">
+                {person.profile.displayName}
+              </span>
+              <LevelBadge level={person.level} tone="onDark" />
+            </span>
+            {person.profile.title && (
+              <p className="truncate text-sm text-auth-text-muted">{person.profile.title}</p>
+            )}
           </div>
           <Button
             type="button"
-            variant={person.isFollowed ? "secondary" : "primary"}
+            variant={person.isFollowed ? "inverse-ghost" : "inverse"}
             aria-label={fr.onboarding.followLabel(person.profile.displayName)}
             aria-pressed={person.isFollowed}
             loading={pendingId === person.profile.id}
             onClick={() => void toggle(person)}
-            className="shrink-0"
+            className={person.isFollowed ? "shrink-0 border border-auth-glass-border" : "shrink-0"}
           >
             {person.isFollowed ? fr.onboarding.following : fr.onboarding.follow}
           </Button>

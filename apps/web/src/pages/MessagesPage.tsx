@@ -1,8 +1,12 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { MessagesSquare, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ConversationBox } from "@kemet/shared";
 import { AppFrame } from "../components/layout/AppFrame.js";
-import { ConversationList, ConversationListSkeleton } from "../components/messaging/ConversationList.js";
+import {
+  ConversationList,
+  ConversationListSkeleton,
+} from "../components/messaging/ConversationList.js";
 import { ConversationView } from "../components/messaging/ConversationView.js";
 import { SalonsSegment } from "../components/shell/SalonsSegment.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
@@ -64,7 +68,12 @@ function ConversationBoxes({ activeConversationId }: { activeConversationId: str
           label: fr.messages.inbox,
           content: (
             <div className="-mx-3 -mt-2">
-              <ConversationList box="inbox" list={inbox} activeConversationId={activeConversationId} viewerId={profile?.id ?? null} />
+              <ConversationList
+                box="inbox"
+                list={inbox}
+                activeConversationId={activeConversationId}
+                viewerId={profile?.id ?? null}
+              />
             </div>
           ),
         },
@@ -99,7 +108,9 @@ function ConversationBoxes({ activeConversationId }: { activeConversationId: str
 export function MessagesPage() {
   const { status } = useSession();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const [conversationId, setConversationId] = useState(() => readConversationId(window.location.pathname));
+  const [conversationId, setConversationId] = useState(() =>
+    readConversationId(window.location.pathname),
+  );
 
   useEffect(() => {
     const onPopState = () => setConversationId(readConversationId(window.location.pathname));
@@ -115,7 +126,7 @@ export function MessagesPage() {
   }
 
   useEffect(() => {
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   if (status === "loading" || status === "incomplete") {
@@ -135,7 +146,7 @@ export function MessagesPage() {
           <EmptyState
             icon={MessagesSquare}
             message={fr.messages.signInRequired}
-            action={{ label: fr.messages.signIn, onClick: () => (window.location.href = "/connexion") }}
+            action={{ label: fr.messages.signIn, onClick: () => navigate("/connexion") }}
           />
         </main>
       </AppFrame>

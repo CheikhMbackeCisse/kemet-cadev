@@ -1,6 +1,8 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { Plus, Search, Star } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
 import type { SkillSummary } from "@kemet/shared";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { SkillCard } from "../components/skills/SkillCard.js";
 import { Button } from "../components/ui/Button.js";
@@ -50,16 +52,12 @@ export function SkillsPage() {
   useEffect(() => load(appliedQuery), [appliedQuery, load]);
 
   return (
-    <RailPage activeSection="skills" className="gap-6 px-4 py-8">
+    <RailPage activeSection="skills" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-lg font-bold text-text">{fr.skills.title}</h1>
-        <a
-          href="/skills/nouveau"
-          className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-medium text-white hover:bg-primary-hover"
-        >
-          <Plus className="size-4" aria-hidden="true" />
+        <HeaderActionLink href="/skills/nouveau" icon={Plus}>
           {fr.skills.create}
-        </a>
+        </HeaderActionLink>
       </div>
 
       <div className="relative max-w-xl">
@@ -88,7 +86,10 @@ export function SkillsPage() {
           ))}
         </div>
       ) : error ? (
-        <ErrorState message={fr.skills.loadingError} retry={{ label: fr.chat.retry, onClick: () => load(appliedQuery) }} />
+        <ErrorState
+          message={fr.skills.loadingError}
+          retry={{ label: fr.chat.retry, onClick: () => load(appliedQuery) }}
+        />
       ) : skills.length === 0 ? (
         appliedQuery ? (
           <div className="flex flex-col items-start gap-3">
@@ -103,7 +104,7 @@ export function SkillsPage() {
             message={fr.skills.noSkills}
             action={{
               label: fr.skills.create,
-              onClick: () => (window.location.href = "/skills/nouveau"),
+              onClick: () => navigate("/skills/nouveau"),
             }}
           />
         )

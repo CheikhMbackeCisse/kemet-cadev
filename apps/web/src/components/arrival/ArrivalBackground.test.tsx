@@ -12,9 +12,25 @@ function setVisibility(state: DocumentVisibilityState) {
 describe("ArrivalBackground", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("compte seize éléments flottants au plus", () => {
+  it("compte vingt et un éléments flottants au plus, onze sur téléphone", () => {
     const { container } = render(<ArrivalBackground motion="rich" />);
-    expect(container.querySelectorAll(".arrival-float").length).toBeLessThanOrEqual(16);
+    const items = container.querySelectorAll(".arrival-float");
+    expect(items.length).toBeLessThanOrEqual(21);
+    const onPhone = [...items].filter((item) => !item.classList.contains("max-md:hidden"));
+    expect(onPhone.length).toBeLessThanOrEqual(11);
+  });
+
+  it("pose le réseau des capitales sur l'accueil, logos dans leurs couleurs", () => {
+    const { container } = render(<ArrivalBackground motion="rich" />);
+    expect(container.querySelectorAll(".capital-dot").length).toBeGreaterThanOrEqual(30);
+    expect(container.querySelectorAll(".network-link").length).toBeGreaterThanOrEqual(40);
+    expect(container.querySelector('svg[fill="#3776AB"]')).not.toBeNull();
+  });
+
+  it("garde le fond discret ailleurs dans le parcours", () => {
+    const { container } = render(<ArrivalBackground motion="calm" />);
+    expect(container.querySelector(".capital-dot")).toBeNull();
+    expect(container.querySelector(".arrival-tile")).toBeNull();
   });
 
   it("met l'animation en pause quand l'onglet est caché, puis la reprend", () => {

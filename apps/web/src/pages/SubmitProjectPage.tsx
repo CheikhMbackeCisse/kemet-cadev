@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { ProjectSummary, Submission } from "@kemet/shared";
 import { Input } from "../components/ui/Input.js";
@@ -41,7 +42,7 @@ export function SubmitProjectPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   const load = useCallback(async () => {
@@ -94,7 +95,7 @@ export function SubmitProjectPage() {
           demoUrl: demoUrl.trim() ? demoUrl.trim() : null,
         });
       }
-      window.location.href = `/competitions/${slug}`;
+      navigate(`/competitions/${slug}`);
     } catch (err) {
       setError(err instanceof ChatApiError ? err.message : fr.competitions.submitProjectError);
       setSubmitting(false);

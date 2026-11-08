@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { FormPage } from "../components/layout/FormPage.js";
 import { Textarea } from "../components/ui/Textarea.js";
@@ -19,7 +20,7 @@ export function NewConversationPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "visitor") window.location.href = "/connexion";
+    if (status === "visitor") navigate("/connexion");
   }, [status]);
 
   const parsed = parseHandles(handles);
@@ -31,10 +32,12 @@ export function NewConversationPage() {
     setSubmitting(true);
     try {
       const { conversation } = await openConversation(parsed.handles);
-      window.location.href = `/messages/${conversation.id}`;
+      navigate(`/messages/${conversation.id}`);
     } catch (err) {
       // Le serveur nomme l'identifiant introuvable ou bloqué : son message est le plus utile.
-      setError(err instanceof ChatApiError && err.statusCode < 500 ? err.message : fr.messages.writeError);
+      setError(
+        err instanceof ChatApiError && err.statusCode < 500 ? err.message : fr.messages.writeError,
+      );
       setSubmitting(false);
     }
   }
@@ -59,7 +62,11 @@ export function NewConversationPage() {
     >
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.messages.handlesLabel}
-        <Textarea variant="form" value={handles} onChange={(event) => setHandles(event.target.value)} />
+        <Textarea
+          variant="form"
+          value={handles}
+          onChange={(event) => setHandles(event.target.value)}
+        />
         <span className="text-xs text-subtle">{fr.messages.handlesHint}</span>
       </label>
       <p className="text-xs text-subtle">{fr.messages.privacyNote}</p>
