@@ -112,7 +112,7 @@ test("enregistre un post, le retrouve dans Enregistrés et copie son lien", asyn
   await expect(page.getByRole("button", { name: /Marquer utile, 1 personne/ })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(page.getByRole("button", { name: "Enregistrer", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByText("Enregistré.")).toBeVisible();
+  await expect(page.getByText("Enregistré.", { exact: true }).first()).toBeVisible();
 
   await page.goto("/enregistres");
   await expect(page.getByText(body)).toBeVisible();
