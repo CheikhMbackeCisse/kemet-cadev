@@ -27,10 +27,6 @@ import { demoUuid } from "./demo-uuid.js";
 
 const databaseUrl = getTestDatabaseUrl();
 
-// Assez de profils de remplissage pour le skill le plus noté (2 310 avis),
-// sans le coût des 12 300 du seed complet.
-const FILLER_PROFILE_COUNT = 3_000;
-
 describe.skipIf(!databaseUrl)("médias de démonstration", () => {
   const db = createDb(databaseUrl ?? "");
   let uploadsDir = "";
@@ -50,7 +46,7 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
   });
 
   it("complète une base déjà remplie par le seed", async () => {
-    await seedDemoDataset(db, { fillerProfileCount: FILLER_PROFILE_COUNT });
+    await seedDemoDataset(db);
     const result = await seedDemoMedia(db, { uploadsDir });
     expect(result).toEqual({
       status: "done",
@@ -62,7 +58,7 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
       skillRatings: expect.any(Number),
       filesWritten: true,
     });
-  }, 180_000);
+  }, 300_000);
 
   it("rattache à chaque nouveau post son image, écrite sur le disque", async () => {
     for (const post of DEMO_MEDIA_POSTS.filter((candidate) => candidate.image)) {
