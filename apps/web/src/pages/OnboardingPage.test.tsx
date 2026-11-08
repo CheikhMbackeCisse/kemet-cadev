@@ -3,6 +3,7 @@ import type { MeResponse, OnboardingState } from "@kemet/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fr } from "../i18n/fr.js";
 import { OnboardingPage } from "./OnboardingPage.js";
+import { readIntroAnswers, saveIntroAnswers } from "../lib/intro/introStorage.js";
 
 const updateOnboarding = vi.fn();
 const updateMyProfile = vi.fn();
@@ -51,7 +52,7 @@ describe("OnboardingPage", () => {
   });
 
   it("reprend à l'écran enregistré quand l'adresse n'en désigne aucun", async () => {
-    start("/bienvenue", { step: "interests", completed: false, interests: ["web"] });
+    start("/bienvenue", { step: "interests", completed: false, interests: ["web"], intents: [] });
 
     expect(await screen.findByRole("heading", { name: fr.onboarding.interestsTitle })).toBeInTheDocument();
     expect(screen.getByText(fr.onboarding.progress(4, 6))).toBeInTheDocument();
@@ -60,7 +61,7 @@ describe("OnboardingPage", () => {
   });
 
   it("Passer avance sans rien enregistrer d'autre que l'écran atteint", async () => {
-    start("/bienvenue/role", { step: "role", completed: false, interests: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
 
     fireEvent.click(screen.getByRole("button", { name: fr.onboarding.skip }));
 
@@ -71,7 +72,7 @@ describe("OnboardingPage", () => {
   });
 
   it("enregistre le choix, puis l'écran suivant", async () => {
-    start("/bienvenue/role", { step: "role", completed: false, interests: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
 
     const submit = screen.getByRole("button", { name: fr.onboarding.continue });
     expect(submit).toBeDisabled();
@@ -83,7 +84,7 @@ describe("OnboardingPage", () => {
   });
 
   it("Retour revient à l'écran précédent ; le premier écran n'en a pas", async () => {
-    start("/bienvenue/role", { step: "role", completed: false, interests: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
     fireEvent.click(screen.getByRole("button", { name: fr.onboarding.back }));
 
     expect(await screen.findByRole("heading", { name: fr.onboarding.countryTitle })).toBeInTheDocument();
@@ -91,7 +92,7 @@ describe("OnboardingPage", () => {
   });
 
   it("filtre les pays sans tenir compte des accents", () => {
-    start("/bienvenue/pays", { step: "country", completed: false, interests: [] });
+    start("/bienvenue/pays", { step: "country", completed: false, interests: [], intents: [] });
 
     fireEvent.change(screen.getByLabelText(fr.onboarding.countrySearchLabel), { target: { value: "senegal" } });
 
@@ -101,11 +102,24 @@ describe("OnboardingPage", () => {
 
   it("garde l'erreur affichée et l'écran en place si l'enregistrement échoue", async () => {
     updateOnboarding.mockRejectedValueOnce(new Error("hors ligne"));
-    start("/bienvenue/role", { step: "role", completed: false, interests: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
 
     fireEvent.click(screen.getByRole("button", { name: fr.onboarding.skip }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(fr.onboarding.saveError);
     expect(screen.getByRole("heading", { name: fr.onboarding.roleTitle })).toBeInTheDocument();
+  });
+
+  it("enregistre les réponses de l'accueil sur le profil et saute les écrans déjà répondus", async () => {
+    saveIntroAnswers({ role: "developer", country: "SN", interests: ["payments"], intents: ["learn"] });
+    start("/bienvenue/pays", { step: "country", completed: false, interests: [], intents: [] });
+
+    expect(await screen.findByRole("heading", { name: fr.onboarding.specialtyTitle })).toBeInTheDocument();
+    expect(updateMyProfile).toHaveBeenCalledWith({ country: "SN", role: "developer" });
+    expect(updateOnboarding).toHaveBeenCalledWith({ interests: ["payments"], intents: ["learn"] });
+    expect(window.location.pathname).toBe("/bienvenue/specialite");
+    expect(screen.getByText(fr.onboarding.progress(1, 3))).toBeInTheDocument();
+    expect(readIntroAnswers()).toEqual({ interests: undefined, intents: undefined });
+    window.localStorage.clear();
   });
 });

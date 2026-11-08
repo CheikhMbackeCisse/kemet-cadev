@@ -3,7 +3,7 @@ import { updateOnboardingSchema, type OnboardingState } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden } from "../../errors.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
-import { knownInterests, suggestPeople, suggestSpaces, updateOnboarding } from "../repositories/onboarding.js";
+import { knownInterests, knownIntents, suggestPeople, suggestSpaces, updateOnboarding } from "../repositories/onboarding.js";
 import { computeProfilesPoints } from "../repositories/points.js";
 import { countSpaceMembersBatch } from "../repositories/chat.js";
 import { serializeSpace } from "../chat-serializers.js";
@@ -18,6 +18,7 @@ export function serializeOnboarding(row: ProfileRow): OnboardingState {
     step: row.onboardingStep,
     completed: row.onboardingCompletedAt !== null,
     interests: knownInterests(row.interests),
+    intents: knownIntents(row.intents),
   };
 }
 

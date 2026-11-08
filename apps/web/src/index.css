@@ -156,3 +156,34 @@
     }
   }
 }
+
+/*
+ * Symboles de code de l'écran d'accueil (pages/WelcomePage.tsx) : une montée
+ * lente et un fondu, jamais d'animation si le système demande moins de
+ * mouvement.
+ */
+@keyframes intro-drift {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-40vh);
+    opacity: 0;
+  }
+}
+
+.intro-glyph {
+  animation: intro-drift var(--intro-duration) linear var(--intro-delay) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-glyph {
+    animation: none;
+    opacity: 0.6;
+  }
+}

@@ -1,3 +1,5 @@
+import { INTRO_BASE_PATH } from "./lib/intro/introSteps.js";
+import { hasSeenIntro } from "./lib/intro/introStorage.js";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Skeleton } from "./components/ui/Skeleton.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
@@ -93,6 +95,12 @@ const ResetPasswordPage = lazy(() =>
 const CompleteProfilePage = lazy(() =>
   import("./pages/CompleteProfilePage.js").then((m) => ({ default: m.CompleteProfilePage })),
 );
+const WelcomePage = lazy(() =>
+  import("./pages/WelcomePage.js").then((m) => ({ default: m.WelcomePage })),
+);
+const IntroQuestionsPage = lazy(() =>
+  import("./pages/IntroQuestionsPage.js").then((m) => ({ default: m.IntroQuestionsPage })),
+);
 const OnboardingPage = lazy(() =>
   import("./pages/OnboardingPage.js").then((m) => ({ default: m.OnboardingPage })),
 );
@@ -178,9 +186,12 @@ function Redirect({ to }: { to: string }) {
  */
 function RootPage() {
   const { status, onboarding } = useSession();
-  // Le fil s'affiche sans attendre la session : un visiteur, le cas le plus
-  // courant ici, n'a pas à patienter pour une redirection qui ne le concerne pas.
-  if (status === "loading" || status === "visitor") return <FeedPage />;
+  const introSeen = hasSeenIntro();
+  // Le fil s'affiche sans attendre la session pour qui a déjà vu l'accueil :
+  // un visiteur, le cas le plus courant ici, n'a pas à patienter pour une
+  // redirection qui ne le concerne pas.
+  if (status === "visitor") return introSeen ? <FeedPage /> : <Redirect to={INTRO_BASE_PATH} />;
+  if (status === "loading") return introSeen ? <FeedPage /> : <PageFallback />;
   const destination = landingPath(status, onboarding);
   if (destination === "/fil") return <FeedPage />;
   return <Redirect to={destination} />;
@@ -192,6 +203,8 @@ function resolvePage(pathname: string) {
   if (pathname === "/mot-de-passe-oublie") return <ForgotPasswordPage />;
   if (pathname === "/reinitialiser-mot-de-passe") return <ResetPasswordPage />;
   if (pathname === "/completer-profil") return <CompleteProfilePage />;
+  if (pathname === INTRO_BASE_PATH || pathname === `${INTRO_BASE_PATH}/`) return <WelcomePage />;
+  if (pathname.startsWith(`${INTRO_BASE_PATH}/`)) return <IntroQuestionsPage />;
   if (pathname === "/ton-role") return <Redirect to={onboardingPath("role")} />;
   if (pathname === ONBOARDING_BASE_PATH || pathname.startsWith(`${ONBOARDING_BASE_PATH}/`)) return <OnboardingPage />;
   if (pathname === "/parametres") return <SettingsPage />;

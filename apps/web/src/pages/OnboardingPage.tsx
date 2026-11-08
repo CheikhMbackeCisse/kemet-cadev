@@ -9,11 +9,39 @@ import { PeopleSuggestions } from "../components/onboarding/PeopleSuggestions.js
 import { Input } from "../components/ui/Input.js";
 import { updateMyProfile, updateOnboarding } from "../lib/chat/api.js";
 import { PROFILE_ROLE_OPTIONS } from "../lib/profileRoles.js";
-import { nextStep, onboardingPath, previousStep, stepFromPath, stepIndex } from "../lib/onboarding/steps.js";
+import { onboardingPath, stepFromPath, stepIndex } from "../lib/onboarding/steps.js";
+import { clearIntroAnswers, hasIntroAnswers, readIntroAnswers, type IntroAnswers } from "../lib/intro/introStorage.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
 const FEED_PATH = "/fil";
+
+/** Écrans déjà répondus avant l'inscription, sur l'écran d'accueil. */
+function stepsAnsweredByIntro(answers: IntroAnswers): Set<OnboardingStep> {
+  const answered = new Set<OnboardingStep>();
+  if (answers.country) answered.add("country");
+  if (answers.role) answered.add("role");
+  if (answers.interests?.length) answered.add("interests");
+  return answered;
+}
+
+// Les réponses de l'accueil rejoignent le profil une seule fois, puis
+// quittent le navigateur.
+async function applyIntroAnswers(answers: IntroAnswers): Promise<void> {
+  if (answers.country || answers.role) {
+    await updateMyProfile({
+      ...(answers.country && { country: answers.country }),
+      ...(answers.role && { role: answers.role }),
+    });
+  }
+  if (answers.interests?.length || answers.intents?.length) {
+    await updateOnboarding({
+      ...(answers.interests?.length && { interests: answers.interests }),
+      ...(answers.intents?.length && { intents: answers.intents }),
+    });
+  }
+  clearIntroAnswers();
+}
 
 /**
  * Six écrans, une question chacun. Chaque passage d'un écran à l'autre
@@ -28,6 +56,7 @@ export function OnboardingPage() {
   const [specialty, setSpecialty] = useState("");
   const [interests, setInterests] = useState<Interest[]>([]);
   const [initialized, setInitialized] = useState(false);
+  const [skipped, setSkipped] = useState<Set<OnboardingStep>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,15 +68,41 @@ export function OnboardingPage() {
 
   useEffect(() => {
     if (initialized || status !== "ready" || !profile || !onboarding) return;
-    setCountry(profile.country);
-    setRole(profile.role ?? "");
-    setSpecialty(profile.title ?? "");
-    setInterests(onboarding.interests);
-    if (!step) {
-      window.history.replaceState(null, "", onboardingPath(onboarding.step));
-      setStep(onboarding.step);
+    const intro = readIntroAnswers();
+    const fromIntro = hasIntroAnswers(intro);
+    let cancelled = false;
+
+    function start(answered: Set<OnboardingStep>) {
+      if (cancelled || !profile || !onboarding) return;
+      setSkipped(answered);
+      setCountry(intro.country ?? profile.country);
+      setRole(intro.role ?? profile.role ?? "");
+      setSpecialty(profile.title ?? "");
+      setInterests(intro.interests?.length ? intro.interests : onboarding.interests);
+      const requested = step ?? onboarding.step;
+      const resume = answered.has(requested)
+        ? (ONBOARDING_STEPS.slice(stepIndex(requested)).find((candidate) => !answered.has(candidate)) ?? "people")
+        : requested;
+      if (resume !== step) {
+        window.history.replaceState(null, "", onboardingPath(resume));
+        setStep(resume);
+      }
+      setInitialized(true);
     }
-    setInitialized(true);
+
+    if (!fromIntro) {
+      start(new Set());
+      return;
+    }
+    applyIntroAnswers(intro)
+      .then(() => start(stepsAnsweredByIntro(intro)))
+      .catch(() => {
+        setError(fr.onboarding.saveError);
+        start(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [initialized, status, profile, onboarding, step]);
 
   useEffect(() => {
@@ -83,11 +138,13 @@ export function OnboardingPage() {
   }
 
   const current = step;
-  const next = nextStep(current);
-  const back = previousStep(current);
+  const visibleSteps = ONBOARDING_STEPS.filter((candidate) => !skipped.has(candidate) || candidate === current);
+  const position = visibleSteps.indexOf(current);
+  const next = visibleSteps[position + 1] ?? null;
+  const back = visibleSteps[position - 1] ?? null;
   const common = {
-    current: stepIndex(current) + 1,
-    total: ONBOARDING_STEPS.length,
+    current: position + 1,
+    total: visibleSteps.length,
     onBack: back ? () => void goTo(back) : null,
     onSkip: () => void goTo(next),
     submitLabel: next ? fr.onboarding.continue : fr.onboarding.finish,

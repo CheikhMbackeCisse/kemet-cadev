@@ -7,5 +7,6 @@ export const PROFILE_ROLE_OPTIONS: { value: ProfileRole; label: string }[] = [
   { value: "hr", label: fr.auth.roleHr },
   { value: "student", label: fr.auth.roleStudent },
   { value: "project_manager", label: fr.auth.roleProjectManager },
+  { value: "entrepreneur", label: fr.auth.roleEntrepreneur },
   { value: "other", label: fr.auth.roleOther },
 ];

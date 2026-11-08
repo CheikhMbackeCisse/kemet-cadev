@@ -1,10 +1,12 @@
 import { expect, test } from "@playwright/test";
+import { skipIntro } from "./support/intro.js";
 
 // Joué par infra/deploy.sh contre l'adresse de production après chaque
 // déploiement (--grep @prod-smoke) : lecture seule, aucun compte créé et
 // aucune donnée écrite dans la base de production.
 
 test("le fil s'affiche pour un visiteur", { tag: "@prod-smoke" }, async ({ page }) => {
+  await skipIntro(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Fil" })).toBeVisible();
 });

@@ -8,6 +8,7 @@ export const profileRoleEnum = pgEnum("profile_role", [
   "hr",
   "student",
   "project_manager",
+  "entrepreneur",
   "other",
 ]);
 
@@ -42,6 +43,8 @@ export const profiles = pgTable("profiles", {
   // Sujets choisis à l'onboarding, valeurs de INTERESTS (@kemet/shared). Ne
   // servent qu'aux suggestions d'espaces et de personnes.
   interests: text("interests").array().notNull().default([]),
+  // Ce que la personne vient faire ou cherche, valeurs de INTENTS (@kemet/shared).
+  intents: text("intents").array().notNull().default([]),
   // Écran où reprendre l'onboarding. Le parcours est terminé (ou entièrement
   // passé) dès que onboardingCompletedAt est posé : on n'y renvoie plus.
   onboardingStep: onboardingStepEnum("onboarding_step").notNull().default("country"),

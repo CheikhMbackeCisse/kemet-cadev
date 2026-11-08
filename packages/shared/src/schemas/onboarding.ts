@@ -37,6 +37,23 @@ export const INTEREST_KEYWORDS: Record<Interest, readonly string[]> = {
   embedded: ["embarque", "iot", "arduino", "lora", "firmware", "esp32"],
 };
 
+/**
+ * Ce que la personne vient faire (apprendre, aider, montrer ses travaux,
+ * recruter) ou, si elle ne développe pas, ce qu'elle cherche.
+ */
+export const INTENTS = [
+  "learn",
+  "help_others",
+  "showcase_work",
+  "recruit",
+  "find_partner",
+  "follow_community",
+] as const;
+
+export const intentSchema = z.enum(INTENTS);
+
+export type Intent = z.infer<typeof intentSchema>;
+
 /** Les six écrans, dans l'ordre. Le pays, le rôle et la spécialité sont des champs du profil. */
 export const ONBOARDING_STEPS = ["country", "role", "specialty", "interests", "spaces", "people"] as const;
 
@@ -49,6 +66,7 @@ export const onboardingStateSchema = z.object({
   step: onboardingStepSchema,
   completed: z.boolean(),
   interests: z.array(interestSchema),
+  intents: z.array(intentSchema),
 });
 
 export type OnboardingState = z.infer<typeof onboardingStateSchema>;
@@ -58,6 +76,7 @@ export const updateOnboardingSchema = z
     step: onboardingStepSchema,
     completed: z.literal(true),
     interests: z.array(interestSchema).max(INTERESTS.length),
+    intents: z.array(intentSchema).max(INTENTS.length),
   })
   .partial()
   .strict()

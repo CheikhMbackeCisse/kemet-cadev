@@ -23,7 +23,7 @@ export const profileCountrySchema = z.union([countryCodeSchema, z.literal("")]);
 
 export const stackSchema = z.array(z.string().min(1).max(40)).max(20);
 
-export const profileRoleSchema = z.enum(["developer", "designer", "hr", "student", "project_manager", "other"]);
+export const profileRoleSchema = z.enum(["developer", "designer", "hr", "student", "project_manager", "entrepreneur", "other"]);
 
 export type ProfileRole = z.infer<typeof profileRoleSchema>;
 

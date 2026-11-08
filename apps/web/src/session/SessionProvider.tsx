@@ -1,3 +1,4 @@
+import { markIntroSeen } from "../lib/intro/introStorage.js";
 import {
   createContext,
   useCallback,
@@ -41,6 +42,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const result = await getMe();
       setMe(result);
       setStatus(statusFor(result));
+      // Une personne connectée ne voit jamais l'écran d'accueil, même
+      // déconnectée plus tard sur ce navigateur.
+      if (result) markIntroSeen();
     } catch {
       setMe(null);
       setStatus("visitor");

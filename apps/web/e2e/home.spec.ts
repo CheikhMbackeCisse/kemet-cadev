@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { skipIntro } from "./support/intro.js";
 import { expectVisitorInvitation } from "./support/visitor.js";
 
-test("la racine ouvre le fil, y compris pour un visiteur", async ({ page, isMobile }) => {
+test("la racine ouvre le fil pour un visiteur qui a déjà vu l'accueil", async ({ page, isMobile }) => {
+  await skipIntro(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Fil" })).toBeVisible();
   await expectVisitorInvitation(page, isMobile);

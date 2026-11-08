@@ -155,6 +155,13 @@
       "when": 1794008148956,
       "tag": "0021_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794099491719,
+      "tag": "0022_intro_intents",
+      "breakpoints": true
     }
   ]
 }

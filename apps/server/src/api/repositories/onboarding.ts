@@ -3,7 +3,9 @@ import { follows, profileBlocks, profiles, spaceMembers, spaces, type Db } from 
 import {
   INTEREST_KEYWORDS,
   interestSchema,
+  intentSchema,
   ONBOARDING_PEOPLE_SUGGESTIONS,
+  type Intent,
   type Interest,
   type UpdateOnboardingInput,
 } from "@kemet/shared";
@@ -22,6 +24,7 @@ export async function updateOnboarding(db: Db, profileId: string, input: UpdateO
     .update(profiles)
     .set({
       ...(input.interests && { interests: [...new Set(input.interests)] }),
+      ...(input.intents && { intents: [...new Set(input.intents)] }),
       ...(input.step && { onboardingStep: input.step }),
       // Une fois terminé, le parcours le reste : la première date est gardée.
       ...(input.completed && {
@@ -31,6 +34,14 @@ export async function updateOnboarding(db: Db, profileId: string, input: UpdateO
     .where(eq(profiles.id, profileId))
     .returning();
   return row!;
+}
+
+/** Intentions enregistrées, réduites à celles que le code connaît encore. */
+export function knownIntents(values: readonly string[]): Intent[] {
+  return values.flatMap((value) => {
+    const parsed = intentSchema.safeParse(value);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 /** Sujets enregistrés, réduits à ceux que le code connaît encore. */
