@@ -42,7 +42,7 @@ test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ pag
   await expectStep(page, 4, "Quels sujets t'intéressent ?");
   await expect(page.getByRole("button", { name: "Continuer" })).toBeDisabled();
   await page.getByText("Mobile", { exact: true }).click();
-  await page.getByText("Paiement", { exact: true }).click();
+  await page.getByText("Fintech et paiement", { exact: true }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expectStep(page, 5, "Rejoins des espaces");

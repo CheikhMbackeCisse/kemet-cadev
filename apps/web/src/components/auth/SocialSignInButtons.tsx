@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Button } from "../ui/Button.js";
 import {
   getAuthConfig,
   signInWithSocialProvider,
@@ -34,32 +33,31 @@ export function SocialSignInButtons({ callbackURL }: SocialSignInButtonsProps) {
   }, []);
 
   const activeProviders = PROVIDERS.filter((provider) => enabled?.[provider.id]);
-  if (activeProviders.length === 0) return null;
+  // Pendant le chargement de la configuration, la place des carrés est gardée :
+  // la carte ne saute pas quand ils arrivent.
+  if (enabled !== null && activeProviders.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Les trois fournisseurs tiennent sur une ligne des qu'il y a la place :
-          le libelle long sert alors d'etiquette accessible, et seul le nom du
-          fournisseur reste visible. */}
-      <div className="grid gap-2 sm:grid-cols-3">
+      {/* Trois carrés côte à côte : le nom du fournisseur est l'étiquette accessible. */}
+      <div className="flex h-12 justify-center gap-3">
         {activeProviders.map((provider) => (
-          <Button
+          <button
             key={provider.id}
             type="button"
-            variant="secondary"
             aria-label={provider.label}
+            title={provider.shortLabel}
             onClick={() => void signInWithSocialProvider(provider.id, callbackURL)}
+            className="flex size-12 items-center justify-center rounded-control bg-white text-[#181717] transition-colors duration-150 hover:bg-auth-button-hover"
           >
             <SocialProviderIcon provider={provider.id} />
-            <span className="sm:hidden">{provider.label}</span>
-            <span className="hidden sm:inline">{provider.shortLabel}</span>
-          </Button>
+          </button>
         ))}
       </div>
-      <div className="flex items-center gap-2 text-xs text-subtle">
-        <span className="h-px flex-1 bg-border" />
+      <div className="flex items-center gap-2 text-xs text-auth-text-muted">
+        <span className="h-px flex-1 bg-white/20" />
         {fr.auth.orSeparator}
-        <span className="h-px flex-1 bg-border" />
+        <span className="h-px flex-1 bg-white/20" />
       </div>
     </div>
   );

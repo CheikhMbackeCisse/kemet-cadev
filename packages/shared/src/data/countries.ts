@@ -206,3 +206,10 @@ export const COUNTRIES: readonly Country[] = [
 ];
 
 export const COUNTRY_CODES = COUNTRIES.map((country) => country.code) as [string, ...string[]];
+
+/** Les 54 États africains membres de l'ONU, proposés en premier dans les listes de pays. */
+export const AFRICAN_COUNTRY_CODES: readonly string[] = [
+  "DZ", "AO", "BJ", "BW", "BF", "BI", "CV", "CM", "CF", "TD", "KM", "CG", "CD", "CI", "DJ", "EG", "GQ", "ER",
+  "SZ", "ET", "GA", "GM", "GH", "GN", "GW", "KE", "LS", "LR", "LY", "MG", "MW", "ML", "MR", "MU", "MA", "MZ",
+  "NA", "NE", "NG", "RW", "ST", "SN", "SC", "SL", "SO", "ZA", "SS", "SD", "TZ", "TG", "TN", "UG", "ZM", "ZW",
+];

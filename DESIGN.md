@@ -144,7 +144,7 @@ Chaque écran et chaque liste a quatre états dessinés :
 
 Ces choix font "interface générée par une IA" :
 
-- dégradés décoratifs, effet verre dépoli, halos lumineux (deux exceptions, les écrans de compte et les bannières de skill, voir ci-dessous) ;
+- dégradés décoratifs, effet verre dépoli, halos lumineux (deux exceptions, le parcours d'arrivée et les bannières de skill, voir ci-dessous) ;
 - emojis utilisés comme icônes ;
 - cartes toutes identiques avec la même ombre grise ;
 - bordure colorée à gauche des cartes ;
@@ -155,25 +155,32 @@ Ces choix font "interface générée par une IA" :
 
 ### Les exceptions
 
-#### Écrans de compte
+#### Parcours d'arrivée
 
-Les écrans de compte (connexion, inscription, mot de passe oublié, réinitialisation)
-ont droit à un fond de marque avec dégradé et halos lumineux. L'interdit a été levé
-pour ces écrans le 20/10/2026, après comparaison avec la page de
-connexion de Systalink. Voir `docs/adr/0019-fond-des-ecrans-de-compte.md`.
+L'accueil d'une première visite (`/decouvrir`), les quatre questions posées
+avant l'inscription, la connexion, l'inscription et les écrans de mot de passe
+partagent un même fond de marque : dégradé et halos (levés le 20/10/2026, voir
+`docs/adr/0019-fond-des-ecrans-de-compte.md`), silhouette de l'Afrique, et
+seize éléments au plus qui flottent lentement (huit logos de langages et
+d'outils en blanc, trois symboles IA, cybersécurité et IoT, cinq bouts de code
+en Geist Mono). Le logo Kemet est en haut à gauche.
 
-Le périmètre est strict : le dégradé et les halos vivent dans le fond, derrière
-une carte opaque qui porte le formulaire. Le formulaire lui-même, ses champs, ses
-boutons et ses textes restent des composants Kemet ordinaires, sans dégradé ni
-halo. Aucun autre écran du produit ne bénéficie de cette exception.
+Le contenu de chaque écran est posé sur une carte en verre dépoli (teinte du
+fond à 60 %, flou de 16 px, bord blanc à 20 %), demandée explicitement le
+08/11/2026. Le texte de la carte est blanc dans les deux thèmes (`--auth-*`),
+les champs gardent leurs couleurs ordinaires, le bouton principal est blanc.
+Aucun texte descriptif sous les titres, une barre de progression sans
+« Étape X sur 4 » sur les questions. Voir
+`docs/adr/0030-parcours-d-arrivee.md`.
 
-L'écran d'accueil d'une première visite (`/decouvrir`) partage ce fond depuis
-le 08/11/2026 : il est la porte d'entrée vers l'inscription. Il n'a pas de
-carte, son contenu est court (logo, titre, une phrase, deux actions) et posé
-directement sur le fond, en blanc. C'est aussi le seul écran avec une
-animation continue : des symboles de code qui montent lentement dans les
-marges, demandés explicitement pour cet écran, arrêtés par
-`prefers-reduced-motion`.
+Deux intensités de mouvement : riche sur l'accueil, calme ailleurs. Seuls
+`transform` et `opacity` bougent, l'animation s'arrête quand l'onglet est
+caché et devient une image fixe avec `prefers-reduced-motion`.
+
+Les logos de Simple Icons sont la seule exception au « jamais le logo d'un
+autre produit » du principe 6 : décor qui dit de quoi on parle, en blanc,
+jamais dans les couleurs de la marque, jamais cliquable. Aucun autre écran
+n'hérite de ces exceptions.
 
 #### Bannières de skill
 
@@ -187,7 +194,7 @@ aucun texte n'y est posé, le reste de la carte est ordinaire, et aucun autre
 ## Mouvement
 
 - 150 à 200 ms, uniquement pour montrer un changement d'état (ouverture d'un tiroir, envoi d'un message, nouvelle réaction).
-- Une seule exception, l'écran d'accueil d'une première visite (voir « Les exceptions »).
+- Une seule exception, le fond du parcours d'arrivée (voir « Les exceptions »).
 - `prefers-reduced-motion` respecté partout.
 
 ## Accessibilité

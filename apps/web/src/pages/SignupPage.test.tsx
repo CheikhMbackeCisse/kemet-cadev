@@ -40,13 +40,13 @@ describe("SignupPage", () => {
     const field = screen.getByLabelText(fr.auth.emailLabel);
     expect(field).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByText(fr.auth.demoEmailError)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: fr.auth.signupSubmit })).toBeDisabled();
+    expect(screen.getByRole("button", { name: fr.auth.signupSubmit })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("accepte une adresse ordinaire", () => {
     fillForm("awa@exemple.sn");
 
     expect(screen.queryByText(fr.auth.demoEmailError)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: fr.auth.signupSubmit })).toBeEnabled();
+    expect(screen.getByRole("button", { name: fr.auth.signupSubmit })).not.toHaveAttribute("aria-disabled");
   });
 });

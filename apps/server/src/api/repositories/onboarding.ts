@@ -25,6 +25,8 @@ export async function updateOnboarding(db: Db, profileId: string, input: UpdateO
     .set({
       ...(input.interests && { interests: [...new Set(input.interests)] }),
       ...(input.intents && { intents: [...new Set(input.intents)] }),
+      ...(input.interestOther !== undefined && { interestOther: input.interestOther }),
+      ...(input.roleOther !== undefined && { roleOther: input.roleOther }),
       ...(input.step && { onboardingStep: input.step }),
       // Une fois terminé, le parcours le reste : la première date est gardée.
       ...(input.completed && {
@@ -63,17 +65,21 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Un sujet sans mot ("other") n'a pas de motif : une alternative vide
+// trouverait n'importe quel texte.
 const KEYWORD_PATTERNS = Object.fromEntries(
-  Object.entries(INTEREST_KEYWORDS).map(([interest, keywords]) => [
-    interest,
-    new RegExp(`(^|[^a-z0-9])(${keywords.map(escapeRegExp).join("|")})($|[^a-z0-9])`),
-  ]),
-) as Record<Interest, RegExp>;
+  Object.entries(INTEREST_KEYWORDS)
+    .filter(([, keywords]) => keywords.length > 0)
+    .map(([interest, keywords]) => [
+      interest,
+      new RegExp(`(^|[^a-z0-9])(${keywords.map(escapeRegExp).join("|")})($|[^a-z0-9])`),
+    ]),
+) as Partial<Record<Interest, RegExp>>;
 
 /** Nombre de sujets dont au moins un mot apparaît dans le texte, comparé sans accent ni casse. */
 export function countMatchedInterests(text: string, interests: readonly Interest[]): number {
   const haystack = normalize(text);
-  return interests.filter((interest) => KEYWORD_PATTERNS[interest].test(haystack)).length;
+  return interests.filter((interest) => KEYWORD_PATTERNS[interest]?.test(haystack)).length;
 }
 
 export async function suggestSpaces(db: Db, profileId: string, interests: readonly Interest[]) {
@@ -111,9 +117,10 @@ function personTextSql() {
 
 function personScoreSql(viewer: ProfileRow) {
   const text = personTextSql();
-  const interestPoints = knownInterests(viewer.interests).map(
-    (interest) => sql`(case when ${text} ~ ${KEYWORD_PATTERNS[interest].source} then 2 else 0 end)`,
-  );
+  const interestPoints = knownInterests(viewer.interests).flatMap((interest) => {
+    const pattern = KEYWORD_PATTERNS[interest];
+    return pattern ? [sql`(case when ${text} ~ ${pattern.source} then 2 else 0 end)`] : [];
+  });
   const countryPoints =
     viewer.country === "" ? [] : [sql`(case when ${profiles.country} = ${viewer.country} then 1 else 0 end)`];
   // Toujours une expression : un ORDER BY sur le seul littéral 0, sans sujet ni

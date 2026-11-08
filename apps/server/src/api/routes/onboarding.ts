@@ -18,7 +18,9 @@ export function serializeOnboarding(row: ProfileRow): OnboardingState {
     step: row.onboardingStep,
     completed: row.onboardingCompletedAt !== null,
     interests: knownInterests(row.interests),
+    interestOther: row.interestOther,
     intents: knownIntents(row.intents),
+    roleOther: row.roleOther,
   };
 }
 

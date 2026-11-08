@@ -31,6 +31,15 @@ describe("introStorage", () => {
     expect(readIntroAnswers()).toEqual({ interests: ["web"], intents: undefined });
   });
 
+  it("garde une précision Autre valide, oublie une précision vide ou trop longue", () => {
+    saveIntroAnswers({ role: "other", roleOther: "Enseignante", interests: ["other"], interestOther: " " });
+    expect(readIntroAnswers()).toMatchObject({ role: "other", roleOther: "Enseignante", interests: ["other"] });
+    expect(readIntroAnswers().interestOther).toBeUndefined();
+
+    saveIntroAnswers({ role: "other", roleOther: "x".repeat(61) });
+    expect(readIntroAnswers().roleOther).toBeUndefined();
+  });
+
   it("oublie des réponses de plus d'un jour", () => {
     window.localStorage.setItem(
       "kemet.intro",

@@ -2,18 +2,28 @@ import { z } from "zod";
 import { levelSchema } from "./points.js";
 import { profileSummarySchema } from "./profile.js";
 
-/** Sujets proposés à l'écran "Sujets d'intérêt". Ils ne servent qu'aux suggestions d'espaces et de personnes. */
+/**
+ * Domaines proposés avant l'inscription et à l'écran "Sujets d'intérêt". Ils ne
+ * servent qu'aux suggestions d'espaces et de personnes. Les valeurs déjà
+ * enregistrées (web, payments, embedded...) gardent leur nom.
+ */
 export const INTERESTS = [
   "web",
   "mobile",
-  "payments",
+  "backend",
   "ai",
-  "devops",
   "data",
-  "design",
+  "devops",
   "security",
-  "games",
+  "networks",
   "embedded",
+  "payments",
+  "blockchain",
+  "games",
+  "design",
+  "testing",
+  "systems",
+  "other",
 ] as const;
 
 export const interestSchema = z.enum(INTERESTS);
@@ -23,19 +33,29 @@ export type Interest = z.infer<typeof interestSchema>;
 /**
  * Mots cherchés, sans accent et en minuscules, dans le nom et la description
  * d'un espace, et dans la spécialité, la stack et la bio d'une personne.
+ * "other" n'en a aucun : il ne rapproche de rien.
  */
 export const INTEREST_KEYWORDS: Record<Interest, readonly string[]> = {
-  web: ["web", "frontend", "front-end", "backend", "react", "api", "javascript", "typescript", "node"],
+  web: ["web", "frontend", "front-end", "react", "javascript", "typescript", "html", "css"],
   mobile: ["mobile", "flutter", "android", "ios", "kotlin", "swift", "react native"],
-  payments: ["paiement", "payment", "mobile money", "fintech", "wave", "momo", "idempotence"],
+  backend: ["backend", "back-end", "api", "node", "django", "laravel", "spring", "graphql"],
   ai: ["ia", "intelligence artificielle", "machine learning", "nlp", "llm", "deep learning", "ml"],
-  devops: ["devops", "docker", "kubernetes", "ci", "infra", "cloud", "deploiement"],
   data: ["data", "donnees", "sql", "postgres", "analytics", "pipeline"],
-  design: ["design", "ux", "ui", "figma", "interface"],
-  security: ["securite", "security", "auth", "chiffrement", "pentest"],
-  games: ["jeu", "jeux", "game", "unity", "godot"],
+  devops: ["devops", "docker", "kubernetes", "ci", "infra", "cloud", "deploiement"],
+  security: ["securite", "cybersecurite", "security", "auth", "chiffrement", "pentest"],
+  networks: ["reseau", "reseaux", "telecom", "telecoms", "network", "5g", "cisco"],
   embedded: ["embarque", "iot", "arduino", "lora", "firmware", "esp32"],
+  payments: ["paiement", "payment", "mobile money", "fintech", "wave", "momo", "idempotence"],
+  blockchain: ["blockchain", "web3", "solidity", "smart contract", "crypto"],
+  games: ["jeu", "jeux", "game", "unity", "godot"],
+  design: ["design", "ux", "ui", "figma", "interface"],
+  testing: ["test", "tests", "qualite", "qa", "playwright", "vitest"],
+  systems: ["linux", "systeme", "systemes", "sysadmin", "bash", "kernel"],
+  other: [],
 };
+
+/** Précision écrite à côté d'un choix "Autre". */
+export const otherAnswerSchema = z.string().trim().min(1).max(60);
 
 /**
  * Ce que la personne vient faire (apprendre, aider, montrer ses travaux,
@@ -55,7 +75,14 @@ export const intentSchema = z.enum(INTENTS);
 export type Intent = z.infer<typeof intentSchema>;
 
 /** Les six écrans, dans l'ordre. Le pays, le rôle et la spécialité sont des champs du profil. */
-export const ONBOARDING_STEPS = ["country", "role", "specialty", "interests", "spaces", "people"] as const;
+export const ONBOARDING_STEPS = [
+  "country",
+  "role",
+  "specialty",
+  "interests",
+  "spaces",
+  "people",
+] as const;
 
 export const onboardingStepSchema = z.enum(ONBOARDING_STEPS);
 
@@ -66,7 +93,9 @@ export const onboardingStateSchema = z.object({
   step: onboardingStepSchema,
   completed: z.boolean(),
   interests: z.array(interestSchema),
+  interestOther: z.string().nullable(),
   intents: z.array(intentSchema),
+  roleOther: z.string().nullable(),
 });
 
 export type OnboardingState = z.infer<typeof onboardingStateSchema>;
@@ -76,7 +105,9 @@ export const updateOnboardingSchema = z
     step: onboardingStepSchema,
     completed: z.literal(true),
     interests: z.array(interestSchema).max(INTERESTS.length),
+    interestOther: otherAnswerSchema.nullable(),
     intents: z.array(intentSchema).max(INTENTS.length),
+    roleOther: otherAnswerSchema.nullable(),
   })
   .partial()
   .strict()

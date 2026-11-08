@@ -27,19 +27,20 @@ export function ForgotPasswordPage() {
   if (sent) {
     return (
       <AuthLayout title={fr.auth.forgotPasswordTitle}>
-        <p className="text-sm text-text-2">{fr.auth.forgotPasswordSent}</p>
+        <p className="text-sm text-auth-text">{fr.auth.forgotPasswordSent}</p>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title={fr.auth.forgotPasswordTitle} subtitle={fr.auth.forgotPasswordSubtitle}>
+    <AuthLayout title={fr.auth.forgotPasswordTitle}>
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
+        <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.emailLabel}
           <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} autoFocus />
         </label>
         <SubmitButton
+          variant="inverse"
           label={fr.auth.forgotPasswordSubmit}
           loading={submitting}
           disabledReason={missingFieldsReason([[email, fr.auth.emailLabel]])}

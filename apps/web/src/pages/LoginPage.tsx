@@ -8,6 +8,7 @@ import { landingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
+import { PrivacyLine } from "../components/auth/PrivacyLine.js";
 
 export function LoginPage() {
   const { status, onboarding, refresh } = useSession();
@@ -37,32 +38,11 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout
-      title={fr.auth.loginTitle}
-      subtitle={fr.auth.loginSubtitle}
-      intro={
-        <>
-          <p className="text-xl font-bold text-auth-text">{fr.auth.landingHeadline}</p>
-          <p className="text-sm text-auth-text-muted">{fr.auth.landingPitch}</p>
-        </>
-      }
-      footer={
-        <p className="text-center text-sm text-auth-text-muted">
-          {fr.auth.landingVisitorIntro}{" "}
-          <a href="/salons" className="font-medium text-auth-text underline underline-offset-2">
-            {fr.auth.landingBrowseSpaces}
-          </a>{" "}
-          ·{" "}
-          <a href="/fil" className="font-medium text-auth-text underline underline-offset-2">
-            {fr.auth.landingBrowseFeed}
-          </a>
-        </p>
-      }
-    >
-      <div className="flex flex-col gap-2">
+    <AuthLayout title={fr.auth.loginTitle}>
+      <div className="flex flex-col gap-3">
         <SocialSignInButtons callbackURL="/" />
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
+          <label className="flex flex-col gap-1 text-sm">
             {fr.auth.emailLabel}
             <Input
               type="email"
@@ -71,7 +51,7 @@ export function LoginPage() {
               onChange={(event) => setEmail(event.target.value)}
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
+          <label className="flex flex-col gap-1 text-sm">
             {fr.auth.passwordLabel}
             <Input
               type="password"
@@ -80,16 +60,18 @@ export function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </label>
-          <a href="/mot-de-passe-oublie" className="self-end text-sm text-link hover:underline">
+          <a href="/mot-de-passe-oublie" className="inline-flex min-h-control-mobile items-center self-end text-sm text-auth-text-muted underline underline-offset-2 hover:text-auth-text md:min-h-control">
             {fr.auth.forgotPasswordLink}
           </a>
           {error && (
-            <p className="text-sm text-danger" role="alert">
+            <p className="text-sm text-auth-danger" role="alert">
               {error}
             </p>
           )}
           <SubmitButton
             label={fr.auth.loginSubmit}
+            variant="inverse"
+            block
             loading={submitting}
             disabledReason={missingFieldsReason([
               [email, fr.auth.emailLabel],
@@ -97,17 +79,13 @@ export function LoginPage() {
             ])}
           />
         </form>
-        <p className="text-center text-sm text-subtle">
+        <p className="text-center text-sm text-auth-text-muted">
           {fr.auth.noAccountYet}{" "}
-          <a href="/inscription" className="text-link hover:underline">
+          <a href="/inscription" className="font-medium text-auth-text underline underline-offset-2">
             {fr.auth.signupLink}
           </a>
         </p>
-        <p className="text-center text-sm text-subtle">
-          <a href="/confidentialite" className="text-link hover:underline">
-            {fr.privacy.title}
-          </a>
-        </p>
+        <PrivacyLine />
       </div>
     </AuthLayout>
   );

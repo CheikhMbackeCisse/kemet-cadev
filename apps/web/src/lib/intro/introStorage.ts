@@ -2,6 +2,7 @@ import {
   COUNTRY_CODES,
   intentSchema,
   interestSchema,
+  otherAnswerSchema,
   profileRoleSchema,
   type Intent,
   type Interest,
@@ -14,7 +15,11 @@ import {
  */
 export interface IntroAnswers {
   role?: ProfileRole;
+  /** Précision écrite quand le rôle est "other". */
+  roleOther?: string;
   interests?: Interest[];
+  /** Précision écrite quand le sujet "other" est coché. */
+  interestOther?: string;
   intents?: Intent[];
   country?: string;
 }
@@ -48,12 +53,16 @@ function parseStored(raw: unknown): Stored {
   const fresh = typeof record.savedAt === "number" && Date.now() - record.savedAt < ANSWERS_LIFETIME_MS;
   const answers = fresh && typeof record.answers === "object" && record.answers !== null ? record.answers : {};
   const role = profileRoleSchema.safeParse(answers.role);
+  const roleOther = otherAnswerSchema.safeParse(answers.roleOther);
+  const interestOther = otherAnswerSchema.safeParse(answers.interestOther);
   const country = typeof answers.country === "string" && COUNTRY_CODES.includes(answers.country) ? answers.country : undefined;
   return {
     seen: record.seen === true,
     ...(fresh && { savedAt: record.savedAt as number }),
     answers: {
       ...(role.success && { role: role.data }),
+      ...(roleOther.success && { roleOther: roleOther.data }),
+      ...(interestOther.success && { interestOther: interestOther.data }),
       ...(country && { country }),
       interests: parseList(answers.interests, (item) => interestSchema.safeParse(item).data ?? null),
       intents: parseList(answers.intents, (item) => intentSchema.safeParse(item).data ?? null),

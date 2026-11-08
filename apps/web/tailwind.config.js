@@ -36,6 +36,7 @@ export default {
         "auth-text": "var(--auth-text)",
         "auth-text-muted": "var(--auth-text-muted)",
         "auth-button-hover": "var(--auth-button-hover)",
+        "auth-danger": "var(--auth-danger)",
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
         "level-badge-text": "var(--level-badge-text)",

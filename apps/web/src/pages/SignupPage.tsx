@@ -11,6 +11,7 @@ import { landingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
+import { PrivacyLine } from "../components/auth/PrivacyLine.js";
 
 export function SignupPage() {
   const toast = useToast();
@@ -66,16 +67,16 @@ export function SignupPage() {
     return (
       <AuthLayout title={fr.auth.checkYourEmailTitle}>
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-text-2">{fr.auth.checkYourEmailBody(email)}</p>
+          <p className="text-sm">{fr.auth.checkYourEmailBody(email)}</p>
           {error && (
-            <p className="text-sm text-danger" role="alert">
+            <p className="text-sm text-auth-danger" role="alert">
               {error}
             </p>
           )}
-          <Button type="button" onClick={handleRetrySignIn}>
+          <Button type="button" variant="inverse" onClick={handleRetrySignIn}>
             {fr.auth.iVerifiedMyEmail}
           </Button>
-          <Button type="button" variant="ghost" onClick={handleResend}>
+          <Button type="button" variant="inverse-ghost" onClick={handleResend}>
             {fr.auth.resendVerificationEmail}
           </Button>
         </div>
@@ -84,16 +85,16 @@ export function SignupPage() {
   }
 
   return (
-    <AuthLayout title={fr.auth.signupTitle} subtitle={fr.auth.signupSubtitle}>
+    <AuthLayout title={fr.auth.signupTitle}>
       <div className="flex flex-col gap-3">
         <SocialSignInButtons callbackURL="/" />
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
+          <label className="flex flex-col gap-1 text-sm">
             {fr.auth.nameLabel}
             <Input autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} />
           </label>
           <div className="flex flex-col gap-1">
-            <label className="flex flex-col gap-1 text-sm text-text-2">
+            <label className="flex flex-col gap-1 text-sm">
               {fr.auth.emailLabel}
               <Input
                 type="email"
@@ -105,22 +106,36 @@ export function SignupPage() {
               />
             </label>
             {isDemoEmail && (
-              <p id="signup-email-error" className="text-sm text-danger">
+              <p id="signup-email-error" className="text-sm text-auth-danger">
                 {fr.auth.demoEmailError}
               </p>
             )}
           </div>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.auth.passwordLabel}
-            <Input type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} />
-          </label>
+          <div className="flex flex-col gap-1">
+            <label className="flex flex-col gap-1 text-sm">
+              {fr.auth.passwordLabel}
+              <Input
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                value={password}
+                aria-describedby="signup-password-hint"
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            <p id="signup-password-hint" className="text-xs text-auth-text-muted">
+              {fr.auth.passwordHint}
+            </p>
+          </div>
           {error && (
-            <p className="text-sm text-danger" role="alert">
+            <p className="text-sm text-auth-danger" role="alert">
               {error}
             </p>
           )}
           <SubmitButton
             label={fr.auth.signupSubmit}
+            variant="inverse"
+            block
             loading={submitting}
             disabledReason={
               missingFieldsReason([
@@ -133,18 +148,13 @@ export function SignupPage() {
             }
           />
         </form>
-        <p className="text-center text-xs text-subtle">
-          {fr.auth.signupPrivacyNotice}{" "}
-          <a href="/confidentialite" className="text-link hover:underline">
-            {fr.auth.signupPrivacyLink}
-          </a>
-        </p>
-        <p className="text-center text-sm text-subtle">
+        <p className="text-center text-sm text-auth-text-muted">
           {fr.auth.alreadyHaveAccount}{" "}
-          <a href="/connexion" className="text-link hover:underline">
+          <a href="/connexion" className="font-medium text-auth-text underline underline-offset-2">
             {fr.auth.loginLink}
           </a>
         </p>
+        <PrivacyLine />
       </div>
     </AuthLayout>
   );

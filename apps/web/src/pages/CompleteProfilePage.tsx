@@ -36,23 +36,24 @@ export function CompleteProfilePage() {
   }
 
   return (
-    <AuthLayout title={fr.auth.completeProfileTitle} subtitle={fr.auth.completeProfileSubtitle}>
+    <AuthLayout title={fr.auth.completeProfileTitle}>
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
+        <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.displayNameLabel}
           <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoFocus />
         </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
+        <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.handleLabel}
           <Input value={handle} onChange={(event) => setHandle(event.target.value.toLowerCase())} />
-          <span className="text-xs text-subtle">{fr.auth.handleHint}</span>
+          <span className="text-xs text-auth-text-muted">{fr.auth.handleHint}</span>
         </label>
         {error && (
-          <p className="text-sm text-danger" role="alert">
+          <p className="text-sm text-auth-danger" role="alert">
             {error}
           </p>
         )}
         <SubmitButton
+          variant="inverse"
           label={fr.auth.completeProfileSubmit}
           loading={submitting}
           disabledReason={missingFieldsReason([

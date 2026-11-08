@@ -19,7 +19,7 @@ describe("étapes de l'onboarding", () => {
 
   it("envoie à l'écran en cours tant que le parcours n'est pas terminé, au fil ensuite", () => {
     expect(landingPath("incomplete", null)).toBe("/completer-profil");
-    expect(landingPath("ready", { step: "spaces", completed: false, interests: [], intents: [] })).toBe("/bienvenue/espaces");
-    expect(landingPath("ready", { step: "spaces", completed: true, interests: [], intents: [] })).toBe("/fil");
+    expect(landingPath("ready", { step: "spaces", completed: false, interests: [], interestOther: null, intents: [], roleOther: null })).toBe("/bienvenue/espaces");
+    expect(landingPath("ready", { step: "spaces", completed: true, interests: [], interestOther: null, intents: [], roleOther: null })).toBe("/fil");
   });
 });

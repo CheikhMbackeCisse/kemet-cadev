@@ -115,6 +115,7 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
       displayName: DELETED_ACCOUNT_DISPLAY_NAME,
       country: "",
       role: null,
+      roleOther: null,
       title: null,
       bio: null,
       stack: [],
@@ -122,6 +123,9 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
       avatarUrl: null,
       bannerUrl: null,
       openToOpportunities: false,
+      interests: [],
+      interestOther: null,
+      intents: [],
       isPlatformAdmin: false,
       deletedAt: now,
     })

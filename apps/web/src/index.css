@@ -158,34 +158,49 @@
 }
 
 /*
- * Symboles de code de l'écran d'accueil (pages/WelcomePage.tsx) : une montée
- * lente et un fondu, jamais d'animation si le système demande moins de
- * mouvement.
+ * Fond du parcours d'arrivée (components/arrival/ArrivalBackground.tsx) :
+ * chaque élément dérive lentement autour de sa place. Seuls transform et
+ * opacity bougent, pour rester sur le compositeur. Arrêté quand l'onglet est
+ * caché, figé si le système demande moins de mouvement.
  */
-@keyframes intro-drift {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  15%,
-  85% {
-    opacity: 1;
-  }
+@keyframes arrival-float {
+  0%,
   100% {
-    transform: translateY(-40vh);
-    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    opacity: var(--float-opacity-low);
+  }
+  50% {
+    transform: translate3d(var(--float-dx), var(--float-dy), 0) rotate(var(--float-rotate));
+    opacity: var(--float-opacity-high);
   }
 }
 
-.intro-glyph {
-  animation: intro-drift var(--intro-duration) linear var(--intro-delay) infinite;
+.arrival-float {
+  opacity: var(--float-opacity-high);
+  animation: arrival-float var(--float-duration) ease-in-out var(--float-delay) infinite;
+  will-change: transform, opacity;
+}
+
+.arrival-background[data-paused] .arrival-float {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .intro-glyph {
+  .arrival-float {
     animation: none;
-    opacity: 0.6;
+    will-change: auto;
   }
+}
+
+/*
+ * Carte en verre dépoli posée sur ce fond : les éléments qui passent dessous
+ * deviennent flous. Sans backdrop-filter, la teinte seule garde le contraste.
+ */
+.arrival-glass {
+  background-color: color-mix(in srgb, var(--auth-glass) calc(var(--auth-glass-opacity) * 100%), transparent);
+  border: 1px solid var(--auth-glass-border);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 /*

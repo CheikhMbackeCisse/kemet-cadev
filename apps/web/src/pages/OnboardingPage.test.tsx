@@ -53,7 +53,7 @@ describe("OnboardingPage", () => {
   });
 
   it("reprend à l'écran enregistré quand l'adresse n'en désigne aucun", async () => {
-    start("/bienvenue", { step: "interests", completed: false, interests: ["web"], intents: [] });
+    start("/bienvenue", { step: "interests", completed: false, interests: ["web"], interestOther: null, intents: [], roleOther: null });
 
     expect(await screen.findByRole("heading", { name: fr.onboarding.interestsTitle })).toBeInTheDocument();
     expect(screen.getByText(fr.onboarding.progress(4, 6))).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe("OnboardingPage", () => {
   });
 
   it("Passer avance sans rien enregistrer d'autre que l'écran atteint", async () => {
-    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], interestOther: null, intents: [], roleOther: null });
 
     fireEvent.click(screen.getByRole("button", { name: fr.onboarding.skip }));
 
@@ -73,7 +73,7 @@ describe("OnboardingPage", () => {
   });
 
   it("enregistre le choix, puis l'écran suivant", async () => {
-    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], interestOther: null, intents: [], roleOther: null });
 
     const submit = screen.getByRole("button", { name: fr.onboarding.continue });
     expect(submit).toBeDisabled();
@@ -85,7 +85,7 @@ describe("OnboardingPage", () => {
   });
 
   it("Retour revient à l'écran précédent ; le premier écran n'en a pas", async () => {
-    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], interestOther: null, intents: [], roleOther: null });
     fireEvent.click(screen.getByRole("button", { name: fr.onboarding.back }));
 
     expect(await screen.findByRole("heading", { name: fr.onboarding.countryTitle })).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe("OnboardingPage", () => {
   });
 
   it("filtre les pays sans tenir compte des accents", () => {
-    start("/bienvenue/pays", { step: "country", completed: false, interests: [], intents: [] });
+    start("/bienvenue/pays", { step: "country", completed: false, interests: [], interestOther: null, intents: [], roleOther: null });
 
     fireEvent.change(screen.getByLabelText(fr.onboarding.countrySearchLabel), { target: { value: "senegal" } });
 
@@ -103,7 +103,7 @@ describe("OnboardingPage", () => {
 
   it("garde l'erreur affichée et l'écran en place si l'enregistrement échoue", async () => {
     updateOnboarding.mockRejectedValueOnce(new Error("hors ligne"));
-    start("/bienvenue/role", { step: "role", completed: false, interests: [], intents: [] });
+    start("/bienvenue/role", { step: "role", completed: false, interests: [], interestOther: null, intents: [], roleOther: null });
 
     fireEvent.click(screen.getByRole("button", { name: fr.onboarding.skip }));
 
@@ -113,7 +113,7 @@ describe("OnboardingPage", () => {
 
   it("enregistre les réponses de l'accueil sur le profil et saute les écrans déjà répondus", async () => {
     saveIntroAnswers({ role: "developer", country: "SN", interests: ["payments"], intents: ["learn"] });
-    start("/bienvenue/pays", { step: "country", completed: false, interests: [], intents: [] });
+    start("/bienvenue/pays", { step: "country", completed: false, interests: [], interestOther: null, intents: [], roleOther: null });
 
     expect(await screen.findByRole("heading", { name: fr.onboarding.specialtyTitle })).toBeInTheDocument();
     expect(updateMyProfile).toHaveBeenCalledWith({ country: "SN", role: "developer" });

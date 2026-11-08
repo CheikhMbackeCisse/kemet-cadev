@@ -176,6 +176,17 @@
   --auth-text-muted: rgba(255, 255, 255, 0.72);
   /* Bouton principal posé sur le fond de marque : blanc, texte du fond. */
   --auth-button-hover: #dbe6fb;
+  /*
+   * Carte en verre dépoli du parcours d'arrivée : teinte du fond, opacité,
+   * bord clair. Le fond restant sombre dans les deux thèmes, le texte de la
+   * carte est blanc ; tokens.test.ts vérifie son contraste au pire cas, un
+   * élément flottant à son opacité maximale posé sur le halo le plus clair.
+   */
+  --auth-glass: #061b47;
+  --auth-glass-opacity: 0.6;
+  --auth-glass-border: rgba(255, 255, 255, 0.2);
+  --auth-float-opacity: 0.35;
+  --auth-danger: #ffc9c2;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -211,7 +222,7 @@
  * Contour de focus sur le fond sombre des ecrans de compte : le bleu
  * --primary du contour par defaut n'a pas assez de contraste sur ce fond.
  */
-.auth-on-dark :focus-visible:not([data-field]) {
+.auth-on-dark :focus-visible:not([data-field]):not([tabindex="-1"]) {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }

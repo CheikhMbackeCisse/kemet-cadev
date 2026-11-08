@@ -61,3 +61,49 @@ describe("icônes de niveau", () => {
     }
   });
 });
+
+describe("carte en verre dépoli du parcours d'arrivée", () => {
+  // Les variables du fond de marque vivent dans leur propre bloc :root.
+  const start = css.indexOf("--auth-bg-from");
+  const root = css.slice(start, css.indexOf("}", start));
+
+  function rgb(hex: string): [number, number, number] {
+    return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+  }
+
+  function hex([r, g, b]: [number, number, number]): string {
+    return `#${[r, g, b].map((channel) => Math.round(channel).toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  /** `top` posé à l'opacité `alpha` sur `bottom`. */
+  function over(top: string, alpha: number, bottom: string): string {
+    const [a, b] = [rgb(top), rgb(bottom)];
+    return hex([0, 1, 2].map((i) => a[i]! * alpha + b[i]! * (1 - alpha)) as [number, number, number]);
+  }
+
+  function number(name: string): number {
+    const match = new RegExp(`--${name}:\\s*([0-9.]+)`).exec(root);
+    if (!match?.[1]) throw new Error(`Variable introuvable : --${name}`);
+    return Number(match[1]);
+  }
+
+  // Pire cas, sans compter le flou qui l'adoucit : un élément flottant blanc à
+  // son opacité maximale, sur le halo le plus clair pris à pleine intensité.
+  const backdrop = over("#ffffff", number("auth-float-opacity"), token(root, "auth-glow-a"));
+  const card = over(token(root, "auth-glass"), number("auth-glass-opacity"), backdrop);
+  // --auth-text-muted est un blanc à 72 %.
+  const muted = over("#ffffff", 0.72, card);
+
+  it("garde 4,5:1 pour le texte, le texte secondaire et les erreurs", () => {
+    expect(contrast(token(root, "auth-text"), card)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(muted, card)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(token(root, "auth-danger"), card)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("ne dépasse jamais l'opacité prévue pour les éléments flottants", () => {
+    const component = readFileSync(new URL("../components/arrival/ArrivalBackground.tsx", import.meta.url), "utf8");
+    const highs = [...component.matchAll(/high: ([0-9.]+)/g)].map((match) => Number(match[1]));
+    expect(highs.length).toBeGreaterThan(0);
+    for (const high of highs) expect(high).toBeLessThanOrEqual(number("auth-float-opacity"));
+  });
+});

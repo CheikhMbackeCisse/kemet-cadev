@@ -13,7 +13,7 @@ test("la page de connexion affiche les options pour un visiteur", async ({ page 
   await page.goto("/connexion");
   await expect(page.getByRole("heading", { name: "Connexion" })).toBeVisible();
   await expect(page.getByText("Créer un compte").first()).toBeVisible();
-  await expect(page.getByText("Parcourir les espaces")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Politique de confidentialité" })).toBeVisible();
 });
 
 test("une adresse inconnue affiche Page introuvable", async ({ page }) => {
@@ -28,5 +28,17 @@ for (const pathname of ["/statut", "/dev/ui", "/dev/ui/shell"]) {
     await page.goto(pathname);
     await expect(page.getByRole("heading", { name: "Page introuvable" })).toBeVisible();
     await expect(page.getByText("Kemet arrive.")).toHaveCount(0);
+  });
+}
+
+for (const pathname of ["/inscription", "/connexion"]) {
+  test(`${pathname} tient dans l'écran sans défilement`, async ({ page }) => {
+    await page.goto(pathname);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const overflow = await page.evaluate(() => ({
+      vertical: document.documentElement.scrollHeight - window.innerHeight,
+      horizontal: document.documentElement.scrollWidth - window.innerWidth,
+    }));
+    expect(overflow).toEqual({ vertical: 0, horizontal: 0 });
   });
 }

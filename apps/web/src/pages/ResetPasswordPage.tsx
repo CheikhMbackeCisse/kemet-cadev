@@ -20,7 +20,7 @@ export function ResetPasswordPage() {
   if (!token) {
     return (
       <AuthLayout title={fr.auth.resetPasswordTitle}>
-        <p className="text-sm text-danger" role="alert">
+        <p className="text-sm text-auth-danger" role="alert">
           {fr.auth.resetPasswordInvalidLink}
         </p>
       </AuthLayout>
@@ -45,8 +45,8 @@ export function ResetPasswordPage() {
     return (
       <AuthLayout title={fr.auth.resetPasswordTitle}>
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-text-2">{fr.auth.resetPasswordSuccess}</p>
-          <Button type="button" onClick={() => (window.location.href = "/connexion")}>
+          <p className="text-sm text-auth-text">{fr.auth.resetPasswordSuccess}</p>
+          <Button type="button" variant="inverse" onClick={() => (window.location.href = "/connexion")}>
             {fr.auth.loginSubmit}
           </Button>
         </div>
@@ -57,7 +57,7 @@ export function ResetPasswordPage() {
   return (
     <AuthLayout title={fr.auth.resetPasswordTitle}>
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
+        <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.newPasswordLabel}
           <Input
             type="password"
@@ -69,11 +69,12 @@ export function ResetPasswordPage() {
           />
         </label>
         {error && (
-          <p className="text-sm text-danger" role="alert">
+          <p className="text-sm text-auth-danger" role="alert">
             {error}
           </p>
         )}
         <SubmitButton
+          variant="inverse"
           label={fr.auth.resetPasswordSubmit}
           loading={submitting}
           disabledReason={password.length < 8 ? fr.auth.passwordTooShort : null}

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import type { Intent, Interest, ProfileRole } from "@kemet/shared";
-import { OnboardingLayout } from "../components/onboarding/OnboardingLayout.js";
-import { ChoiceChips } from "../components/onboarding/ChoiceChips.js";
+import { IntroStepLayout } from "../components/intro/IntroStepLayout.js";
 import { CountryList } from "../components/onboarding/CountryList.js";
-import { InterestChips } from "../components/onboarding/InterestChips.js";
-import { RadioList } from "../components/onboarding/RadioList.js";
+import { DomainGrid } from "../components/onboarding/DomainGrid.js";
+import { OtherAnswerField } from "../components/onboarding/OtherAnswerField.js";
+import { CheckList, RadioList, type ChoiceOption } from "../components/onboarding/RadioList.js";
+import { INTENT_ICONS, WHO_ICONS } from "../lib/onboarding/choiceIcons.js";
 import {
   asksForDomains,
   INTRO_BASE_PATH,
@@ -13,24 +14,56 @@ import {
   questionFromPath,
   type IntroQuestion,
 } from "../lib/intro/introSteps.js";
-import { markIntroSeen, readIntroAnswers, saveIntroAnswers, type IntroAnswers } from "../lib/intro/introStorage.js";
+import {
+  markIntroSeen,
+  readIntroAnswers,
+  saveIntroAnswers,
+  type IntroAnswers,
+} from "../lib/intro/introStorage.js";
 import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import { fr } from "../i18n/fr.js";
 
-const WHO_OPTIONS: { value: ProfileRole; label: string }[] = [
-  { value: "developer", label: fr.intro.whoDeveloper },
-  { value: "student", label: fr.intro.whoStudent },
-  { value: "hr", label: fr.intro.whoHr },
-  { value: "entrepreneur", label: fr.intro.whoEntrepreneur },
-  { value: "other", label: fr.intro.whoOther },
-];
+const WHO_OPTIONS = [
+  { value: "developer", label: fr.intro.whoDeveloper, icon: WHO_ICONS.developer },
+  { value: "student", label: fr.intro.whoStudent, icon: WHO_ICONS.student },
+  { value: "hr", label: fr.intro.whoHr, icon: WHO_ICONS.hr },
+  { value: "entrepreneur", label: fr.intro.whoEntrepreneur, icon: WHO_ICONS.entrepreneur },
+  { value: "other", label: fr.intro.whoOther, icon: WHO_ICONS.other },
+] satisfies (ChoiceOption & { value: ProfileRole })[];
 
-const SEEKING_OPTIONS = ["recruit", "find_partner", "follow_community"] as const satisfies readonly Intent[];
-const GOAL_OPTIONS = ["learn", "help_others", "showcase_work", "recruit"] as const satisfies readonly Intent[];
+const SEEKING_OPTIONS = [
+  "recruit",
+  "find_partner",
+  "follow_community",
+] as const satisfies readonly Intent[];
+const GOAL_OPTIONS = [
+  "learn",
+  "help_others",
+  "showcase_work",
+  "recruit",
+] as const satisfies readonly Intent[];
+
+function intentOptions(intents: readonly Intent[]) {
+  return intents.map((intent) => ({
+    value: intent,
+    label: fr.intro.intents[intent],
+    icon: INTENT_ICONS[intent],
+  }));
+}
 
 /** Remplace, dans la liste des intentions, celles qu'un écran propose, sans toucher aux autres. */
 function replaceIntents(current: Intent[], offered: readonly Intent[], chosen: Intent[]): Intent[] {
   return [...new Set([...current.filter((intent) => !offered.includes(intent)), ...chosen])];
+}
+
+/** Une précision "Autre" n'a plus de sens une fois "Autre" décoché. */
+function withoutStaleOther(answers: IntroAnswers): IntroAnswers {
+  const { roleOther, interestOther, ...rest } = answers;
+  return {
+    ...rest,
+    ...(answers.role === "other" && roleOther !== undefined && { roleOther }),
+    ...(answers.interests?.includes("other") && interestOther !== undefined && { interestOther }),
+  };
 }
 
 /**
@@ -39,7 +72,9 @@ function replaceIntents(current: Intent[], offered: readonly Intent[], chosen: I
  * créé (OnboardingPage).
  */
 export function IntroQuestionsPage() {
-  const [question, setQuestion] = useState<IntroQuestion>(() => questionFromPath(window.location.pathname) ?? "who");
+  const [question, setQuestion] = useState<IntroQuestion>(
+    () => questionFromPath(window.location.pathname) ?? "who",
+  );
   const [answers, setAnswers] = useState<IntroAnswers>(() => readIntroAnswers());
 
   useEffect(() => {
@@ -55,7 +90,7 @@ export function IntroQuestionsPage() {
   const previous = INTRO_QUESTIONS[index - 1] ?? null;
 
   function goTo(target: IntroQuestion | null, updated: IntroAnswers = answers) {
-    saveIntroAnswers(updated);
+    saveIntroAnswers(withoutStaleOther(updated));
     if (!target) {
       markIntroSeen();
       window.location.href = SIGN_UP_PATH;
@@ -83,10 +118,9 @@ export function IntroQuestionsPage() {
   switch (question) {
     case "who":
       return (
-        <OnboardingLayout
+        <IntroStepLayout
           {...common}
           title={fr.intro.whoTitle}
-          subtitle={fr.intro.whoSubtitle}
           disabledReason={answers.role ? null : fr.onboarding.roleRequired}
         >
           <RadioList
@@ -95,65 +129,98 @@ export function IntroQuestionsPage() {
             options={WHO_OPTIONS}
             value={answers.role ?? ""}
             onChange={(value) => update({ role: value as ProfileRole })}
+            tone="glass"
           />
-        </OnboardingLayout>
+          {answers.role === "other" && (
+            <OtherAnswerField
+              label={fr.intro.whoOtherLabel}
+              placeholder={fr.intro.whoOtherPlaceholder}
+              value={answers.roleOther ?? ""}
+              onChange={(roleOther) => update({ roleOther })}
+              tone="glass"
+            />
+          )}
+        </IntroStepLayout>
       );
     case "domains":
       return asksForDomains(answers) ? (
-        <OnboardingLayout
+        <IntroStepLayout
           {...common}
+          width="lg"
           title={fr.intro.domainsTitle}
-          subtitle={fr.intro.domainsSubtitle}
           disabledReason={answers.interests?.length ? null : fr.onboarding.interestsRequired}
         >
-          <InterestChips
+          <DomainGrid
             value={answers.interests ?? []}
             onChange={(value: Interest[]) => update({ interests: value })}
+            tone="glass"
           />
-        </OnboardingLayout>
+          {answers.interests?.includes("other") && (
+            <OtherAnswerField
+              label={fr.onboarding.interestOtherLabel}
+              placeholder={fr.onboarding.interestOtherPlaceholder}
+              value={answers.interestOther ?? ""}
+              onChange={(interestOther) => update({ interestOther })}
+              tone="glass"
+            />
+          )}
+        </IntroStepLayout>
       ) : (
-        <OnboardingLayout
+        <IntroStepLayout
           {...common}
           title={fr.intro.seekingTitle}
-          subtitle={fr.intro.seekingSubtitle}
-          disabledReason={intents.some((intent) => (SEEKING_OPTIONS as readonly Intent[]).includes(intent)) ? null : fr.intro.choiceRequired}
+          disabledReason={
+            intents.some((intent) => (SEEKING_OPTIONS as readonly Intent[]).includes(intent))
+              ? null
+              : fr.intro.choiceRequired
+          }
         >
-          <ChoiceChips
+          <CheckList
             label={fr.intro.seekingLabel}
-            options={SEEKING_OPTIONS}
-            labels={fr.intro.intents}
-            value={intents.filter((intent) => (SEEKING_OPTIONS as readonly Intent[]).includes(intent)) as (typeof SEEKING_OPTIONS)[number][]}
-            onChange={(value) => update({ intents: replaceIntents(intents, SEEKING_OPTIONS, value) })}
+            options={intentOptions(SEEKING_OPTIONS)}
+            value={intents.filter((intent) =>
+              (SEEKING_OPTIONS as readonly Intent[]).includes(intent),
+            )}
+            onChange={(value) =>
+              update({ intents: replaceIntents(intents, SEEKING_OPTIONS, value) })
+            }
+            tone="glass"
           />
-        </OnboardingLayout>
+        </IntroStepLayout>
       );
     case "country":
       return (
-        <OnboardingLayout
+        <IntroStepLayout
           {...common}
           title={fr.intro.countryTitle}
-          subtitle={fr.intro.countrySubtitle}
           disabledReason={answers.country ? null : fr.onboarding.countryRequired}
         >
-          <CountryList value={answers.country ?? ""} onChange={(country) => update({ country })} />
-        </OnboardingLayout>
+          <CountryList
+            value={answers.country ?? ""}
+            onChange={(country) => update({ country })}
+            tone="glass"
+          />
+        </IntroStepLayout>
       );
     case "intents":
       return (
-        <OnboardingLayout
+        <IntroStepLayout
           {...common}
           title={fr.intro.intentsTitle}
-          subtitle={fr.intro.intentsSubtitle}
-          disabledReason={intents.some((intent) => (GOAL_OPTIONS as readonly Intent[]).includes(intent)) ? null : fr.intro.choiceRequired}
+          disabledReason={
+            intents.some((intent) => (GOAL_OPTIONS as readonly Intent[]).includes(intent))
+              ? null
+              : fr.intro.choiceRequired
+          }
         >
-          <ChoiceChips
+          <CheckList
             label={fr.intro.intentsLabel}
-            options={GOAL_OPTIONS}
-            labels={fr.intro.intents}
-            value={intents.filter((intent) => (GOAL_OPTIONS as readonly Intent[]).includes(intent)) as (typeof GOAL_OPTIONS)[number][]}
+            options={intentOptions(GOAL_OPTIONS)}
+            value={intents.filter((intent) => (GOAL_OPTIONS as readonly Intent[]).includes(intent))}
             onChange={(value) => update({ intents: replaceIntents(intents, GOAL_OPTIONS, value) })}
+            tone="glass"
           />
-        </OnboardingLayout>
+        </IntroStepLayout>
       );
   }
 }

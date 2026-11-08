@@ -33,6 +33,8 @@ export const profiles = pgTable("profiles", {
   country: text("country").notNull(),
   // Facultatif, l'étape qui le propose se passe. title porte la spécialité.
   role: profileRoleEnum("role"),
+  // Précision libre quand le rôle choisi est "other", posée par l'accueil.
+  roleOther: text("role_other"),
   title: text("title"),
   bio: text("bio"),
   stack: text("stack").array().notNull().default([]),
@@ -45,6 +47,8 @@ export const profiles = pgTable("profiles", {
   // Sujets choisis à l'onboarding, valeurs de INTERESTS (@kemet/shared). Ne
   // servent qu'aux suggestions d'espaces et de personnes.
   interests: text("interests").array().notNull().default([]),
+  // Précision libre quand le sujet "other" est coché.
+  interestOther: text("interest_other"),
   // Ce que la personne vient faire ou cherche, valeurs de INTENTS (@kemet/shared).
   intents: text("intents").array().notNull().default([]),
   // Écran où reprendre l'onboarding. Le parcours est terminé (ou entièrement

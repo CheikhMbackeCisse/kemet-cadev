@@ -16,15 +16,19 @@ test("les quatre questions mènent à l'inscription, Passer compris", async ({ p
   await page.goto("/decouvrir");
   await page.getByRole("link", { name: "Commencer" }).click();
 
-  await expect(page.getByText("Étape 1 sur 4")).toBeVisible();
+  await expect(page.getByRole("progressbar", { name: "Étape 1 sur 4" })).toBeVisible();
   await page.getByText("Développeur/se", { exact: true }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expect(page.getByRole("heading", { name: "Tes domaines" })).toBeVisible();
-  await page.getByText("Paiement", { exact: true }).click();
+  await page.getByText("Fintech et paiement", { exact: true }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expect(page.getByRole("heading", { name: "Ta nationalité" })).toBeVisible();
+  await expect(page.getByText("Sénégal", { exact: true })).toBeVisible();
+  await expect(page.getByText("France", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Autre pays" }).click();
+  await expect(page.getByText("France", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Passer" }).click();
 
   await expect(page.getByRole("heading", { name: "Que viens-tu faire sur Kemet ?" })).toBeVisible();
@@ -34,6 +38,18 @@ test("les quatre questions mènent à l'inscription, Passer compris", async ({ p
   await expect(page).toHaveURL(/\/inscription$/);
   const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("kemet.intro") ?? "{}"));
   expect(stored).toMatchObject({ seen: true, answers: { role: "developer", interests: ["payments"], intents: ["help_others"] } });
+});
+
+test("Autre ouvre un champ libre, gardé avec les réponses", async ({ page }) => {
+  await page.goto("/decouvrir/qui");
+  await expect(page.getByLabel("Précise")).toHaveCount(0);
+  await page.getByText("Autre", { exact: true }).click();
+  await page.getByLabel("Précise").fill("Enseignante");
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  await expect(page.getByRole("heading", { name: "Que cherches-tu ?" })).toBeVisible();
+  const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("kemet.intro") ?? "{}"));
+  expect(stored.answers).toMatchObject({ role: "other", roleOther: "Enseignante" });
 });
 
 test("les réponses de l'accueil rejoignent le profil après l'inscription", async ({ page }, testInfo) => {

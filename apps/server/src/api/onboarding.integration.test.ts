@@ -90,7 +90,7 @@ describe.skipIf(!databaseUrl)("Onboarding (base Postgres réelle)", () => {
     const { cookie } = await createProfile("awa");
     const body = (await me(cookie)).json();
     expect(body.profile.country).toBe("");
-    expect(body.onboarding).toEqual({ step: "country", completed: false, interests: [], intents: [] });
+    expect(body.onboarding).toEqual({ step: "country", completed: false, interests: [], interestOther: null, intents: [], roleOther: null });
   });
 
   it("garde l'écran atteint, puis le parcours terminé pour de bon", async () => {
@@ -115,6 +115,21 @@ describe.skipIf(!databaseUrl)("Onboarding (base Postgres réelle)", () => {
     expect((await patchOnboarding(cookie, {})).statusCode).toBe(400);
     expect((await patchOnboarding(cookie, { completed: false })).statusCode).toBe(400);
     expect((await patchOnboarding(cookie, { intents: ["learn", "pirater"] })).statusCode).toBe(400);
+  });
+
+  it("enregistre la précision d'un choix Autre, nettoyée et bornée", async () => {
+    const { cookie } = await createProfile("awa");
+    expect(
+      (await patchOnboarding(cookie, { roleOther: "  Enseignante  ", interests: ["other"], interestOther: "Robotique" }))
+        .statusCode,
+    ).toBe(200);
+    const onboarding = (await me(cookie)).json().onboarding;
+    expect(onboarding).toMatchObject({ roleOther: "Enseignante", interests: ["other"], interestOther: "Robotique" });
+
+    expect((await patchOnboarding(cookie, { roleOther: "x".repeat(61) })).statusCode).toBe(400);
+    expect((await patchOnboarding(cookie, { roleOther: "   " })).statusCode).toBe(400);
+    expect((await patchOnboarding(cookie, { roleOther: null })).statusCode).toBe(200);
+    expect((await me(cookie)).json().onboarding.roleOther).toBeNull();
   });
 
   it("enregistre les intentions sans doublon, et le rôle entrepreneur", async () => {

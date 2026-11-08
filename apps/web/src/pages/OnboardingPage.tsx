@@ -3,7 +3,8 @@ import { ONBOARDING_STEPS, type Interest, type OnboardingStep, type ProfileRole 
 import { OnboardingLayout, OnboardingSkeleton } from "../components/onboarding/OnboardingLayout.js";
 import { CountryList } from "../components/onboarding/CountryList.js";
 import { RadioList } from "../components/onboarding/RadioList.js";
-import { InterestChips } from "../components/onboarding/InterestChips.js";
+import { DomainGrid } from "../components/onboarding/DomainGrid.js";
+import { OtherAnswerField } from "../components/onboarding/OtherAnswerField.js";
 import { SpaceSuggestions } from "../components/onboarding/SpaceSuggestions.js";
 import { PeopleSuggestions } from "../components/onboarding/PeopleSuggestions.js";
 import { Input } from "../components/ui/Input.js";
@@ -34,10 +35,12 @@ async function applyIntroAnswers(answers: IntroAnswers): Promise<void> {
       ...(answers.role && { role: answers.role }),
     });
   }
-  if (answers.interests?.length || answers.intents?.length) {
+  if (answers.interests?.length || answers.intents?.length || answers.roleOther) {
     await updateOnboarding({
       ...(answers.interests?.length && { interests: answers.interests }),
+      ...(answers.interestOther && { interestOther: answers.interestOther }),
       ...(answers.intents?.length && { intents: answers.intents }),
+      ...(answers.roleOther && { roleOther: answers.roleOther }),
     });
   }
   clearIntroAnswers();
@@ -55,6 +58,7 @@ export function OnboardingPage() {
   const [role, setRole] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [interests, setInterests] = useState<Interest[]>([]);
+  const [interestOther, setInterestOther] = useState("");
   const [initialized, setInitialized] = useState(false);
   const [skipped, setSkipped] = useState<Set<OnboardingStep>>(new Set());
   const [submitting, setSubmitting] = useState(false);
@@ -79,6 +83,7 @@ export function OnboardingPage() {
       setRole(intro.role ?? profile.role ?? "");
       setSpecialty(profile.title ?? "");
       setInterests(intro.interests?.length ? intro.interests : onboarding.interests);
+      setInterestOther(intro.interestOther ?? onboarding.interestOther ?? "");
       const requested = step ?? onboarding.step;
       const resume = answered.has(requested)
         ? (ONBOARDING_STEPS.slice(stepIndex(requested)).find((candidate) => !answered.has(candidate)) ?? "people")
@@ -212,9 +217,24 @@ export function OnboardingPage() {
           title={fr.onboarding.interestsTitle}
           subtitle={fr.onboarding.interestsSubtitle}
           disabledReason={interests.length > 0 ? null : fr.onboarding.interestsRequired}
-          onSubmit={() => void goTo(next, () => updateOnboarding({ interests }))}
+          onSubmit={() =>
+            void goTo(next, () =>
+              updateOnboarding({
+                interests,
+                interestOther: interests.includes("other") && interestOther.trim() ? interestOther.trim() : null,
+              }),
+            )
+          }
         >
-          <InterestChips value={interests} onChange={setInterests} />
+          <DomainGrid value={interests} onChange={setInterests} />
+          {interests.includes("other") && (
+            <OtherAnswerField
+              label={fr.onboarding.interestOtherLabel}
+              placeholder={fr.onboarding.interestOtherPlaceholder}
+              value={interestOther}
+              onChange={setInterestOther}
+            />
+          )}
         </OnboardingLayout>
       );
     case "spaces":

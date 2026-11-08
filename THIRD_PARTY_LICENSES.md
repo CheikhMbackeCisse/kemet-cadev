@@ -20,3 +20,12 @@ Plateforme couverte : linux x64 (glibc et musl), celle des images de production 
 | OFL-1.1 | @fontsource-variable/geist-mono@5.3.0, @fontsource/plus-jakarta-sans@5.3.0 |
 | Python-2.0 | argparse@2.0.1 |
 | Unlicense | postgres@3.4.9 |
+
+## Ressources copiées dans le dépôt
+
+Aucun paquet ne les apporte : liste tenue dans `scripts/vendored-assets.ts`.
+
+| Ressource | Licence | Source | Fichier |
+| --- | --- | --- | --- |
+| Simple Icons 16.37.0 (Python, JavaScript, React, Flutter, Node.js, Go, Docker, Linux) | CC0-1.0 | https://simpleicons.org | `apps/web/src/components/arrival/techLogos.ts` |
+| Contour de l'Afrique, Natural Earth via world-atlas 2.0.2 (countries-110m) | Domaine public (Natural Earth), ISC (world-atlas) | https://www.naturalearthdata.com, https://github.com/topojson/world-atlas | `apps/web/src/components/arrival/africaOutline.ts` |
