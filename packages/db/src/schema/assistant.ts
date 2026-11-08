@@ -133,6 +133,8 @@ export const assistantInvocations = pgTable(
   (table) => [
     index("assistant_invocations_requested_by_created_at_idx").on(table.requestedBy, table.createdAt),
     index("assistant_invocations_channel_idx").on(table.channelId),
+    // Compte des utilisations d'un skill (liste des skills) : `skill_ids @> array[id]`.
+    index("assistant_invocations_skill_ids_idx").using("gin", table.skillIds),
   ],
 );
 

@@ -4,8 +4,9 @@ import type { SkillDetail, SkillSummary } from "@kemet/shared";
 type SkillRow = typeof skills.$inferSelect;
 type ProfileRow = typeof profiles.$inferSelect;
 type RatingStats = { average: number | null; count: number };
+type SkillStats = RatingStats & { uses: number };
 
-export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings: RatingStats): SkillSummary {
+export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings: SkillStats): SkillSummary {
   return {
     id: row.id,
     slug: row.slug,
@@ -18,11 +19,12 @@ export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings
     authorDisplayName: author.displayName,
     averageStars: ratings.average,
     ratingCount: ratings.count,
+    usageCount: ratings.uses,
     createdAt: row.createdAt.toISOString(),
   };
 }
 
-export function serializeSkillDetail(row: SkillRow, author: ProfileRow, ratings: RatingStats): SkillDetail {
+export function serializeSkillDetail(row: SkillRow, author: ProfileRow, ratings: SkillStats): SkillDetail {
   return {
     ...serializeSkillSummary(row, author, ratings),
     content: row.content,

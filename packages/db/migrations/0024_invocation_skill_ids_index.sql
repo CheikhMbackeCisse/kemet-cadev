@@ -1,0 +1,1 @@
+CREATE INDEX "assistant_invocations_skill_ids_idx" ON "assistant_invocations" USING gin ("skill_ids");

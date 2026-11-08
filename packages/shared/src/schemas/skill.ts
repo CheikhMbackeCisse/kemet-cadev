@@ -47,8 +47,12 @@ export const skillSummarySchema = z.object({
   authorDisplayName: z.string(),
   averageStars: z.number().min(0).max(5).nullable(),
   ratingCount: z.number().int().nonnegative(),
+  /** Réponses de @kemet qui ont retenu ce skill. */
+  usageCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
 });
+
+export const skillListQuerySchema = z.object({ q: z.string().trim().max(100).optional() });
 
 export type SkillSummary = z.infer<typeof skillSummarySchema>;
 

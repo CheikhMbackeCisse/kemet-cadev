@@ -135,6 +135,28 @@
 }
 
 /**
+ * Bannières des skills : un dégradé par domaine, autre exception à l'interdit
+ * des dégradés (DESIGN.md, "Skill"). Aucun texte n'y est posé : les mêmes
+ * teintes servent dans les deux thèmes.
+ */
+:root {
+  --skill-payments-from: #0f766e;
+  --skill-payments-to: #1265dd;
+  --skill-ai-from: #0e7490;
+  --skill-ai-to: #7c3aed;
+  --skill-data-from: #7c3aed;
+  --skill-data-to: #1265dd;
+  --skill-infra-from: #a14f00;
+  --skill-infra-to: #c4320a;
+  --skill-front-from: #be185d;
+  --skill-front-to: #7c3aed;
+  --skill-back-from: #1265dd;
+  --skill-back-to: #0e7490;
+  --skill-other-from: #364153;
+  --skill-other-to: #1265dd;
+}
+
+/**
  * Fond de marque des écrans de compte (connexion, inscription, mot de passe).
  * Dégradé et halos : seule exception à la liste « Ce qui est interdit » de
  * DESIGN.md, voir docs/adr/0019-fond-des-ecrans-de-compte.md. Partagé

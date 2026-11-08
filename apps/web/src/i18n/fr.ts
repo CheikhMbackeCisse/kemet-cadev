@@ -563,8 +563,19 @@ export const fr = {
     noSkills: "Aucun skill pour l'instant.",
     loadingError: "Impossible de charger les skills.",
     createError: "Ce skill n'a pas pu être publié.",
-    averageStars: (average: number, count: number) =>
-      count === 0 ? "Pas encore noté" : `${average.toFixed(1)} / 5 (${count})`,
+    notRatedYet: "Pas encore noté",
+    averageValue: (average: number) => average.toFixed(1).replace(".", ","),
+    ratingLabel: (average: number, count: number) =>
+      `${average.toFixed(1).replace(".", ",")} sur 5, ${count} avis`,
+    reviewCount: (count: string) => `(${count} avis)`,
+    usageCount: (formatted: string, count: number) =>
+      count === 0
+        ? "Pas encore utilisé par @kemet"
+        : `${formatted} ${count === 1 ? "utilisation" : "utilisations"} par @kemet`,
+    view: "Voir",
+    searchLabel: "Chercher un skill",
+    searchPlaceholder: "Wave, Postgres, Docker…",
+    searchNoResult: (query: string) => `Aucun skill ne correspond à « ${query} ».`,
     rate: "Noter ce skill",
     rateRequiresUsage: "Seuls ceux à qui ce skill a déjà servi peuvent lui donner des étoiles.",
     rateError: "Cette note n'a pas pu être enregistrée.",

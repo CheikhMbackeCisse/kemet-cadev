@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, profiles, type Db } from "@kemet/db";
+import { assistantInvocations, createDb, messages, profiles, type Db } from "@kemet/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
@@ -192,5 +192,57 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     await createSkill(author);
     const again = await createSkill(author);
     expect(again.statusCode).toBe(409);
+  });
+
+  it("cherche les skills par mot ou par début de nom", async () => {
+    const cookie = await createMember("search@test.kemet", "chercheuse");
+    await createSkill(cookie);
+    await createSkill(cookie, {
+      slug: "migrations-postgres",
+      name: "migrations-postgres",
+      description: "Écrire des migrations sans bloquer la base.",
+      tags: ["postgres"],
+    });
+
+    const byWord = await app.inject({ method: "GET", url: "/api/skills?q=migrations" });
+    expect(byWord.json().items.map((skill: { slug: string }) => skill.slug)).toEqual(["migrations-postgres"]);
+    const byPrefix = await app.inject({ method: "GET", url: "/api/skills?q=wav" });
+    expect(byPrefix.json().items.map((skill: { slug: string }) => skill.slug)).toEqual(["wave-paiements"]);
+    const wildcard = await app.inject({ method: "GET", url: "/api/skills?q=%25" });
+    expect(wildcard.json().items).toEqual([]);
+    const all = await app.inject({ method: "GET", url: "/api/skills" });
+    expect(all.json().items).toHaveLength(2);
+  });
+
+  it("compte les réponses de @kemet terminées qui ont retenu un skill", async () => {
+    const cookie = await createMember("uses@test.kemet", "utilisatrice");
+    const skillId = (await createSkill(cookie)).json().skill.id as string;
+    const [profile] = await db.select().from(profiles).where(eq(profiles.handle, "utilisatrice"));
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/spaces",
+      headers: { cookie },
+      payload: { name: "usages", slug: "usages", visibility: "public" },
+    });
+    const spaceId = created.json().space.id as string;
+    const channels = (await app.inject({ method: "GET", url: `/api/spaces/${spaceId}/channels`, headers: { cookie } })).json()
+      .items as { id: string; slug: string }[];
+    const channelId = channels[0]!.id;
+    const [trigger] = await db
+      .insert(messages)
+      .values({ channelId, authorId: profile!.id, clientId: crypto.randomUUID(), body: "@kemet Wave ?" })
+      .returning();
+    const base = { channelId, triggerMessageId: trigger!.id, requestedBy: profile!.id };
+    await db.insert(assistantInvocations).values([
+      { ...base, skillIds: [skillId], status: "done" },
+      { ...base, skillIds: [skillId], status: "done" },
+      { ...base, skillIds: [skillId], status: "failed" },
+      { ...base, skillIds: [], status: "done" },
+    ]);
+
+    const list = await app.inject({ method: "GET", url: "/api/skills" });
+    expect(list.json().items[0].usageCount).toBe(2);
+    const detail = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(detail.json().skill.usageCount).toBe(2);
   });
 });

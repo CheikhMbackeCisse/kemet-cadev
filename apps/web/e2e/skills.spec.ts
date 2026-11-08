@@ -65,6 +65,11 @@ test("publie un skill et le retrouve sur sa page publique", async ({ page, reque
 
   // La page renvoie vers la liste une fois le skill publié.
   await expect(page).toHaveURL(/\/skills$/);
+  await page.getByLabel("Chercher un skill").fill(slug);
+  await expect(page.getByRole("link", { name: new RegExp(slug) })).toHaveCount(1);
+  await page.getByLabel("Chercher un skill").fill(`${slug}-introuvable`);
+  await expect(page.getByText(/Aucun skill ne correspond/)).toBeVisible();
+  await page.getByLabel("Chercher un skill").fill(slug);
   await page.getByRole("link", { name: new RegExp(slug) }).click();
   await expect(page.getByRole("heading", { name: slug })).toBeVisible();
 });

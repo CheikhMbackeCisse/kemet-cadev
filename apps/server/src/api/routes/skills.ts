@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { createSkillSchema, rateSkillSchema, updateSkillSchema } from "@kemet/shared";
+import { createSkillSchema, rateSkillSchema, skillListQuerySchema, updateSkillSchema } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
@@ -8,7 +8,7 @@ import {
   deleteSkill,
   findAuthorProfile,
   findSkillBySlug,
-  getSkillRatingStats,
+  getSkillStats,
   listMemberSpaceIds,
   listSkillsForViewer,
   rateSkill,
@@ -58,11 +58,12 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
   app.get("/api/skills", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (request) => {
     const userId = await getSessionUserId(auth, request);
     const profile = userId ? await findProfileByUserId(db, userId) : null;
+    const { q } = skillListQuerySchema.parse(request.query);
     const memberSpaceIds = profile ? await listMemberSpaceIds(db, profile.id) : [];
-    const rows = await listSkillsForViewer(db, profile?.id ?? null, memberSpaceIds);
+    const rows = await listSkillsForViewer(db, profile?.id ?? null, memberSpaceIds, q);
     const items = await Promise.all(
       rows.map(async (skill) => {
-        const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillRatingStats(db, skill.id)]);
+        const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillStats(db, skill.id)]);
         return serializeSkillSummary(skill, author, ratings);
       }),
     );
@@ -77,7 +78,7 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
     if (existing) throw conflict("Un skill avec cet identifiant existe déjà.");
     await requireSpaceMembershipForVisibility(db, profile.id, input.visibility, input.spaceId);
     const skill = await createSkill(db, profile.id, input);
-    const ratings = await getSkillRatingStats(db, skill.id);
+    const ratings = await getSkillStats(db, skill.id);
     return { skill: serializeSkillDetail(skill, profile, ratings) };
   });
 
@@ -85,7 +86,7 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
     const userId = await getSessionUserId(auth, request);
     const profile = userId ? await findProfileByUserId(db, userId) : null;
     const skill = await requireVisibleSkill(db, request.params.slug, profile?.id ?? null);
-    const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillRatingStats(db, skill.id)]);
+    const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillStats(db, skill.id)]);
     return { skill: serializeSkillDetail(skill, author, ratings) };
   });
 
@@ -105,7 +106,7 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
         input.spaceId !== undefined ? input.spaceId : skill.spaceId,
       );
       const updated = await updateSkill(db, skill.id, input);
-      const ratings = await getSkillRatingStats(db, skill.id);
+      const ratings = await getSkillStats(db, skill.id);
       return { skill: serializeSkillDetail(updated, profile, ratings) };
     },
   );

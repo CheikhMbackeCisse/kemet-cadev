@@ -43,6 +43,7 @@ function skillBy(authorId: string): SkillDetail {
     authorDisplayName: "Fatima Benali",
     averageStars: null,
     ratingCount: 0,
+    usageCount: 0,
     createdAt: new Date(0).toISOString(),
     content: "Contenu",
     spaceId: null,

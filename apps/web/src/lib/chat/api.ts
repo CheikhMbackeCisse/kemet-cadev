@@ -315,8 +315,9 @@ export function revokeInvite(inviteId: string) {
   return request<{ revoked: boolean }>(`/api/invites/${inviteId}`, { method: "DELETE" });
 }
 
-export function listSkills() {
-  return request<{ items: SkillSummary[] }>("/api/skills");
+export function listSkills(query = "") {
+  const search = query ? `?q=${encodeURIComponent(query)}` : "";
+  return request<{ items: SkillSummary[] }>(`/api/skills${search}`);
 }
 
 export function getSkill(slug: string) {

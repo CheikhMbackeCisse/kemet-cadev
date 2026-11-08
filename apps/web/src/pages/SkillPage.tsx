@@ -13,6 +13,10 @@ import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { RichText } from "../components/content/RichText.js";
 import { AskKemetDialog } from "../components/skills/AskKemetDialog.js";
+import { SkillBanner, SkillDomainIcon } from "../components/skills/SkillBanner.js";
+import { SkillRating } from "../components/skills/SkillRating.js";
+import { formatCount } from "../lib/formatCount.js";
+import { skillDomain } from "../lib/skills/skillDomain.js";
 import { useSession } from "../session/SessionProvider.js";
 
 function readSlug(pathname: string): string {
@@ -108,28 +112,35 @@ export function SkillPage() {
         </a>
       </div>
 
-      <div>
-        <div className="flex items-start justify-between gap-2">
-          <h1 className="text-lg font-semibold text-text">{skill.name}</h1>
-          {canWrite && profile?.id === skill.authorId && (
-            <MoreActionsMenu
-              label={fr.skills.moreActions}
-              items={[{ value: "delete", label: fr.skills.delete, danger: true }]}
-              onSelect={() => setDeleteOpen(true)}
-            />
-          )}
-        </div>
-        <p className="mt-1 text-sm text-subtle">{fr.skills.byAuthor(skill.authorDisplayName)}</p>
-        <p className="mt-3 text-sm text-text-2">{skill.description}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {skill.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-2"
-            >
-              {tag}
+      <div className="overflow-hidden rounded-card border border-border">
+        <SkillBanner domain={skillDomain(skill)} seed={skill.slug} className="h-28" />
+        <div className="px-4 pb-4">
+          <SkillDomainIcon domain={skillDomain(skill)} className="-mt-6" />
+          <div className="mt-2 flex items-start justify-between gap-2">
+            <h1 className="break-words text-lg font-bold text-text">{skill.name}</h1>
+            {canWrite && profile?.id === skill.authorId && (
+              <MoreActionsMenu
+                label={fr.skills.moreActions}
+                items={[{ value: "delete", label: fr.skills.delete, danger: true }]}
+                onSelect={() => setDeleteOpen(true)}
+              />
+            )}
+          </div>
+          <p className="mt-1 text-xs text-subtle">{fr.skills.byAuthor(skill.authorDisplayName)}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <SkillRating average={skill.averageStars} count={skill.ratingCount} />
+            <span className="text-xs text-subtle tabular-nums">
+              {fr.skills.usageCount(formatCount(skill.usageCount), skill.usageCount)}
             </span>
-          ))}
+          </div>
+          <p className="mt-3 text-base text-text-2">{skill.description}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {skill.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-2">
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -149,15 +160,9 @@ export function SkillPage() {
         )
       )}
 
-      <RichText
-        source={skill.content}
-        className="text-base text-text"
-      />
+      <RichText source={skill.content} className="text-base text-text" />
 
       <div className="flex items-center gap-3">
-        <span className="text-sm text-text-2">
-          {fr.skills.averageStars(skill.averageStars ?? 0, skill.ratingCount)}
-        </span>
         {canWrite && (
           <div className="flex items-center gap-1" role="group" aria-label={fr.skills.rate}>
             {[1, 2, 3, 4, 5].map((stars) => (
