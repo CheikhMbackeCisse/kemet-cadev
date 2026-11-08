@@ -8,6 +8,8 @@ import { fr } from "../i18n/fr.js";
 
 interface Glyph {
   text: string;
+  /** Sur téléphone, seuls les symboles du haut restent : le texte occupe toute la largeur. */
+  mobile?: boolean;
   left: string;
   top: string;
   duration: string;
@@ -16,17 +18,17 @@ interface Glyph {
 
 // Positions fixes plutôt qu'aléatoires : le même écran à chaque visite, et
 // rien qui ne bouge entre deux rendus.
+// Dans les marges gauche et droite seulement, jamais sous le texte.
 const GLYPHS: Glyph[] = [
-  { text: "</>", left: "8%", top: "70%", duration: "26s", delay: "-4s" },
-  { text: "{ }", left: "20%", top: "92%", duration: "32s", delay: "-18s" },
-  { text: "=>", left: "34%", top: "80%", duration: "28s", delay: "-9s" },
-  { text: "fn()", left: "62%", top: "88%", duration: "30s", delay: "-22s" },
-  { text: "[ ]", left: "76%", top: "74%", duration: "24s", delay: "-2s" },
-  { text: ";", left: "88%", top: "95%", duration: "34s", delay: "-14s" },
-  { text: "#", left: "48%", top: "98%", duration: "36s", delay: "-27s" },
-  { text: "0x1F", left: "14%", top: "40%", duration: "29s", delay: "-11s" },
-  { text: "&&", left: "82%", top: "45%", duration: "27s", delay: "-6s" },
-  { text: "git", left: "56%", top: "55%", duration: "33s", delay: "-20s" },
+  { text: "</>", left: "4%", top: "70%", duration: "26s", delay: "-4s" },
+  { text: "{ }", left: "16%", top: "92%", duration: "32s", delay: "-18s" },
+  { text: "=>", left: "10%", top: "50%", duration: "28s", delay: "-9s" },
+  { text: "0x1F", left: "6%", top: "26%", duration: "29s", delay: "-11s", mobile: true },
+  { text: "fn()", left: "80%", top: "88%", duration: "30s", delay: "-22s" },
+  { text: "[ ]", left: "90%", top: "60%", duration: "24s", delay: "-2s" },
+  { text: ";", left: "86%", top: "95%", duration: "34s", delay: "-14s" },
+  { text: "&&", left: "82%", top: "24%", duration: "27s", delay: "-6s", mobile: true },
+  { text: "#", left: "70%", top: "14%", duration: "31s", delay: "-16s", mobile: true },
 ];
 
 /**
@@ -56,7 +58,7 @@ export function WelcomePage() {
         {GLYPHS.map((glyph) => (
           <li
             key={glyph.text}
-            className="intro-glyph absolute font-mono text-lg text-auth-text-muted md:text-2xl"
+            className={`intro-glyph absolute font-mono text-md text-auth-text-muted md:text-xl ${glyph.mobile ? "" : "max-md:hidden"}`}
             style={
               {
                 left: glyph.left,
