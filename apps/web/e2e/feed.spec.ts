@@ -99,7 +99,7 @@ test("publie un post avec une image et la voit affichée dans le fil", async ({ 
 
 test("enregistre un post, le retrouve dans Enregistrés et copie son lien", async ({ page, request, context }) => {
   const email = `e2e-feedsave-${test.info().project.name}-${Date.now()}@test.kemet`;
-  const handle = `e2efeedsave${test.info().project.name}${Date.now()}`;
+  const handle = `e2esave${test.info().project.name}${Date.now()}`;
   const body = `Post à garder ${Date.now()}`;
 
   await signUpVerifyAndSignIn(request, email, handle);
@@ -121,5 +121,5 @@ test("enregistre un post, le retrouve dans Enregistrés et copie son lien", asyn
   await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
   await page.evaluate(() => Object.defineProperty(navigator, "share", { value: undefined }));
   await page.getByRole("button", { name: "Partager" }).first().click();
-  await expect(page.getByText(/Lien copié|Le lien n'a pas pu être copié/)).toBeVisible();
+  await expect(page.getByText(/Lien copié|Le lien n'a pas pu être copié/).first()).toBeVisible();
 });
