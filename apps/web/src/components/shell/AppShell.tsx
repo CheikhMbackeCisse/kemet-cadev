@@ -1,5 +1,6 @@
 import { ArrowLeft, PanelRight, Plus } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useMobileChatView } from "../../lib/chat/useMobileChatView.js";
 import { useEdgeSwipe } from "../../lib/useEdgeSwipe.js";
 import { MobileSpaceNavigator } from "./MobileSpaceNavigator.js";
 import { fr } from "../../i18n/fr.js";
@@ -22,6 +23,8 @@ export interface AppShellSpaces {
   status: SpaceTreeStatus;
   onRetry: () => void;
   channelsLoading: boolean;
+  channelsError: boolean;
+  onRetryChannels: () => void;
   /** Faux pour un visiteur ou un compte suspendu : le lien n'est pas rendu. */
   canCreateSpace: boolean;
 }
@@ -55,15 +58,22 @@ export function AppShell({
   topBarExtra,
   children,
 }: AppShellProps) {
-  // Sous lg : la liste des espaces et des salons, ou une discussion en plein
-  // écran. Une adresse qui désigne un espace ou un salon (lien partagé,
-  // espace tout juste créé ou rejoint) ouvre directement la discussion.
-  const [mobileView, setMobileView] = useState<"list" | "chat">(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.has("channel") || params.has("space") ? "chat" : "list";
-  });
+  // Sous lg : la liste des espaces et des salons, ou une discussion en plein écran.
+  const { view: mobileView, openChat, backToList } = useMobileChatView();
   const [rightSheetOpen, setRightSheetOpen] = useState(false);
-  const swipeHandlers = useEdgeSwipe(() => setMobileView("list"));
+  const swipeHandlers = useEdgeSwipe(backToList);
+  const chatTitleRef = useRef<HTMLHeadingElement>(null);
+  const navigatorRef = useRef<HTMLDivElement>(null);
+  const previousView = useRef(mobileView);
+  // Le bouton activé disparaît avec la vue : le focus suit le changement,
+  // vers le titre du salon à l'entrée, vers le salon quitté au retour.
+  useEffect(() => {
+    if (previousView.current === "list" && mobileView === "chat") chatTitleRef.current?.focus();
+    if (previousView.current === "chat" && mobileView === "list") {
+      navigatorRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.focus();
+    }
+    previousView.current = mobileView;
+  }, [mobileView]);
 
   const activeChannelName = channelList.channels.find(
     (channel) => channel.id === channelList.activeChannelId,
@@ -95,7 +105,10 @@ export function AppShell({
     >
       <div className="flex min-w-0 flex-1 flex-col">
         {mobileView === "list" && (
-          <div className="flex min-h-0 flex-1 flex-col pb-[calc(44px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:hidden">
+          <div
+            ref={navigatorRef}
+            className="flex min-h-0 flex-1 flex-col pb-[calc(44px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:hidden"
+          >
             <SalonsSegment active="salons" />
             <MobileSpaceNavigator
               title={spaces.title}
@@ -107,11 +120,14 @@ export function AppShell({
               spaceName={channelList.spaceName}
               channels={channelList.channels}
               channelsLoading={spaces.channelsLoading}
+              channelsError={spaces.channelsError}
+              onRetryChannels={spaces.onRetryChannels}
               activeChannelId={channelList.activeChannelId}
               onSelectChannel={(id) => {
                 channelList.onSelect(id);
-                setMobileView("chat");
+                openChat();
               }}
+
               canCreateSpace={spaces.canCreateSpace}
             />
           </div>
@@ -124,14 +140,14 @@ export function AppShell({
             <IconButton
               aria-label={fr.shell.backToChannelList}
               className="lg:hidden"
-              onClick={() => setMobileView("list")}
+              onClick={backToList}
             >
               <ArrowLeft className="size-5" aria-hidden="true" />
             </IconButton>
             {/* Sous lg, le salon d'abord, en entier sur deux lignes au plus,
               l'espace en dessous : "Espace · #salon" sur une ligne
               coupait le nom du salon dès que l'espace avait un nom long. */}
-            <h1 className="flex min-w-0 flex-1 flex-col px-2 lg:hidden">
+            <h1 ref={chatTitleRef} tabIndex={-1} className="flex min-w-0 flex-1 flex-col px-2 outline-none lg:hidden">
               <span className="line-clamp-2 break-words text-md font-semibold leading-tight text-text">
                 {activeChannelName ?? channelList.spaceName}
               </span>

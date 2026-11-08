@@ -89,7 +89,8 @@ function readParam(name: string): string | null {
 function writeParams(params: Record<string, string>) {
   const url = new URL(window.location.href);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  window.history.replaceState(null, "", url.toString());
+  // Garde l'état de l'historique : il porte la vue mobile (liste ou salon).
+  window.history.replaceState(window.history.state, "", url.toString());
 }
 
 function formatTime(iso: string): string {
@@ -464,6 +465,8 @@ export function SpacePage() {
           status: spacesLoading ? "loading" : spacesError ? "error" : "ready",
           onRetry: () => void refreshSpaces(),
           channelsLoading,
+          channelsError,
+          onRetryChannels: () => activeSpaceId && void refreshChannels(activeSpaceId),
           canCreateSpace: canWrite,
         }}
         channelList={{

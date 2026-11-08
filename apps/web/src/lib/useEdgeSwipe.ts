@@ -15,6 +15,9 @@ export function useEdgeSwipe(onSwipe: () => void) {
       start.current =
         touch && touch.clientX <= EDGE_WIDTH ? { x: touch.clientX, y: touch.clientY } : null;
     },
+    onTouchCancel() {
+      start.current = null;
+    },
     onTouchEnd(event: TouchEvent) {
       const origin = start.current;
       start.current = null;

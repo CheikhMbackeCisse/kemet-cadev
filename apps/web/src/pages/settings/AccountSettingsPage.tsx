@@ -96,7 +96,7 @@ export function AccountSettingsPage() {
   return (
     <SettingsSubPage title={fr.settings.accountSection}>
       {error ? (
-        <ErrorState message={fr.settings.blockedError} retry={{ label: fr.chat.retry, onClick: load }} />
+        <ErrorState message={fr.settings.accountLoadError} retry={{ label: fr.chat.retry, onClick: load }} />
       ) : !state ? (
         <div className="flex max-w-xl flex-col gap-3">
           <Skeleton className="h-12 w-full" />
@@ -119,7 +119,7 @@ export function AccountSettingsPage() {
             {state.me.hasPassword ? (
               <PasswordForm />
             ) : (
-              <p className="text-sm text-text-2">{fr.settings.noPassword}</p>
+              <p className="text-base text-text-2">{fr.settings.noPassword}</p>
             )}
           </section>
 
@@ -161,6 +161,17 @@ export function AccountSettingsPage() {
   );
 }
 
+// Better Auth répond 400 aussi pour un nouveau mot de passe hors bornes :
+// seul son code distingue un mot de passe actuel erroné.
+function passwordErrorMessage(error: unknown): string {
+  if (!(error instanceof ChatApiError)) return fr.settings.passwordError;
+  if (error.statusCode === 429) return fr.settings.passwordTooManyAttempts;
+  if (error.code === "INVALID_PASSWORD") return fr.settings.passwordWrong;
+  if (error.code === "PASSWORD_TOO_SHORT") return fr.settings.passwordTooShort;
+  if (error.code === "PASSWORD_TOO_LONG") return fr.settings.passwordTooLong;
+  return fr.settings.passwordError;
+}
+
 function PasswordForm() {
   const toast = useToast();
   const [currentPassword, setCurrentPassword] = useState("");
@@ -178,7 +189,7 @@ function PasswordForm() {
       setNewPassword("");
       toast.show(fr.settings.passwordSaved, "success");
     } catch (err) {
-      setError(err instanceof ChatApiError && err.statusCode === 400 ? fr.settings.passwordWrong : fr.settings.passwordError);
+      setError(passwordErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -186,7 +197,7 @@ function PasswordForm() {
 
   return (
     <form className="flex max-w-sm flex-col gap-3" onSubmit={handleSubmit}>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-base text-text-2">
         {fr.settings.currentPasswordLabel}
         <Input
           type="password"
@@ -195,7 +206,7 @@ function PasswordForm() {
           onChange={(event) => setCurrentPassword(event.target.value)}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
+      <label className="flex flex-col gap-1 text-base text-text-2">
         {fr.settings.newPasswordLabel}
         <Input
           type="password"
@@ -206,7 +217,7 @@ function PasswordForm() {
         <span className="text-xs text-subtle">{fr.settings.newPasswordHint}</span>
       </label>
       {error && (
-        <p className="text-sm text-danger" role="alert">
+        <p className="text-base text-danger" role="alert">
           {error}
         </p>
       )}

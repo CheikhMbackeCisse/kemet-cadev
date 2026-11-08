@@ -457,7 +457,7 @@ export async function signInWithSocialProvider(
 ): Promise<void> {
   const result = await request<{ url: string }>("/api/auth/sign-in/social", {
     method: "POST",
-    body: JSON.stringify({ provider, callbackURL }),
+    body: JSON.stringify({ provider, callbackURL, errorCallbackURL: callbackURL }),
   });
   window.location.href = result.url;
 }
@@ -799,7 +799,7 @@ export function changePassword(input: { currentPassword: string; newPassword: st
 export async function linkSocialProvider(provider: SocialProvider, callbackURL: string) {
   const result = await request<{ url: string }>("/api/auth/link-social", {
     method: "POST",
-    body: JSON.stringify({ provider, callbackURL }),
+    body: JSON.stringify({ provider, callbackURL, errorCallbackURL: callbackURL }),
   });
   window.location.href = result.url;
 }

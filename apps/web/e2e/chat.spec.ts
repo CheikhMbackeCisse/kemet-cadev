@@ -49,7 +49,6 @@ async function signInBrowser(page: Page, email: string): Promise<void> {
 test("envoie un message dans un salon et le voit apparaître", async ({
   page,
   request,
-  isMobile,
 }) => {
   const email = `e2e-${test.info().project.name}-${Date.now()}@test.kemet`;
   // Pas de troncature : couper les derniers chiffres de Date.now() ferait

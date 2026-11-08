@@ -337,4 +337,28 @@ describe.skipIf(!databaseUrl)("limite de tentatives sur la connexion", () => {
     for (let i = 0; i < 4; i += 1) results.push(await request());
     expect(results.some((response) => response.statusCode === 429)).toBe(true);
   });
+
+  it("bloque les changements de mot de passe rapprochés", async () => {
+    await resetTestDatabase(databaseUrl!);
+    const db = createDb(databaseUrl!);
+    const auth = createAuth({
+      db,
+      emailSender: new InMemoryEmailSender(),
+      baseUrl: "http://localhost:3001",
+      webAppUrl: "http://localhost:5173",
+      secret: "test-secret-at-least-32-characters-long",
+    });
+    const app = buildApp({ db, auth });
+
+    const attempt = () =>
+      app.inject({
+        method: "POST",
+        url: "/api/auth/change-password",
+        payload: { currentPassword: "une-mauvaise-phrase", newPassword: "une-nouvelle-phrase" },
+      });
+
+    const results = [];
+    for (let i = 0; i < 6; i += 1) results.push(await attempt());
+    expect(results.some((response) => response.statusCode === 429)).toBe(true);
+  });
 });

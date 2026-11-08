@@ -105,6 +105,11 @@ export function createAuth(config: AuthConfig) {
       // (3 par minute), vérifiée par un test d'intégration.
       customRules: {
         "/sign-in/email": { window: 60, max: 5 },
+        // Le mot de passe actuel s'y vérifie : une session volée ne doit pas
+        // servir à le deviner.
+        "/change-password": { window: 60, max: 5 },
+        "/link-social": { window: 60, max: 5 },
+        "/unlink-account": { window: 60, max: 5 },
       },
     },
   });

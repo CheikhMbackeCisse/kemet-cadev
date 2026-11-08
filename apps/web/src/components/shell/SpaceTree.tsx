@@ -130,7 +130,7 @@ function ChannelRow({
       className={cn(
         ROW_CLASS,
         active
-          ? "bg-accent-soft font-medium text-primary"
+          ? "bg-accent-soft font-medium text-link"
           : "text-text-2 hover:bg-surface-2 hover:text-text",
       )}
     >
@@ -164,7 +164,7 @@ function SpaceAvatar({ space }: { space: SpaceItem }) {
   return (
     <span
       aria-hidden="true"
-      className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-accent-soft text-xs font-semibold text-primary"
+      className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-accent-soft text-xs font-semibold text-link"
     >
       {space.imageUrl ? (
         <img src={space.imageUrl} alt="" className="size-full object-cover" />
