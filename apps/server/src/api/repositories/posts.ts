@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 import { follows, postBookmarks, postFeedback, postReactions, postReplies, posts, profiles, works, type Db, type DbOrTx } from "@kemet/db";
 import type { CreatePostInput } from "@kemet/shared";
+import { badRequest } from "../../errors.js";
 import { findProfileById } from "./chat.js";
 import { listAttachmentsForPosts } from "./post-attachments.js";
 
@@ -150,10 +151,17 @@ export async function setPostBookmark(db: Db, postId: string, profileId: string,
   return { savedByMe: saved };
 }
 
+// Un curseur illisible vaut une demande invalide, pas une erreur serveur.
+function parseCursorDate(cursor: string): Date {
+  const date = new Date(cursor);
+  if (Number.isNaN(date.getTime())) throw badRequest("Curseur de pagination invalide.");
+  return date;
+}
+
 /** Posts enregistrés, du plus récemment enregistré au plus ancien ; le curseur est la date d'enregistrement. */
 export async function listBookmarkedPosts(db: Db, profileId: string, cursor: string | undefined, limit: number) {
   const own = and(eq(postBookmarks.profileId, profileId), isNull(posts.deletedAt));
-  const condition = cursor ? and(own, lt(postBookmarks.createdAt, new Date(cursor))) : own;
+  const condition = cursor ? and(own, lt(postBookmarks.createdAt, parseCursorDate(cursor))) : own;
   const rows = await db
     .select({ post: posts, savedAt: postBookmarks.createdAt })
     .from(postBookmarks)

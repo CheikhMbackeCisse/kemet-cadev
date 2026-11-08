@@ -9,7 +9,7 @@ export function SkillRating({ average, count }: { average: number | null; count:
   }
   return (
     <span className="inline-flex items-center gap-1 text-xs text-text-2">
-      <Star className="size-4 fill-current text-level-artisan" aria-hidden="true" />
+      <Star className="size-4 fill-current text-rating-star" aria-hidden="true" />
       <span className="sr-only">{fr.skills.ratingLabel(average, count)}</span>
       <span aria-hidden="true" className="font-medium text-text tabular-nums">
         {fr.skills.averageValue(average)}

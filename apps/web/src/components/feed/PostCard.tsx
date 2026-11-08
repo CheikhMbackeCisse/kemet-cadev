@@ -187,7 +187,7 @@ export function PostCard({
           )}
           {post.testAsk && <p className="mt-1 text-sm text-subtle">{post.testAsk}</p>}
 
-          <div className="mt-3 flex items-center gap-1">
+          <div className="mt-3 flex flex-wrap items-center gap-x-1 gap-y-1">
             {replyHref ? (
               <a href={replyHref} aria-label={replyLabel} className={actionClassName}>
                 <MessageSquare className="size-4" aria-hidden="true" />
@@ -215,16 +215,16 @@ export function PostCard({
             ) : (
               <span
                 title={fr.feed.utile}
-                aria-label={fr.feed.utileCount(post.utileCount)}
                 className="inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted"
               >
                 <Heart className="size-4" aria-hidden="true" />
-                {formatCount(post.utileCount)}
+                <span className="sr-only">{fr.feed.utileCount(post.utileCount)}</span>
+                <span aria-hidden="true">{formatCount(post.utileCount)}</span>
               </span>
             )}
             {canInteract && !post.deletedAt && (
               <IconButton
-                aria-label={post.savedByMe ? fr.feed.unsave : fr.feed.save}
+                aria-label={fr.feed.save}
                 aria-pressed={post.savedByMe}
                 onClick={onSave}
                 className={cn(post.savedByMe && "text-text")}

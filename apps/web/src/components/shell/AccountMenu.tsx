@@ -50,6 +50,7 @@ export function AccountMenu({ variant = "header" }: AccountMenuProps) {
       }
       items={[
         { value: "profile", label: fr.moi.myProfile },
+        { value: "saved", label: fr.moi.saved },
         // Sur bureau, Paramètres a déjà son icône dans la barre d'activité.
         ...(inActivityBar ? [] : [{ value: "settings", label: fr.settings.navLink }]),
         ...(isPlatformAdmin ? [{ value: "moderation", label: fr.moderation.navLink }] : []),
@@ -57,6 +58,7 @@ export function AccountMenu({ variant = "header" }: AccountMenuProps) {
       ]}
       onSelect={(value) => {
         if (value === "profile") window.location.href = `/u/${profile.handle}`;
+        if (value === "saved") window.location.href = "/enregistres";
         if (value === "settings") window.location.href = "/parametres";
         if (value === "moderation") window.location.href = "/moderation";
         if (value === "sign-out") void signOut();

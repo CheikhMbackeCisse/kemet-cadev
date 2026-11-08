@@ -31,6 +31,7 @@
   --level-scribe: #0e7490;
   --level-architecte: #1265dd;
   --level-legende: #7c3aed;
+  --rating-star: #a14f00;
   --assistant-bg: #f5f8ff;
   --assistant-border: #d0e2ff;
   --success: #1e8205;
@@ -62,6 +63,7 @@
     --level-scribe: #3cc0d8;
     --level-architecte: #7fb0f7;
     --level-legende: #b794f6;
+    --rating-star: #e8a33c;
     --assistant-bg: #121c30;
     --assistant-border: #26406e;
     --success: #4cc26a;
@@ -125,6 +127,7 @@
   --level-scribe: #3cc0d8;
   --level-architecte: #7fb0f7;
   --level-legende: #b794f6;
+  --rating-star: #e8a33c;
   --assistant-bg: #121c30;
   --assistant-border: #26406e;
   --success: #4cc26a;

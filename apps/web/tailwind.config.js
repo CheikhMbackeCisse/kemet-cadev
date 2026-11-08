@@ -44,6 +44,7 @@ export default {
         "level-scribe": "var(--level-scribe)",
         "level-architecte": "var(--level-architecte)",
         "level-legende": "var(--level-legende)",
+        "rating-star": "var(--rating-star)",
         "assistant-bg": "var(--assistant-bg)",
         "assistant-border": "var(--assistant-border)",
         success: {
