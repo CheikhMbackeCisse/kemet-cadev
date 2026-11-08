@@ -155,9 +155,18 @@ une carte opaque qui porte le formulaire. Le formulaire lui-même, ses champs, s
 boutons et ses textes restent des composants Kemet ordinaires, sans dégradé ni
 halo. Aucun autre écran du produit ne bénéficie de cette exception.
 
+L'écran d'accueil d'une première visite (`/decouvrir`) partage ce fond depuis
+le 08/11/2026 : il est la porte d'entrée vers l'inscription. Il n'a pas de
+carte, son contenu est court (logo, titre, une phrase, deux actions) et posé
+directement sur le fond, en blanc. C'est aussi le seul écran avec une
+animation continue : des symboles de code qui montent lentement dans les
+marges, demandés explicitement pour cet écran, arrêtés par
+`prefers-reduced-motion`.
+
 ## Mouvement
 
 - 150 à 200 ms, uniquement pour montrer un changement d'état (ouverture d'un tiroir, envoi d'un message, nouvelle réaction).
+- Une seule exception, l'écran d'accueil d'une première visite (voir « La seule exception : les écrans de compte »).
 - `prefers-reduced-motion` respecté partout.
 
 ## Accessibilité

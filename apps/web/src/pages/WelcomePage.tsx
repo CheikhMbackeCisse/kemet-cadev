@@ -25,7 +25,7 @@ const GLYPHS: Glyph[] = [
   { text: "=>", left: "10%", top: "50%", duration: "28s", delay: "-9s" },
   { text: "0x1F", left: "6%", top: "26%", duration: "29s", delay: "-11s", mobile: true },
   { text: "fn()", left: "80%", top: "88%", duration: "30s", delay: "-22s" },
-  { text: "[ ]", left: "90%", top: "60%", duration: "24s", delay: "-2s" },
+  { text: "[ ]", left: "84%", top: "70%", duration: "24s", delay: "-2s" },
   { text: ";", left: "86%", top: "95%", duration: "34s", delay: "-14s" },
   { text: "&&", left: "82%", top: "24%", duration: "27s", delay: "-6s", mobile: true },
   { text: "#", left: "70%", top: "14%", duration: "31s", delay: "-16s", mobile: true },
@@ -46,9 +46,14 @@ export function WelcomePage() {
     }
   }, [status]);
 
-  function explore() {
-    markIntroSeen();
-    window.location.href = "/fil";
+  // Tant que la session n'est pas connue, le fond seul : une personne
+  // connectée ne doit pas voir l'accueil passer avant d'être redirigée.
+  if (status === "loading" || status === "ready" || status === "incomplete") {
+    return (
+      <div className="relative min-h-viewport w-full overflow-hidden" aria-busy="true">
+        <AuthBackground />
+      </div>
+    );
   }
 
   return (
@@ -58,7 +63,7 @@ export function WelcomePage() {
         {GLYPHS.map((glyph) => (
           <li
             key={glyph.text}
-            className={`intro-glyph absolute font-mono text-md text-auth-text-muted md:text-xl ${glyph.mobile ? "" : "max-md:hidden"}`}
+            className={`intro-glyph absolute font-mono text-md text-auth-text-muted ${glyph.mobile ? "" : "max-md:hidden"}`}
             style={
               {
                 left: glyph.left,
@@ -77,22 +82,22 @@ export function WelcomePage() {
         <span className="kemet-on-dark">
           <KemetSymbol className="h-28 w-auto md:h-36" />
         </span>
-        <h1 className="text-xl font-bold text-auth-text md:text-hero">{fr.intro.welcomeTitle}</h1>
+        <h1 className="text-xl font-extrabold text-auth-text md:text-hero">{fr.intro.welcomeTitle}</h1>
         <p className="max-w-md text-md text-auth-text-muted">{fr.intro.welcomeText}</p>
         <div className="mt-4 flex w-full flex-col items-center gap-4">
           <a
             href={introQuestionPath("who")}
-            className="inline-flex h-control-mobile w-full items-center justify-center rounded-control bg-white px-6 text-base font-semibold text-[var(--auth-bg-from)] hover:bg-white/90 md:h-control md:w-auto md:min-w-48"
+            className="inline-flex h-control-mobile w-full items-center justify-center rounded-control bg-auth-text px-6 text-base font-semibold text-[var(--auth-bg-from)] hover:bg-auth-button-hover md:h-control md:w-auto md:min-w-48"
           >
             {fr.intro.start}
           </a>
-          <button
-            type="button"
-            onClick={explore}
-            className="inline-flex min-h-control-mobile items-center px-2 text-sm font-medium text-auth-text-muted underline-offset-4 hover:text-auth-text hover:underline md:min-h-control"
+          <a
+            href="/fil"
+            onClick={markIntroSeen}
+            className="inline-flex min-h-control-mobile items-center px-2 text-base font-medium text-auth-text-muted underline-offset-4 hover:text-auth-text hover:underline md:min-h-control"
           >
             {fr.intro.explore}
-          </button>
+          </a>
         </div>
       </main>
     </div>

@@ -298,6 +298,7 @@ export const fr = {
       "Ton adresse email, et ton mot de passe si tu en as un, haché avec Argon2id : pour te connecter.",
       "Si tu te connectes avec GitHub, Google ou LinkedIn : le nom, l'email et la photo que ce service nous transmet.",
       "Ton profil (nom, identifiant, pays, rôle, spécialité, parcours) : il est public, pour que la communauté sache qui parle.",
+      "Tes sujets d'intérêt et ce que tu viens faire sur Kemet : ils ne servent qu'à te suggérer des espaces et des personnes, et ne sont pas affichés. Avant l'inscription, tes réponses à l'accueil restent dans ton navigateur, un jour au plus.",
       "Tes messages, posts, réponses, skills, projets et fichiers envoyés : pour les montrer aux personnes à qui tu les adresses.",
       "Tes abonnements, réactions, votes, notes de skills et candidatures : pour que ces actions fonctionnent. Une candidature n'est visible que par toi et le propriétaire du projet.",
       "Le journal de tes appels à @kemet (salon, message, skills choisis) : pour ton quota quotidien.",

@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
 
@@ -33,12 +34,14 @@ export function RadioList({ name, label, options, value, onChange, className }: 
           <span
             className={cn(
               "flex min-h-control-mobile items-center gap-3 rounded-control border border-border-strong px-3 text-base text-text md:min-h-control",
-              "hover:bg-surface-2",
+              "md:hover:bg-surface-2",
               "peer-checked:border-primary peer-checked:bg-surface-2 peer-checked:font-medium",
               "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary",
             )}
           >
             {option.label}
+            {/* La coche dit le choix retenu sans dépendre de la seule couleur. */}
+            {value === option.value && <Check aria-hidden="true" className="ml-auto size-4 shrink-0 text-primary" />}
           </span>
         </label>
       ))}

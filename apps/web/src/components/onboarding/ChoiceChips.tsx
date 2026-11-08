@@ -30,7 +30,7 @@ export function ChoiceChips<T extends string>({ label, options, labels, value, o
             <span
               className={cn(
                 "inline-flex min-h-control-mobile items-center gap-1.5 rounded-full bg-surface-2 px-4 text-base text-text md:min-h-control",
-                "hover:bg-border",
+                "md:hover:bg-border",
                 "peer-checked:bg-primary peer-checked:text-white",
                 "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary",
               )}

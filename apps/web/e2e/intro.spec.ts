@@ -6,7 +6,7 @@ test("une première visite ouvre l'accueil, Explorer sans compte mène au fil", 
   await expect(page).toHaveURL(/\/decouvrir$/);
   await expect(page.getByRole("heading", { name: "Bienvenue chez les développeurs africains" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Explorer sans compte" }).click();
+  await page.getByRole("link", { name: "Explorer sans compte" }).click();
   await expect(page).toHaveURL(/\/fil$/);
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Fil" })).toBeVisible();
@@ -43,7 +43,7 @@ test("les réponses de l'accueil rejoignent le profil après l'inscription", asy
     if (window.localStorage.getItem("kemet.intro")) return;
     window.localStorage.setItem(
       "kemet.intro",
-      JSON.stringify({ seen: true, answers: { role: "student", interests: ["ai"], intents: ["learn"] } }),
+      JSON.stringify({ seen: true, savedAt: Date.now(), answers: { role: "student", interests: ["ai"], intents: ["learn"] } }),
     );
   });
   await signUpVerifyAndSignIn(page.request, email, handle);

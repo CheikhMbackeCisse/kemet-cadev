@@ -90,7 +90,7 @@ describe.skipIf(!databaseUrl)("Onboarding (base Postgres réelle)", () => {
     const { cookie } = await createProfile("awa");
     const body = (await me(cookie)).json();
     expect(body.profile.country).toBe("");
-    expect(body.onboarding).toEqual({ step: "country", completed: false, interests: [] });
+    expect(body.onboarding).toEqual({ step: "country", completed: false, interests: [], intents: [] });
   });
 
   it("garde l'écran atteint, puis le parcours terminé pour de bon", async () => {
@@ -114,6 +114,22 @@ describe.skipIf(!databaseUrl)("Onboarding (base Postgres réelle)", () => {
     expect((await patchOnboarding(cookie, { step: "people", country: "SN" })).statusCode).toBe(400);
     expect((await patchOnboarding(cookie, {})).statusCode).toBe(400);
     expect((await patchOnboarding(cookie, { completed: false })).statusCode).toBe(400);
+    expect((await patchOnboarding(cookie, { intents: ["learn", "pirater"] })).statusCode).toBe(400);
+  });
+
+  it("enregistre les intentions sans doublon, et le rôle entrepreneur", async () => {
+    const { cookie } = await createProfile("awa");
+    expect((await patchOnboarding(cookie, { intents: ["learn", "learn", "recruit"] })).statusCode).toBe(200);
+    expect((await me(cookie)).json().onboarding.intents).toEqual(["learn", "recruit"]);
+
+    const profile = await app.inject({
+      method: "PATCH",
+      url: "/api/me/profile",
+      headers: { cookie },
+      payload: { role: "entrepreneur" },
+    });
+    expect(profile.statusCode).toBe(200);
+    expect(profile.json().profile.role).toBe("entrepreneur");
   });
 
   it("exige une session et un profil", async () => {

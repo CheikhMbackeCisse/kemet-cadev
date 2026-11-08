@@ -35,6 +35,7 @@ export default {
         // sombre quel que soit le thème (voir docs/adr/0019).
         "auth-text": "var(--auth-text)",
         "auth-text-muted": "var(--auth-text-muted)",
+        "auth-button-hover": "var(--auth-button-hover)",
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
         "level-badge-text": "var(--level-badge-text)",
@@ -59,6 +60,12 @@ export default {
         4.5: "18px",
       },
       height: {
+        control: "36px",
+        "control-compact": "32px",
+        "control-mobile": "44px",
+      },
+      // Hauteur minimale d'une cible : la ligne peut grandir avec son texte.
+      minHeight: {
         control: "36px",
         "control-compact": "32px",
         "control-mobile": "44px",
