@@ -11,7 +11,7 @@ export const fr = {
     sectionWithUnread: (label: string, count: number) =>
       `${label}, ${count} non ${count > 1 ? "lus" : "lu"}`,
     home: "Accueil",
-    openChannelList: "Ouvrir la liste des salons",
+    backToChannelList: "Retour aux salons",
     openDetailsPanel: "Ouvrir le panneau",
     mySpaces: "Mes espaces",
     publicSpaces: "Espaces publics",

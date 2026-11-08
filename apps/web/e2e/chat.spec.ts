@@ -62,10 +62,9 @@ test("envoie un message dans un salon et le voit apparaître", async ({
   await signInBrowser(page, email);
 
   await page.goto("/salons");
-  // « Créer un espace » est dans le rail sur grand écran, et dans le tiroir
-  // de la liste des salons sous lg. Le raccourci de l'état vide ne convient
-  // pas, la base de démonstration de la CI fournit déjà des espaces publics.
-  if (isMobile) await page.getByRole("button", { name: "Ouvrir la liste des salons" }).click();
+  // « Créer un espace » est dans le panneau latéral sur grand écran, et en
+  // bas de la colonne des espaces sous lg. Le raccourci de l'état vide ne
+  // convient pas, la base de démonstration de la CI fournit déjà des espaces publics.
   await page
     .getByRole("button", { name: "Créer un espace" })
     .or(page.getByRole("link", { name: "Créer un espace" }))

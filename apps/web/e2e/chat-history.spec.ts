@@ -99,11 +99,11 @@ test("garde le brouillon de chaque salon et le focus du composeur après l'envoi
 
   // Changement de salon par l'interface, puis retour.
   if (project === "mobile")
-    await page.getByRole("button", { name: "Ouvrir la liste des salons" }).click();
+    await page.getByRole("button", { name: "Retour aux salons" }).click();
   await page.getByRole("button", { name: "mèmes" }).filter({ visible: true }).click();
   await expect(composer).toHaveValue("");
   if (project === "mobile")
-    await page.getByRole("button", { name: "Ouvrir la liste des salons" }).click();
+    await page.getByRole("button", { name: "Retour aux salons" }).click();
   await page.getByRole("button", { name: "général" }).filter({ visible: true }).click();
   await expect(composer).toHaveValue(draft);
 
