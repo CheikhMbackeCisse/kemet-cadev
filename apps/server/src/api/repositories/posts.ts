@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
-import { follows, postFeedback, postReactions, postReplies, posts, profiles, works, type Db, type DbOrTx } from "@kemet/db";
+import { follows, postBookmarks, postFeedback, postReactions, postReplies, posts, profiles, works, type Db, type DbOrTx } from "@kemet/db";
 import type { CreatePostInput } from "@kemet/shared";
 import { findProfileById } from "./chat.js";
 import { listAttachmentsForPosts } from "./post-attachments.js";
@@ -133,12 +133,48 @@ export async function togglePostReaction(db: Db, postId: string, profileId: stri
   return { utileCount, reactedByMe: !existing };
 }
 
+export async function isPostBookmarkedByProfile(db: DbOrTx, postId: string, profileId: string) {
+  const [row] = await db
+    .select({ postId: postBookmarks.postId })
+    .from(postBookmarks)
+    .where(and(eq(postBookmarks.postId, postId), eq(postBookmarks.profileId, profileId)));
+  return row != null;
+}
+
+export async function setPostBookmark(db: Db, postId: string, profileId: string, saved: boolean) {
+  if (saved) {
+    await db.insert(postBookmarks).values({ postId, profileId }).onConflictDoNothing();
+  } else {
+    await db.delete(postBookmarks).where(and(eq(postBookmarks.postId, postId), eq(postBookmarks.profileId, profileId)));
+  }
+  return { savedByMe: saved };
+}
+
+/** Posts enregistrés, du plus récemment enregistré au plus ancien ; le curseur est la date d'enregistrement. */
+export async function listBookmarkedPosts(db: Db, profileId: string, cursor: string | undefined, limit: number) {
+  const own = and(eq(postBookmarks.profileId, profileId), isNull(posts.deletedAt));
+  const condition = cursor ? and(own, lt(postBookmarks.createdAt, new Date(cursor))) : own;
+  const rows = await db
+    .select({ post: posts, savedAt: postBookmarks.createdAt })
+    .from(postBookmarks)
+    .innerJoin(posts, eq(posts.id, postBookmarks.postId))
+    .where(condition)
+    .orderBy(desc(postBookmarks.createdAt))
+    .limit(limit + 1);
+  const page = toPage(
+    rows.map((row) => ({ ...row, createdAt: row.savedAt })),
+    limit,
+  );
+  return { items: page.items.map((row) => row.post), nextCursor: page.nextCursor };
+}
+
 // `viewerProfileId` est `null` pour un visiteur : jamais réagi, sans requête.
 export async function hydratePost(db: Db, row: typeof posts.$inferSelect, viewerProfileId: string | null) {
-  const [author, utileCount, reactedByMe, replyCount, feedbackCount, sharedPost, attachments, work] = await Promise.all([
+  const [author, utileCount, reactedByMe, savedByMe, replyCount, feedbackCount, sharedPost, attachments, work] = await Promise.all([
     findProfileById(db, row.authorId),
     countPostReactions(db, row.id),
     viewerProfileId ? isPostReactedByProfile(db, row.id, viewerProfileId) : Promise.resolve(false),
+    viewerProfileId ? isPostBookmarkedByProfile(db, row.id, viewerProfileId) : Promise.resolve(false),
     countPostReplies(db, row.id),
     countPostFeedback(db, row.id),
     row.sharedPostId ? findPostById(db, row.sharedPostId) : Promise.resolve(null),
@@ -152,6 +188,7 @@ export async function hydratePost(db: Db, row: typeof posts.$inferSelect, viewer
     author: author!,
     utileCount,
     reactedByMe,
+    savedByMe,
     replyCount,
     feedbackCount,
     attachments,

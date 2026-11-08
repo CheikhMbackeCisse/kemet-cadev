@@ -9,6 +9,7 @@ import {
   messageAttachments,
   messages,
   postAttachments,
+  postBookmarks,
   postReplies,
   posts,
   profiles,
@@ -131,6 +132,7 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
   await handOverOwnedSpaces(tx, profileId, now);
   await tx.delete(spaceMembers).where(eq(spaceMembers.profileId, profileId));
   await tx.delete(readStates).where(eq(readStates.profileId, profileId));
+  await tx.delete(postBookmarks).where(eq(postBookmarks.profileId, profileId));
   await tx.delete(skillRatings).where(eq(skillRatings.raterId, profileId));
   await tx.delete(mcpServers).where(eq(mcpServers.addedBy, profileId));
   // Le vote d'une compétition close reste : le retirer changerait un

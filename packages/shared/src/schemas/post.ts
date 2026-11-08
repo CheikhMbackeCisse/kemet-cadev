@@ -122,6 +122,7 @@ export const postSummarySchema = z.object({
   work: postWorkPreviewSchema.nullable(),
   utileCount: z.number().int().nonnegative(),
   reactedByMe: z.boolean(),
+  savedByMe: z.boolean(),
   replyCount: z.number().int().nonnegative(),
   feedbackCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
@@ -137,6 +138,12 @@ export const postReactionResultSchema = z.object({
 });
 
 export type PostReactionResult = z.infer<typeof postReactionResultSchema>;
+
+export const postBookmarkInputSchema = z.object({ saved: z.boolean() });
+
+export const postBookmarkResultSchema = z.object({ savedByMe: z.boolean() });
+
+export type PostBookmarkResult = z.infer<typeof postBookmarkResultSchema>;
 
 export const postReplySchema = z.object({
   id: z.string().uuid(),

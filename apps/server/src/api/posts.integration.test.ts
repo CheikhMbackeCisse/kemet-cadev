@@ -307,4 +307,67 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
     const after = await app.inject({ method: "GET", url: "/api/posts?tab=pour-toi" });
     expect(after.json().items.map((item: { id: string }) => item.id)).toEqual([testedId, usefulId, newestId]);
   });
+  it("enregistre un post pour soi seul, sans doublon, et le retire", async () => {
+    const author = await createMember("bm-author@test.kemet", "bmauthor");
+    const reader = await createMember("bm-reader@test.kemet", "bmreader");
+    const other = await createMember("bm-other@test.kemet", "bmother");
+    const first = (await createPost(author.cookie, { body: "Premier." })).json().post.id as string;
+    const second = (await createPost(author.cookie, { body: "Second." })).json().post.id as string;
+
+    for (const postId of [first, first, second]) {
+      const saved = await app.inject({
+        method: "PUT",
+        url: `/api/posts/${postId}/bookmark`,
+        headers: { cookie: reader.cookie },
+        payload: { saved: true },
+      });
+      expect(saved.statusCode).toBe(200);
+      expect(saved.json()).toEqual({ savedByMe: true });
+    }
+
+    const list = await app.inject({ method: "GET", url: "/api/me/bookmarks", headers: { cookie: reader.cookie } });
+    expect(list.json().items.map((post: { id: string }) => post.id)).toEqual([second, first]);
+    expect(list.json().items[0].savedByMe).toBe(true);
+
+    const otherList = await app.inject({ method: "GET", url: "/api/me/bookmarks", headers: { cookie: other.cookie } });
+    expect(otherList.json().items).toEqual([]);
+    const seenByOther = await app.inject({ method: "GET", url: `/api/posts/${first}`, headers: { cookie: other.cookie } });
+    expect(seenByOther.json().post.savedByMe).toBe(false);
+
+    await app.inject({
+      method: "PUT",
+      url: `/api/posts/${first}/bookmark`,
+      headers: { cookie: reader.cookie },
+      payload: { saved: false },
+    });
+    const afterRemoval = await app.inject({ method: "GET", url: "/api/me/bookmarks", headers: { cookie: reader.cookie } });
+    expect(afterRemoval.json().items.map((post: { id: string }) => post.id)).toEqual([second]);
+
+    await app.inject({ method: "DELETE", url: `/api/posts/${second}`, headers: { cookie: author.cookie } });
+    const afterDelete = await app.inject({ method: "GET", url: "/api/me/bookmarks", headers: { cookie: reader.cookie } });
+    expect(afterDelete.json().items).toEqual([]);
+  });
+
+  it("refuse d'enregistrer sans session, sans corps valide ou un post inexistant", async () => {
+    const author = await createMember("bm2@test.kemet", "bmtwo");
+    const postId = (await createPost(author.cookie)).json().post.id as string;
+    const anonymous = await app.inject({ method: "PUT", url: `/api/posts/${postId}/bookmark`, payload: { saved: true } });
+    expect(anonymous.statusCode).toBe(401);
+    const list = await app.inject({ method: "GET", url: "/api/me/bookmarks" });
+    expect(list.statusCode).toBe(401);
+    const invalid = await app.inject({
+      method: "PUT",
+      url: `/api/posts/${postId}/bookmark`,
+      headers: { cookie: author.cookie },
+      payload: { saved: "oui" },
+    });
+    expect(invalid.statusCode).toBe(400);
+    const missing = await app.inject({
+      method: "PUT",
+      url: "/api/posts/00000000-0000-4000-8000-000000000000/bookmark",
+      headers: { cookie: author.cookie },
+      payload: { saved: true },
+    });
+    expect(missing.statusCode).toBe(404);
+  });
 });

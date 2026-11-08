@@ -162,6 +162,13 @@
       "when": 1794099491719,
       "tag": "0022_intro_intents",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794100989507,
+      "tag": "0023_post_bookmarks",
+      "breakpoints": true
     }
   ]
 }

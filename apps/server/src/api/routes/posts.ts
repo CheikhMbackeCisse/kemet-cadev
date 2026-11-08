@@ -7,6 +7,7 @@ import {
   feedQuerySchema,
   markPostReplySolutionSchema,
   paginationQuerySchema,
+  postBookmarkInputSchema,
   sharePostSchema,
 } from "@kemet/shared";
 import type { posts } from "@kemet/db";
@@ -23,9 +24,11 @@ import {
   insertPostFeedback,
   insertPostReply,
   listAbonnementsFeed,
+  listBookmarkedPosts,
   listPostFeedback,
   listPostReplies,
   listPourToiFeed,
+  setPostBookmark,
   setPostReplySolution,
   softDeletePost,
   softDeletePostReply,
@@ -76,6 +79,7 @@ async function toSerializedPosts(db: ChatAppDeps["db"], rows: (typeof posts.$inf
       {
         utileCount: hydrated.utileCount,
         reactedByMe: hydrated.reactedByMe,
+        savedByMe: hydrated.savedByMe,
         replyCount: hydrated.replyCount,
         feedbackCount: hydrated.feedbackCount,
       },
@@ -216,6 +220,30 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       return togglePostReaction(db, post.id, profile.id);
     },
   );
+
+  // Un état posé plutôt qu'une bascule : deux appuis rapides ou un envoi
+  // rejoué donnent le même résultat.
+  app.put<{ Params: { id: string } }>(
+    "/api/posts/:id/bookmark",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const input = postBookmarkInputSchema.parse(request.body);
+      const post = await findPostById(db, request.params.id);
+      if (!post || (post.deletedAt && input.saved)) throw notFound("Ce post n'existe pas.");
+      return setPostBookmark(db, post.id, profile.id, input.saved);
+    },
+  );
+
+  app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/me/bookmarks", async (request) => {
+    const userId = await requireSessionUserId(auth, request);
+    const profile = await findProfileByUserId(db, userId);
+    if (!profile) throw badRequest("Complétez votre profil avant de consulter vos enregistrements.");
+    const query = paginationQuerySchema.parse(request.query);
+    const page = await listBookmarkedPosts(db, profile.id, query.cursor, query.limit);
+    return { items: await toSerializedPosts(db, page.items, profile.id), nextCursor: page.nextCursor };
+  });
 
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/posts/:id/replies",

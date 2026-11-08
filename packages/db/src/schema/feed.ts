@@ -110,6 +110,25 @@ export const postReactions = pgTable(
   (table) => [uniqueIndex("post_reactions_post_profile_idx").on(table.postId, table.profileId)],
 );
 
+// Posts enregistrés pour plus tard. Visibles seulement par la personne qui
+// les enregistre ; disparaissent avec le post ou le compte.
+export const postBookmarks = pgTable(
+  "post_bookmarks",
+  {
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("post_bookmarks_profile_post_idx").on(table.profileId, table.postId),
+    index("post_bookmarks_profile_created_idx").on(table.profileId, table.createdAt),
+  ],
+);
+
 export const postFeedback = pgTable(
   "post_feedback",
   {
