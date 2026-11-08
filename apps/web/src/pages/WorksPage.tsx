@@ -1,6 +1,6 @@
 import { BookOpen, Plus, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import type { WorkSort, WorkStatus, WorkSummary, WorkType } from "@kemet/shared";
+import type { WorkSort, WorkSummary, WorkType } from "@kemet/shared";
 import { listWorks } from "../lib/chat/api.js";
 import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
@@ -11,13 +11,8 @@ import { Skeleton } from "../components/ui/Skeleton.js";
 import { IconButton } from "../components/ui/IconButton.js";
 import { useToast } from "../components/ui/Toast.js";
 import { RailPage } from "../components/layout/RailPage.js";
-import { WorkListItem } from "../components/works/WorkListItem.js";
-import {
-  WORK_STATUS_LABELS,
-  WORK_STATUSES,
-  WORK_TYPE_LABELS,
-  WORK_TYPES,
-} from "../components/works/workLabels.js";
+import { WorkCard } from "../components/works/WorkCard.js";
+import { WORK_TYPE_LABELS, WORK_TYPES } from "../components/works/workLabels.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
@@ -26,7 +21,6 @@ const ALL = "all";
 interface WorkFilters {
   q: string;
   type: WorkType | null;
-  status: WorkStatus | null;
   sort: WorkSort;
   tag: string;
 }
@@ -35,11 +29,9 @@ interface WorkFilters {
 function readFilters(): WorkFilters {
   const params = new URLSearchParams(window.location.search);
   const type = params.get("type");
-  const status = params.get("statut");
   return {
     q: params.get("q") ?? "",
     type: WORK_TYPES.includes(type as WorkType) ? (type as WorkType) : null,
-    status: WORK_STATUSES.includes(status as WorkStatus) ? (status as WorkStatus) : null,
     sort: params.get("tri") === "discussed" ? "discussed" : "recent",
     tag: params.get("tag") ?? "",
   };
@@ -49,7 +41,6 @@ function writeFilters(filters: WorkFilters) {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
   if (filters.type) params.set("type", filters.type);
-  if (filters.status) params.set("statut", filters.status);
   if (filters.sort !== "recent") params.set("tri", filters.sort);
   if (filters.tag) params.set("tag", filters.tag);
   const query = params.toString();
@@ -60,7 +51,6 @@ function toQuery(filters: WorkFilters) {
   return {
     q: filters.q || undefined,
     type: filters.type ?? undefined,
-    status: filters.status ?? undefined,
     sort: filters.sort,
     tag: filters.tag || undefined,
   };
@@ -73,7 +63,6 @@ export function WorksPage() {
   const [q, setQ] = useState(initial.q);
   const [qDraft, setQDraft] = useState(initial.q);
   const [type, setType] = useState<WorkType | null>(initial.type);
-  const [workStatus, setWorkStatus] = useState<WorkStatus | null>(initial.status);
   const [sort, setSort] = useState<WorkSort>(initial.sort);
   const [tag, setTag] = useState(initial.tag);
   const [tagDraft, setTagDraft] = useState(initial.tag);
@@ -90,7 +79,7 @@ export function WorksPage() {
     const request = ++latestRequest.current;
     setLoading(true);
     setError(false);
-    const filters = { q, type, status: workStatus, sort, tag };
+    const filters = { q, type, sort, tag };
     writeFilters(filters);
     listWorks(toQuery(filters))
       .then((page) => {
@@ -104,7 +93,7 @@ export function WorksPage() {
       .finally(() => {
         if (request === latestRequest.current) setLoading(false);
       });
-  }, [q, type, workStatus, sort, tag]);
+  }, [q, type, sort, tag]);
 
   useEffect(() => load(), [load]);
 
@@ -114,7 +103,7 @@ export function WorksPage() {
     setLoadingMore(true);
     try {
       const page = await listWorks({
-        ...toQuery({ q, type, status: workStatus, sort, tag }),
+        ...toQuery({ q, type, sort, tag }),
         cursor: nextCursor,
       });
       if (request !== latestRequest.current) return;
@@ -148,7 +137,7 @@ export function WorksPage() {
     setQ("");
   }
 
-  const filtered = q !== "" || type !== null || workStatus !== null || tag !== "";
+  const filtered = q !== "" || type !== null || tag !== "";
 
   return (
     <RailPage activeSection="travaux" className="gap-6 px-4 py-8">
@@ -157,7 +146,7 @@ export function WorksPage() {
         {status !== "visitor" && (
           <a
             href="/travaux/nouveau"
-            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-base font-medium text-white hover:bg-primary-hover"
           >
             <Plus className="size-4" aria-hidden="true" />
             {fr.works.create}
@@ -193,71 +182,51 @@ export function WorksPage() {
         </Button>
       </form>
 
-      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:items-end">
-        <label className="flex flex-col gap-1 text-sm text-text-2 sm:w-48">
-          {fr.works.filterTypeLabel}
-          <Select
-            value={type ?? ALL}
-            onValueChange={(value) => setType(value === ALL ? null : (value as WorkType))}
-            aria-label={fr.works.filterTypeLabel}
-            options={[
-              { value: ALL, label: fr.works.filterAllTypes },
-              ...WORK_TYPES.map((value) => ({ value, label: WORK_TYPE_LABELS[value] })),
-            ]}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={type ?? ALL}
+          onValueChange={(value) => setType(value === ALL ? null : (value as WorkType))}
+          aria-label={fr.works.filterTypeLabel}
+          className="w-auto min-w-36"
+          options={[
+            { value: ALL, label: fr.works.filterAllTypes },
+            ...WORK_TYPES.map((value) => ({ value, label: WORK_TYPE_LABELS[value] })),
+          ]}
+        />
+        <Select
+          value={sort}
+          onValueChange={(value) => setSort(value as WorkSort)}
+          aria-label={fr.works.sortLabel}
+          className="w-auto min-w-36"
+          options={[
+            { value: "recent", label: fr.works.sortRecent },
+            { value: "discussed", label: fr.works.sortDiscussed },
+          ]}
+        />
+        <form onSubmit={submitTag} className="flex min-w-40 flex-1 items-center gap-2 sm:max-w-64">
+          <label htmlFor="works-tag-filter" className="sr-only">
+            {fr.works.filterTagLabel}
+          </label>
+          <Input
+            id="works-tag-filter"
+            value={tagDraft}
+            placeholder={fr.works.filterTagPlaceholder}
+            onChange={(event) => setTagDraft(event.target.value)}
+            onBlur={() => tagDraft.trim().toLowerCase() !== tag && applyTag(tagDraft)}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2 sm:w-36">
-          {fr.works.filterStatusLabel}
-          <Select
-            value={workStatus ?? ALL}
-            onValueChange={(value) => setWorkStatus(value === ALL ? null : (value as WorkStatus))}
-            aria-label={fr.works.filterStatusLabel}
-            options={[
-              { value: ALL, label: fr.works.filterAllStatuses },
-              ...WORK_STATUSES.map((value) => ({ value, label: WORK_STATUS_LABELS[value] })),
-            ]}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2 sm:w-44">
-          {fr.works.sortLabel}
-          <Select
-            value={sort}
-            onValueChange={(value) => setSort(value as WorkSort)}
-            aria-label={fr.works.sortLabel}
-            options={[
-              { value: "recent", label: fr.works.sortRecent },
-              { value: "discussed", label: fr.works.sortDiscussed },
-            ]}
-          />
-        </label>
-        <form onSubmit={submitTag} className="flex flex-1 flex-col gap-1 text-sm text-text-2">
-          <label htmlFor="works-tag-filter">{fr.works.filterTagLabel}</label>
-          <div className="flex items-center gap-2">
-            <Input
-              id="works-tag-filter"
-              value={tagDraft}
-              placeholder={fr.works.filterTagPlaceholder}
-              onChange={(event) => setTagDraft(event.target.value)}
-              onBlur={() => tagDraft.trim().toLowerCase() !== tag && applyTag(tagDraft)}
-            />
-            {tag && (
-              <IconButton
-                type="button"
-                aria-label={fr.works.clearTag(tag)}
-                onClick={() => applyTag("")}
-              >
-                <X className="size-4" aria-hidden="true" />
-              </IconButton>
-            )}
-          </div>
+          {tag && (
+            <IconButton type="button" aria-label={fr.works.clearTag(tag)} onClick={() => applyTag("")}>
+              <X className="size-4" aria-hidden="true" />
+            </IconButton>
+          )}
         </form>
       </div>
 
       {loading ? (
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-72 w-full rounded-card" />
+          ))}
         </div>
       ) : error ? (
         <ErrorState
@@ -275,7 +244,6 @@ export function WorksPage() {
                   onClick: () => {
                     clearSearch();
                     setType(null);
-                    setWorkStatus(null);
                     applyTag("");
                   },
                 }
@@ -292,9 +260,9 @@ export function WorksPage() {
         />
       ) : (
         <>
-          <ul className="flex flex-col divide-y divide-border">
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {works.map((work) => (
-              <WorkListItem key={work.id} work={work} onTagClick={applyTag} />
+              <WorkCard key={work.id} work={work} onTagClick={applyTag} />
             ))}
           </ul>
           {nextCursor && (

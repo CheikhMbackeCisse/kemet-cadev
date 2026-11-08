@@ -32,6 +32,12 @@ import {
   WORK_TYPE_LABELS,
   WORK_TYPES,
 } from "../components/works/workLabels.js";
+import {
+  initialMediaDraft,
+  mediaDraftToInput,
+  WorkMediaFields,
+  type WorkMediaDraft,
+} from "../components/works/WorkMediaFields.js";
 import { useSession } from "../session/SessionProvider.js";
 import { missingFieldsReason } from "../lib/forms.js";
 import { slugify } from "../lib/slugify.js";
@@ -143,6 +149,8 @@ function WorkForm({
   );
   const [attachment, setAttachment] = useState<WorkAttachment | null>(existing?.attachment ?? null);
   const [uploading, setUploading] = useState(false);
+  const [media, setMedia] = useState<WorkMediaDraft>(() => initialMediaDraft(existing));
+  const [mediaUploading, setMediaUploading] = useState(false);
   const [coauthorHandles, setCoauthorHandles] = useState<string[]>([]);
   const [invitations, setInvitations] = useState(existing?.invitations ?? []);
   const [coauthorDraft, setCoauthorDraft] = useState("");
@@ -259,6 +267,7 @@ function WorkForm({
         })),
       externalAuthors,
       attachmentId: attachment?.id ?? null,
+      media: mediaDraftToInput(media),
     };
     try {
       const { work } = isEdit
@@ -270,7 +279,7 @@ function WorkForm({
       else if (err instanceof ChatApiError && err.code === "invalid_input")
         setError(fr.works.invalidInput);
       else if (err instanceof ChatApiError && err.statusCode === 400)
-        setError(fr.works.checkCoauthorsAndPdf);
+        setError(fr.works.checkCoauthorsAndFiles);
       else setError(isEdit ? fr.works.saveError : fr.works.createError);
       setSubmitting(false);
     }
@@ -292,8 +301,8 @@ function WorkForm({
       backHref={isEdit ? `/travaux/${existing.slug}` : "/travaux"}
       submitLabel={isEdit ? fr.works.save : fr.works.publish}
       submitting={submitting}
-      submitDisabled={uploading}
-      submitDisabledReason={uploading ? fr.works.pdfUploading : missing}
+      submitDisabled={uploading || mediaUploading}
+      submitDisabledReason={uploading ? fr.works.pdfUploading : mediaUploading ? fr.works.mediaUploading : missing}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -448,6 +457,10 @@ function WorkForm({
             {fr.works.addLink}
           </Button>
         </fieldset>
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <WorkMediaFields value={media} onChange={setMedia} onUploadingChange={setMediaUploading} />
       </div>
 
       <div className="border-t border-border pt-4">

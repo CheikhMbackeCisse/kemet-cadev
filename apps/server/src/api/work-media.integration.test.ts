@@ -15,14 +15,22 @@ const PNG_BYTES = Buffer.from(
   "hex",
 );
 // Plus petits en-têtes que file-type reconnaît comme MP4 et WebM.
-const MP4_BYTES = Buffer.from("000000186674797069736f6d0000020069736f6d69736f32" + "00".repeat(64), "hex");
+const MP4_BYTES = Buffer.from(
+  "000000186674797069736f6d0000020069736f6d69736f32" + "00".repeat(64),
+  "hex",
+);
 const WEBM_BYTES = Buffer.from(
   "1a45dfa39f4286810142f7810142f2810442f381084282847765626d4287810442858102" + "00".repeat(64),
   "hex",
 );
 const PDF_BYTES = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
 
-function buildMultipartBody(filename: string, contentType: string, data: Buffer, boundary: string): Buffer {
+function buildMultipartBody(
+  filename: string,
+  contentType: string,
+  data: Buffer,
+  boundary: string,
+): Buffer {
   return Buffer.concat([
     Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`,
@@ -42,7 +50,11 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     await db.$client.end();
   });
 
-  function createApp(limits?: { maxAttachmentBytes: number; maxUserStorageBytes: number; maxWorkVideoBytes?: number }) {
+  function createApp(limits?: {
+    maxAttachmentBytes: number;
+    maxUserStorageBytes: number;
+    maxWorkVideoBytes?: number;
+  }) {
     const auth = createAuth({
       db,
       emailSender,
@@ -56,7 +68,10 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
       auth,
       storage,
       antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 },
-      attachmentLimits: limits ?? { maxAttachmentBytes: 25 * 1024 * 1024, maxUserStorageBytes: 500 * 1024 * 1024 },
+      attachmentLimits: limits ?? {
+        maxAttachmentBytes: 25 * 1024 * 1024,
+        maxUserStorageBytes: 500 * 1024 * 1024,
+      },
     });
   }
 
@@ -99,7 +114,12 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     return { cookie };
   }
 
-  function upload(cookie: string, data: Buffer, filename: string, contentType = "application/octet-stream") {
+  function upload(
+    cookie: string,
+    data: Buffer,
+    filename: string,
+    contentType = "application/octet-stream",
+  ) {
     const boundary = "----kemetmediaboundary";
     return app.inject({
       method: "POST",
@@ -124,7 +144,8 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
         slug,
         title: "Un travail avec des images",
         type: "thesis_research",
-        summary: "Un travail illustré par une couverture, une galerie et une vidéo de démonstration.",
+        summary:
+          "Un travail illustré par une couverture, une galerie et une vidéo de démonstration.",
         tags: ["mobile"],
         stack: [],
         publishRightConfirmed: true,
@@ -214,14 +235,27 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     const image = await uploadId(author.cookie, PNG_BYTES, "image.png");
     const video = await uploadId(author.cookie, MP4_BYTES, "demo.mp4");
 
-    expect((await createWork(author.cookie, { media: [{ id: image, role: "video" }], youtubeUrls: [] })).statusCode).toBe(400);
-    expect((await createWork(author.cookie, { media: [{ id: video, role: "cover" }], youtubeUrls: [] })).statusCode).toBe(400);
+    expect(
+      (await createWork(author.cookie, { media: [{ id: image, role: "video" }], youtubeUrls: [] }))
+        .statusCode,
+    ).toBe(400);
+    expect(
+      (await createWork(author.cookie, { media: [{ id: video, role: "cover" }], youtubeUrls: [] }))
+        .statusCode,
+    ).toBe(400);
     const tooMany = await createWork(author.cookie, {
       media: [{ id: video, role: "video" }],
-      youtubeUrls: ["https://youtu.be/dQw4w9WgXcQ", "https://youtu.be/aaaaaaaaaaa", "https://youtu.be/bbbbbbbbbbb"],
+      youtubeUrls: [
+        "https://youtu.be/dQw4w9WgXcQ",
+        "https://youtu.be/aaaaaaaaaaa",
+        "https://youtu.be/bbbbbbbbbbb",
+      ],
     });
     expect(tooMany.statusCode).toBe(400);
-    const notYoutube = await createWork(author.cookie, { media: [], youtubeUrls: ["https://example.com/watch?v=dQw4w9WgXcQ"] });
+    const notYoutube = await createWork(author.cookie, {
+      media: [],
+      youtubeUrls: ["https://example.com/watch?v=dQw4w9WgXcQ"],
+    });
     expect(notYoutube.statusCode).toBe(400);
   });
 
@@ -229,9 +263,14 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     const author = await createMember("autrice");
     const other = await createMember("autre");
     const foreign = await uploadId(other.cookie, PNG_BYTES, "image.png");
-    const created = await createWork(author.cookie, { media: [{ id: foreign, role: "cover" }], youtubeUrls: [] });
+    const created = await createWork(author.cookie, {
+      media: [{ id: foreign, role: "cover" }],
+      youtubeUrls: [],
+    });
     expect(created.statusCode).toBe(400);
-    expect((await app.inject({ method: "GET", url: `/api/work-media/${foreign}/content` })).statusCode).toBe(404);
+    expect(
+      (await app.inject({ method: "GET", url: `/api/work-media/${foreign}/content` })).statusCode,
+    ).toBe(404);
   });
 
   it("refuse l'envoi à un visiteur et une vidéo trop lourde", async () => {
@@ -249,7 +288,10 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
   });
 
   it("compte les médias dans le quota commun", async () => {
-    app = createApp({ maxAttachmentBytes: 25 * 1024 * 1024, maxUserStorageBytes: PNG_BYTES.length + MP4_BYTES.length - 1 });
+    app = createApp({
+      maxAttachmentBytes: 25 * 1024 * 1024,
+      maxUserStorageBytes: PNG_BYTES.length + MP4_BYTES.length - 1,
+    });
     const author = await createMember("autrice");
     expect((await upload(author.cookie, PNG_BYTES, "image.png")).statusCode).toBe(200);
     const over = await upload(author.cookie, MP4_BYTES, "demo.mp4");
@@ -260,7 +302,10 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     const author = await createMember("autrice");
     const first = await uploadId(author.cookie, PNG_BYTES, "premiere.png");
     const second = await uploadId(author.cookie, PNG_BYTES, "seconde.png");
-    await createWork(author.cookie, { media: [{ id: first, role: "cover" }], youtubeUrls: ["https://youtu.be/dQw4w9WgXcQ"] });
+    await createWork(author.cookie, {
+      media: [{ id: first, role: "cover" }],
+      youtubeUrls: ["https://youtu.be/dQw4w9WgXcQ"],
+    });
 
     const patched = await app.inject({
       method: "PATCH",
@@ -271,7 +316,9 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     expect(patched.statusCode).toBe(200);
     expect(patched.json().work.coverMediaId).toBe(second);
     expect(patched.json().work.videos).toEqual([]);
-    expect((await app.inject({ method: "GET", url: `/api/work-media/${first}/content` })).statusCode).toBe(404);
+    expect(
+      (await app.inject({ method: "GET", url: `/api/work-media/${first}/content` })).statusCode,
+    ).toBe(404);
 
     // Délai de grâce d'une heure : rien ne part tout de suite.
     expect(await cleanupOrphanWorkMedia(db, storage)).toBe(0);
@@ -281,7 +328,13 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     const author = await createMember("autrice");
     const cover = await uploadId(author.cookie, PNG_BYTES, "couverture.png");
     await createWork(author.cookie, { media: [{ id: cover, role: "cover" }], youtubeUrls: [] });
-    await app.inject({ method: "DELETE", url: "/api/works/travail-media", headers: { cookie: author.cookie } });
-    expect((await app.inject({ method: "GET", url: `/api/work-media/${cover}/content` })).statusCode).toBe(404);
+    await app.inject({
+      method: "DELETE",
+      url: "/api/works/travail-media",
+      headers: { cookie: author.cookie },
+    });
+    expect(
+      (await app.inject({ method: "GET", url: `/api/work-media/${cover}/content` })).statusCode,
+    ).toBe(404);
   });
 });

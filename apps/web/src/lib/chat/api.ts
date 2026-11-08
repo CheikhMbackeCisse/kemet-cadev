@@ -58,6 +58,7 @@ import type {
   ProfileWork,
   UpdateWorkInput,
   WorkAttachment,
+  WorkUploadedMedia,
   WorkDetail,
   WorkMatchResult,
   WorkMatchSubject,
@@ -917,6 +918,27 @@ export async function uploadWorkAttachment(file: File): Promise<WorkAttachment> 
   }
   const { attachment } = (await response.json()) as { attachment: WorkAttachment };
   return attachment;
+}
+
+/** Image (couverture, galerie) ou vidéo d'un travail, type vérifié par le serveur. */
+export async function uploadWorkMedia(file: File): Promise<WorkUploadedMedia> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/works/media", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { media } = (await response.json()) as { media: WorkUploadedMedia };
+  return media;
 }
 
 export function workAttachmentUrl(attachmentId: string): string {

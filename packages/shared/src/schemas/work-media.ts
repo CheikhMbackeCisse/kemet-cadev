@@ -5,11 +5,22 @@ export const MAX_WORK_GALLERY_IMAGES = 8;
 export const MAX_WORK_VIDEOS = 3;
 export const DEFAULT_MAX_WORK_VIDEO_BYTES = 50 * 1024 * 1024;
 
-export const WORK_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"] as const;
+export const WORK_IMAGE_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+] as const;
 export const WORK_VIDEO_MIME_TYPES = ["video/mp4", "video/webm"] as const;
 
 const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
-const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com"]);
+const YOUTUBE_HOSTS = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtube-nocookie.com",
+  "www.youtube-nocookie.com",
+]);
 
 /**
  * Identifiant d'une vidéo YouTube (11 caractères) lu dans un lien
@@ -31,7 +42,12 @@ export function parseYoutubeId(value: string): string | null {
     candidate = url.pathname.split("/")[1] ?? null;
   } else if (YOUTUBE_HOSTS.has(host)) {
     const [, first, second] = url.pathname.split("/");
-    candidate = first === "watch" ? url.searchParams.get("v") : ["shorts", "embed", "live"].includes(first ?? "") ? (second ?? null) : null;
+    candidate =
+      first === "watch"
+        ? url.searchParams.get("v")
+        : ["shorts", "embed", "live"].includes(first ?? "")
+          ? (second ?? null)
+          : null;
   }
   return candidate && YOUTUBE_ID_PATTERN.test(candidate) ? candidate : null;
 }
@@ -42,7 +58,10 @@ export const youtubeUrlSchema = z
   .transform((value, context) => {
     const id = parseYoutubeId(value);
     if (!id) {
-      context.addIssue({ code: z.ZodIssueCode.custom, message: "Ce lien n'est pas une vidéo YouTube." });
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Ce lien n'est pas une vidéo YouTube.",
+      });
       return z.NEVER;
     }
     return id;
@@ -66,7 +85,11 @@ export const workMediaFieldsSchema = z
   .superRefine((value, context) => {
     const count = (role: WorkMediaRole) => value.media.filter((item) => item.role === role).length;
     if (count("cover") > 1) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["media"], message: "Une seule image de couverture." });
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["media"],
+        message: "Une seule image de couverture.",
+      });
     }
     if (count("gallery") > MAX_WORK_GALLERY_IMAGES) {
       context.addIssue({
@@ -83,7 +106,11 @@ export const workMediaFieldsSchema = z
       });
     }
     if (new Set(value.media.map((item) => item.id)).size !== value.media.length) {
-      context.addIssue({ code: z.ZodIssueCode.custom, path: ["media"], message: "Un même fichier apparaît deux fois." });
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["media"],
+        message: "Un même fichier apparaît deux fois.",
+      });
     }
   });
 export type WorkMediaFields = z.infer<typeof workMediaFieldsSchema>;
@@ -101,7 +128,12 @@ export const workImageSchema = z.object({ id: z.string().uuid(), originalName: z
 export type WorkImage = z.infer<typeof workImageSchema>;
 
 export const workVideoSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("file"), id: z.string().uuid(), mimeType: z.string(), originalName: z.string() }),
+  z.object({
+    kind: z.literal("file"),
+    id: z.string().uuid(),
+    mimeType: z.string(),
+    originalName: z.string(),
+  }),
   z.object({ kind: z.literal("youtube"), id: z.string().uuid(), youtubeId: z.string() }),
 ]);
 export type WorkVideo = z.infer<typeof workVideoSchema>;

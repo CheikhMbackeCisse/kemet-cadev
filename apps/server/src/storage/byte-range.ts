@@ -6,7 +6,10 @@ import type { ByteRange } from "./file-storage.js";
  * `null` : en-tête absent ou ignoré (plusieurs plages, autre unité), le
  * fichier part en entier. `"unsatisfiable"` : plage hors du fichier, 416.
  */
-export function parseByteRange(header: string | undefined, size: number): ByteRange | "unsatisfiable" | null {
+export function parseByteRange(
+  header: string | undefined,
+  size: number,
+): ByteRange | "unsatisfiable" | null {
   if (!header) return null;
   const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
   if (!match) return null;

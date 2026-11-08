@@ -56,7 +56,12 @@ function sanitizeFilename(name: string): string {
  * correspondre à son rôle (une image en couverture ou en galerie, une vidéo
  * en vidéo).
  */
-export async function applyWorkMedia(tx: DbOrTx, workId: string, authorId: string, fields: WorkMediaFields) {
+export async function applyWorkMedia(
+  tx: DbOrTx,
+  workId: string,
+  authorId: string,
+  fields: WorkMediaFields,
+) {
   const rows = await findAttachableWorkMedia(
     tx,
     fields.media.map((item) => item.id),
@@ -108,7 +113,9 @@ export function registerWorkMediaRoutes(
       const profile = await requireUploader(db, userId);
       // Plafond global du greffon multipart relevé pour cette seule route :
       // la limite propre à chaque type est vérifiée une fois le type connu.
-      const part = await request.file({ limits: { fileSize: Math.max(maxVideoBytes, maxImageBytes), files: 1 } });
+      const part = await request.file({
+        limits: { fileSize: Math.max(maxVideoBytes, maxImageBytes), files: 1 },
+      });
       if (!part) throw badRequest("Aucun fichier envoyé.");
       let buffer: Buffer;
       try {
@@ -120,7 +127,10 @@ export function registerWorkMediaRoutes(
         throw error;
       }
       const detected = await detectWorkMedia(buffer);
-      if (!detected) throw badRequest("Seules les images (PNG, JPEG, WebP, GIF) et les vidéos MP4 ou WebM sont acceptées.");
+      if (!detected)
+        throw badRequest(
+          "Seules les images (PNG, JPEG, WebP, GIF) et les vidéos MP4 ou WebM sont acceptées.",
+        );
       const limit = detected.kind === "video" ? maxVideoBytes : maxImageBytes;
       if (buffer.length > limit) {
         throw badRequest(
@@ -133,7 +143,10 @@ export function registerWorkMediaRoutes(
       const storageKey = randomUUID();
       const media = await db.transaction(async (tx) => {
         await lockUserStorageQuota(tx, profile.id);
-        if ((await sumTotalUserStorageBytes(tx, profile.id)) + buffer.length > attachmentLimits.maxUserStorageBytes) {
+        if (
+          (await sumTotalUserStorageBytes(tx, profile.id)) + buffer.length >
+          attachmentLimits.maxUserStorageBytes
+        ) {
           throw badRequest("Quota de stockage de fichiers atteint.");
         }
         await storage.save(storageKey, buffer);
@@ -166,7 +179,8 @@ export function registerWorkMediaRoutes(
   app.get<{ Params: { id: string } }>("/api/work-media/:id/content", async (request, reply) => {
     const { id } = mediaParamsSchema.parse(request.params);
     const media = await findWorkMediaById(db, id);
-    if (!media?.workId || !media.storageKey || !media.mimeType) throw notFound("Ce fichier n'existe pas.");
+    if (!media?.workId || !media.storageKey || !media.mimeType)
+      throw notFound("Ce fichier n'existe pas.");
     const work = await findWorkById(db, media.workId);
     if (!work || work.deletedAt) throw notFound("Ce fichier n'existe pas.");
 

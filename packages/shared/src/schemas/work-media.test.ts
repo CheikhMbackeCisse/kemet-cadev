@@ -25,7 +25,10 @@ describe("parseYoutubeId", () => {
 
 describe("workMediaFieldsSchema", () => {
   it("transforme les liens en identifiants", () => {
-    const parsed = workMediaFieldsSchema.parse({ media: [], youtubeUrls: [`https://youtu.be/${ID}`] });
+    const parsed = workMediaFieldsSchema.parse({
+      media: [],
+      youtubeUrls: [`https://youtu.be/${ID}`],
+    });
     expect(parsed.youtubeUrls).toEqual([ID]);
   });
 

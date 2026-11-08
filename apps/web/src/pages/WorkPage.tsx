@@ -1,6 +1,6 @@
 import { ArrowLeft, FileDown, Mail, MessagesSquare } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { isDeletedAccountHandle, type WorkDetail, type WorkLink, type WorkPerson } from "@kemet/shared";
+import { isDeletedAccountHandle, workMediaContentPath, type WorkDetail, type WorkLink, type WorkPerson } from "@kemet/shared";
 import {
   ChatApiError,
   decideWorkInvitation,
@@ -11,6 +11,7 @@ import {
   workAttachmentUrl,
 } from "../lib/chat/api.js";
 import { RichText } from "../components/content/RichText.js";
+import { WorkVideo } from "../components/works/WorkVideo.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
@@ -293,6 +294,42 @@ export function WorkPage() {
     <div className="flex flex-col gap-6">
       <RichText source={work.summary} className="text-base text-text" />
 
+      {work.videos.length > 0 && (
+        <AsideSection title={fr.works.videosTitle}>
+          <div className="flex flex-col gap-4">
+            {work.videos.map((video, index) => (
+              <WorkVideo key={video.id} video={video} title={fr.works.videoTitle(work.title, index + 1)} />
+            ))}
+          </div>
+        </AsideSection>
+      )}
+
+      {work.gallery.length > 0 && (
+        <AsideSection title={fr.works.galleryTitle}>
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {work.gallery.map((image, index) => (
+              <li key={image.id}>
+                <a
+                  href={workMediaContentPath(image.id)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label={fr.works.openImage(index + 1)}
+                  className="block overflow-hidden rounded-control border border-border hover:border-border-strong"
+                >
+                  <img
+                    src={workMediaContentPath(image.id)}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[4/3] w-full bg-surface-2 object-cover"
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </AsideSection>
+      )}
+
       {(work.links.length > 0 || work.attachment) && (
         <AsideSection title={fr.works.linksTitle}>
           <ul className="flex flex-col gap-1">
@@ -366,6 +403,13 @@ export function WorkPage() {
     <ReadingPage activeSection="travaux" header={header}>
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-10">
         <article className="flex min-w-0 flex-col gap-4">
+          {work.coverMediaId && (
+            <img
+              src={workMediaContentPath(work.coverMediaId)}
+              alt={fr.works.coverAlt(work.title)}
+              className="aspect-[16/9] w-full rounded-card border border-border bg-surface-2 object-cover"
+            />
+          )}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-lg font-bold text-text">{work.title}</h1>
