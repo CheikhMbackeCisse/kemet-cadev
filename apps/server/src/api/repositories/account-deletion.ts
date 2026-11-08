@@ -23,6 +23,7 @@ import {
   verification,
   votes,
   workAttachments,
+  workMedia,
   workAuthors,
   type Db,
 } from "@kemet/db";
@@ -185,8 +186,17 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .delete(workAttachments)
     .where(eq(workAttachments.authorId, profileId))
     .returning({ storageKey: workAttachments.storageKey });
+  // Même règle pour la couverture, la galerie et les vidéos : un visage, une
+  // voix. Les liens YouTube partent aussi, ils pointent vers une chaîne.
+  const mediaFiles = await tx
+    .delete(workMedia)
+    .where(eq(workMedia.authorId, profileId))
+    .returning({ storageKey: workMedia.storageKey });
   await tx
     .delete(workAuthors)
     .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "pending")));
-  return [...messageFiles, ...postFiles, ...workFiles].map((file) => file.storageKey);
+  return [
+    ...[...messageFiles, ...postFiles, ...workFiles].map((file) => file.storageKey),
+    ...mediaFiles.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
+  ];
 }

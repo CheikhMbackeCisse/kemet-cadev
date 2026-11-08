@@ -58,6 +58,8 @@ import {
   serializeWorkDetail,
   serializeWorkSummary,
 } from "../work-serializers.js";
+import { listWorkMedia } from "../repositories/work-media.js";
+import { applyWorkMedia } from "./work-media.js";
 import type { ChatAppDeps } from "../app.js";
 
 const attachmentParamsSchema = z.object({ id: z.string().uuid() });
@@ -124,10 +126,11 @@ export async function viewerRoleFor(
 }
 
 async function buildWorkDetail(db: Db, work: WorkRow, viewerProfileId: string | null) {
-  const [people, links, attachment, viewerRole, { level }] = await Promise.all([
+  const [people, links, attachment, media, viewerRole, { level }] = await Promise.all([
     loadWorkPeople(db, [work]),
     listWorkLinks(db, work.id),
     findWorkAttachmentForWork(db, work.id),
+    listWorkMedia(db, work.id),
     viewerRoleFor(db, work, viewerProfileId),
     computeProfilePoints(db, work.publisherId),
   ]);
@@ -143,6 +146,7 @@ async function buildWorkDetail(db: Db, work: WorkRow, viewerProfileId: string | 
     publisherLevel: level,
     links,
     attachment,
+    media,
     invitations,
     viewerRole,
     participantCount: await countDiscussionParticipants(db, work.channelId),
@@ -200,6 +204,7 @@ export function registerWorkRoutes(
         for (const coauthor of coauthors) await insertWorkInvitation(tx, created.id, coauthor.id);
         if (input.attachmentId)
           await attachPendingPdf(tx, created.id, input.attachmentId, profile.id);
+        if (input.media) await applyWorkMedia(tx, created.id, profile.id, input.media);
         // Publier un travail l'annonce dans le fil, sans texte : le post
         // affiche le travail lui-même. Aucun point n'est versé.
         await insertPost(tx, {
@@ -261,6 +266,7 @@ export function registerWorkRoutes(
           if (current?.id !== input.attachmentId)
             await attachPendingPdf(tx, work.id, input.attachmentId, profile.id);
         }
+        if (input.media) await applyWorkMedia(tx, work.id, profile.id, input.media);
         return row;
       });
 

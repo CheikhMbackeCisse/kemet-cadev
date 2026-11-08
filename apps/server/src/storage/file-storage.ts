@@ -3,9 +3,15 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
 
+/** Octets de `start` à `end` inclus, comme dans un en-tête Range. */
+export interface ByteRange {
+  start: number;
+  end: number;
+}
+
 export interface FileStorage {
   save(key: string, data: Buffer): Promise<void>;
-  read(key: string): NodeJS.ReadableStream;
+  read(key: string, range?: ByteRange): NodeJS.ReadableStream;
   delete(key: string): Promise<void>;
 }
 
@@ -28,8 +34,8 @@ export class LocalDiskStorage implements FileStorage {
     await writeFile(path, data);
   }
 
-  read(key: string): NodeJS.ReadableStream {
-    return createReadStream(this.pathFor(key));
+  read(key: string, range?: ByteRange): NodeJS.ReadableStream {
+    return createReadStream(this.pathFor(key), range);
   }
 
   async delete(key: string): Promise<void> {
@@ -45,10 +51,10 @@ export class InMemoryStorage implements FileStorage {
     this.files.set(key, data);
   }
 
-  read(key: string): NodeJS.ReadableStream {
+  read(key: string, range?: ByteRange): NodeJS.ReadableStream {
     const data = this.files.get(key);
     if (!data) throw new Error(`Fichier introuvable en mémoire : ${key}`);
-    return Readable.from(data);
+    return Readable.from(range ? data.subarray(range.start, range.end + 1) : data);
   }
 
   async delete(key: string): Promise<void> {

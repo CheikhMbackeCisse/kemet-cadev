@@ -9,6 +9,7 @@ import {
   workAuthors,
   workExternalAuthors,
   workLinks,
+  workMedia,
   WORK_DISCUSSIONS_SPACE_ID,
   works,
   type Db,
@@ -306,6 +307,7 @@ export interface WorkPeople {
   coauthors: ProfileRow[];
   externalAuthors: string[];
   hasPdf: boolean;
+  coverMediaId: string | null;
   messageCount: number;
   levels: Map<string, Level>;
 }
@@ -318,7 +320,7 @@ export async function loadWorkPeople(
   const result = new Map<string, WorkPeople>();
   if (rows.length === 0) return result;
   const workIds = rows.map((row) => row.id);
-  const [coauthorRows, externalRows, attachmentRows, countRows] = await Promise.all([
+  const [coauthorRows, externalRows, attachmentRows, countRows, coverRows] = await Promise.all([
     db
       .select({ workId: workAuthors.workId, profile: profiles })
       .from(workAuthors)
@@ -338,11 +340,16 @@ export async function loadWorkPeople(
       .select({ id: works.id, messageCount: messageCountSql })
       .from(works)
       .where(inArray(works.id, workIds)),
+    db
+      .select({ workId: workMedia.workId, id: workMedia.id })
+      .from(workMedia)
+      .where(and(inArray(workMedia.workId, workIds), eq(workMedia.role, "cover"))),
   ]);
   const publisherIds = [...new Set(rows.map((row) => row.publisherId))];
   const publishers = await db.select().from(profiles).where(inArray(profiles.id, publisherIds));
   const publisherById = new Map(publishers.map((profile) => [profile.id, profile]));
   const withPdf = new Set(attachmentRows.map((row) => row.workId));
+  const coverById = new Map(coverRows.map((row) => [row.workId, row.id]));
   const messageCountById = new Map(countRows.map((row) => [row.id, row.messageCount]));
   const levels = await computeLevels(db, [
     ...publisherIds,
@@ -359,6 +366,7 @@ export async function loadWorkPeople(
         .filter((entry) => entry.workId === row.id)
         .map((entry) => entry.name),
       hasPdf: withPdf.has(row.id),
+      coverMediaId: coverById.get(row.id) ?? null,
       messageCount: messageCountById.get(row.id) ?? 0,
       levels,
     });

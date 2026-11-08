@@ -39,6 +39,7 @@ import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { WorkMatcher } from "../ai/work-matcher.js";
 import { FullTextWorkRetriever } from "../ai/work-retriever.js";
 import { registerWorkRoutes } from "./routes/works.js";
+import { registerWorkMediaRoutes } from "./routes/work-media.js";
 import { registerWorkMatchRoutes } from "./routes/work-matches.js";
 
 export interface AppDeps {
@@ -172,6 +173,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerCredentialRoutes(app, chatDeps);
     registerAccountDeletionRoutes(app, chatDeps);
     registerWorkRoutes(app, chatDeps);
+    registerWorkMediaRoutes(app, chatDeps);
     registerWorkMatchRoutes(app, chatDeps);
     registerConversationRoutes(app, chatDeps);
   });

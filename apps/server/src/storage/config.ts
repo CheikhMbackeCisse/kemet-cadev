@@ -1,6 +1,10 @@
+import { DEFAULT_MAX_WORK_VIDEO_BYTES } from "@kemet/shared";
+
 export interface AttachmentLimits {
   maxAttachmentBytes: number;
   maxUserStorageBytes: number;
+  /** Vidéo d'un travail. Absente des réglages de test : valeur de `@kemet/shared`. */
+  maxWorkVideoBytes?: number;
 }
 
 const DEFAULT_MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -18,5 +22,6 @@ export function loadAttachmentLimits(env: NodeJS.ProcessEnv = process.env): Atta
   return {
     maxAttachmentBytes: readPositiveInt(env.MAX_ATTACHMENT_BYTES, DEFAULT_MAX_ATTACHMENT_BYTES),
     maxUserStorageBytes: readPositiveInt(env.MAX_USER_STORAGE_BYTES, DEFAULT_MAX_USER_STORAGE_BYTES),
+    maxWorkVideoBytes: readPositiveInt(env.WORK_VIDEO_MAX_BYTES, DEFAULT_MAX_WORK_VIDEO_BYTES),
   };
 }

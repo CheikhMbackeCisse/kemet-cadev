@@ -39,7 +39,9 @@ export async function findAttachableWorkMedia(db: DbOrTx, ids: string[], authorI
         isNotNull(workMedia.storageKey),
         or(isNull(workMedia.workId), eq(workMedia.workId, workId)),
       ),
-    );
+    )
+    // Deux travaux enregistrés en même temps ne prennent pas le même fichier.
+    .for("update");
 }
 
 /**
@@ -75,15 +77,6 @@ export async function replaceWorkMedia(
 
 export async function listWorkMedia(db: DbOrTx, workId: string) {
   return db.select().from(workMedia).where(eq(workMedia.workId, workId)).orderBy(asc(workMedia.position));
-}
-
-export async function listWorkCovers(db: DbOrTx, workIds: string[]): Promise<Map<string, string>> {
-  if (workIds.length === 0) return new Map();
-  const rows = await db
-    .select({ workId: workMedia.workId, id: workMedia.id })
-    .from(workMedia)
-    .where(and(inArray(workMedia.workId, workIds), eq(workMedia.role, "cover")));
-  return new Map(rows.map((row) => [row.workId!, row.id]));
 }
 
 export async function findWorkMediaById(db: DbOrTx, id: string) {
