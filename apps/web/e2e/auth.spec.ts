@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { createPublicSpace } from "./support/spaces.js";
 import { expectVisitorInvitation } from "./support/visitor.js";
+import { completeProfile } from "./support/accounts.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -39,7 +40,7 @@ async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", { data: { handle, displayName: handle, country: "SN" } });
+  await completeProfile(request, handle);
 }
 
 test("une inscription complète par l'interface mène jusqu'au fil", async ({ page }) => {
