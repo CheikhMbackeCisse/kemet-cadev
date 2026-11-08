@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { skipIntro } from "./support/intro.js";
 
 // Le service worker n'existe que dans la version construite (pile Docker de
 // la CI, production) : le serveur de développement Vite ne l'enregistre pas.
@@ -8,7 +9,9 @@ test(
   "une navigation vers l'api atteint le serveur même sous le service worker",
   { tag: "@prod-smoke" },
   async ({ page }) => {
-    await page.goto("/");
+    // Sans cela, "/" renvoie le visiteur vers l'accueil pendant l'attente.
+    await skipIntro(page);
+    await page.goto("/fil");
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready;
     });
