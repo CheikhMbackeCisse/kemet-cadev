@@ -29,7 +29,12 @@ describe.skipIf(!databaseUrl)("Adresse du client derrière le proxy (base Postgr
       secret: "test-secret-at-least-32-characters-long",
       rateLimitEnabled: true,
     });
-    app = buildApp({ db, auth });
+    // Facteur 1 : la limite d'une requête sans session reste celle de la route.
+    app = buildApp({
+      db,
+      auth,
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 1 },
+    });
     app.after(() => {
       app.get("/test/ip", async (request) => ({ ip: request.ip }));
       app.get("/test/limited", { config: { rateLimit: { max: 2, timeWindow: 60_000 } } }, async () => ({ ok: true }));

@@ -1,6 +1,5 @@
 import { loadSiteConfig, type SiteConfig } from "../config/site-config.js";
 import Fastify, { type FastifyInstance } from "fastify";
-import rateLimit from "@fastify/rate-limit";
 import multipart from "@fastify/multipart";
 import helmet from "@fastify/helmet";
 import { toNodeHandler } from "better-auth/node";
@@ -15,6 +14,8 @@ import { loadPrivacyContact, type PrivacyContact } from "../config/privacy-confi
 import { loadAttachmentLimits, type AttachmentLimits } from "../storage/config.js";
 import { InMemoryStorage, type FileStorage } from "../storage/file-storage.js";
 import { loadAntiSpamConfig, type AntiSpamConfig } from "../moderation/anti-spam-config.js";
+import { getSessionUserId } from "../auth/session.js";
+import { registerRateLimit } from "./rate-limit.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerOnboardingRoutes } from "./routes/onboarding.js";
 import { registerAccountDeletionRoutes } from "./routes/account-deletion.js";
@@ -77,7 +78,10 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const workMatcher =
     deps.workMatcher ?? new WorkMatcher(deps.db, new UnavailableLlmProvider(), new FullTextWorkRetriever(deps.db));
 
-  void app.register(rateLimit, { global: false });
+  registerRateLimit(app, {
+    resolveUserId: (request) => getSessionUserId(deps.auth, request),
+    anonymousFactor: antiSpamConfig.anonymousIpFactor,
+  });
   void app.register(multipart, { limits: { fileSize: attachmentLimits.maxAttachmentBytes, files: 1 } });
   // API JSON seulement : default-src 'none' ne coûte rien. Sans
   // `useDefaults: false`, helmet fusionnerait ses directives par défaut,

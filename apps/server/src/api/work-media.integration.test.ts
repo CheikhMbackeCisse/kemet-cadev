@@ -68,7 +68,7 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
       db,
       auth,
       storage,
-      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 },
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 },
       attachmentLimits: limits ?? {
         maxAttachmentBytes: 25 * 1024 * 1024,
         maxUserStorageBytes: 500 * 1024 * 1024,

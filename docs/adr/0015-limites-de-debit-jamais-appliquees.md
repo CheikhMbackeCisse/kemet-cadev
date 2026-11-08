@@ -107,3 +107,54 @@ plusieurs se serait bloquée en quelques secondes.
 Couvert par `apps/server/src/api/client-ip.integration.test.ts`, avec deux
 adresses de client derrière une adresse de proxy, et un client qui change
 d'en-tête à chaque tentative.
+
+## Complément du 08/11/2026 : une clé par compte, l'adresse IP sans session
+
+Compter par adresse IP pénalise les réseaux partagés, nombreux chez les
+utilisateurs visés : NAT des opérateurs mobiles, campus, cybercafés. Avec
+une clé par adresse, 20 messages par minute valaient pour tout un campus.
+
+- La clé de chaque limite de route est désormais `user:<identifiant>` pour
+  une requête avec session, `ip:<adresse>` sinon (`apps/server/src/api/rate-limit.ts`,
+  `keyGenerator` global de `@fastify/rate-limit`). Une adresse IPv6 est
+  ramenée à son préfixe /64, comme le fait déjà Better Auth.
+- Sans session, la limite de la route est multipliée par
+  `RATE_LIMIT_ANONYMOUS_IP_FACTOR` (3 par défaut), par un hook `onRoute`
+  posé avant celui du greffon. Les routes d'écriture refusent de toute façon
+  une requête sans session : ce facteur ne concerne en pratique que les
+  routes publiques limitées.
+- La limite réduite des comptes récents (`antiSpamMax`) s'applique
+  toujours, comptée par compte.
+- La session d'une requête n'est lue qu'une fois : `getSessionUserId`
+  garde son résultat le temps de la requête, partagé par la clé, la limite
+  et la route.
+- Les limites de connexion et d'inscription de Better Auth restent comptées
+  par adresse : il n'y a pas encore de compte à ce moment-là.
+
+- Le hook ne modifie jamais l'objet de configuration d'une route : il est
+  souvent partagé (`publicReadLimit` des projets et des compétitions), et
+  chaque GET est redéclaré en HEAD avec le même objet. Le modifier en place
+  multipliait la limite à chaque déclaration.
+- Si la session ne peut pas être lue (base indisponible), la requête
+  échoue. Aucun repli sur la clé par adresse.
+- `RATE_LIMIT_ANONYMOUS_IP_FACTOR` est plafonné à 10.
+
+Ce qui change pour un attaquant : un compte ne contourne plus sa limite en
+changeant d'adresse, mais plusieurs comptes derrière une même adresse ont
+chacun la leur. Sur les routes branchées sur `antiSpamMax` (messages,
+posts, réponses, fichiers et images, signalements, conversations privées,
+travaux et leurs médias, "Qui a travaillé sur ce sujet ?"), un compte
+récent n'a qu'une fraction de la limite. Ailleurs (réactions, skills,
+projets, compétitions, invitations), un compte neuf a la limite pleine :
+créer des comptes en série multiplie ces quotas, borné par la vérification d'email
+et la limite d'inscription de Better Auth, mais pas par la connexion
+GitHub, Google ou LinkedIn. Point ouvert.
+
+Autre coût : une requête limitée lit la session avant le compteur, refus
+compris. Sans cookie ou avec un cookie mal signé, Better Auth répond sans
+toucher à la base ; un compte connecté qui insiste paie une lecture par
+tentative. Le cache de session en cookie de Better Auth réduirait ce coût
+au prix d'un délai de révocation ; il n'est pas activé.
+
+Couvert par `apps/server/src/api/rate-limit.test.ts` et, avec de vraies
+sessions, par `apps/server/src/moderation/anti-spam.integration.test.ts`.

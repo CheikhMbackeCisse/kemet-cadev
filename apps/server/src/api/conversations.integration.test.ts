@@ -51,7 +51,7 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
       },
     };
     // Facteur 1 : la limite réduite des comptes neufs a son propre test plus bas.
-    app = buildApp({ db, auth, chat, assistant, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 } });
+    app = buildApp({ db, auth, chat, assistant, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 } });
   });
 
   afterEach(async () => {
@@ -795,7 +795,7 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
       secret: "test-secret-at-least-32-characters-long",
       rateLimitEnabled: false,
     });
-    app = buildApp({ db, auth, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 0.25 } });
+    app = buildApp({ db, auth, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 0.25, anonymousIpFactor: 3 } });
     const spammer = await createMember("nouveau");
     const targets: Member[] = [];
     // Dix par minute d'ordinaire, trois pour un compte neuf (10 x 0,25 arrondi).

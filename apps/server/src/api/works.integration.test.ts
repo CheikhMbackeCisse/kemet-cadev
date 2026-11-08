@@ -69,7 +69,7 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     app = buildApp({
       db,
       auth,
-      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 },
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 },
     });
   });
 
@@ -856,7 +856,7 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     app = buildApp({
       db,
       auth,
-      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 },
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 },
       attachmentLimits: {
         maxAttachmentBytes: 1024 * 1024,
         maxUserStorageBytes: PDF_BYTES.length + PNG_BYTES.length - 1,

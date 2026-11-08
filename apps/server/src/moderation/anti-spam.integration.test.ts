@@ -34,7 +34,7 @@ describe.skipIf(!databaseUrl)("Anti-spam : limite réduite pour un compte récen
       db,
       auth,
       chat: createNoopChatPublisher(),
-      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 0.2 },
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 0.2, anonymousIpFactor: 3 },
     });
   });
 
@@ -120,5 +120,34 @@ describe.skipIf(!databaseUrl)("Anti-spam : limite réduite pour un compte récen
     for (let i = 0; i < 10; i += 1) results.push(await sendMessage(cookie, channelId));
 
     expect(results.every((r) => r.statusCode === 200)).toBe(true);
+  });
+
+  // PATCH /api/me/profile : 20 par minute, sans réduction pour un compte
+  // récent. Toutes les requêtes injectées partagent la même adresse.
+  async function patchProfile(cookie: string) {
+    return app.inject({ method: "PATCH", url: "/api/me/profile", headers: { cookie }, payload: { displayName: "Même adresse" } });
+  }
+
+  it("compte la limite par compte : deux comptes derrière une même adresse ont chacun la leur", async () => {
+    const first = await createMember("same-address-a@test.kemet", "sameaddressa");
+    const second = await createMember("same-address-b@test.kemet", "sameaddressb");
+
+    const firstStatuses = [];
+    for (let i = 0; i < 20; i += 1) firstStatuses.push((await patchProfile(first.cookie)).statusCode);
+    expect(firstStatuses.slice(0, 19).every((status) => status === 200)).toBe(true);
+    expect(firstStatuses[19]).toBe(429);
+
+    expect((await patchProfile(second.cookie)).statusCode).toBe(200);
+  });
+
+  it("retombe sur la limite par adresse, élargie, pour un cookie de session forgé", async () => {
+    const forged = await app.inject({
+      method: "PATCH",
+      url: "/api/me/profile",
+      headers: { cookie: "better-auth.session_token=forge.signature" },
+      payload: { displayName: "Forgé" },
+    });
+    expect(forged.statusCode).toBe(401);
+    expect(forged.headers["x-ratelimit-limit"]).toBe("60");
   });
 });
