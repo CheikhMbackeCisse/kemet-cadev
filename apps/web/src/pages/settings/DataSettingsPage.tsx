@@ -55,7 +55,7 @@ export function DataSettingsPage() {
         ) : blocked === null ? (
           <Skeleton className="h-12 w-full" />
         ) : blocked.length === 0 ? (
-          <p className="text-sm text-text-2">{fr.settings.blockedEmpty}</p>
+          <p className="text-base text-text-2">{fr.settings.blockedEmpty}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {blocked.map((person) => (
@@ -63,7 +63,7 @@ export function DataSettingsPage() {
                 <Avatar name={person.displayName} src={person.avatarUrl ?? undefined} size={32} />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-base text-text">{person.displayName}</span>
-                  <span className="truncate text-sm text-subtle">@{person.handle}</span>
+                  <span className="truncate text-base text-subtle">@{person.handle}</span>
                 </span>
                 <Button
                   variant="secondary"
@@ -85,7 +85,7 @@ export function DataSettingsPage() {
         <span className="text-xs text-subtle">{fr.settings.exportHint}</span>
       </section>
 
-      <a href="/confidentialite" className="w-fit text-sm text-link hover:underline">
+      <a href="/confidentialite" className="w-fit text-base text-link hover:underline">
         {fr.settings.privacyLink}
       </a>
 
@@ -95,7 +95,7 @@ export function DataSettingsPage() {
         </h2>
         <a
           href="/parametres/supprimer-mon-compte"
-          className="-mx-2 inline-flex h-control w-fit items-center rounded-control px-2 text-sm font-medium text-danger hover:underline max-md:h-control-mobile"
+          className="-mx-2 inline-flex h-control w-fit items-center rounded-control px-2 text-base font-medium text-danger hover:underline max-md:h-control-mobile"
         >
           {fr.settings.deleteLink}
         </a>

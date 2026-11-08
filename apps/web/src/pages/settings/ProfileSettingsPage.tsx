@@ -47,7 +47,7 @@ export function ProfileSettingsPage() {
 
   if (status !== "ready" || !profile) return null;
 
-  const githubInvalid = githubUrl.trim() !== "" && !/^https:\/\/\S+$/.test(githubUrl.trim());
+  const githubInvalid = githubUrl.trim() !== "" && !/^https:\/\/github\.com\/\S+$/.test(githubUrl.trim());
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();

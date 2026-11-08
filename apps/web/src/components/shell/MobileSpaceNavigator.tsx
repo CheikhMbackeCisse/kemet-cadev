@@ -16,6 +16,8 @@ export interface MobileSpaceNavigatorProps {
   spaceName: string;
   channels: ChannelItem[];
   channelsLoading: boolean;
+  channelsError: boolean;
+  onRetryChannels: () => void;
   activeChannelId: string;
   onSelectChannel: (id: string) => void;
   canCreateSpace: boolean;
@@ -36,6 +38,8 @@ export function MobileSpaceNavigator({
   spaceName,
   channels,
   channelsLoading,
+  channelsError,
+  onRetryChannels,
   activeChannelId,
   onSelectChannel,
   canCreateSpace,
@@ -75,7 +79,7 @@ export function MobileSpaceNavigator({
                     }
                     className={cn(
                       "relative flex size-12 items-center justify-center overflow-hidden rounded-card text-sm font-semibold transition-colors duration-150",
-                      active ? "bg-primary text-white" : "bg-accent-soft text-primary",
+                      active ? "bg-primary text-white" : "bg-accent-soft text-link",
                     )}
                   >
                     {space.imageUrl ? (
@@ -93,17 +97,6 @@ export function MobileSpaceNavigator({
                 </li>
               );
             })}
-            {canCreateSpace && (
-              <li>
-                <a
-                  href="/salons/nouveau"
-                  aria-label={fr.spaces.createTitle}
-                  className="flex size-12 items-center justify-center rounded-card border border-dashed border-border-strong text-primary hover:bg-surface-2"
-                >
-                  <Plus className="size-5" aria-hidden="true" />
-                </a>
-              </li>
-            )}
           </ul>
         )}
       </nav>
@@ -114,17 +107,17 @@ export function MobileSpaceNavigator({
       >
         {status === "error" ? (
           <div className="flex flex-col items-start gap-1 p-4">
-            <p className="text-sm text-muted">{fr.spaces.loadingSpacesError}</p>
+            <p className="text-base text-muted">{fr.spaces.loadingSpacesError}</p>
             <button
               type="button"
               onClick={onRetry}
-              className="text-sm font-medium text-link hover:underline"
+              className="text-base font-medium text-link hover:underline"
             >
               {fr.chat.retry}
             </button>
           </div>
         ) : status === "ready" && spaces.length === 0 ? (
-          <p className="p-4 text-sm text-muted">{fr.spaces.noSpaces}</p>
+          <p className="p-4 text-base text-muted">{fr.spaces.noSpaces}</p>
         ) : (
           <>
             {activeSpace?.imageUrl && (
@@ -134,13 +127,30 @@ export function MobileSpaceNavigator({
                 className="h-24 w-full shrink-0 object-cover"
               />
             )}
-            <h2 className="truncate px-4 pb-2 pt-4 text-md font-semibold text-text">{spaceName}</h2>
+            {status === "loading" ? (
+              <Skeleton className="mx-4 mb-2 mt-4 h-5 w-32" />
+            ) : (
+              <h2 className="truncate px-4 pb-2 pt-4 text-md font-semibold text-text">{spaceName}</h2>
+            )}
             {channelsLoading || status === "loading" ? (
               <div className="flex flex-col gap-1 px-2">
                 {[0, 1, 2].map((index) => (
                   <Skeleton key={index} className="h-control-mobile w-full" />
                 ))}
               </div>
+            ) : channelsError ? (
+              <div className="flex flex-col items-start gap-1 px-4">
+                <p className="text-base text-muted">{fr.spaces.loadingChannelsError}</p>
+                <button
+                  type="button"
+                  onClick={onRetryChannels}
+                  className="text-base font-medium text-link hover:underline"
+                >
+                  {fr.chat.retry}
+                </button>
+              </div>
+            ) : channels.length === 0 ? (
+              <p className="px-4 text-base text-muted">{fr.spaces.noChannels}</p>
             ) : (
               <ul className="flex flex-col gap-1 px-2 pb-4">
                 {channels.map((channel) => (
@@ -155,7 +165,7 @@ export function MobileSpaceNavigator({
                           : channel.name
                       }
                       className={cn(
-                        "flex h-control-mobile w-full items-center gap-2 rounded-control px-2 text-md transition-colors duration-150",
+                        "flex h-control-mobile w-full items-center gap-2 rounded-control px-2 text-base transition-colors duration-150",
                         channel.unreadCount ? "font-semibold text-text" : "text-text-2",
                         "hover:bg-surface-2",
                       )}
@@ -167,7 +177,7 @@ export function MobileSpaceNavigator({
                           aria-hidden="true"
                           className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-medium text-white tabular-nums"
                         >
-                          {channel.unreadCount}
+                          {channel.unreadCount > 9 ? "9+" : channel.unreadCount}
                         </span>
                       ) : null}
                     </button>
@@ -176,6 +186,15 @@ export function MobileSpaceNavigator({
               </ul>
             )}
           </>
+        )}
+        {canCreateSpace && (
+          <a
+            href="/salons/nouveau"
+            className="mx-2 mb-4 mt-auto flex h-control-mobile items-center gap-2 rounded-control px-2 text-base font-medium text-link hover:bg-surface-2"
+          >
+            <Plus className="size-4 shrink-0" aria-hidden="true" />
+            {fr.spaces.createTitle}
+          </a>
         )}
       </section>
     </div>

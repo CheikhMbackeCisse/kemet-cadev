@@ -14,7 +14,7 @@ export function AppearanceSettingsPage() {
   const { choice, setChoice } = useTheme();
   return (
     <SettingsSubPage title={fr.settings.appearanceSection}>
-      <label className="flex max-w-sm flex-col gap-1 text-sm text-text-2">
+      <label className="flex max-w-sm flex-col gap-1 text-base text-text-2">
         {fr.settings.themeLabel}
         <Select
           aria-label={fr.settings.themeLabel}

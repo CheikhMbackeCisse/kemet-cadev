@@ -15,7 +15,8 @@ export function SettingsSubPage({ title, children }: SettingsSubPageProps) {
       <div className="flex flex-col gap-2">
         <a
           href="/parametres"
-          className="-ml-2 inline-flex h-control w-fit items-center gap-1 rounded-control px-2 text-sm font-medium text-text-2 hover:text-text max-md:h-control-mobile"
+          aria-label={fr.settings.backLabel}
+          className="-ml-2 inline-flex h-control w-fit items-center gap-1 rounded-control px-2 text-base font-medium text-text-2 hover:text-text max-md:h-control-mobile"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           {fr.settings.back}

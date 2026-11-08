@@ -41,3 +41,10 @@ describe("badge de niveau", () => {
     expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+describe("monogramme d'espace inactif", () => {
+  it.each(Object.entries(themes))("garde 4,5:1 en thème %s", (_theme, source) => {
+    const ratio = contrast(token(source, "link"), token(source, "accent-soft"));
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+});

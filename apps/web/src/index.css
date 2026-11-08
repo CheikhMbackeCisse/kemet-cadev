@@ -192,19 +192,4 @@
  * Page "Moi" sur téléphone : elle monte depuis le bas, comme une feuille,
  * en 200 ms (DESIGN.md, Mouvement).
  */
-@keyframes moi-sheet-up {
-  from {
-    transform: translateY(24px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
 
-@media (max-width: 1023px) and (prefers-reduced-motion: no-preference) {
-  .moi-sheet {
-    animation: moi-sheet-up 200ms ease-out;
-  }
-}

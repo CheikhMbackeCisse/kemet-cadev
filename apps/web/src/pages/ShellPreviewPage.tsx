@@ -41,6 +41,8 @@ export function ShellPreviewPage() {
         activeSpaceId,
         onSelect: setActiveSpaceId,
         channelsLoading: false,
+        channelsError: false,
+        onRetryChannels: () => {},
         canCreateSpace: true,
       }}
       channelList={{

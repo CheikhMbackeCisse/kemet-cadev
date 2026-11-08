@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SettingsSubPage } from "../../components/settings/SettingsSubPage.js";
+import { Skeleton } from "../../components/ui/Skeleton.js";
 import { getPrivacyContact } from "../../lib/chat/api.js";
 import { fr } from "../../i18n/fr.js";
 
@@ -7,13 +8,19 @@ import { fr } from "../../i18n/fr.js";
 const VERSION = (import.meta.env.VITE_KEMET_VERSION as string | undefined)?.slice(0, 7) ?? "dev";
 
 export function HelpSettingsPage() {
+  // undefined pendant le chargement, null quand le serveur n'en a pas.
   const [contact, setContact] = useState<{ name: string; email: string } | null | undefined>(undefined);
+  const [contactError, setContactError] = useState(false);
 
-  useEffect(() => {
+  const loadContact = useCallback(() => {
+    setContactError(false);
+    setContact(undefined);
     getPrivacyContact()
       .then((result) => setContact(result.contact))
-      .catch(() => setContact(null));
+      .catch(() => setContactError(true));
   }, []);
+
+  useEffect(loadContact, [loadContact]);
 
   return (
     <SettingsSubPage title={fr.settings.helpSection}>
@@ -21,15 +28,24 @@ export function HelpSettingsPage() {
         <h2 className="text-md font-semibold text-text">{fr.settings.aboutTitle}</h2>
         <p className="text-base text-text-2">{fr.settings.aboutText}</p>
       </section>
-      <dl className="flex max-w-xl flex-col divide-y divide-border rounded-card bg-surface">
-        <div className="flex items-center justify-between gap-4 px-4 py-3">
-          <dt className="text-sm text-text-2">{fr.settings.versionLabel}</dt>
-          <dd className="font-mono text-sm text-text">{VERSION}</dd>
+      <dl className="flex max-w-xl flex-col divide-y divide-border border-y border-border">
+        <div className="flex items-center justify-between gap-4 px-2 py-3">
+          <dt className="text-base text-text-2">{fr.settings.versionLabel}</dt>
+          <dd className="font-mono text-base text-text">{VERSION}</dd>
         </div>
-        <div className="flex items-center justify-between gap-4 px-4 py-3">
-          <dt className="text-sm text-text-2">{fr.settings.contactLabel}</dt>
-          <dd className="min-w-0 truncate text-sm text-text">
-            {contact === undefined ? null : contact ? (
+        <div className="flex items-center justify-between gap-4 px-2 py-3">
+          <dt className="text-base text-text-2">{fr.settings.contactLabel}</dt>
+          <dd className="min-w-0 truncate text-base text-text">
+            {contactError ? (
+              <span className="text-subtle">
+                {fr.settings.contactError}{" "}
+                <button type="button" onClick={loadContact} className="font-medium text-link hover:underline">
+                  {fr.chat.retry}
+                </button>
+              </span>
+            ) : contact === undefined ? (
+              <Skeleton className="h-4 w-40" />
+            ) : contact ? (
               <a href={`mailto:${contact.email}`} className="text-link hover:underline">
                 {contact.email}
               </a>
@@ -39,7 +55,7 @@ export function HelpSettingsPage() {
           </dd>
         </div>
       </dl>
-      <a href="/confidentialite" className="w-fit text-sm text-link hover:underline">
+      <a href="/confidentialite" className="w-fit text-base text-link hover:underline">
         {fr.settings.privacyLink}
       </a>
     </SettingsSubPage>
