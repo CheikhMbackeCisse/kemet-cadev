@@ -25,6 +25,9 @@ import { Tabs } from "../components/ui/Tabs.js";
 import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { useSession } from "../session/SessionProvider.js";
+import { goToSignUp } from "../session/signUpInvite.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 
 const PHASE_LABELS = {
   registration: fr.competitions.phaseRegistration,
@@ -38,6 +41,8 @@ function readSlug(pathname: string): string {
 }
 
 export function CompetitionPage() {
+  const { status } = useSession();
+  const isVisitor = status === "visitor";
   const toast = useToast();
   const slug = readSlug(window.location.pathname);
 
@@ -89,12 +94,14 @@ export function CompetitionPage() {
     loadCompetition();
     loadTeams();
     loadSubmissions();
-    getMe().then((me) => setMyProfileId(me.profile?.id ?? null));
+    getMe()
+      .then((me) => setMyProfileId(me.profile?.id ?? null))
+      .catch(() => {});
   }, [loadCompetition, loadTeams, loadSubmissions]);
 
   useEffect(() => {
     if (!competition) return;
-    if (competition.phase === "voting" || competition.phase === "closed") {
+    if (status === "ready" && (competition.phase === "voting" || competition.phase === "closed")) {
       getMyVote(slug)
         .then((result) => setMyVote(result.submissionId))
         .catch(() => {});
@@ -104,7 +111,7 @@ export function CompetitionPage() {
         .then((result) => setResults(result.items))
         .catch(() => {});
     }
-  }, [competition, slug]);
+  }, [competition, slug, status]);
 
   const myTeam = teams.find((team) => team.viewerIsMember) ?? null;
 
@@ -227,6 +234,8 @@ export function CompetitionPage() {
         )}
       </div>
 
+      {isVisitor && <VisitorBanner />}
+
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -236,8 +245,8 @@ export function CompetitionPage() {
             label: fr.competitions.teamsTab,
             content: (
               <div className="flex flex-col gap-3">
-                {myProfileId && !myTeam && competition.phase === "registration" && (
-                  <Button onClick={() => setCreateTeamOpen(true)}>
+                {(isVisitor || myProfileId) && !myTeam && competition.phase === "registration" && (
+                  <Button onClick={isVisitor ? goToSignUp : () => setCreateTeamOpen(true)}>
                     {fr.competitions.createTeamTitle}
                   </Button>
                 )}
@@ -267,7 +276,7 @@ export function CompetitionPage() {
                               <Button
                                 variant="secondary"
                                 className="text-xs"
-                                onClick={() => handleJoinTeam(team.id)}
+                                onClick={isVisitor ? goToSignUp : () => handleJoinTeam(team.id)}
                               >
                                 {fr.competitions.joinTeam}
                               </Button>
@@ -349,7 +358,7 @@ export function CompetitionPage() {
                             <Button
                               variant={myVote === submission.id ? "secondary" : "primary"}
                               className="text-xs"
-                              onClick={() => handleVote(submission.id)}
+                              onClick={isVisitor ? goToSignUp : () => handleVote(submission.id)}
                             >
                               {myVote === submission.id
                                 ? fr.competitions.votedFor

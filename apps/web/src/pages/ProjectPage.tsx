@@ -30,6 +30,9 @@ import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { useSession } from "../session/SessionProvider.js";
+import { goToSignUp } from "../session/signUpInvite.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { ProfileLink } from "../components/ui/ProfileLink.js";
 import { WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
@@ -50,6 +53,8 @@ function readSlug(pathname: string): string {
 }
 
 export function ProjectPage() {
+  const { status } = useSession();
+  const isVisitor = status === "visitor";
   const toast = useToast();
   const slug = readSlug(window.location.pathname);
 
@@ -272,6 +277,8 @@ export function ProjectPage() {
         </div>
       </div>
 
+      {isVisitor && <VisitorBanner />}
+
       <WorkMatchPanel
         subject={{ type: "project", slug: project.slug }}
         signedIn={myProfileId !== null}
@@ -335,7 +342,7 @@ export function ProjectPage() {
                     </>
                   ) : (
                     helpRequest.status === "open" && (
-                      <Button className="text-xs" onClick={() => setApplyFor(helpRequest)}>
+                      <Button className="text-xs" onClick={isVisitor ? goToSignUp : () => setApplyFor(helpRequest)}>
                         {fr.projects.apply}
                       </Button>
                     )

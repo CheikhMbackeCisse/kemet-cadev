@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import {
   createCompetitionRequestSchema,
   createSubmissionSchema,
@@ -8,7 +8,7 @@ import {
   reviewCompetitionSchema,
   updateSubmissionSchema,
 } from "@kemet/shared";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   castVote,
@@ -73,6 +73,13 @@ async function requireCompetitionBySlug(db: ChatAppDeps["db"], slug: string) {
 }
 
 export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
+  // Lecture ouverte aux visiteurs (aucune compétition, équipe ou soumission
+  // n'est privée) ; un visiteur est traité comme un lecteur sans équipe.
+  async function findViewerProfile(request: FastifyRequest) {
+    const userId = await getSessionUserId(auth, request);
+    return userId ? findProfileByUserId(db, userId) : null;
+  }
+
   app.post("/api/competitions", { config: { rateLimit: { max: 5, timeWindow: "1 hour" } } }, async (request) => {
     const userId = await requireSessionUserId(auth, request);
     const profile = await requireOwnProfile(db, userId);
@@ -86,7 +93,6 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
   });
 
   app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/competitions", async (request) => {
-    await requireSessionUserId(auth, request);
     const query = paginationQuerySchema.parse(request.query);
     const page = await listPublishedCompetitions(db, query.cursor, query.limit);
     const items = await Promise.all(
@@ -128,8 +134,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
   );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await findProfileByUserId(db, userId);
+    const profile = await findViewerProfile(request);
     const competition = await requireCompetitionBySlug(db, request.params.slug);
     const isCreator = profile?.id === competition.createdBy;
     const isAdmin = profile?.isPlatformAdmin ?? false;
@@ -184,8 +189,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
   );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug/teams", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await findProfileByUserId(db, userId);
+    const profile = await findViewerProfile(request);
     const competition = await requireCompetitionBySlug(db, request.params.slug);
     const rows = await listTeamsForCompetition(db, competition.id);
     const items = await Promise.all(
@@ -255,8 +259,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
   );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug/submissions", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await findProfileByUserId(db, userId);
+    const profile = await findViewerProfile(request);
     const competition = await requireCompetitionBySlug(db, request.params.slug);
     const rows = await listSubmissionsForCompetition(db, competition.id);
     const stillInSubmissionPhase = computeCompetitionPhase(competition) === "submission";
@@ -315,7 +318,6 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
   );
 
   app.get<{ Params: { slug: string } }>("/api/competitions/:slug/results", async (request) => {
-    await requireSessionUserId(auth, request);
     const competition = await requireCompetitionBySlug(db, request.params.slug);
     if (computeCompetitionPhase(competition) !== "closed") throw badRequest("Le vote n'est pas encore terminé pour cette compétition.");
     const standings = await computeStandings(db, competition.id);

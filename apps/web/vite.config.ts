@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { fr } from "./src/i18n/fr.js";
+import { SERVER_NAVIGATION_DENYLIST } from "./src/pwa/navigation-denylist.js";
 
 export default defineConfig({
   server: {
@@ -20,6 +21,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      workbox: { navigateFallbackDenylist: SERVER_NAVIGATION_DENYLIST },
       manifest: {
         name: "Kemet",
         short_name: "Kemet",

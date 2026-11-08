@@ -327,4 +327,32 @@ describe.skipIf(!databaseUrl)("Projets (base Postgres réelle)", () => {
     });
     expect(asStranger.statusCode).toBe(403);
   });
+
+  it("un visiteur lit les projets et leurs demandes, mais n'écrit rien et ne voit aucune candidature", async () => {
+    const owner = await createMember("owner-visitor@test.kemet", "ownervisitor");
+    await createProject(owner.cookie);
+    const published = await app.inject({
+      method: "POST",
+      url: "/api/projects/projet-test/help-requests",
+      headers: { cookie: owner.cookie },
+      payload: { title: "Relire mon schéma", description: "Un regard extérieur sur le schéma de la base avant de publier." },
+    });
+    const helpRequestId = published.json().helpRequest.id as string;
+
+    const list = await app.inject({ method: "GET", url: "/api/projects" });
+    expect(list.statusCode).toBe(200);
+    expect(list.json().items).toHaveLength(1);
+    const detail = await app.inject({ method: "GET", url: "/api/projects/projet-test" });
+    expect(detail.statusCode).toBe(200);
+    const helpRequests = await app.inject({ method: "GET", url: "/api/projects/projet-test/help-requests" });
+    expect(helpRequests.statusCode).toBe(200);
+    expect(helpRequests.json().items).toHaveLength(1);
+
+    const applications = await app.inject({ method: "GET", url: `/api/help-requests/${helpRequestId}/applications` });
+    expect(applications.statusCode).toBe(401);
+    const apply = await app.inject({ method: "POST", url: `/api/help-requests/${helpRequestId}/applications`, payload: { message: "Je peux aider." } });
+    expect(apply.statusCode).toBe(401);
+    const create = await app.inject({ method: "POST", url: "/api/projects", payload: { slug: "x", name: "X", pitch: "Un pitch assez long pour passer." } });
+    expect(create.statusCode).toBe(401);
+  });
 });

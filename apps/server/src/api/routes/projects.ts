@@ -58,7 +58,6 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
   }
 
   app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/projects", async (request) => {
-    await requireSessionUserId(auth, request);
     const query = paginationQuerySchema.parse(request.query);
     const page = await listProjects(db, query.cursor, query.limit);
     const items = await Promise.all(page.items.map((row) => toProjectSummary(row)));
@@ -76,7 +75,6 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
   });
 
   app.get<{ Params: { slug: string } }>("/api/projects/:slug", async (request) => {
-    await requireSessionUserId(auth, request);
     const project = await findProjectBySlug(db, request.params.slug);
     if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
     const [owner, openHelpRequestCount] = await Promise.all([
@@ -117,7 +115,6 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
   );
 
   app.get<{ Params: { slug: string } }>("/api/projects/:slug/help-requests", async (request) => {
-    await requireSessionUserId(auth, request);
     const project = await findProjectBySlug(db, request.params.slug);
     if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
     const rows = await listHelpRequestsForProject(db, project.id);

@@ -384,4 +384,36 @@ describe.skipIf(!databaseUrl)("Compétitions (base Postgres réelle)", () => {
     });
     expect(lateSubmission.statusCode).toBe(400);
   });
+
+  it("un visiteur lit les compétitions publiées et leurs équipes, jamais une demande en attente", async () => {
+    const creator = await createMember("creator-visitor@test.kemet", "creatorvisitor");
+    const admin = await createMember("admin-visitor@test.kemet", "adminvisitor");
+    await makeAdmin(admin.profileId);
+    const pending = await requestCompetition(creator.cookie, { slug: "en-attente" });
+    expect(pending.statusCode).toBe(200);
+    const created = await requestCompetition(creator.cookie);
+    const competitionId = created.json().competition.id as string;
+    await app.inject({ method: "PUT", url: `/api/competitions/${competitionId}/review`, headers: { cookie: admin.cookie }, payload: { approve: true } });
+
+    const list = await app.inject({ method: "GET", url: "/api/competitions" });
+    expect(list.statusCode).toBe(200);
+    expect(list.json().items.map((item: { slug: string }) => item.slug)).toEqual(["cadev-test"]);
+
+    const detail = await app.inject({ method: "GET", url: "/api/competitions/cadev-test" });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json().competition.viewerIsCreator).toBe(false);
+    expect(detail.json().competition.reviewNote).toBeNull();
+    const hidden = await app.inject({ method: "GET", url: "/api/competitions/en-attente" });
+    expect(hidden.statusCode).toBe(404);
+
+    const teams = await app.inject({ method: "GET", url: "/api/competitions/cadev-test/teams" });
+    expect(teams.statusCode).toBe(200);
+    const submissions = await app.inject({ method: "GET", url: "/api/competitions/cadev-test/submissions" });
+    expect(submissions.statusCode).toBe(200);
+
+    const join = await app.inject({ method: "POST", url: "/api/competitions/cadev-test/teams", payload: { name: "Équipe visiteur" } });
+    expect(join.statusCode).toBe(401);
+    const myVote = await app.inject({ method: "GET", url: "/api/competitions/cadev-test/my-vote" });
+    expect(myVote.statusCode).toBe(401);
+  });
 });

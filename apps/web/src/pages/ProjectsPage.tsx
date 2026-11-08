@@ -8,8 +8,13 @@ import { ErrorState } from "../components/ui/ErrorState.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { useSession } from "../session/SessionProvider.js";
+import { goToSignUp, SIGN_UP_PATH } from "../session/signUpInvite.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 
 export function ProjectsPage() {
+  const { status } = useSession();
+  const isVisitor = status === "visitor";
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -34,7 +39,7 @@ export function ProjectsPage() {
         </div>
         <div className="flex items-center gap-2">
           <a
-            href="/projets/nouveau"
+            href={isVisitor ? SIGN_UP_PATH : "/projets/nouveau"}
             className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
           >
             <Plus className="size-4" aria-hidden="true" />
@@ -42,6 +47,8 @@ export function ProjectsPage() {
           </a>
         </div>
       </div>
+
+      {isVisitor && <VisitorBanner />}
 
       {loading ? (
         <div className="flex flex-col gap-3">
@@ -59,7 +66,7 @@ export function ProjectsPage() {
           message={fr.projects.noProjects}
           action={{
             label: fr.projects.createTitle,
-            onClick: () => (window.location.href = "/projets/nouveau"),
+            onClick: isVisitor ? goToSignUp : () => (window.location.href = "/projets/nouveau"),
           }}
         />
       ) : (

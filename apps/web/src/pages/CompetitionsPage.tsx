@@ -17,6 +17,9 @@ import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { useSession } from "../session/SessionProvider.js";
+import { goToSignUp, SIGN_UP_PATH } from "../session/signUpInvite.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 
 const PHASE_LABELS = {
   registration: fr.competitions.phaseRegistration,
@@ -26,6 +29,8 @@ const PHASE_LABELS = {
 };
 
 export function CompetitionsPage() {
+  const { status } = useSession();
+  const isVisitor = status === "visitor";
   const toast = useToast();
   const [competitions, setCompetitions] = useState<CompetitionSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +97,7 @@ export function CompetitionsPage() {
         </div>
         <div className="flex items-center gap-2">
           <a
-            href="/competitions/nouvelle"
+            href={isVisitor ? SIGN_UP_PATH : "/competitions/nouvelle"}
             className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
           >
             <Plus className="size-4" aria-hidden="true" />
@@ -100,6 +105,8 @@ export function CompetitionsPage() {
           </a>
         </div>
       </div>
+
+      {isVisitor && <VisitorBanner />}
 
       {isAdmin && (
         <div className="flex flex-col gap-3 rounded-card bg-surface p-4">
@@ -161,7 +168,7 @@ export function CompetitionsPage() {
           message={fr.competitions.noCompetitions}
           action={{
             label: fr.competitions.requestTitle,
-            onClick: () => (window.location.href = "/competitions/nouvelle"),
+            onClick: isVisitor ? goToSignUp : () => (window.location.href = "/competitions/nouvelle"),
           }}
         />
       ) : (
