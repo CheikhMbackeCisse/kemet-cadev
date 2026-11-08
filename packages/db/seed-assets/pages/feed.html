@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+/* Site moche n°1 : le but est d'être le plus laid possible. */
+.ugly1 {
+  background-color: #ff00cc;
+  background-image:
+    repeating-linear-gradient(45deg, #ffff00 0 20px, transparent 20px 40px),
+    repeating-linear-gradient(-45deg, #00ffff 0 10px, transparent 10px 60px);
+  font-family: "Comic Sans MS", "Comic Sans", cursive;
+  color: #0000ff;
+  text-align: center;
+  padding: 18px;
+}
+.ugly1 .title {
+  font-size: 66px;
+  font-weight: 900;
+  color: #00ff00;
+  text-shadow: 4px 4px 0 #ff0000, -4px -4px 0 #0000ff, 8px 8px 0 #000;
+  transform: rotate(-3deg);
+  margin-top: 10px;
+}
+.ugly1 .marquee {
+  background: #000;
+  color: #ffff00;
+  font-size: 26px;
+  padding: 6px;
+  margin: 18px -18px;
+  white-space: nowrap;
+  border-top: 6px dashed #ff0000;
+  border-bottom: 6px dashed #00ff00;
+}
+.ugly1 .cols {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 0.8fr;
+  gap: 10px;
+  align-items: start;
+}
+.ugly1 .box {
+  background: #ffffff;
+  border: 8px ridge #ff8800;
+  padding: 10px;
+  font-size: 20px;
+}
+.ugly1 .box:nth-child(2) {
+  background: #ccff00;
+  transform: rotate(2deg);
+  font-size: 28px;
+  font-family: "Times New Roman", serif;
+  color: #ff0000;
+}
+.ugly1 .box:nth-child(3) {
+  background: #8800ff;
+  color: #ffff00;
+  border-style: double;
+  transform: rotate(-4deg);
+}
+.ugly1 .counter {
+  display: inline-block;
+  margin-top: 18px;
+  font-family: Consolas, monospace;
+  font-size: 34px;
+  background: #000;
+  color: #00ff00;
+  padding: 4px 12px;
+  letter-spacing: 6px;
+  border: 4px inset #888;
+}
+.ugly1 .btn {
+  display: inline-block;
+  margin: 14px 8px 0;
+  padding: 10px 26px;
+  background: #ff0000;
+  color: #00ffff;
+  border: 6px outset #ffcc00;
+  font-size: 26px;
+  font-weight: 900;
+}
+.ugly1 .tiny {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  font-size: 15px;
+  color: #000;
+  background: #ffff00;
+}
+
+/* Site moche n°2 : une boutique en ligne */
+.ugly2 {
+  background: #00ff66;
+  font-family: Impact, "Arial Black", sans-serif;
+  color: #ff00ff;
+}
+.ugly2 header {
+  background: #ff00ff;
+  color: #00ff66;
+  font-size: 54px;
+  padding: 12px 24px;
+  letter-spacing: 3px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ugly2 header small {
+  font-family: "Comic Sans MS", cursive;
+  font-size: 20px;
+  background: #ffff00;
+  color: #ff0000;
+  padding: 6px 12px;
+  transform: rotate(8deg);
+}
+.ugly2 .construction {
+  height: 34px;
+  background: repeating-linear-gradient(135deg, #000 0 24px, #ffd600 24px 48px);
+  color: #fff;
+  font-size: 22px;
+  text-align: center;
+  line-height: 34px;
+  text-shadow: 2px 2px 0 #000;
+}
+.ugly2 .grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  padding: 22px;
+}
+.ugly2 .item {
+  background: #ffffff;
+  border: 5px dotted #0000ff;
+  padding: 10px;
+  text-align: center;
+  font-family: "Courier New", monospace;
+  font-weight: 700;
+  color: #000;
+  font-size: 18px;
+}
+.ugly2 .item:nth-child(odd) { transform: rotate(-3deg); background: #ffccff; }
+.ugly2 .item .pic {
+  height: 140px;
+  margin-bottom: 8px;
+  background:
+    radial-gradient(circle at 30% 30%, #ff0 0 18%, transparent 19%),
+    radial-gradient(circle at 70% 60%, #f00 0 24%, transparent 25%),
+    conic-gradient(#0ff, #f0f, #ff0, #0ff);
+}
+.ugly2 .item:nth-child(2) .pic { background: repeating-radial-gradient(circle, #000 0 6px, #fff 6px 12px); }
+.ugly2 .item:nth-child(3) .pic { background: linear-gradient(90deg, red, orange, yellow, green, blue, indigo, violet); }
+.ugly2 .item:nth-child(4) .pic { background: repeating-conic-gradient(#00f 0 10deg, #ff0 10deg 20deg); }
+.ugly2 .price {
+  font-family: Impact, sans-serif;
+  font-size: 30px;
+  color: #ff0000;
+}
+.ugly2 .price s { color: #888; font-size: 18px; }
+.ugly2 .footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #0000ff;
+  color: #ffff00;
+  font-family: "Times New Roman", serif;
+  font-style: italic;
+  font-size: 22px;
+  padding: 12px 24px;
+  text-align: right;
+}
+
+/* Une seule div : baobab au coucher du soleil. Tout le dessin tient dans
+   les arrière-plans superposés et les ombres d'un seul élément. */
+.onediv-stage {
+  background: #1b1430;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.onediv {
+  width: 900px;
+  height: 560px;
+  border-radius: 24px;
+  background:
+    /* tronc */
+    linear-gradient(#3a2416, #3a2416) 405px 245px / 120px 235px no-repeat,
+    /* branches */
+    linear-gradient(60deg, transparent 45%, #3a2416 45% 55%, transparent 55%) 360px 170px / 120px 120px no-repeat,
+    linear-gradient(-60deg, transparent 45%, #3a2416 45% 55%, transparent 55%) 450px 170px / 120px 120px no-repeat,
+    linear-gradient(90deg, transparent 42%, #3a2416 42% 58%, transparent 58%) 405px 150px / 120px 120px no-repeat,
+    /* feuillage */
+    radial-gradient(ellipse at center, #22311f 0 60%, transparent 61%) 300px 110px / 160px 90px no-repeat,
+    radial-gradient(ellipse at center, #22311f 0 60%, transparent 61%) 470px 110px / 170px 90px no-repeat,
+    radial-gradient(ellipse at center, #22311f 0 60%, transparent 61%) 390px 80px / 150px 80px no-repeat,
+    /* sol */
+    linear-gradient(#2b1d12, #2b1d12) 0 470px / 100% 90px no-repeat,
+    /* soleil */
+    radial-gradient(circle at 640px 330px, #ffd36b 0 70px, #ff9d4d 71px 74px, transparent 75px),
+    /* ciel */
+    linear-gradient(#ff7a59 0%, #ffb36b 55%, #ffd9a0 100%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+.onediv-label {
+  position: absolute;
+  left: 40px;
+  bottom: 30px;
+  color: #cfc6ea;
+  font-family: Consolas, monospace;
+  font-size: 22px;
+}
+
+/* Erreur du lundi */
+.error-stage {
+  background: #e8ecf3;
+}
+.dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 760px;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 30px 60px rgba(20, 30, 50, 0.25);
+  overflow: hidden;
+}
+.dialog .head {
+  background: #c62828;
+  color: #fff;
+  padding: 16px 24px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.dialog .body {
+  padding: 24px;
+  font-size: 20px;
+  color: #222b3a;
+  line-height: 1.5;
+}
+.dialog pre {
+  margin-top: 16px;
+  background: #f4f6fa;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: Consolas, monospace;
+  font-size: 17px;
+  color: #6b1d1d;
+  white-space: pre-wrap;
+}
+.dialog .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 24px 22px;
+}
+.dialog .actions span {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 600;
+  background: #eef1f6;
+  color: #2a3345;
+}
+.dialog .actions span.primary {
+  background: #1265dd;
+  color: #fff;
+}
+
+/* Estimation contre réalité */
+.estimate {
+  background: #fdfaf3;
+  color: #1d2433;
+  padding: 50px 70px;
+}
+.estimate h2 {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+.estimate p {
+  font-size: 20px;
+  color: #5b6475;
+  margin-bottom: 36px;
+}
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.bar {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  align-items: center;
+  gap: 18px;
+  font-size: 20px;
+}
+.bar div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bar i {
+  display: block;
+  height: 22px;
+  border-radius: 6px;
+}
+.bar i.est { background: #9fb7e8; }
+.bar i.real { background: #e8683f; }
+.legend {
+  position: absolute;
+  right: 70px;
+  top: 60px;
+  display: flex;
+  gap: 24px;
+  font-size: 18px;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  background: #9fb7e8;
+}
+.legend span:last-child::before { background: #e8683f; }
+</style>
+</head>
+<body>
+
+<section class="frame ugly1" data-out="feed-ugly-site-perso">
+  <div class="title">BIENVENUE SUR MA PAGE PERSO !!!</div>
+  <div class="marquee">★ Site optimisé pour un écran 800x600 ★ Ajoutez-moi à vos favoris ★ Nouveau : ma collection de câbles USB ★</div>
+  <div class="cols">
+    <div class="box">MENU<br>➤ Accueil<br>➤ Mes photos de serveurs<br>➤ Livre d'or<br>➤ Contact (fax)</div>
+    <div class="box">Je suis développeur depuis 2003 et j'ai appris le HTML dans un cybercafé. Ce site est écrit avec 47 balises &lt;center&gt; imbriquées.</div>
+    <div class="box">Couleur du jour :<br><b>TOUTES</b></div>
+  </div>
+  <div class="counter">000042</div><br>
+  <span class="btn">CLIQUEZ ICI</span><span class="btn">NON, ICI</span>
+  <div class="tiny">© 2003-2026 · Ce site ne respecte aucune norme · Dernière mise à jour : jamais</div>
+</section>
+
+<section class="frame ugly2" data-out="feed-ugly-site-boutique">
+  <header>MÉGA BOUTIQUE DU FUTUR <small>-90% sur tout, même les prix</small></header>
+  <div class="construction">EN CONSTRUCTION DEPUIS 2011</div>
+  <div class="grid">
+    <div class="item"><div class="pic"></div>Clavier sans touches<div class="price"><s>12 000 F</s> 15 000 F</div></div>
+    <div class="item"><div class="pic"></div>Souris hypnotique<div class="price"><s>3 499 F</s> 3 500 F</div></div>
+    <div class="item"><div class="pic"></div>Câble arc-en-ciel 0,3 m<div class="price"><s>900 F</s> 9 000 F</div></div>
+    <div class="item"><div class="pic"></div>Écran qui tourne tout seul<div class="price"><s>?</s> Sur devis</div></div>
+  </div>
+  <div class="footer">Paiement accepté : à l'amiable · Livraison : un jour, peut-être</div>
+</section>
+
+<section class="frame onediv-stage" data-out="feed-une-seule-div">
+  <div class="onediv"></div>
+  <div class="onediv-label">&lt;div class="baobab"&gt;&lt;/div&gt; · une seule div, zéro image</div>
+</section>
+
+<section class="frame terminal" data-out="feed-terminal-vendredi">
+  <div class="window-bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span>bash · vendredi 17:58</span></div>
+<pre><span class="t-green">lyna@laptop</span>:<span class="t-blue">~/api-paiement</span>$ git push --force origin main
+<span class="t-yellow">Attention : vous poussez en force sur main un vendredi à 17:58.</span>
+<span class="t-yellow">Êtes-vous sûre ? Votre week-end, lui, n'est pas sûr.</span>
+Enumerating objects: 3, done.
+Writing objects: 100% (3/3), 1 ligne, 0 test.
+<span class="t-red">remote: 14 collègues viennent de recevoir une notification.</span>
+<span class="t-red">remote: le déploiement automatique a démarré.</span>
+<span class="t-dim">To code.demo.kemetlabs.dev:lyna/api-paiement.git</span>
+ + 3f2a1c9...b00b1e5 main -> main (forced update)
+
+<span class="t-green">lyna@laptop</span>:<span class="t-blue">~/api-paiement</span>$ shutdown --tout-de-suite<span class="t-bold">▌</span></pre>
+</section>
+
+<section class="frame error-stage" data-out="feed-erreur-lundi">
+  <div class="dialog">
+    <div class="head">Erreur inattendue (encore)</div>
+    <div class="body">
+      L'application a rencontré un problème et doit redémarrer. Votre café, lui, a déjà refroidi.
+<pre>TypeError: lundi is not a function
+    at reveil (matin.js:6:30)
+    at cafe (cuisine.js:1:1)
+    at standup (reunion.ts:9:00)
+    at Object.&lt;anonymous&gt; (semaine.js:1:5)</pre>
+    </div>
+    <div class="actions"><span>Signaler le lundi</span><span class="primary">Retourner au lit</span></div>
+  </div>
+</section>
+
+<section class="frame terminal" data-out="feed-terminal-ci">
+  <div class="window-bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span>pnpm test · en local, puis en CI</span></div>
+<pre><span class="t-dim"># sur ma machine</span>
+ <span class="t-green">✓</span> 142 tests passent <span class="t-dim">(3,2 s)</span>
+ <span class="t-green">✓</span> couverture 91&nbsp;%
+ <span class="t-green">✓</span> confiance en soi 100&nbsp;%
+
+<span class="t-dim"># sur la CI, dix minutes plus tard</span>
+ <span class="t-red">✗</span> 1 test échoue : <span class="t-yellow">"marche sur ma machine"</span>
+   Attendu : la même chose qu'en local
+   Reçu    : un fuseau horaire différent
+ <span class="t-red">✗</span> confiance en soi 12&nbsp;%
+
+<span class="t-dim">Indice : la CI tourne en UTC, toi en GMT+1 depuis ton voyage.</span></pre>
+</section>
+
+<section class="frame estimate" data-out="feed-estimation">
+  <h2>"Ça me prend deux heures"</h2>
+  <p>Temps estimé et temps réel, relevés honnêtement sur un sprint.</p>
+  <div class="legend"><span>Estimé</span><span>Réel</span></div>
+  <div class="bars">
+    <div class="bar"><span>Changer un libellé</span><div><i class="est" style="width:6%"></i><i class="real" style="width:22%"></i></div></div>
+    <div class="bar"><span>Ajouter un champ au formulaire</span><div><i class="est" style="width:12%"></i><i class="real" style="width:48%"></i></div></div>
+    <div class="bar"><span>Mettre à jour une dépendance</span><div><i class="est" style="width:4%"></i><i class="real" style="width:100%"></i></div></div>
+    <div class="bar"><span>Corriger un bug "simple"</span><div><i class="est" style="width:8%"></i><i class="real" style="width:71%"></i></div></div>
+    <div class="bar"><span>Réunion de dix minutes</span><div><i class="est" style="width:3%"></i><i class="real" style="width:30%"></i></div></div>
+  </div>
+</section>
+
+</body>
+</html>

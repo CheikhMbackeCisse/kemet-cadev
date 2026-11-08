@@ -16,6 +16,7 @@ export function serializeProfile(row: ProfileRow, level: Level): Profile {
     stack: row.stack,
     githubUrl: row.githubUrl,
     avatarUrl: row.avatarUrl,
+    bannerUrl: row.bannerUrl,
     // Masqué aussi à la lecture : un total revu à la baisse le retire.
     openToOpportunities: row.openToOpportunities && isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL),
     isDemo: row.isDemo,

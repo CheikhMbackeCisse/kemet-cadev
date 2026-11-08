@@ -120,6 +120,7 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
       stack: [],
       githubUrl: null,
       avatarUrl: null,
+      bannerUrl: null,
       openToOpportunities: false,
       isPlatformAdmin: false,
       deletedAt: now,

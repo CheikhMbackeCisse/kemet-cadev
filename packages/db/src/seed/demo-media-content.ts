@@ -1,0 +1,305 @@
+// Contenu ajouté par seedDemoMedia. Les fichiers nommés ici sont générés par
+// seed-assets/render.mjs dans seed-assets/out/. Les blagues et les textes
+// sont écrits pour Kemet, aucun n'est repris d'ailleurs.
+
+type PostFormat = "astuce" | "question";
+
+export interface DemoMediaPost {
+  key: string;
+  authorHandle: string;
+  format?: PostFormat;
+  body: string;
+  image?: string;
+  hoursAgo: number;
+}
+
+export const DEMO_MEDIA_POSTS: DemoMediaPost[] = [
+  {
+    key: "site-moche-perso",
+    authorHandle: "ahou-kouadio",
+    image: "feed-ugly-site-perso.jpg",
+    hoursAgo: 30,
+    body:
+      "Je m'entraîne pour la compétition du site le plus moche. Première version : 47 balises center, un " +
+      "compteur de visites bloqué à 42 et deux boutons qui se disputent l'attention. Je pense pouvoir faire " +
+      "pire d'ici la date limite.",
+  },
+  {
+    key: "site-moche-boutique",
+    authorHandle: "skander-jaziri",
+    image: "feed-ugly-site-boutique.jpg",
+    hoursAgo: 22,
+    body:
+      "Ma réponse au site d'Ahou : une boutique en ligne où le prix barré est plus bas que le vrai prix. " +
+      "Aucun client n'a été blessé pendant la conception, aucun n'a acheté non plus.",
+  },
+  {
+    key: "baobab-une-div",
+    authorHandle: "dapo-oyelaran",
+    image: "feed-une-seule-div.jpg",
+    hoursAgo: 50,
+    body:
+      "Un baobab au coucher du soleil avec une seule div et zéro image, pour le défi du dessin en CSS. " +
+      "Tout tient dans les arrière-plans superposés. Le tronc m'a pris plus de temps que le soleil.\n\n" +
+      "```css\n" +
+      ".baobab {\n" +
+      "  background:\n" +
+      "    linear-gradient(#3a2416, #3a2416) 405px 245px / 120px 235px no-repeat,\n" +
+      "    radial-gradient(circle at 640px 330px, #ffd36b 0 70px, transparent 75px),\n" +
+      "    linear-gradient(#ff7a59, #ffd9a0);\n" +
+      "}\n" +
+      "```",
+  },
+  {
+    key: "push-force-vendredi",
+    authorHandle: "lyna-bouzid",
+    image: "feed-terminal-vendredi.jpg",
+    hoursAgo: 54,
+    body:
+      "Rappel amical avant le week-end : la protection de branche existe pour une bonne raison. " +
+      "Capture reconstituée, aucune production n'a été abîmée. Cette fois.",
+  },
+  {
+    key: "erreur-lundi",
+    authorHandle: "kgomotso-mahlangu",
+    image: "feed-erreur-lundi.jpg",
+    hoursAgo: 3,
+    body: "Mon lundi en une capture. Si quelqu'un sait comment rendre lundi appelable, je prends.",
+  },
+  {
+    key: "ci-fuseau-horaire",
+    authorHandle: "ebo-quansah",
+    image: "feed-terminal-ci.jpg",
+    hoursAgo: 18,
+    body:
+      "Ça passe en local. Ça casse en CI. Il était 23 h. C'était le fuseau horaire. " +
+      "C'est toujours le fuseau horaire.",
+  },
+  {
+    key: "estimation-sprint",
+    authorHandle: "heritier-kabeya",
+    image: "feed-estimation.jpg",
+    hoursAgo: 40,
+    body:
+      "Pendant un sprint, j'ai noté le temps estimé et le temps réel de chaque tâche. " +
+      "Je ne commenterai pas la ligne de la mise à jour de dépendance.",
+  },
+  {
+    key: "index-concurrently",
+    authorHandle: "coumba-thiam",
+    format: "astuce",
+    hoursAgo: 16,
+    body:
+      "Sur une table qui sert du trafic, créez vos index avec CONCURRENTLY. C'est plus lent, mais la table " +
+      "reste ouverte en écriture pendant toute la création.\n\n" +
+      "```sql\n" +
+      "CREATE INDEX CONCURRENTLY idx_payments_created_at\n" +
+      "  ON payments (created_at);\n" +
+      "```\n\n" +
+      "Piège : la commande refuse de tourner dans une transaction, donc dans la plupart des outils de " +
+      "migration il faut une option dédiée.",
+  },
+  {
+    key: "cle-idempotence",
+    authorHandle: "kiprono-langat",
+    format: "astuce",
+    hoursAgo: 36,
+    body:
+      "La règle qui nous a évité tous les doubles débits : même clé et même corps, même réponse. " +
+      "Même clé et autre corps, une erreur, jamais un second paiement.\n\n" +
+      "```typescript\n" +
+      "const existing = await payments.findByKey(idempotencyKey);\n" +
+      "if (existing) {\n" +
+      '  if (existing.bodyHash !== hashBody(body)) throw new ConflictError("Clé déjà utilisée.");\n' +
+      "  return existing.response;\n" +
+      "}\n" +
+      "```",
+  },
+  {
+    key: "arabizi-normalisation",
+    authorHandle: "ghizlane-amrani",
+    format: "question",
+    hoursAgo: 11,
+    body:
+      "Comment vous normalisez l'arabe écrit en lettres latines, avec des chiffres à la place de certaines " +
+      "lettres ? Mon approche actuelle :\n\n" +
+      "```python\n" +
+      'REPLACEMENTS = {"3": "ع", "7": "ح", "9": "ق"}\n\n' +
+      "def normalize(text: str) -> str:\n" +
+      '    return "".join(REPLACEMENTS.get(char, char) for char in text.lower())\n' +
+      "```\n\n" +
+      "Ça casse dès que quelqu'un écrit un vrai nombre, comme une heure de rendez-vous. Des idées ?",
+  },
+  {
+    key: "retry-backoff",
+    authorHandle: "skander-jaziri",
+    format: "astuce",
+    hoursAgo: 64,
+    body:
+      "Sur un réseau instable, une nouvelle tentative immédiate ne fait qu'ajouter de la charge. " +
+      "Attendre de plus en plus longtemps, avec un peu de hasard pour que tous les téléphones ne " +
+      "reviennent pas à la même seconde :\n\n" +
+      "```javascript\n" +
+      "async function retry(task, attempts = 5) {\n" +
+      "  for (let i = 0; i < attempts; i += 1) {\n" +
+      "    try {\n" +
+      "      return await task();\n" +
+      "    } catch (error) {\n" +
+      "      if (i === attempts - 1) throw error;\n" +
+      "      const delay = 2 ** i * 500 + Math.random() * 300;\n" +
+      "      await new Promise((resolve) => setTimeout(resolve, delay));\n" +
+      "    }\n" +
+      "  }\n" +
+      "}\n" +
+      "```",
+  },
+];
+
+/** Images ajoutées à des posts du seed d'origine, retrouvés par leur auteur et le début de leur texte. */
+export const DEMO_EXISTING_POST_IMAGES: {
+  authorHandle: string;
+  bodyStart: string;
+  image: string;
+}[] = [
+  {
+    authorHandle: "lyna-bouzid",
+    bodyStart: "J'ai écrit un petit outil qui détecte les builds Docker",
+    image: "work-ci-memoire.jpg",
+  },
+  {
+    authorHandle: "kgomotso-mahlangu",
+    bodyStart: "Mes DAG Airflow plantent",
+    image: "work-meteo-cover.jpg",
+  },
+  {
+    authorHandle: "heritier-kabeya",
+    bodyStart: "Firmware pour capteurs agricoles",
+    image: "work-capteurs-batterie.jpg",
+  },
+  {
+    authorHandle: "ebo-quansah",
+    bodyStart: "Quelqu'un a un pattern fiable pour la synchronisation",
+    image: "work-sync-conflict.jpg",
+  },
+  {
+    authorHandle: "kiprono-langat",
+    bodyStart: "Sur un système de paiement mobile, résoudre",
+    image: "work-idempotence-logs.jpg",
+  },
+  {
+    authorHandle: "dapo-oyelaran",
+    bodyStart: "Pour un design system React",
+    image: "work-a11y-cover.jpg",
+  },
+];
+
+export interface DemoWorkMediaPlan {
+  slug: string;
+  cover: string;
+  gallery: string[];
+  video?: string;
+}
+
+export const DEMO_WORK_MEDIA: DemoWorkMediaPlan[] = [
+  {
+    slug: "synchronisation-hors-ligne-banque-mobile",
+    cover: "work-sync-cover.jpg",
+    gallery: ["work-sync-conflict.jpg", "work-sync-queue.jpg"],
+  },
+  {
+    slug: "idempotence-paiements-mobile-money",
+    cover: "work-idempotence-cover.jpg",
+    gallery: ["work-idempotence-receipt.jpg", "work-idempotence-logs.jpg"],
+    video: "work-idempotence-video.webm",
+  },
+  {
+    slug: "stock-boutique-hors-ligne",
+    cover: "work-stock-cover.jpg",
+    gallery: ["work-stock-livraisons.jpg", "work-stock-ventes.jpg"],
+  },
+  {
+    slug: "maladies-manioc-vision-mobile",
+    cover: "work-manioc-cover.jpg",
+    gallery: ["work-manioc-resultat.jpg", "work-manioc-entrainement.jpg"],
+  },
+  {
+    slug: "capteurs-sol-lora-une-pile",
+    cover: "work-capteurs-cover.jpg",
+    gallery: ["work-capteurs-boitier.jpg", "work-capteurs-batterie.jpg"],
+    video: "work-capteurs-video.webm",
+  },
+  {
+    slug: "pipeline-meteo-cooperatives-agricoles",
+    cover: "work-meteo-cover.jpg",
+    gallery: ["work-meteo-sms.jpg", "work-capteurs-cover.jpg"],
+  },
+  {
+    slug: "formulaires-paiement-accessibles-react",
+    cover: "work-a11y-cover.jpg",
+    gallery: ["work-a11y-audit.jpg", "work-idempotence-receipt.jpg"],
+  },
+  {
+    slug: "ci-docker-runners-partages",
+    cover: "work-ci-cover.jpg",
+    gallery: ["work-ci-memoire.jpg", "feed-terminal-ci.jpg"],
+  },
+];
+
+/**
+ * Utilisations par @kemet et avis visés pour chaque skill de démonstration.
+ * Le seed complète jusqu'à ces nombres, il ne retire jamais rien.
+ */
+export const DEMO_SKILL_TARGETS: {
+  slug: string;
+  uses: number;
+  ratings: number;
+  averageStars: number;
+}[] = [
+  { slug: "wave-paiements", uses: 11_240, ratings: 2_310, averageStars: 4.8 },
+  { slug: "paiement-mobile-idempotence", uses: 7_920, ratings: 1_488, averageStars: 4.9 },
+  { slug: "flutter-sync-hors-ligne", uses: 4_310, ratings: 905, averageStars: 4.7 },
+  { slug: "ux-reseau-instable", uses: 3_660, ratings: 742, averageStars: 4.8 },
+  { slug: "design-system-theme-sombre", uses: 2_780, ratings: 611, averageStars: 4.5 },
+  { slug: "frame-pacing-android-bas-de-gamme", uses: 1_530, ratings: 286, averageStars: 4.7 },
+  { slug: "ci-docker-fiable", uses: 869, ratings: 142, averageStars: 4.6 },
+  { slug: "firmware-autonomie-batterie", uses: 640, ratings: 97, averageStars: 4.6 },
+  { slug: "airflow-workers-oom", uses: 412, ratings: 64, averageStars: 4.3 },
+  { slug: "nlp-bas-ressource-arabe", uses: 356, ratings: 51, averageStars: 4.4 },
+];
+
+/**
+ * Nom enregistré pour chaque fichier : le fil s'en sert comme texte
+ * alternatif d'une image, il doit donc décrire ce qu'elle montre.
+ */
+export const DEMO_ASSET_NAMES: Record<string, string> = {
+  "feed-ugly-site-perso.jpg": "Page perso aux couleurs criardes, avec un compteur de visites.jpg",
+  "feed-ugly-site-boutique.jpg": "Boutique en ligne volontairement illisible.jpg",
+  "feed-une-seule-div.jpg": "Baobab au coucher du soleil dessiné avec une seule div.jpg",
+  "feed-terminal-vendredi.jpg": "Terminal : push forcé sur main un vendredi soir.jpg",
+  "feed-erreur-lundi.jpg": "Fenêtre d'erreur : lundi is not a function.jpg",
+  "feed-terminal-ci.jpg": "Tests qui passent en local et échouent en CI.jpg",
+  "feed-estimation.jpg": "Graphique du temps estimé contre le temps réel.jpg",
+  "work-sync-cover.jpg": "Application bancaire hors ligne avec trois opérations en attente.jpg",
+  "work-sync-conflict.jpg": "Écran de conflit de synchronisation entre deux appareils.jpg",
+  "work-sync-queue.jpg": "Tableau de bord de la file de synchronisation.jpg",
+  "work-idempotence-cover.jpg": "Registre des paiements avec les requêtes rejouées.jpg",
+  "work-idempotence-receipt.jpg": "Confirmation de paiement après une coupure réseau.jpg",
+  "work-idempotence-logs.jpg": "Journaux d'une API de paiement avec clé d'idempotence.jpg",
+  "work-idempotence-video.webm": "Paiement rejoué après une coupure réseau.webm",
+  "work-stock-cover.jpg": "Stock d'une boutique de quartier sur téléphone.jpg",
+  "work-stock-livraisons.jpg": "Carte de la tournée de livraison du matin.jpg",
+  "work-stock-ventes.jpg": "Ventes de la semaine de 42 boutiques.jpg",
+  "work-manioc-cover.jpg": "Feuille de manioc analysée par la caméra du téléphone.jpg",
+  "work-manioc-resultat.jpg": "Résultat du diagnostic de la feuille de manioc.jpg",
+  "work-manioc-entrainement.jpg": "Courbes d'entraînement du modèle de diagnostic.jpg",
+  "work-capteurs-cover.jpg": "Humidité du sol relevée par les capteurs LoRa.jpg",
+  "work-capteurs-batterie.jpg": "Projection de l'autonomie de la pile des capteurs.jpg",
+  "work-capteurs-boitier.jpg": "Boîtier du capteur d'humidité.jpg",
+  "work-capteurs-video.webm": "Courbe d'humidité du sol en direct.webm",
+  "work-meteo-cover.jpg": "Graphe des tâches du pipeline météo.jpg",
+  "work-meteo-sms.jpg": "Alerte météo reçue par SMS.jpg",
+  "work-a11y-cover.jpg": "Formulaire de paiement avec un message d'erreur clair.jpg",
+  "work-a11y-audit.jpg": "Audit d'accessibilité avant et après la refonte.jpg",
+  "work-ci-cover.jpg": "Pipeline de CI sous surveillance mémoire.jpg",
+  "work-ci-memoire.jpg": "Mémoire d'un build Docker suivie dans le terminal.jpg",
+};

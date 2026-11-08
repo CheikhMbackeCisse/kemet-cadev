@@ -257,11 +257,17 @@ docker compose -f infra/docker-compose.yml --env-file .env --env-file .env.deplo
 ```
 
 Ce seed est sans risque à relancer : s'il trouve déjà les dix comptes de
-démonstration, il ne fait rien, sauf échouer si l'un d'eux est
-administrateur (base remplie par une ancienne version). Tout est créé dans une seule transaction,
-et il échoue sans rien écrire s'il trouve une base où il ne reste qu'une
-partie de ces comptes, ou si un compte de démonstration se retrouvait
-administrateur.
+démonstration, il ne recrée rien, sauf échouer si l'un d'eux est
+administrateur (base remplie par une ancienne version). Il rejoue ensuite
+l'étape des médias de démonstration (images, vidéos, bannières, chiffres des
+skills), qui ne complète que ce qui manque et ne touche qu'aux comptes,
+posts, travaux et skills de démonstration. Les fichiers sont écrits dans
+`UPLOADS_DIR`, déjà défini pour le service `api`. Chaque étape tient dans
+sa propre transaction : la première échoue sans rien écrire si elle trouve une
+base où il ne reste qu'une partie de ces comptes, ou si un compte de
+démonstration se retrouvait administrateur. Si l'étape des médias échoue,
+les fichiers déjà copiés restent sur le disque et sont réécrits au même nom
+au passage suivant.
 
 Pour donner le rôle administrateur, créer d'abord un compte normal par la
 page d'inscription (adresse vérifiée et profil complété), avec un mot de

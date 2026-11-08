@@ -39,6 +39,8 @@ export const profiles = pgTable("profiles", {
   githubUrl: text("github_url"),
   // Jamais accepté du client : seul le seed en pose un.
   avatarUrl: text("avatar_url"),
+  // Même règle que avatarUrl : posée par le seed, jamais par le client.
+  bannerUrl: text("banner_url"),
   openToOpportunities: boolean("open_to_opportunities").notNull().default(false),
   // Sujets choisis à l'onboarding, valeurs de INTERESTS (@kemet/shared). Ne
   // servent qu'aux suggestions d'espaces et de personnes.

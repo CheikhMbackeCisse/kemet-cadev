@@ -183,6 +183,13 @@
       "when": 1794102469891,
       "tag": "0025_work_media",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794120697745,
+      "tag": "0026_profile_banner",
+      "breakpoints": true
     }
   ]
 }

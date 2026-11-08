@@ -1,17 +1,38 @@
 import { createDb } from "./client.js";
 import { DEMO_PASSWORD, seedDemoDataset } from "./seed/demo-dataset.js";
+import { seedDemoMedia } from "./seed/demo-media.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL non définie.");
-  const result = await seedDemoDataset(createDb(databaseUrl));
+  const db = createDb(databaseUrl);
+
+  const result = await seedDemoDataset(db);
   if (result.status === "already-present") {
-    console.log("Données de démonstration déjà présentes : rien à faire.");
+    console.log("Comptes de démonstration déjà présents : seule l'étape des médias est rejouée.");
+  } else {
+    console.log(
+      `10 comptes de démonstration créés (mot de passe : ${DEMO_PASSWORD}), aucun administrateur.`,
+    );
+    console.log(
+      `${result.fillerProfileCount} profils de remplissage créés (jamais de connexion possible).`,
+    );
+    console.log("Espaces, salons, fil, skills, projets et compétitions de démonstration créés.");
+  }
+
+  const uploadsDir = process.env.UPLOADS_DIR;
+  if (!uploadsDir)
+    console.warn("UPLOADS_DIR non définie : images et vidéos de démonstration non écrites.");
+  const media = await seedDemoMedia(db, { uploadsDir });
+  if (media.status === "skipped") {
+    console.log(`Médias de démonstration sautés : ${media.reason}.`);
     return;
   }
-  console.log(`10 comptes de démonstration créés (mot de passe : ${DEMO_PASSWORD}), aucun administrateur.`);
-  console.log(`${result.fillerProfileCount} profils de remplissage créés (jamais de connexion possible).`);
-  console.log("Espaces, salons, fil, skills, projets et compétitions de démonstration créés.");
+  console.log(
+    `Médias de démonstration : ${media.posts} posts, ${media.postImages} images sur des posts existants, ` +
+      `${media.works} travaux illustrés, ${media.banners} bannières, ${media.skillUses} utilisations ` +
+      `et ${media.skillRatings} avis de skills ajoutés.`,
+  );
 }
 
 main().then(

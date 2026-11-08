@@ -21,6 +21,7 @@ import {
   unfollowUser,
 } from "../lib/chat/api.js";
 import { Avatar } from "../components/ui/Avatar.js";
+import { ProfileBanner } from "../components/ui/ProfileBanner.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card } from "../components/ui/Card.js";
 import { Button } from "../components/ui/Button.js";
@@ -283,6 +284,7 @@ export function UserPage() {
   return (
     <ReadingPage header={header} activeMobileTab="moi">
       <div className="flex flex-col gap-3">
+        <ProfileBanner src={profile.bannerUrl} />
         <div className="flex flex-wrap items-start gap-3">
           <Avatar
             name={profile.displayName}

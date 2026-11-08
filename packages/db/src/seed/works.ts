@@ -16,7 +16,7 @@ import { daysAgo } from "./time.js";
 type WorkType = (typeof works.$inferInsert)["type"];
 type LinkType = (typeof workLinks.$inferInsert)["type"];
 
-interface DemoWork {
+export interface DemoWork {
   publisher: keyof DemoAccountIds;
   slug: string;
   title: string;
@@ -37,7 +37,7 @@ interface DemoWork {
 
 // Les tags se recoupent volontairement (hors-ligne, mobile, paiements,
 // agriculture) : "Qui a travaillé sur ce sujet ?" doit trouver des voisins.
-const DEMO_WORKS: DemoWork[] = [
+export const DEMO_WORKS: DemoWork[] = [
   {
     publisher: "eboQuansah",
     slug: "synchronisation-hors-ligne-banque-mobile",

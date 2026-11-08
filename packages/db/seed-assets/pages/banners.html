@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+/* Bannières de profil : une couleur unie et, à droite, quelques lignes de
+   code du domaine de la personne, en filigrane. */
+.banner {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.banner pre {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 30px;
+  line-height: 1.5;
+  padding-right: 90px;
+  white-space: pre;
+  opacity: 0.32;
+}
+.banner .shape {
+  position: absolute;
+  left: 110px;
+  top: 50%;
+  width: 240px;
+  height: 240px;
+  transform: translateY(-50%) rotate(45deg);
+  border-radius: 36px;
+  opacity: 0.18;
+}
+</style>
+</head>
+<body>
+<script>
+const BANNERS = [
+  ["coumba-thiam", "#1d2b4f", "#c9d6ff", "CREATE INDEX CONCURRENTLY\n  idx_payments_created\n  ON payments (created_at);\n-- relire avant la prod"],
+  ["ebo-quansah", "#0d4d5c", "#bff3ff", "class SyncQueue {\n  final pending = <Op>[];\n  Future<void> flush() async {\n    // hors ligne d'abord\n  }\n}"],
+  ["lyna-bouzid", "#2b2f3a", "#f4c95d", "FROM node:22-alpine AS build\nRUN pnpm install --frozen-lockfile\nHEALTHCHECK CMD wget -qO- :3001/health\nUSER node"],
+  ["dapo-oyelaran", "#3d2a5c", "#e7dcff", ":root {\n  --primary: #1265dd;\n  --radius-card: 12px;\n}\n[data-theme=\"dark\"] { }"],
+  ["kgomotso-mahlangu", "#1f4d3a", "#cfeedd", "with DAG(\"meteo_coops\") as dag:\n    extract >> clean >> load\n    # surveiller la mémoire"],
+  ["skander-jaziri", "#5a2e1f", "#ffd9c7", "app.get(\"/orders\", async (req) => {\n  return retry(() => db.orders())\n})\n<OrderList :items=\"orders\" />"],
+  ["ahou-kouadio", "#26213f", "#ffcfe6", "void Update() {\n  if (frameTime > budget)\n    particles.LowerQuality();\n}"],
+  ["kiprono-langat", "#14452f", "#c8f7dc", "POST /payments\nIdempotency-Key: pay_7f3c\n\n201 Created\n{ \"status\": \"debited\" }"],
+  ["ghizlane-amrani", "#4a1d2f", "#ffd1e1", "tokens = tokenize(\"wach katfhem\")\nmodel.predict(tokens)\n# darija : peu de données,\n# beaucoup d'humilité"],
+  ["heritier-kabeya", "#2f3a12", "#e9f5b8", "void loop() {\n  read_soil();\n  lora_send();\n  deep_sleep(600);\n}"],
+];
+for (const [handle, background, color, code] of BANNERS) {
+  const frame = document.createElement("section");
+  frame.className = "frame banner";
+  frame.dataset.out = `banner-${handle}`;
+  frame.style.background = background;
+  frame.style.color = color;
+  const shape = document.createElement("div");
+  shape.className = "shape";
+  shape.style.background = color;
+  const pre = document.createElement("pre");
+  pre.textContent = code;
+  frame.append(shape, pre);
+  document.body.append(frame);
+}
+</script>
+</body>
+</html>

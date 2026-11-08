@@ -32,6 +32,7 @@ const PROFILE: NonNullable<MeResponse["profile"]> = {
   stack: [],
   githubUrl: null,
   avatarUrl: null,
+  bannerUrl: null,
   openToOpportunities: false,
   isDemo: false,
   level: "apprenti",
