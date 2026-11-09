@@ -11,6 +11,7 @@ const gzipAsync = promisify(gzip);
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
@@ -26,7 +27,7 @@ const MIME_TYPES = {
 
 // Les images PNG et les polices woff2 sont déjà compressées : les recompresser
 // coûterait du temps processeur pour quelques octets.
-const COMPRESSIBLE = new Set([".html", ".js", ".css", ".json", ".txt", ".svg", ".webmanifest"]);
+const COMPRESSIBLE = new Set([".html", ".js", ".mjs", ".css", ".json", ".txt", ".svg", ".webmanifest"]);
 const MIN_COMPRESSED_SIZE = 1024;
 
 /** En-tête Cache-Control d'un fichier servi. */

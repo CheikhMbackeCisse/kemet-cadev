@@ -32,6 +32,7 @@ describe("serveur statique", () => {
     mkdirSync(join(root, "assets"));
     writeFileSync(join(root, "index.html"), "<!doctype html><title>Kemet</title>");
     writeFileSync(join(root, "assets", "index-abc.js"), SCRIPT);
+    writeFileSync(join(root, "assets", "worker-abc.mjs"), SCRIPT);
     writeFileSync(join(root, "assets", "font-abc.woff2"), Buffer.alloc(2000, 1));
     server = createStaticServer(root);
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -50,6 +51,11 @@ describe("serveur statique", () => {
     expect(response.headers.vary).toBe("Accept-Encoding");
     expect(body.length).toBeLessThan(SCRIPT.length / 10);
     expect(brotliDecompressSync(body).toString()).toBe(SCRIPT);
+  });
+
+  it("sert un module .mjs comme du JavaScript, sinon le navigateur refuse le worker de pdf.js", async () => {
+    const response = await fetch(`${base}/assets/worker-abc.mjs`);
+    expect(response.headers.get("content-type")).toBe("text/javascript; charset=utf-8");
   });
 
   it("ne recompresse pas une police et lui donne son type", async () => {
