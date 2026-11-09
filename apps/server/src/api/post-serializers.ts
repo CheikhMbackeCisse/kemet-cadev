@@ -1,6 +1,14 @@
 import type { postAttachments, postFeedback, postReplies, posts, profiles, works } from "@kemet/db";
 import { serializePostWorkPreview } from "./work-serializers.js";
-import type { Attachment, Level, PostFeedbackEntry, PostReply, PostSummary, SharedPostPreview } from "@kemet/shared";
+import type {
+  AssistantInvocationDetail,
+  Attachment,
+  Level,
+  PostFeedbackEntry,
+  PostReply,
+  PostSummary,
+  SharedPostPreview,
+} from "@kemet/shared";
 
 type PostRow = typeof posts.$inferSelect;
 type ProfileRow = typeof profiles.$inferSelect;
@@ -87,7 +95,12 @@ export function serializePostSummary(
   };
 }
 
-export function serializePostReply(row: PostReplyRow, author: ProfileRow, authorLevel: Level): PostReply {
+export function serializePostReply(
+  row: PostReplyRow,
+  author: ProfileRow,
+  authorLevel: Level,
+  assistant: AssistantInvocationDetail | null = null,
+): PostReply {
   const deleted = row.deletedAt !== null;
   return {
     id: row.id,
@@ -100,6 +113,7 @@ export function serializePostReply(row: PostReplyRow, author: ProfileRow, author
     authorLevel,
     body: deleted ? "" : row.body,
     isSolution: row.isSolution,
+    assistant,
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
     deletedAt: row.deletedAt?.toISOString() ?? null,

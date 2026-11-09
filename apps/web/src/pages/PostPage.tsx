@@ -3,6 +3,7 @@ import { ArrowLeft, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   isDeletedAccountHandle,
+  KEMET_HANDLE,
   type PostFeedbackEntry,
   type PostReply,
   type PostSummary,
@@ -17,6 +18,8 @@ import {
   listPostFeedback,
   listPostReplies,
   markPostReplySolution,
+  retryPostAssistant,
+  sendAssistantFeedback,
   setPostBookmark,
   togglePostReaction,
 } from "../lib/chat/api.js";
@@ -42,6 +45,15 @@ import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
+import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
+import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
+import { KemetSymbol } from "../components/ui/KemetSymbol.js";
+import { usePostAssistant } from "../lib/feed/usePostAssistant.js";
+import {
+  ASK_KEMET_PARAM,
+  EXPLAIN_POST_PROMPT,
+  isTechnicalPost,
+} from "../lib/feed/technicalPost.js";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -79,6 +91,41 @@ export function PostPage() {
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const appendReply = useCallback((reply: PostReply) => {
+    setReplies((current) =>
+      current.some((item) => item.id === reply.id) ? current : [...current, reply],
+    );
+    setPost((current) => (current ? { ...current, replyCount: current.replyCount + 1 } : current));
+  }, []);
+  const assistant = usePostAssistant(appendReply);
+
+  function prepareKemetQuestion() {
+    // Ce qui était déjà écrit reste, sous la question.
+    setReplyDraft((draft) =>
+      draft.trim() && !draft.includes(EXPLAIN_POST_PROMPT)
+        ? `${EXPLAIN_POST_PROMPT}\n\n${draft}`
+        : draft.trim()
+          ? draft
+          : EXPLAIN_POST_PROMPT,
+    );
+    // Après le rendu : le champ reçoit la question avant le focus.
+    requestAnimationFrame(() => {
+      const textarea = replyTextareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    });
+  }
+
+  // Pastille du fil : la question est préparée ici, jamais envoyée seule.
+  const askedFromFeed = useRef(false);
+  useEffect(() => {
+    if (askedFromFeed.current || !canInteract || !post) return;
+    if (new URLSearchParams(window.location.search).get(ASK_KEMET_PARAM) !== "kemet") return;
+    askedFromFeed.current = true;
+    prepareKemetQuestion();
+  }, [canInteract, post]);
 
   const loadPost = useCallback(() => {
     setLoading(true);
@@ -140,18 +187,37 @@ export function PostPage() {
     }
   }
 
+  async function sendReply(body: string) {
+    try {
+      const result = await createPostReply(postId, { body });
+      appendReply(result.reply);
+      setReplyDraft("");
+      assistant.track(result.assistant);
+    } catch {
+      toast.show(fr.feed.replySendError, "danger");
+    }
+  }
+
   async function handleReply() {
     const body = replyDraft.trim();
     if (!body) return;
+    await sendReply(body);
+  }
+
+  async function retryAssistant(invocationId: string) {
     try {
-      const { reply } = await createPostReply(postId, { body });
-      setReplies((current) => [...current, reply]);
-      setReplyDraft("");
-      setPost((current) =>
-        current ? { ...current, replyCount: current.replyCount + 1 } : current,
-      );
+      const result = await retryPostAssistant(invocationId);
+      assistant.track(result.assistant);
     } catch {
-      toast.show(fr.feed.replySendError, "danger");
+      toast.show(fr.chat.assistantFailed, "danger");
+    }
+  }
+
+  async function handleAssistantFeedback(invocationId: string, helpful: boolean) {
+    try {
+      await sendAssistantFeedback(invocationId, helpful);
+    } catch {
+      toast.show(fr.feed.reactError, "danger");
     }
   }
 
@@ -231,6 +297,11 @@ export function PostPage() {
   }
 
   const isOwnPost = profile !== null && profile.id === post.authorId && !post.deletedAt;
+  // Une réponse de @kemet se retire par qui l'a demandée ou par l'auteur du post.
+  const canRemoveAssistantReply = (reply: PostReply) =>
+    canInteract &&
+    !reply.deletedAt &&
+    (isOwnPost || (profile !== null && reply.assistant?.requestedBy === profile.id));
   const hasGivenFeedback =
     profile !== null && feedback.some((entry) => entry.authorId === profile.id);
 
@@ -255,6 +326,11 @@ export function PostPage() {
           onFeedback={() => setFeedbackOpen(true)}
           onDelete={() => setDeleteOpen(true)}
           onReply={() => replyTextareaRef.current?.focus()}
+          askKemet={
+            canInteract && isTechnicalPost(post.body)
+              ? { onClick: prepareKemetQuestion }
+              : undefined
+          }
         />
 
         {post.format === "question" && !post.deletedAt && (
@@ -290,56 +366,144 @@ export function PostPage() {
           {replies.length === 0 ? (
             <EmptyState message={fr.feed.noReplies} />
           ) : (
-            replies.map((reply) => (
-              <div key={reply.id} className="flex gap-3">
-                <ProfileLink
-                  handle={reply.authorHandle}
-                  aria-label={fr.profile.viewProfile(reply.authorDisplayName)}
-                >
-                  <Avatar
-                    deleted={isDeletedAccountHandle(reply.authorHandle)}
-                    name={reply.authorDisplayName}
-                    src={reply.authorAvatarUrl ?? undefined}
-                    countryCode={reply.authorCountry}
+            replies.map((reply) =>
+              reply.authorHandle === KEMET_HANDLE && reply.assistant ? (
+                <div key={reply.id} className="flex flex-col gap-1">
+                  <AssistantMessage
+                    content={
+                      reply.deletedAt ? fr.chat.messageDeleted : <RichText source={reply.body} />
+                    }
+                    skill={
+                      reply.assistant.skill
+                        ? {
+                            skillName: reply.assistant.skill.name,
+                            skillHref: `/skills/${reply.assistant.skill.slug}`,
+                            authorName: reply.assistant.skill.authorDisplayName,
+                            authorHref: `/u/${reply.assistant.skill.authorHandle}`,
+                          }
+                        : undefined
+                    }
+                    recorded={reply.assistant.recorded}
+                    initialFeedback={
+                      reply.assistant.helpful === true
+                        ? "helpful"
+                        : reply.assistant.helpful === false
+                          ? "not-helpful"
+                          : null
+                    }
+                    // L'avis rapporte des points : réservé à qui a posé la
+                    // question et à l'auteur du post (règle côté serveur).
+                    hideFeedback={
+                      !canInteract || (profile?.id !== reply.assistant.requestedBy && !isOwnPost)
+                    }
+                    onFeedback={(helpful) =>
+                      void handleAssistantFeedback(reply.assistant!.invocationId, helpful)
+                    }
                   />
-                </ProfileLink>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <UserName
-                      name={reply.authorDisplayName}
-                      handle={reply.authorHandle}
-                      level={authorLevel(reply.authorHandle, reply.authorLevel)}
-                    />
-                    <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
-                    {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
-                  </div>
-                  {reply.deletedAt ? (
-                    <p className="mt-0.5 text-sm text-text">{fr.chat.messageDeleted}</p>
-                  ) : (
-                    <RichText source={reply.body} className="mt-0.5 text-sm text-text" />
+                  {(reply.isSolution ||
+                    (isOwnPost && post.format === "question") ||
+                    canRemoveAssistantReply(reply)) && (
+                    <div className="flex items-center gap-2">
+                      {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
+                      {isOwnPost && post.format === "question" && !reply.deletedAt && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSolution(reply)}
+                          className="text-xs text-link hover:underline"
+                        >
+                          {reply.isSolution ? fr.feed.unmarkSolution : fr.feed.markSolution}
+                        </button>
+                      )}
+                      {canRemoveAssistantReply(reply) && (
+                        <IconButton
+                          aria-label={fr.feed.delete}
+                          onClick={() => setReplyToDelete(reply.id)}
+                        >
+                          <Trash2 className="size-4" aria-hidden="true" />
+                        </IconButton>
+                      )}
+                    </div>
                   )}
-                  <div className="mt-1 flex items-center gap-2">
-                    {isOwnPost && post.format === "question" && !reply.deletedAt && (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleSolution(reply)}
-                        className="text-xs text-link hover:underline"
-                      >
-                        {reply.isSolution ? fr.feed.unmarkSolution : fr.feed.markSolution}
-                      </button>
+                </div>
+              ) : (
+                <div key={reply.id} className="flex gap-3">
+                  <ProfileLink
+                    handle={reply.authorHandle}
+                    aria-label={fr.profile.viewProfile(reply.authorDisplayName)}
+                  >
+                    <Avatar
+                      deleted={isDeletedAccountHandle(reply.authorHandle)}
+                      name={reply.authorDisplayName}
+                      src={reply.authorAvatarUrl ?? undefined}
+                      countryCode={reply.authorCountry}
+                    />
+                  </ProfileLink>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <UserName
+                        name={reply.authorDisplayName}
+                        handle={reply.authorHandle}
+                        level={authorLevel(reply.authorHandle, reply.authorLevel)}
+                      />
+                      <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
+                      {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
+                    </div>
+                    {reply.deletedAt ? (
+                      <p className="mt-0.5 text-sm text-text">{fr.chat.messageDeleted}</p>
+                    ) : (
+                      <RichText source={reply.body} className="mt-0.5 text-sm text-text" />
                     )}
-                    {profile?.id === reply.authorId && !reply.deletedAt && (
-                      <IconButton
-                        aria-label={fr.feed.delete}
-                        onClick={() => setReplyToDelete(reply.id)}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </IconButton>
-                    )}
+                    <div className="mt-1 flex items-center gap-2">
+                      {isOwnPost && post.format === "question" && !reply.deletedAt && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSolution(reply)}
+                          className="text-xs text-link hover:underline"
+                        >
+                          {reply.isSolution ? fr.feed.unmarkSolution : fr.feed.markSolution}
+                        </button>
+                      )}
+                      {profile?.id === reply.authorId && !reply.deletedAt && (
+                        <IconButton
+                          aria-label={fr.feed.delete}
+                          onClick={() => setReplyToDelete(reply.id)}
+                        >
+                          <Trash2 className="size-4" aria-hidden="true" />
+                        </IconButton>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ),
+            )
+          )}
+          {assistant.isPending && (
+            <div
+              role="status"
+              className="flex items-center gap-2 rounded-card border border-assistant-border bg-assistant-bg px-4 py-3 text-sm text-text-2"
+            >
+              <KemetSymbol className="size-5 motion-safe:animate-pulse" />
+              {fr.feed.assistantPending}
+            </div>
+          )}
+          {canInteract && assistant.failure && (
+            <AssistantFailureNotice
+              errorCode={assistant.failure.errorCode}
+              onRetry={
+                assistant.failure.invocationId === null
+                  ? null
+                  : () => {
+                      const invocationId = assistant.failure!.invocationId!;
+                      assistant.dismissFailure();
+                      void retryAssistant(invocationId);
+                      replyTextareaRef.current?.focus();
+                    }
+              }
+              onDismiss={() => {
+                assistant.dismissFailure();
+                replyTextareaRef.current?.focus();
+              }}
+            />
           )}
           {canInteract && (
             <div className="flex flex-col gap-2">
@@ -366,6 +530,7 @@ export function PostPage() {
                   {fr.feed.reply}
                 </Button>
               </div>
+              <p className="text-xs text-muted">{fr.feed.replyHint}</p>
             </div>
           )}
         </div>

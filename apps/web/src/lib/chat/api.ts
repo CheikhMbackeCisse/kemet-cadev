@@ -15,6 +15,7 @@ import type {
   CreateHelpRequestInput,
   CreatePostInput,
   CreatePostReplyInput,
+  CreatePostReplyResult,
   CreateProjectInput,
   CreateSkillInput,
   CreateSubmissionInput,
@@ -33,6 +34,9 @@ import type {
   ModerationActionEntry,
   Report,
   ResolveReportInput,
+  FeedProject,
+  PostAssistantStatus,
+  PostReplyAssistantStart,
   PostFeedbackEntry,
   PostBookmarkResult,
   PostReactionResult,
@@ -85,7 +89,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: "include",
     // Fastify refuse en 400 un corps vide annoncé comme JSON : un POST sans corps
     // (suivre, rejoindre) ne doit pas porter cet en-tête.
-    headers: { ...(init?.body !== undefined && { "Content-Type": "application/json" }), ...init?.headers },
+    headers: {
+      ...(init?.body !== undefined && { "Content-Type": "application/json" }),
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
@@ -248,7 +255,11 @@ export async function uploadAttachment(channelId: string, file: File): Promise<A
 
 const VOICE_EXTENSIONS: Record<string, string> = { "audio/mp4": "m4a", "audio/ogg": "ogg" };
 
-export async function uploadVoiceMessage(channelId: string, blob: Blob, durationMs: number): Promise<Attachment> {
+export async function uploadVoiceMessage(
+  channelId: string,
+  blob: Blob,
+  durationMs: number,
+): Promise<Attachment> {
   const formData = new FormData();
   // Le serveur lit la durée avant le fichier : elle doit le précéder.
   formData.append("durationMs", String(Math.round(durationMs)));
@@ -573,10 +584,25 @@ export function listPostReplies(postId: string, cursor?: string): Promise<Page<P
 }
 
 export function createPostReply(postId: string, input: CreatePostReplyInput) {
-  return request<{ reply: PostReply }>(`/api/posts/${postId}/replies`, {
+  return request<CreatePostReplyResult>(`/api/posts/${postId}/replies`, {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export function getPostAssistantStatus(invocationId: string) {
+  return request<PostAssistantStatus>(`/api/post-assistant-invocations/${invocationId}`);
+}
+
+export function retryPostAssistant(invocationId: string) {
+  return request<{ assistant: PostReplyAssistantStart }>(
+    `/api/post-assistant-invocations/${invocationId}/retry`,
+    { method: "POST" },
+  );
+}
+
+export function listFeedProjects(tab: FeedTab, limit: number): Promise<{ items: FeedProject[] }> {
+  return request(`/api/feed/projects?tab=${tab}&limit=${limit}`);
 }
 
 export function deletePostReply(replyId: string) {

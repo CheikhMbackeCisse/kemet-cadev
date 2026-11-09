@@ -288,3 +288,21 @@ export async function listPostFeedback(db: Db, postId: string) {
     .where(and(eq(postFeedback.postId, postId), eq(profiles.isFiller, false)))
     .orderBy(desc(postFeedback.createdAt));
 }
+
+/** Réponses visibles qui précèdent `before`, de la plus ancienne à la plus récente : contexte de @kemet. */
+export async function listRepliesBefore(db: Db, postId: string, before: Date, limit: number) {
+  const rows = await db
+    .select({ body: postReplies.body })
+    .from(postReplies)
+    .where(
+      and(
+        eq(postReplies.postId, postId),
+        isNull(postReplies.deletedAt),
+        lt(postReplies.createdAt, before),
+        notWrittenByFiller(postReplies.authorId),
+      ),
+    )
+    .orderBy(desc(postReplies.createdAt))
+    .limit(limit);
+  return rows.reverse();
+}

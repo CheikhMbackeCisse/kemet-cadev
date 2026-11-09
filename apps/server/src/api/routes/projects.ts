@@ -4,11 +4,13 @@ import {
   createHelpRequestSchema,
   createProjectSchema,
   decideApplicationSchema,
+  feedProjectsQuerySchema,
   paginationQuerySchema,
   updateProjectSchema,
 } from "@kemet/shared";
 import { loadProjectsConfig, type ProjectsConfig } from "../../config/projects-config.js";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
+import { listFolloweeIds } from "../repositories/posts.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   closeHelpRequest,
@@ -21,9 +23,12 @@ import {
   findProjectById,
   findProjectBySlug,
   insertApplication,
+  FEED_PROJECT_ROLES,
   insertHelpRequest,
   listApplicationsForHelpRequest,
+  listFeedProjects,
   listHelpRequestsForProject,
+  listOpenRoles,
   listProjects,
   softDeleteProject,
   updateProject,
@@ -64,6 +69,24 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     const page = await listProjects(db, query.cursor, query.limit);
     const items = await Promise.all(page.items.map((row) => toProjectSummary(row)));
     return { items, nextCursor: page.nextCursor };
+  });
+
+  // Cartes projet du fil. Un visiteur n'a pas d'abonnements : il reçoit
+  // toujours le classement "Pour toi", comme pour les posts.
+  app.get<{ Querystring: { tab?: string; limit?: string } }>("/api/feed/projects", publicReadLimit, async (request) => {
+    const query = feedProjectsQuerySchema.parse(request.query);
+    const userId = await getSessionUserId(auth, request);
+    const profile = userId ? await findProfileByUserId(db, userId) : null;
+    const ownerIds =
+      query.tab === "abonnements" && profile ? [profile.id, ...(await listFolloweeIds(db, profile.id))] : null;
+    const rows = await listFeedProjects(db, ownerIds, query.limit);
+    const items = await Promise.all(
+      rows.map(async (row) => ({
+        ...(await toProjectSummary(row)),
+        openRoles: await listOpenRoles(db, row.id, FEED_PROJECT_ROLES),
+      })),
+    );
+    return { items };
   });
 
   app.post("/api/projects", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request) => {

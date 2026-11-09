@@ -37,7 +37,13 @@ export function ForgotPasswordPage() {
       <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.emailLabel}
-          <Input type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} autoFocus />
+          <Input
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoFocus
+          />
         </label>
         <SubmitButton
           variant="inverse"

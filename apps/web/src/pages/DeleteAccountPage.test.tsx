@@ -79,10 +79,14 @@ describe("DeleteAccountPage", () => {
   it("dit clairement qu'un mot de passe est faux, sans quitter la page", async () => {
     getMe.mockResolvedValue(me({ hasPassword: true }));
     const { ChatApiError } = await import("../lib/chat/api.js");
-    deleteMyAccount.mockRejectedValue(new ChatApiError("wrong_password", "Mot de passe incorrect.", 403));
+    deleteMyAccount.mockRejectedValue(
+      new ChatApiError("wrong_password", "Mot de passe incorrect.", 403),
+    );
     renderPage();
 
-    fireEvent.change(await screen.findByLabelText("Ton mot de passe"), { target: { value: "faux" } });
+    fireEvent.change(await screen.findByLabelText("Ton mot de passe"), {
+      target: { value: "faux" },
+    });
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", SUBMIT));
 
@@ -94,7 +98,9 @@ describe("DeleteAccountPage", () => {
     getMe.mockResolvedValue(me({ hasPassword: false, socialProviders: ["github"] }));
     renderPage();
 
-    expect(await screen.findByRole("button", { name: "Se reconnecter avec GitHub" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Se reconnecter avec GitHub" }),
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText("Ton mot de passe")).not.toBeInTheDocument();
   });
 });

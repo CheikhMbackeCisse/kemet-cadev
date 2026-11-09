@@ -10,7 +10,14 @@ import {
   postBookmarkInputSchema,
   sharePostSchema,
 } from "@kemet/shared";
-import type { posts } from "@kemet/db";
+import { z } from "zod";
+import type { postReplies, posts } from "@kemet/db";
+import { KEMET_ASSISTANT_PROFILE_ID, mentionsAssistant } from "../../chat/kemet-assistant.js";
+import {
+  findInvocationById,
+  listInvocationsByResponseReplyIds,
+} from "../repositories/assistant.js";
+import { describeInvocation, loadReplyAssistantDetails } from "../post-reply-assistant.js";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
@@ -34,7 +41,11 @@ import {
   softDeletePostReply,
   togglePostReaction,
 } from "../repositories/posts.js";
-import { attachToPost, findPendingPostAttachment, listAttachmentsForPosts } from "../repositories/post-attachments.js";
+import {
+  attachToPost,
+  findPendingPostAttachment,
+  listAttachmentsForPosts,
+} from "../repositories/post-attachments.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import {
   awardPoints,
@@ -43,7 +54,11 @@ import {
   POINTS_POST_FEEDBACK_GIVEN,
   POINTS_POST_REPLY_SOLUTION,
 } from "../repositories/points.js";
-import { serializePostFeedbackEntry, serializePostReply, serializePostSummary } from "../post-serializers.js";
+import {
+  serializePostFeedbackEntry,
+  serializePostReply,
+  serializePostSummary,
+} from "../post-serializers.js";
 import type { ChatAppDeps } from "../app.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
 
@@ -64,7 +79,11 @@ async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
 }
 
 // Niveaux calculés une fois pour toute la page : deux requêtes au lieu de deux par post.
-async function toSerializedPosts(db: ChatAppDeps["db"], rows: (typeof posts.$inferSelect)[], viewerProfileId: string | null) {
+async function toSerializedPosts(
+  db: ChatAppDeps["db"],
+  rows: (typeof posts.$inferSelect)[],
+  viewerProfileId: string | null,
+) {
   const hydratedPosts = await Promise.all(rows.map((row) => hydratePost(db, row, viewerProfileId)));
   const authorIds = hydratedPosts.flatMap((hydrated) => [
     hydrated.author.id,
@@ -97,29 +116,74 @@ async function toSerializedPosts(db: ChatAppDeps["db"], rows: (typeof posts.$inf
   );
 }
 
-async function toSerializedPost(db: ChatAppDeps["db"], row: typeof posts.$inferSelect, viewerProfileId: string | null) {
+async function toSerializedPost(
+  db: ChatAppDeps["db"],
+  row: typeof posts.$inferSelect,
+  viewerProfileId: string | null,
+) {
   const [post] = await toSerializedPosts(db, [row], viewerProfileId);
   return post!;
 }
 
-export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamConfig }: ChatAppDeps): void {
-  app.get<{ Querystring: { tab?: string; cursor?: string; limit?: string } }>("/api/posts", async (request) => {
-    const userId = await getSessionUserId(auth, request);
-    const profile = await findOwnProfile(db, userId);
-    const query = feedQuerySchema.parse(request.query);
-    // Un visiteur n'a pas d'abonnements : l'onglet "Pour toi" lui est servi
-    // quel que soit l'onglet demandé, l'interface ne lui proposant que celui-là.
-    const page =
-      query.tab === "pour-toi" || !profile
-        ? await listPourToiFeed(db, query.limit)
-        : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
-    const items = await toSerializedPosts(db, page.items, profile?.id ?? null);
-    return { items, nextCursor: page.nextCursor };
-  });
+async function toSerializedReplies(
+  db: ChatAppDeps["db"],
+  rows: (typeof postReplies.$inferSelect)[],
+  viewerProfileId: string | null,
+) {
+  const [levels, assistantDetails] = await Promise.all([
+    computeLevels(db, [...new Set(rows.map((row) => row.authorId))]),
+    loadReplyAssistantDetails(
+      db,
+      rows.map((row) => row.id),
+      viewerProfileId,
+    ),
+  ]);
+  return Promise.all(
+    rows.map(async (row) => {
+      const { author } = await hydratePostReply(db, row);
+      return serializePostReply(
+        row,
+        author,
+        levels.get(row.authorId)!,
+        assistantDetails.get(row.id) ?? null,
+      );
+    }),
+  );
+}
+
+const invocationIdParamsSchema = z.object({ id: z.string().uuid() });
+
+export function registerPostRoutes(
+  app: FastifyInstance,
+  { db, auth, antiSpamConfig, postAssistant }: ChatAppDeps,
+): void {
+  app.get<{ Querystring: { tab?: string; cursor?: string; limit?: string } }>(
+    "/api/posts",
+    async (request) => {
+      const userId = await getSessionUserId(auth, request);
+      const profile = await findOwnProfile(db, userId);
+      const query = feedQuerySchema.parse(request.query);
+      // Un visiteur n'a pas d'abonnements : l'onglet "Pour toi" lui est servi
+      // quel que soit l'onglet demandé, l'interface ne lui proposant que celui-là.
+      const page =
+        query.tab === "pour-toi" || !profile
+          ? await listPourToiFeed(db, query.limit)
+          : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
+      const items = await toSerializedPosts(db, page.items, profile?.id ?? null);
+      return { items, nextCursor: page.nextCursor };
+    },
+  );
 
   app.post(
     "/api/posts",
-    { config: { rateLimit: { max: antiSpamMax(db, auth, antiSpamConfig, MAX_POSTS_PER_MINUTE), timeWindow: "1 minute" } } },
+    {
+      config: {
+        rateLimit: {
+          max: antiSpamMax(db, auth, antiSpamConfig, MAX_POSTS_PER_MINUTE),
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
@@ -167,7 +231,8 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       const body = input.body.trim();
       if (body.length === 0 && !post.sharedPostId) {
         const attachments = await listAttachmentsForPosts(db, [post.id]);
-        if (attachments.length === 0) throw badRequest("Un post doit contenir du texte ou au moins une image.");
+        if (attachments.length === 0)
+          throw badRequest("Un post doit contenir du texte ou au moins une image.");
       }
       const updated = await editPost(db, post.id, body);
       return { post: await toSerializedPost(db, updated, profile.id) };
@@ -190,7 +255,14 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
 
   app.post<{ Params: { id: string } }>(
     "/api/posts/:id/share",
-    { config: { rateLimit: { max: antiSpamMax(db, auth, antiSpamConfig, MAX_SHARES_PER_MINUTE), timeWindow: "1 minute" } } },
+    {
+      config: {
+        rateLimit: {
+          max: antiSpamMax(db, auth, antiSpamConfig, MAX_SHARES_PER_MINUTE),
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
@@ -236,48 +308,158 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
     },
   );
 
-  app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/me/bookmarks", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    const profile = await findProfileByUserId(db, userId);
-    if (!profile) throw badRequest("Complétez votre profil avant de consulter vos enregistrements.");
-    const query = paginationQuerySchema.parse(request.query);
-    const page = await listBookmarkedPosts(db, profile.id, query.cursor, query.limit);
-    return { items: await toSerializedPosts(db, page.items, profile.id), nextCursor: page.nextCursor };
-  });
+  app.get<{ Querystring: { cursor?: string; limit?: string } }>(
+    "/api/me/bookmarks",
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await findProfileByUserId(db, userId);
+      if (!profile)
+        throw badRequest("Complétez votre profil avant de consulter vos enregistrements.");
+      const query = paginationQuerySchema.parse(request.query);
+      const page = await listBookmarkedPosts(db, profile.id, query.cursor, query.limit);
+      return {
+        items: await toSerializedPosts(db, page.items, profile.id),
+        nextCursor: page.nextCursor,
+      };
+    },
+  );
 
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(
     "/api/posts/:id/replies",
     async (request) => {
-      // Aucune résolution de profil nécessaire, visiteur ou non : les
-      // réponses à un post n'ont pas de notion de visibilité privée dans ce
-      // module, à la différence des salons.
+      // Les réponses à un post n'ont pas de visibilité privée, à la
+      // différence des salons. Le profil ne sert qu'à décider si le skill
+      // cité par une réponse de @kemet est encore visible pour ce lecteur.
+      const userId = await getSessionUserId(auth, request);
+      const profile = await findOwnProfile(db, userId);
       const post = await findPostById(db, request.params.id);
       if (!post) throw notFound("Ce post n'existe pas.");
       const query = paginationQuerySchema.parse(request.query);
       const page = await listPostReplies(db, post.id, query.cursor, query.limit);
-      const levels = await computeLevels(db, page.items.map((row) => row.authorId));
-      const items = await Promise.all(
-        page.items.map(async (row) => {
-          const { author } = await hydratePostReply(db, row);
-          return serializePostReply(row, author, levels.get(row.authorId)!);
-        }),
-      );
+      const items = await toSerializedReplies(db, page.items, profile?.id ?? null);
       return { items, nextCursor: page.nextCursor };
     },
   );
 
   app.post<{ Params: { id: string } }>(
     "/api/posts/:id/replies",
-    { config: { rateLimit: { max: antiSpamMax(db, auth, antiSpamConfig, MAX_REPLIES_PER_MINUTE), timeWindow: "1 minute" } } },
+    {
+      config: {
+        rateLimit: {
+          max: antiSpamMax(db, auth, antiSpamConfig, MAX_REPLIES_PER_MINUTE),
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const post = await findPostById(db, request.params.id);
       if (!post || post.deletedAt) throw notFound("Ce post n'existe pas.");
       const input = createPostReplySchema.parse(request.body);
-      const reply = await insertPostReply(db, { postId: post.id, authorId: profile.id, body: input.body });
+      const reply = await insertPostReply(db, {
+        postId: post.id,
+        authorId: profile.id,
+        body: input.body,
+      });
       const { level } = await computeProfilePoints(db, profile.id);
-      return { reply: serializePostReply(reply, profile, level) };
+      // @kemet ne répond que s'il est appelé dans la réponse elle-même,
+      // jamais au post seul. Sa réponse arrive plus tard, voir la route
+      // GET /api/post-assistant-invocations/:id.
+      const assistant = mentionsAssistant(input.body)
+        ? await postAssistant.start({
+            postId: post.id,
+            triggerReplyId: reply.id,
+            triggerCreatedAt: reply.createdAt,
+            requestedBy: profile.id,
+            body: input.body,
+          })
+        : null;
+      return { reply: serializePostReply(reply, profile, level), assistant };
+    },
+  );
+
+  // Lue seulement par la personne qui a appelé @kemet : un échec ou un quota
+  // atteint ne regardent qu'elle, et la réponse finale est de toute façon
+  // publique dans la liste des réponses.
+  // Une réponse de @kemet n'a pas d'auteur humain : la personne qui l'a
+  // demandée et l'auteur du post peuvent la retirer, par exemple quand un
+  // post piégé lui a fait écrire n'importe quoi.
+  async function canRemoveAssistantReply(
+    reply: typeof postReplies.$inferSelect,
+    profileId: string,
+  ) {
+    if (reply.authorId !== KEMET_ASSISTANT_PROFILE_ID) return false;
+    const [invocation] = await listInvocationsByResponseReplyIds(db, [reply.id]);
+    if (invocation?.requestedBy === profileId) return true;
+    const post = await findPostById(db, reply.postId);
+    return post?.authorId === profileId;
+  }
+
+  async function findOwnPostInvocation(profileId: string, rawId: unknown) {
+    const params = invocationIdParamsSchema.safeParse(rawId);
+    const invocation = params.success ? await findInvocationById(db, params.data.id) : null;
+    if (
+      !invocation ||
+      !invocation.postId ||
+      !invocation.triggerReplyId ||
+      invocation.requestedBy !== profileId
+    ) {
+      throw notFound("Cette demande à @kemet n'existe pas.");
+    }
+    return invocation;
+  }
+
+  // Relance sur la même question, sans republier la réponse qui l'a posée.
+  app.post<{ Params: { id: string } }>(
+    "/api/post-assistant-invocations/:id/retry",
+    { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const invocation = await findOwnPostInvocation(profile.id, request.params);
+      if (invocation.status !== "failed") throw conflict("Cette demande à @kemet n'a pas échoué.");
+      const [post, trigger] = await Promise.all([
+        findPostById(db, invocation.postId!),
+        findPostReplyById(db, invocation.triggerReplyId!),
+      ]);
+      if (!post || post.deletedAt || !trigger || trigger.deletedAt)
+        throw notFound("Cette question n'existe plus.");
+      const assistant = await postAssistant.start({
+        postId: post.id,
+        triggerReplyId: trigger.id,
+        triggerCreatedAt: trigger.createdAt,
+        requestedBy: profile.id,
+        body: trigger.body,
+      });
+      return { assistant };
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/post-assistant-invocations/:id",
+    // Relue toutes les 1,5 s pendant une attente : large, mais bornée.
+    { config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await findProfileByUserId(db, userId);
+      if (!profile) throw notFound("Cette demande à @kemet n'existe pas.");
+      const invocation = await findOwnPostInvocation(profile.id, request.params);
+      const replyRow = invocation.responseReplyId
+        ? await findPostReplyById(db, invocation.responseReplyId)
+        : null;
+      let reply = null;
+      if (replyRow) {
+        const { author } = await hydratePostReply(db, replyRow);
+        const { level } = await computeProfilePoints(db, author.id);
+        reply = serializePostReply(
+          replyRow,
+          author,
+          level,
+          await describeInvocation(db, invocation, profile.id),
+        );
+      }
+      return { status: invocation.status, errorCode: invocation.errorCode, reply };
     },
   );
 
@@ -289,7 +471,9 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       const profile = await requireOwnProfile(db, userId);
       const reply = await findPostReplyById(db, request.params.id);
       if (!reply || reply.deletedAt) throw notFound("Cette réponse n'existe pas.");
-      if (reply.authorId !== profile.id) throw forbidden("Seul l'auteur peut supprimer cette réponse.");
+      if (reply.authorId !== profile.id && !(await canRemoveAssistantReply(reply, profile.id))) {
+        throw forbidden("Seul l'auteur peut supprimer cette réponse.");
+      }
       await softDeletePostReply(db, reply.id);
       return { deleted: true };
     },
@@ -313,7 +497,9 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
       }
       const input = markPostReplySolutionSchema.parse(request.body);
       const updated = await setPostReplySolution(db, post.id, reply.id, input.isSolution);
-      if (input.isSolution) {
+      // Une réponse de @kemet peut être la solution, sans points : le
+      // registre ne crédite jamais le profil de l'assistant.
+      if (input.isSolution && updated.authorId !== KEMET_ASSISTANT_PROFILE_ID) {
         await awardPoints(db, {
           profileId: updated.authorId,
           source: "post_reply_solution",
@@ -322,9 +508,8 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
           givenByProfileId: profile.id,
         });
       }
-      const { author } = await hydratePostReply(db, updated);
-      const { level } = await computeProfilePoints(db, author.id);
-      return { reply: serializePostReply(updated, author, level) };
+      const [serialized] = await toSerializedReplies(db, [updated], profile.id);
+      return { reply: serialized! };
     },
   );
 
@@ -346,7 +531,11 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
         throw conflict("Vous avez déjà donné un retour sur ce post.");
       }
       const input = createPostFeedbackSchema.parse(request.body);
-      const feedback = await insertPostFeedback(db, { postId: post.id, authorId: profile.id, body: input.body });
+      const feedback = await insertPostFeedback(db, {
+        postId: post.id,
+        authorId: profile.id,
+        body: input.body,
+      });
       if (!feedback) throw conflict("Vous avez déjà donné un retour sur ce post.");
       await awardPoints(db, {
         profileId: profile.id,
@@ -366,7 +555,14 @@ export function registerPostRoutes(app: FastifyInstance, { db, auth, antiSpamCon
     const post = await findPostById(db, request.params.id);
     if (!post) throw notFound("Ce post n'existe pas.");
     const rows = await listPostFeedback(db, post.id);
-    const levels = await computeLevels(db, rows.map((row) => row.author.id));
-    return { items: rows.map((row) => serializePostFeedbackEntry(row.feedback, row.author, levels.get(row.author.id)!)) };
+    const levels = await computeLevels(
+      db,
+      rows.map((row) => row.author.id),
+    );
+    return {
+      items: rows.map((row) =>
+        serializePostFeedbackEntry(row.feedback, row.author, levels.get(row.author.id)!),
+      ),
+    };
   });
 }

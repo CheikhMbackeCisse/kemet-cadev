@@ -21,7 +21,11 @@ function image(attachment: Attachment, frame: string, fit: "contain" | "cover", 
       alt={attachment.originalName}
       loading="lazy"
       decoding="async"
-      className={cn("block w-full bg-surface-2", frame, fit === "contain" ? "object-contain" : "object-cover")}
+      className={cn(
+        "block w-full bg-surface-2",
+        frame,
+        fit === "contain" ? "object-contain" : "object-cover",
+      )}
     />
   );
   if (!linked) return <div key={attachment.id}>{picture}</div>;
@@ -44,7 +48,9 @@ export function PostImages({ attachments: all, className, linked = true }: PostI
   const attachments = all.filter((attachment) => !attachment.removed);
   if (attachments.length === 0) {
     return all.length > 0 ? (
-      <p className={cn("mt-2 text-sm text-subtle", className)}>{fr.chat.imagesRemoved(all.length)}</p>
+      <p className={cn("mt-2 text-sm text-subtle", className)}>
+        {fr.chat.imagesRemoved(all.length)}
+      </p>
     ) : null;
   }
 

@@ -9,7 +9,9 @@ const VERSION = (import.meta.env.VITE_KEMET_VERSION as string | undefined)?.slic
 
 export function HelpSettingsPage() {
   // undefined pendant le chargement, null quand le serveur n'en a pas.
-  const [contact, setContact] = useState<{ name: string; email: string } | null | undefined>(undefined);
+  const [contact, setContact] = useState<{ name: string; email: string } | null | undefined>(
+    undefined,
+  );
   const [contactError, setContactError] = useState(false);
 
   const loadContact = useCallback(() => {
@@ -39,7 +41,11 @@ export function HelpSettingsPage() {
             {contactError ? (
               <span className="text-subtle">
                 {fr.settings.contactError}{" "}
-                <button type="button" onClick={loadContact} className="font-medium text-link hover:underline">
+                <button
+                  type="button"
+                  onClick={loadContact}
+                  className="font-medium text-link hover:underline"
+                >
                   {fr.chat.retry}
                 </button>
               </span>

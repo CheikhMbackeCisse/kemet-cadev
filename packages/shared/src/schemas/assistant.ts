@@ -16,6 +16,8 @@ export const assistantInvocationDetailSchema = z.object({
   skill: skillCitationSchema.nullable(),
   helpful: z.boolean().nullable(),
   recorded: z.boolean(),
+  /** Sous un post seulement : la personne qui a posé la question, qui peut retirer la réponse. */
+  requestedBy: z.string().uuid().optional(),
 });
 
 export type AssistantInvocationDetail = z.infer<typeof assistantInvocationDetailSchema>;
@@ -38,8 +40,9 @@ export const assistantInvocationStatusSchema = z.enum(["pending", "streaming", "
 
 export const assistantInvocationSchema = z.object({
   id: z.string().uuid(),
-  channelId: z.string().uuid(),
-  triggerMessageId: z.string().uuid(),
+  channelId: z.string().uuid().nullable(),
+  triggerMessageId: z.string().uuid().nullable(),
+  postId: z.string().uuid().nullable(),
   requestedBy: z.string().uuid(),
   responseMessageId: z.string().uuid().nullable(),
   skillIds: z.array(z.string().uuid()),

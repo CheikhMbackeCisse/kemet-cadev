@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { and, count, eq, inArray, isNull, like, notInArray, sql } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, isNull, like, notInArray, sql } from "drizzle-orm";
 import type { DbOrTx } from "../client.js";
 import {
   assistantInvocations,
@@ -268,7 +268,14 @@ async function topUpSkillUses(db: DbOrTx, fillers: string[]): Promise<number> {
     // Seulement une question posée par un compte de démonstration : le
     // serveur pose aussi `recorded` sur une réponse rejouée à un vrai compte.
     .innerJoin(profiles, eq(profiles.id, assistantInvocations.requestedBy))
-    .where(and(eq(assistantInvocations.recorded, true), eq(profiles.isDemo, true)))
+    // Une invocation de salon : celles sous un post n'ont ni salon ni message.
+    .where(
+      and(
+        eq(assistantInvocations.recorded, true),
+        eq(profiles.isDemo, true),
+        isNotNull(assistantInvocations.channelId),
+      ),
+    )
     .orderBy(assistantInvocations.createdAt)
     .limit(1);
   if (!anchor || fillers.length === 0) return 0;

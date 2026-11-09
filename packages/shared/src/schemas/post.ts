@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assistantInvocationDetailSchema, assistantInvocationStatusSchema } from "./assistant.js";
 import { levelSchema } from "./points.js";
 import { attachmentSchema, MAX_POST_ATTACHMENTS } from "./attachment.js";
 import { httpUrlSchema } from "./url.js";
@@ -156,12 +157,41 @@ export const postReplySchema = z.object({
   authorLevel: levelSchema,
   body: z.string(),
   isSolution: z.boolean(),
+  /** Renseigné seulement pour une réponse de @kemet : skill cité, avis, réponse enregistrée. */
+  assistant: assistantInvocationDetailSchema.nullable(),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
   deletedAt: z.string().datetime().nullable(),
 });
 
 export type PostReply = z.infer<typeof postReplySchema>;
+
+/**
+ * Suite donnée à une réponse qui appelle @kemet : l'invocation lancée, ou la
+ * raison immédiate du refus (quota atteint). `null` sans appel à @kemet.
+ */
+export const postReplyAssistantStartSchema = z.object({
+  invocationId: z.string().uuid().nullable(),
+  errorCode: z.string().nullable(),
+});
+
+export type PostReplyAssistantStart = z.infer<typeof postReplyAssistantStartSchema>;
+
+export const createPostReplyResultSchema = z.object({
+  reply: postReplySchema,
+  assistant: postReplyAssistantStartSchema.nullable(),
+});
+
+export type CreatePostReplyResult = z.infer<typeof createPostReplyResultSchema>;
+
+/** État d'une réponse de @kemet sous un post, lu par la personne qui l'a demandée. */
+export const postAssistantStatusSchema = z.object({
+  status: assistantInvocationStatusSchema,
+  errorCode: z.string().nullable(),
+  reply: postReplySchema.nullable(),
+});
+
+export type PostAssistantStatus = z.infer<typeof postAssistantStatusSchema>;
 
 export const postFeedbackEntrySchema = z.object({
   id: z.string().uuid(),

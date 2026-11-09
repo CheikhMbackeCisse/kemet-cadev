@@ -1,6 +1,6 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, Check, ExternalLink, Rocket, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   isDeletedAccountHandle,
   type Application,
@@ -53,8 +53,11 @@ function readSlug(pathname: string): string {
   return pathname.replace(/^\/projets\//, "");
 }
 
+/** Paramètre posé par le bouton "Proposer mon aide" d'une carte projet du fil. */
+const OFFER_HELP_PARAM = "aider";
+
 export function ProjectPage() {
-  const { status } = useSession();
+  const { status, profile } = useSession();
   const isVisitor = status === "visitor";
   const toast = useToast();
   const slug = readSlug(window.location.pathname);
@@ -104,6 +107,19 @@ export function ProjectPage() {
   }, [loadProject, loadHelpRequests]);
 
   const isOwner = myProfileId !== null && project !== null && myProfileId === project.ownerId;
+
+  // "Proposer mon aide" depuis le fil : ouvre la candidature à la demande
+  // visée, une seule fois, pour un membre connecté qui n'est pas le propriétaire.
+  const offeredFromFeed = useRef(false);
+  useEffect(() => {
+    if (offeredFromFeed.current || status !== "ready" || !profile || !project) return;
+    const helpRequestId = new URLSearchParams(window.location.search).get(OFFER_HELP_PARAM);
+    if (!helpRequestId || profile.id === project.ownerId) return;
+    const target = helpRequests.find((item) => item.id === helpRequestId && item.status === "open");
+    if (!target) return;
+    offeredFromFeed.current = true;
+    setApplyFor(target);
+  }, [status, profile, project, helpRequests]);
 
   async function handleDeleteProject() {
     if (!project) return;
@@ -361,7 +377,7 @@ export function ProjectPage() {
       <Dialog
         open={applyFor !== null}
         onOpenChange={(open) => !open && setApplyFor(null)}
-        title={fr.projects.applyTitle}
+        title={applyFor ? fr.projects.applyTitleFor(applyFor.title) : fr.projects.applyTitle}
       >
         <div className="flex flex-col gap-3">
           <CodeTextarea

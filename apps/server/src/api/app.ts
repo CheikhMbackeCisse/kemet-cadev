@@ -38,6 +38,7 @@ import { registerModerationRoutes } from "./routes/moderation.js";
 import { registerCredentialRoutes } from "./routes/credentials.js";
 import { registerConversationRoutes } from "./routes/conversations.js";
 import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
+import { NoopPostAssistant, type PostAssistant } from "../ai/post-assistant.js";
 import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { WorkMatcher } from "../ai/work-matcher.js";
 import { FullTextWorkRetriever } from "../ai/work-retriever.js";
@@ -52,6 +53,7 @@ export interface AppDeps {
   storage?: FileStorage;
   attachmentLimits?: AttachmentLimits;
   assistant?: AssistantOrchestrator;
+  postAssistant?: PostAssistant;
   authConfig?: AuthConfig;
   privacyContact?: PrivacyContact | null;
   siteConfig?: SiteConfig;
@@ -72,6 +74,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const storage = deps.storage ?? new InMemoryStorage();
   const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
   const assistant = deps.assistant ?? new NoopAssistantOrchestrator();
+  const postAssistant = deps.postAssistant ?? new NoopPostAssistant();
+  // Une réponse en cours de rédaction n'est pas abandonnée à l'arrêt du serveur.
+  app.addHook("onClose", async () => postAssistant.idle());
   const authConfig = deps.authConfig ?? loadAuthConfig();
   const privacyContact = deps.privacyContact === undefined ? loadPrivacyContact() : deps.privacyContact;
   const antiSpamConfig = deps.antiSpamConfig ?? loadAntiSpamConfig();
@@ -165,6 +170,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       storage,
       attachmentLimits,
       assistant,
+      postAssistant,
       antiSpamConfig,
       workMatcher,
     };
@@ -199,6 +205,7 @@ export interface ChatAppDeps {
   storage: FileStorage;
   attachmentLimits: AttachmentLimits;
   assistant: AssistantOrchestrator;
+  postAssistant: PostAssistant;
   antiSpamConfig: AntiSpamConfig;
   workMatcher: WorkMatcher;
 }

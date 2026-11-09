@@ -11,6 +11,7 @@ import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
 import { ReportMenu } from "../moderation/ReportMenu.js";
 import { PostImages } from "./PostImages.js";
+import { AskKemetChip } from "./AskKemetChip.js";
 import { RichText } from "../content/RichText.js";
 import { WORK_TYPE_LABELS } from "../works/workLabels.js";
 import { cn } from "../../lib/cn.js";
@@ -98,6 +99,8 @@ export interface PostCardProps {
   onFeedback: () => void;
   onDelete: () => void;
   onReply?: () => void;
+  /** Pastille "Demander à @kemet d'expliquer", sous un post technique seulement. */
+  askKemet?: { href?: string; onClick?: () => void };
 }
 
 export function PostCard({
@@ -114,6 +117,7 @@ export function PostCard({
   onFeedback,
   onDelete,
   onReply,
+  askKemet,
 }: PostCardProps) {
   // Le corps contient ses propres liens (mentions, adresses) : il ne peut
   // pas être lui-même un lien. La date sert de lien vers le post, au clavier
@@ -198,6 +202,11 @@ export function PostCard({
             </a>
           )}
           {post.testAsk && <p className="mt-1 text-sm text-subtle">{post.testAsk}</p>}
+          {askKemet && !post.deletedAt && (
+            <div className="mt-2">
+              <AskKemetChip href={askKemet.href} onClick={askKemet.onClick} />
+            </div>
+          )}
 
           <div className="mt-3 flex flex-wrap items-center gap-x-1 gap-y-1">
             {replyHref ? (

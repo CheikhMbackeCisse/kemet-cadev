@@ -1,15 +1,20 @@
-import { Plus, Rss } from "lucide-react";
+import { FolderGit2, Plus, Rss } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { FeedTab, PostSummary } from "@kemet/shared";
+import type { FeedProject, FeedTab, PostSummary } from "@kemet/shared";
 import {
   ChatApiError,
   createPostFeedback,
   deletePost,
+  listFeedProjects,
   listPosts,
   setPostBookmark,
   togglePostReaction,
 } from "../lib/chat/api.js";
 import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
+import { ProjectFeedCard, ProjectFeedCardSkeleton } from "../components/feed/ProjectFeedCard.js";
+import { navigate } from "../lib/navigation/navigate.js";
+import { interleaveProjects } from "../lib/feed/interleave.js";
+import { ASK_KEMET_PARAM, isTechnicalPost } from "../lib/feed/technicalPost.js";
 import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { Button } from "../components/ui/Button.js";
@@ -58,9 +63,21 @@ function PostListItem({
       onSave={() => onSave(post.id)}
       onFeedback={() => onFeedback(post.id)}
       onDelete={() => onDeleteRequest(post.id)}
+      askKemet={
+        canInteract && !post.deletedAt && isTechnicalPost(post.body)
+          ? { href: `/fil/${post.id}?${ASK_KEMET_PARAM}=kemet` }
+          : undefined
+      }
     />
   );
 }
+
+// Onglet "Projets" : seulement les cartes projet, sans les posts.
+type FeedView = FeedTab | "projets";
+
+// Assez de cartes pour une carte tous les cinq posts sur une page de vingt.
+const PROJECTS_PER_POST_PAGE = 6;
+const PROJECTS_TAB_SIZE = 20;
 
 export function FeedPage() {
   const toast = useToast();
@@ -68,8 +85,9 @@ export function FeedPage() {
   const canInteract = status === "ready" && !isSuspended;
   // "Pour toi" par defaut pour tout le monde : un nouveau compte ne suit
   // encore personne, et ouvrait donc le fil sur une page vide.
-  const [tab, setTab] = useState<FeedTab>("pour-toi");
+  const [tab, setTab] = useState<FeedView>("pour-toi");
   const [posts, setPosts] = useState<PostSummary[]>([]);
+  const [projects, setProjects] = useState<FeedProject[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -79,13 +97,29 @@ export function FeedPage() {
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
-  const load = useCallback((currentTab: FeedTab) => {
+  const load = useCallback((currentTab: FeedView) => {
     setLoading(true);
     setError(false);
-    listPosts(currentTab)
-      .then((page) => {
+    if (currentTab === "projets") {
+      listFeedProjects("pour-toi", PROJECTS_TAB_SIZE)
+        .then((result) => {
+          setProjects(result.items);
+          setPosts([]);
+          setNextCursor(null);
+        })
+        .catch(() => setError(true))
+        .finally(() => setLoading(false));
+      return;
+    }
+    // Les cartes projet accompagnent le fil : sans elles, il reste lisible.
+    Promise.all([
+      listPosts(currentTab),
+      listFeedProjects(currentTab, PROJECTS_PER_POST_PAGE).catch(() => ({ items: [] })),
+    ])
+      .then(([page, projectResult]) => {
         setPosts(page.items);
         setNextCursor(page.nextCursor);
+        setProjects(projectResult.items);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -94,11 +128,12 @@ export function FeedPage() {
   useEffect(() => load(tab), [tab, load]);
 
   useEffect(() => {
-    if (status === "visitor") setTab("pour-toi");
+    if (status === "visitor")
+      setTab((current) => (current === "abonnements" ? "pour-toi" : current));
   }, [status]);
 
   async function loadMore() {
-    if (!nextCursor) return;
+    if (!nextCursor || tab === "projets") return;
     try {
       const page = await listPosts(tab, nextCursor);
       setPosts((current) => [...current, ...page.items]);
@@ -169,6 +204,39 @@ export function FeedPage() {
     }
   }
 
+  const projectsContent = loading ? (
+    <div className="flex flex-col divide-y divide-border">
+      <ProjectFeedCardSkeleton />
+      <ProjectFeedCardSkeleton />
+    </div>
+  ) : error ? (
+    <ErrorState
+      message={fr.feed.projectsLoadingError}
+      retry={{ label: fr.chat.retry, onClick: () => load(tab) }}
+    />
+  ) : projects.length === 0 ? (
+    <EmptyState
+      icon={FolderGit2}
+      message={status === "visitor" ? fr.feed.noProjectsVisitor : fr.feed.noProjects}
+      action={
+        status === "visitor"
+          ? { label: fr.feed.browseProjects, onClick: () => navigate("/projets") }
+          : { label: fr.feed.publishProject, onClick: () => navigate("/projets/nouveau") }
+      }
+    />
+  ) : (
+    <ul className="flex flex-col divide-y divide-border">
+      {projects.map((project) => (
+        <ProjectFeedCard
+          key={project.id}
+          project={project}
+          variant="row"
+          viewerProfileId={profile?.id ?? null}
+        />
+      ))}
+    </ul>
+  );
+
   const feedContent = loading ? (
     <div className="flex flex-col divide-y divide-border">
       <PostCardSkeleton />
@@ -184,18 +252,27 @@ export function FeedPage() {
   ) : (
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col divide-y divide-border">
-        {posts.map((post) => (
-          <PostListItem
-            key={post.id}
-            post={post}
-            canInteract={canInteract}
-            viewerProfileId={profile?.id ?? null}
-            onReact={handleReact}
-            onSave={handleSave}
-            onFeedback={setFeedbackPostId}
-            onDeleteRequest={setPostToDelete}
-          />
-        ))}
+        {interleaveProjects(posts, projects).map((entry) =>
+          entry.kind === "project" ? (
+            <ProjectFeedCard
+              key={`project-${entry.item.id}`}
+              project={entry.item}
+              variant="card"
+              viewerProfileId={profile?.id ?? null}
+            />
+          ) : (
+            <PostListItem
+              key={entry.item.id}
+              post={entry.item}
+              canInteract={canInteract}
+              viewerProfileId={profile?.id ?? null}
+              onReact={handleReact}
+              onSave={handleSave}
+              onFeedback={setFeedbackPostId}
+              onDeleteRequest={setPostToDelete}
+            />
+          ),
+        )}
       </ul>
       {nextCursor && (
         <Button variant="secondary" onClick={loadMore} className="self-center">
@@ -240,29 +317,33 @@ export function FeedPage() {
         {status === "ready" && <InstallBanner />}
         {isSuspended && <SuspendedBanner />}
 
-        {/* Un visiteur n'a pas d'abonnements : une barre d'onglets a un seul
-            onglet ressemblerait a un bouton isole. */}
-        {status === "visitor" ? (
-          feedContent
-        ) : (
-          <Tabs
-            layout="centered"
-            value={tab}
-            onValueChange={(value) => setTab(value as FeedTab)}
-            items={[
-              {
-                value: "pour-toi",
-                label: fr.feed.tabPourToi,
-                content: tab === "pour-toi" ? feedContent : null,
-              },
-              {
-                value: "abonnements",
-                label: fr.feed.tabAbonnements,
-                content: tab === "abonnements" ? feedContent : null,
-              },
-            ]}
-          />
-        )}
+        {/* Un visiteur n'a pas d'abonnements : seulement "Pour toi" et "Projets". */}
+        <Tabs
+          layout="centered"
+          value={tab}
+          onValueChange={(value) => setTab(value as FeedView)}
+          items={[
+            {
+              value: "pour-toi",
+              label: fr.feed.tabPourToi,
+              content: tab === "pour-toi" ? feedContent : null,
+            },
+            ...(status === "visitor"
+              ? []
+              : [
+                  {
+                    value: "abonnements",
+                    label: fr.feed.tabAbonnements,
+                    content: tab === "abonnements" ? feedContent : null,
+                  },
+                ]),
+            {
+              value: "projets",
+              label: fr.feed.tabProjets,
+              content: tab === "projets" ? projectsContent : null,
+            },
+          ]}
+        />
 
         <Dialog
           open={feedbackPostId !== null}
