@@ -4,7 +4,7 @@ import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden } from "../../errors.js";
 import {
   findAccountById,
-  findProfileByHandle,
+  findProfileOwningHandle,
   findProfileByUserId,
   listCredentials,
   upsertProfile,
@@ -85,7 +85,7 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       }
 
       if (patch.handle) {
-        const owner = await findProfileByHandle(db, patch.handle);
+        const owner = await findProfileOwningHandle(db, patch.handle);
         if (owner && owner.userId !== userId) {
           throw conflict("Cet identifiant est déjà pris.");
         }

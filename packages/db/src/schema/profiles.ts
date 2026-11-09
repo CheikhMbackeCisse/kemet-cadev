@@ -56,6 +56,10 @@ export const profiles = pgTable("profiles", {
   onboardingStep: onboardingStepEnum("onboarding_step").notNull().default("country"),
   onboardingCompletedAt: timestamp("onboarding_completed_at"),
   isDemo: boolean("is_demo").notNull().default(false),
+  // Figurant du seed de démonstration : sans aucun moyen de connexion,
+  // compté dans les totaux mais jamais montré (liste, recherche, profil,
+  // mention, messagerie). Voir docs/adr/0032-figurants-invisibles.md.
+  isFiller: boolean("is_filler").notNull().default(false),
   // Validation des compétitions et modération. Attribué seulement par
   // `pnpm db:promote-admin`, jamais par l'interface ni par le seed.
   isPlatformAdmin: boolean("is_platform_admin").notNull().default(false),

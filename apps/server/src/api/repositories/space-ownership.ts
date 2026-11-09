@@ -40,7 +40,10 @@ export async function handOverSpace(tx: Tx, spaceId: string, leavingProfileId: s
     .select({ id: spaceMembers.id })
     .from(spaceMembers)
     .innerJoin(profiles, eq(profiles.id, spaceMembers.profileId))
-    .where(and(eq(spaceMembers.spaceId, spaceId), ne(spaceMembers.profileId, leavingProfileId)))
+    // Jamais un figurant du seed : un propriétaire doit pouvoir être vu et joint.
+    .where(
+      and(eq(spaceMembers.spaceId, spaceId), ne(spaceMembers.profileId, leavingProfileId), eq(profiles.isFiller, false)),
+    )
     .orderBy(
       asc(sql`${profiles.suspendedAt} is not null`),
       asc(sql`case ${spaceMembers.role} when 'admin' then 0 else 1 end`),

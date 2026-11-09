@@ -89,7 +89,6 @@ function useAnnounceNavigation(
       const heading = document.querySelector<HTMLElement>("main h1, h1");
       const target = heading ?? document.querySelector<HTMLElement>("main");
       const title = heading?.textContent?.trim();
-      document.title = title ? fr.shell.documentTitle(title) : "Kemet";
       if (target) {
         if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
         target.focus({ preventScroll: true });
@@ -98,6 +97,33 @@ function useAnnounceNavigation(
     });
     return () => window.cancelAnimationFrame(frame);
   }, [location, announcer]);
+}
+
+function readDocumentTitle(): string {
+  const title = document.querySelector<HTMLElement>("main h1, h1")?.textContent?.trim();
+  return title ? fr.shell.documentTitle(title) : "Kemet";
+}
+
+// Le titre d'une page n'existe souvent qu'une fois ses données chargées : on
+// suit le document plutôt que de le lire une seule fois après la navigation.
+function useDocumentTitle() {
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const next = readDocumentTitle();
+        if (document.title !== next) document.title = next;
+      });
+    };
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
 }
 
 /**
@@ -121,6 +147,7 @@ export function Router({
   const announcer = useRef<HTMLDivElement>(null);
   usePreloading();
   useAnnounceNavigation(location, announcer);
+  useDocumentTitle();
 
   useEffect(() => {
     markInitialEntry();

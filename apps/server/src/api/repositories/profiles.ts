@@ -18,7 +18,17 @@ export async function isProfileDeleted(db: Db, profileId: string): Promise<boole
   return row?.deletedAt != null;
 }
 
+/** Profil visible d'un identifiant : un figurant du seed n'existe pour personne. */
 export async function findProfileByHandle(db: Db, handle: string) {
+  const [profile] = await db
+    .select()
+    .from(profiles)
+    .where(and(eq(profiles.handle, handle), eq(profiles.isFiller, false)));
+  return profile ?? null;
+}
+
+/** Identifiant déjà porté par un profil, figurants compris : sert seulement à refuser un doublon. */
+export async function findProfileOwningHandle(db: Db, handle: string) {
   const [profile] = await db.select().from(profiles).where(eq(profiles.handle, handle));
   return profile ?? null;
 }
@@ -108,9 +118,8 @@ export async function listFollowers(
   cursor: string | undefined,
   limit: number,
 ): Promise<ProfilePage> {
-  const condition = cursor
-    ? and(eq(follows.followeeId, profileId), lt(profiles.createdAt, new Date(cursor)))
-    : eq(follows.followeeId, profileId);
+  const visible = and(eq(follows.followeeId, profileId), eq(profiles.isFiller, false));
+  const condition = cursor ? and(visible, lt(profiles.createdAt, new Date(cursor))) : visible;
   const rows = await db
     .select({ profile: profiles })
     .from(follows)
@@ -127,9 +136,8 @@ export async function listFollowing(
   cursor: string | undefined,
   limit: number,
 ): Promise<ProfilePage> {
-  const condition = cursor
-    ? and(eq(follows.followerId, profileId), lt(profiles.createdAt, new Date(cursor)))
-    : eq(follows.followerId, profileId);
+  const visible = and(eq(follows.followerId, profileId), eq(profiles.isFiller, false));
+  const condition = cursor ? and(visible, lt(profiles.createdAt, new Date(cursor))) : visible;
   const rows = await db
     .select({ profile: profiles })
     .from(follows)
@@ -138,4 +146,22 @@ export async function listFollowing(
     .orderBy(desc(profiles.createdAt))
     .limit(limit + 1);
   return toPage(rows.map((row) => row.profile), limit);
+}
+
+/**
+ * Abonnés et abonnements jamais listés (figurants du seed) : ils restent dans
+ * les compteurs, la liste finit par "et N autres".
+ */
+export async function countHiddenFollows(db: Db, profileId: string, side: "followers" | "following") {
+  const [row] = await db
+    .select({ value: count() })
+    .from(follows)
+    .innerJoin(profiles, eq(profiles.id, side === "followers" ? follows.followerId : follows.followeeId))
+    .where(
+      and(
+        eq(side === "followers" ? follows.followeeId : follows.followerId, profileId),
+        eq(profiles.isFiller, true),
+      ),
+    );
+  return row?.value ?? 0;
 }

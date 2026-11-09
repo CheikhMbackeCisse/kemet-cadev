@@ -118,9 +118,9 @@ export async function removeSpaceMember(db: Db, spaceId: string, profileId: stri
 }
 
 export async function listSpaceMembers(db: Db, spaceId: string, cursor: string | undefined, limit: number) {
-  const condition = cursor
-    ? and(eq(spaceMembers.spaceId, spaceId), gt(spaceMembers.joinedAt, new Date(cursor)))
-    : eq(spaceMembers.spaceId, spaceId);
+  // Les figurants du seed comptent dans le nombre de membres, jamais dans la liste.
+  const visible = and(eq(spaceMembers.spaceId, spaceId), eq(profiles.isFiller, false));
+  const condition = cursor ? and(visible, gt(spaceMembers.joinedAt, new Date(cursor))) : visible;
   const rows = await db
     .select({ profile: profiles, role: spaceMembers.role, joinedAt: spaceMembers.joinedAt })
     .from(spaceMembers)
@@ -339,7 +339,9 @@ export async function resolveMentionableProfiles(db: DbOrTx, spaceId: string, ha
     .select({ id: profiles.id, handle: profiles.handle })
     .from(spaceMembers)
     .innerJoin(profiles, eq(profiles.id, spaceMembers.profileId))
-    .where(and(eq(spaceMembers.spaceId, spaceId), inArray(profiles.handle, handles)));
+    .where(
+      and(eq(spaceMembers.spaceId, spaceId), inArray(profiles.handle, handles), eq(profiles.isFiller, false)),
+    );
   return rows;
 }
 

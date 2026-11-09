@@ -1,4 +1,4 @@
-import { eq, getTableColumns, inArray } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray } from "drizzle-orm";
 import {
   account,
   applications,
@@ -48,7 +48,10 @@ import {
   type Db,
 } from "@kemet/db";
 
-function omit<Columns extends object, Key extends keyof Columns>(columns: Columns, ...keys: Key[]): Omit<Columns, Key> {
+function omit<Columns extends object, Key extends keyof Columns>(
+  columns: Columns,
+  ...keys: Key[]
+): Omit<Columns, Key> {
   const copy = { ...columns };
   for (const key of keys) delete copy[key];
   return copy;
@@ -72,7 +75,13 @@ const workMediaColumns = omit(getTableColumns(workMedia), "storageKey");
  */
 export async function buildAccountExport(db: Db, userId: string, profileId: string | null) {
   const [account_] = await db
-    .select({ id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified, createdAt: user.createdAt })
+    .select({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt,
+    })
     .from(user)
     .where(eq(user.id, userId));
   const [sessions, linkedAccounts] = await Promise.all([
@@ -91,7 +100,12 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
       .where(eq(account.userId, userId)),
   ]);
 
-  const base = { exportedAt: new Date().toISOString(), account: account_ ?? null, sessions, linkedAccounts };
+  const base = {
+    exportedAt: new Date().toISOString(),
+    account: account_ ?? null,
+    sessions,
+    linkedAccounts,
+  };
   if (!profileId) return { ...base, profile: null };
 
   const [
@@ -136,22 +150,33 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
       .select({ handle: profiles.handle, since: follows.createdAt })
       .from(follows)
       .innerJoin(profiles, eq(profiles.id, follows.followeeId))
-      .where(eq(follows.followerId, profileId)),
+      .where(and(eq(follows.followerId, profileId), eq(profiles.isFiller, false))),
     db
       .select({ handle: profiles.handle, since: follows.createdAt })
       .from(follows)
       .innerJoin(profiles, eq(profiles.id, follows.followerId))
-      .where(eq(follows.followeeId, profileId)),
+      .where(and(eq(follows.followeeId, profileId), eq(profiles.isFiller, false))),
     db
-      .select({ space: spaces.name, slug: spaces.slug, role: spaceMembers.role, joinedAt: spaceMembers.joinedAt })
+      .select({
+        space: spaces.name,
+        slug: spaces.slug,
+        role: spaceMembers.role,
+        joinedAt: spaceMembers.joinedAt,
+      })
       .from(spaceMembers)
       .innerJoin(spaces, eq(spaces.id, spaceMembers.spaceId))
       .where(eq(spaceMembers.profileId, profileId)),
     db.select().from(messages).where(eq(messages.authorId, profileId)),
     db.select().from(messageReactions).where(eq(messageReactions.profileId, profileId)),
-    db.select(messageAttachmentColumns).from(messageAttachments).where(eq(messageAttachments.authorId, profileId)),
+    db
+      .select(messageAttachmentColumns)
+      .from(messageAttachments)
+      .where(eq(messageAttachments.authorId, profileId)),
     db.select().from(posts).where(eq(posts.authorId, profileId)),
-    db.select(postAttachmentColumns).from(postAttachments).where(eq(postAttachments.authorId, profileId)),
+    db
+      .select(postAttachmentColumns)
+      .from(postAttachments)
+      .where(eq(postAttachments.authorId, profileId)),
     db.select().from(postReplies).where(eq(postReplies.authorId, profileId)),
     db.select().from(postReactions).where(eq(postReactions.profileId, profileId)),
     db.select().from(postBookmarks).where(eq(postBookmarks.profileId, profileId)),
@@ -184,7 +209,15 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
   const skillFileRows =
     skillRows.length === 0
       ? []
-      : await db.select().from(skillFiles).where(inArray(skillFiles.skillId, skillRows.map((skill) => skill.id)));
+      : await db
+          .select()
+          .from(skillFiles)
+          .where(
+            inArray(
+              skillFiles.skillId,
+              skillRows.map((skill) => skill.id),
+            ),
+          );
 
   const workRows = await db.select(workColumns).from(works).where(eq(works.publisherId, profileId));
   const workIds = workRows.map((work) => work.id);

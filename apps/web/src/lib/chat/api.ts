@@ -443,12 +443,15 @@ export function unfollowUser(handle: string) {
   return request<{ following: boolean }>(`/api/users/${handle}/follow`, { method: "DELETE" });
 }
 
-export function listUserFollowers(handle: string, cursor?: string): Promise<Page<ProfileSummary>> {
+/** `hiddenCount` : abonnés ou abonnements comptés mais jamais listés. */
+export type FollowPage = Page<ProfileSummary> & { hiddenCount: number };
+
+export function listUserFollowers(handle: string, cursor?: string): Promise<FollowPage> {
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
   return request(`/api/users/${handle}/followers${query}`);
 }
 
-export function listUserFollowing(handle: string, cursor?: string): Promise<Page<ProfileSummary>> {
+export function listUserFollowing(handle: string, cursor?: string): Promise<FollowPage> {
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
   return request(`/api/users/${handle}/following${query}`);
 }

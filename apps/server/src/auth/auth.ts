@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import type { Db } from "@kemet/db";
+import { profiles, type Db } from "@kemet/db";
+import { and, eq } from "drizzle-orm";
 import { DEMO_EMAIL_REJECTED_CODE, isDemoEmailAddress } from "@kemet/shared";
 import { DemoAddressFilter } from "../email/demo-address-filter.js";
 import type { EmailSender } from "../email/email-sender.js";
@@ -34,6 +35,18 @@ function rejectDemoEmail(email: unknown) {
       message: "Les adresses du domaine de démonstration ne peuvent pas créer de compte.",
     });
   }
+}
+
+// Un figurant du seed n'a ni mot de passe ni compte social, mais une
+// réinitialisation de mot de passe ou une liaison sociale par adresse email
+// créerait une ligne `account`. Aucune session ni aucun moyen de connexion
+// ne doit jamais lui être donné, quel que soit le chemin.
+async function rejectFillerUser(db: Db, userId: string) {
+  const [filler] = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.userId, userId), eq(profiles.isFiller, true)));
+  if (filler) throw new APIError("FORBIDDEN", { message: "Ce compte ne peut pas se connecter." });
 }
 
 export function createAuth(config: AuthConfig) {
@@ -92,6 +105,20 @@ export function createAuth(config: AuthConfig) {
         create: {
           before: async (newUser) => {
             rejectDemoEmail(newUser.email);
+          },
+        },
+      },
+      account: {
+        create: {
+          before: async (account) => {
+            await rejectFillerUser(config.db, account.userId);
+          },
+        },
+      },
+      session: {
+        create: {
+          before: async (session) => {
+            await rejectFillerUser(config.db, session.userId);
           },
         },
       },

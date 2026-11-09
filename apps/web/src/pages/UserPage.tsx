@@ -116,6 +116,7 @@ export function UserPage() {
   const [followListItems, setFollowListItems] = useState<ProfileSummary[]>([]);
   const [followListCursor, setFollowListCursor] = useState<string | null>(null);
   const [followListLoading, setFollowListLoading] = useState(false);
+  const [followListHidden, setFollowListHidden] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -198,12 +199,14 @@ export function UserPage() {
     setFollowList(kind);
     setFollowListItems([]);
     setFollowListCursor(null);
+    setFollowListHidden(0);
     setFollowListLoading(true);
     const loader = kind === "followers" ? listUserFollowers : listUserFollowing;
     loader(handle)
       .then((page) => {
         setFollowListItems(page.items);
         setFollowListCursor(page.nextCursor);
+        setFollowListHidden(page.hiddenCount);
       })
       .catch(() => toast.show(fr.profile.loadingError, "danger"))
       .finally(() => setFollowListLoading(false));
@@ -448,7 +451,7 @@ export function UserPage() {
         title={followList === "followers" ? fr.profile.followersTitle : fr.profile.followingTitle}
       >
         <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
-          {followListItems.length === 0 && !followListLoading ? (
+          {followListItems.length === 0 && followListHidden === 0 && !followListLoading ? (
             <p className="text-sm text-subtle">
               {followList === "followers" ? fr.profile.emptyFollowers : fr.profile.emptyFollowing}
             </p>
@@ -470,6 +473,14 @@ export function UserPage() {
             ))
           )}
           {followListLoading && <Skeleton className="h-10 w-full" />}
+          {!followListCursor && !followListLoading && followListHidden > 0 && (
+            <p className="px-1 text-sm text-text-2">
+              {fr.profile.hiddenFollows(
+                new Intl.NumberFormat("fr-FR").format(followListHidden),
+                followListItems.length > 0,
+              )}
+            </p>
+          )}
           {followListCursor && !followListLoading && (
             <Button
               variant="secondary"

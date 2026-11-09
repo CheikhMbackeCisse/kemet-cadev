@@ -4,6 +4,7 @@ import type { CreatePostInput } from "@kemet/shared";
 import { badRequest } from "../../errors.js";
 import { findProfileById } from "./chat.js";
 import { listAttachmentsForPosts } from "./post-attachments.js";
+import { notWrittenByFiller } from "./fillers.js";
 
 // Fenêtre du classement "Pour toi" : "Utile" et retours de test sur les
 // posts récents, sans pondération par niveau (docs/adr/0010-fil-de-posts.md).
@@ -43,8 +44,9 @@ export async function insertPost(
   return post!;
 }
 
+/** Un post écrit par un figurant du seed n'existe pour personne, en lecture comme en écriture. */
 export async function findPostById(db: Db, postId: string) {
-  const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+  const [post] = await db.select().from(posts).where(and(eq(posts.id, postId), notWrittenByFiller(posts.authorId)));
   return post ?? null;
 }
 
@@ -66,7 +68,7 @@ export async function listFolloweeIds(db: Db, profileId: string) {
 export async function listAbonnementsFeed(db: Db, viewerProfileId: string, cursor: string | undefined, limit: number) {
   const followeeIds = await listFolloweeIds(db, viewerProfileId);
   const authorIds = [viewerProfileId, ...followeeIds];
-  const visible = and(isNull(posts.deletedAt), inArray(posts.authorId, authorIds));
+  const visible = and(isNull(posts.deletedAt), inArray(posts.authorId, authorIds), notWrittenByFiller(posts.authorId));
   const condition = cursor ? and(visible, lt(posts.createdAt, new Date(cursor))) : visible;
   const rows = await db.select().from(posts).where(condition).orderBy(desc(posts.createdAt)).limit(limit + 1);
   return toPage(rows, limit);
@@ -88,7 +90,7 @@ export async function listPourToiFeed(db: Db, limit: number) {
   const rows = await db
     .select({ post: posts })
     .from(posts)
-    .where(and(isNull(posts.deletedAt), gt(posts.createdAt, since)))
+    .where(and(isNull(posts.deletedAt), gt(posts.createdAt, since), notWrittenByFiller(posts.authorId)))
     .orderBy(desc(score), desc(posts.createdAt))
     .limit(limit);
   return { items: rows.map((row) => row.post), nextCursor: null as string | null };
@@ -160,7 +162,7 @@ function parseCursorDate(cursor: string): Date {
 
 /** Posts enregistrés, du plus récemment enregistré au plus ancien ; le curseur est la date d'enregistrement. */
 export async function listBookmarkedPosts(db: Db, profileId: string, cursor: string | undefined, limit: number) {
-  const own = and(eq(postBookmarks.profileId, profileId), isNull(posts.deletedAt));
+  const own = and(eq(postBookmarks.profileId, profileId), isNull(posts.deletedAt), notWrittenByFiller(posts.authorId));
   const condition = cursor ? and(own, lt(postBookmarks.createdAt, parseCursorDate(cursor))) : own;
   const rows = await db
     .select({ post: posts, savedAt: postBookmarks.createdAt })
@@ -228,7 +230,7 @@ export async function softDeletePostReply(db: Db, replyId: string) {
 }
 
 export async function listPostReplies(db: Db, postId: string, cursor: string | undefined, limit: number) {
-  const visible = eq(postReplies.postId, postId);
+  const visible = and(eq(postReplies.postId, postId), notWrittenByFiller(postReplies.authorId));
   const condition = cursor ? and(visible, gt(postReplies.createdAt, new Date(cursor))) : visible;
   const rows = await db.select().from(postReplies).where(condition).orderBy(asc(postReplies.createdAt)).limit(limit + 1);
   const hasMore = rows.length > limit;
@@ -283,6 +285,6 @@ export async function listPostFeedback(db: Db, postId: string) {
     .select({ feedback: postFeedback, author: profiles })
     .from(postFeedback)
     .innerJoin(profiles, eq(profiles.id, postFeedback.authorId))
-    .where(eq(postFeedback.postId, postId))
+    .where(and(eq(postFeedback.postId, postId), eq(profiles.isFiller, false)))
     .orderBy(desc(postFeedback.createdAt));
 }

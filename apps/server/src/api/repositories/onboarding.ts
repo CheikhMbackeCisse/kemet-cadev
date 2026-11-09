@@ -148,6 +148,7 @@ export async function suggestPeople(db: Db, viewer: ProfileRow) {
         ne(profiles.id, KEMET_ASSISTANT_PROFILE_ID),
         isNull(profiles.deletedAt),
         isNull(profiles.suspendedAt),
+        eq(profiles.isFiller, false),
         sql`not exists (select 1 from ${profileBlocks} where (${profileBlocks.blockerId} = ${viewer.id} and ${profileBlocks.blockedId} = ${profiles.id}) or (${profileBlocks.blockerId} = ${profiles.id} and ${profileBlocks.blockedId} = ${viewer.id}))`,
       ),
     )

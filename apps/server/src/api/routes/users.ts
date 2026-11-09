@@ -13,6 +13,7 @@ import {
   listCredentials,
   listFollowers,
   listFollowing,
+  countHiddenFollows,
 } from "../repositories/profiles.js";
 import { computeProfilePoints } from "../repositories/points.js";
 import { serializeCredential, serializeProfile, serializeProfileSummary } from "../serializers.js";
@@ -71,7 +72,11 @@ export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps):
       const profile = await requireProfileByHandle(db, request.params.handle);
       const query = paginationQuerySchema.parse(request.query);
       const page = await listFollowers(db, profile.id, query.cursor, query.limit);
-      return { items: page.items.map(serializeProfileSummary), nextCursor: page.nextCursor };
+      return {
+        items: page.items.map(serializeProfileSummary),
+        nextCursor: page.nextCursor,
+        hiddenCount: await countHiddenFollows(db, profile.id, "followers"),
+      };
     },
   );
 
@@ -81,7 +86,11 @@ export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps):
       const profile = await requireProfileByHandle(db, request.params.handle);
       const query = paginationQuerySchema.parse(request.query);
       const page = await listFollowing(db, profile.id, query.cursor, query.limit);
-      return { items: page.items.map(serializeProfileSummary), nextCursor: page.nextCursor };
+      return {
+        items: page.items.map(serializeProfileSummary),
+        nextCursor: page.nextCursor,
+        hiddenCount: await countHiddenFollows(db, profile.id, "following"),
+      };
     },
   );
 }

@@ -1268,6 +1268,8 @@ export const fr = {
     followersTitle: "Abonnés",
     followingTitle: "Abonnements",
     emptyFollowers: "Personne pour l'instant.",
+    hiddenFollows: (count: string, afterNames: boolean) =>
+      afterNames ? `Et ${count} autres.` : `${count} personnes.`,
     emptyFollowing: "Personne pour l'instant.",
     loadMore: "Charger plus",
     credentialsTitle: "Parcours",

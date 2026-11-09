@@ -82,6 +82,7 @@ function searchCondition(q: string): SQL {
         where ${qualified(workAuthors.workId)} = ${qualified(works.id)} and ${qualified(workAuthors.status)} = 'accepted'
       ))
       and ${qualified(profiles.deletedAt)} is null
+      and ${qualified(profiles.isFiller)} = false
       and (${qualified(profiles.displayName)} ilike ${pattern} or ${qualified(profiles.handle)} ilike ${pattern})
     )
     or exists (
