@@ -1,9 +1,9 @@
 import {
   COUNTRY_CODES,
-  intentSchema,
-  interestSchema,
-  otherAnswerSchema,
-  profileRoleSchema,
+  INTENTS,
+  INTERESTS,
+  OTHER_ANSWER_MAX_LENGTH,
+  PROFILE_ROLES,
   type Intent,
   type Interest,
   type ProfileRole,
@@ -37,35 +37,47 @@ const STORAGE_KEY = "kemet.intro";
 // le compte créé par quelqu'un d'autre le lendemain.
 const ANSWERS_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
-function parseList<T>(value: unknown, parse: (item: unknown) => T | null): T[] | undefined {
+function oneOf<T extends string>(values: readonly T[], value: unknown): T | undefined {
+  return values.find((candidate) => candidate === value);
+}
+
+function parseList<T extends string>(values: readonly T[], value: unknown): T[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.flatMap((item) => {
-    const parsed = parse(item);
-    return parsed === null ? [] : [parsed];
+    const parsed = oneOf(values, item);
+    return parsed === undefined ? [] : [parsed];
   });
 }
 
-// Le contenu vient du navigateur : chaque valeur est relue avec les schémas
-// partagés, et ce qui ne passe pas est simplement oublié.
+// Mêmes règles que otherAnswerSchema, sans zod : ce module fait partie du
+// premier fichier chargé, que zod alourdirait d'environ 35 ko compressés.
+function parseOtherAnswer(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length >= 1 && trimmed.length <= OTHER_ANSWER_MAX_LENGTH ? trimmed : undefined;
+}
+
+// Le contenu vient du navigateur : chaque valeur est relue avec les listes
+// partagées, et ce qui ne passe pas est simplement oublié.
 function parseStored(raw: unknown): Stored {
   if (typeof raw !== "object" || raw === null) return { seen: false, answers: {} };
   const record = raw as { seen?: unknown; answers?: Record<string, unknown>; savedAt?: unknown };
   const fresh = typeof record.savedAt === "number" && Date.now() - record.savedAt < ANSWERS_LIFETIME_MS;
   const answers = fresh && typeof record.answers === "object" && record.answers !== null ? record.answers : {};
-  const role = profileRoleSchema.safeParse(answers.role);
-  const roleOther = otherAnswerSchema.safeParse(answers.roleOther);
-  const interestOther = otherAnswerSchema.safeParse(answers.interestOther);
-  const country = typeof answers.country === "string" && COUNTRY_CODES.includes(answers.country) ? answers.country : undefined;
+  const role = oneOf(PROFILE_ROLES, answers.role);
+  const roleOther = parseOtherAnswer(answers.roleOther);
+  const interestOther = parseOtherAnswer(answers.interestOther);
+  const country = oneOf(COUNTRY_CODES, answers.country);
   return {
     seen: record.seen === true,
     ...(fresh && { savedAt: record.savedAt as number }),
     answers: {
-      ...(role.success && { role: role.data }),
-      ...(roleOther.success && { roleOther: roleOther.data }),
-      ...(interestOther.success && { interestOther: interestOther.data }),
+      ...(role && { role }),
+      ...(roleOther && { roleOther }),
+      ...(interestOther && { interestOther }),
       ...(country && { country }),
-      interests: parseList(answers.interests, (item) => interestSchema.safeParse(item).data ?? null),
-      intents: parseList(answers.intents, (item) => intentSchema.safeParse(item).data ?? null),
+      interests: parseList(INTERESTS, answers.interests),
+      intents: parseList(INTENTS, answers.intents),
     },
   };
 }

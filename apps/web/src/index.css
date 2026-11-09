@@ -2,10 +2,8 @@
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
-@import "@fontsource/plus-jakarta-sans/800.css";
 @import "@fontsource-variable/geist-mono";
 @import "@fontsource-variable/space-grotesk/wght.css";
-@import "flag-icons/css/flag-icons.min.css";
 @import "./styles/tokens.css";
 
 @tailwind base;
@@ -199,6 +197,11 @@
 
 .arrival-background[data-paused] .arrival-float {
   animation-play-state: paused;
+}
+
+.arrival-background[data-still] .arrival-float {
+  animation: none;
+  will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {

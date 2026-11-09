@@ -17,7 +17,7 @@ function option(country: (typeof COUNTRIES)[number]) {
     value: country.code,
     label: (
       <span className="flex items-center gap-2">
-        <Flag countryCode={country.code} />
+        <Flag countryCode={country.code} decorative />
         {country.name}
       </span>
     ),

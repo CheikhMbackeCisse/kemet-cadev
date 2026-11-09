@@ -3,7 +3,9 @@
 #   - un domaine réel ou un nom sslip.io en production : Caddy obtient seul
 #     un certificat Let's Encrypt, sans autre réglage.
 {$PUBLIC_HOST} {
-	encode gzip
+	# Les fichiers de l'app arrivent déjà compressés en Brotli par le serveur
+	# web ; encode ne retouche pas une réponse qui porte Content-Encoding.
+	encode zstd gzip
 
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

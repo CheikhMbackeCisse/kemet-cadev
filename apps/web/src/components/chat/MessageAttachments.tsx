@@ -20,6 +20,8 @@ export function MessageAttachments({ attachments }: { attachments: Attachment[] 
             key={attachment.id}
             src={attachmentUrl(attachment.id)}
             alt={attachment.originalName}
+            loading="lazy"
+            decoding="async"
             className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
           />
         ) : (

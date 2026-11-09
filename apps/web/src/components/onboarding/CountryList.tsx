@@ -46,7 +46,7 @@ export function CountryList({ value, onChange, tone = "page" }: CountryListProps
           <>
             {/* Le nom suit : le drapeau répété ferait lire le pays deux fois. */}
             <span aria-hidden="true" className="inline-flex">
-              <Flag countryCode={country.code} />
+              <Flag countryCode={country.code} decorative />
             </span>
             {country.name}
           </>

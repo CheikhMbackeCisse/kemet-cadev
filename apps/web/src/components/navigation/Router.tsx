@@ -20,6 +20,8 @@ import {
   savedScrollY,
 } from "../../lib/navigation/navigate.js";
 import { MAIN_SECTION_PATHS, pageFor, preloadPage } from "../../lib/navigation/pages.js";
+import { whenIdle } from "../../lib/idle.js";
+import { isSlowConnection } from "../../lib/network.js";
 
 interface RenderedLocation {
   pathname: string;
@@ -33,14 +35,28 @@ function readLocation(id: number, via: RenderedLocation["via"]): RenderedLocatio
   return { pathname: window.location.pathname, search: window.location.search, id, via };
 }
 
-function whenIdle(callback: () => void) {
-  if ("requestIdleCallback" in window) window.requestIdleCallback(callback, { timeout: 4000 });
-  else setTimeout(callback, 1500);
+const SECTION_PRELOAD_IDLE_TIMEOUT_MS = 4000;
+
+// Les sections se préchargent une fois la page entièrement chargée : plus tôt,
+// elles prenaient la bande passante des images et des données de la page
+// affichée. Sur connexion lente, seul le geste vers un lien précharge.
+function preloadSectionsAfterLoad(): () => void {
+  if (isSlowConnection()) return () => {};
+  let cancelIdle = () => {};
+  const start = () => {
+    cancelIdle = whenIdle(() => MAIN_SECTION_PATHS.forEach(preloadPage), SECTION_PRELOAD_IDLE_TIMEOUT_MS);
+  };
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start, { once: true });
+  return () => {
+    window.removeEventListener("load", start);
+    cancelIdle();
+  };
 }
 
 function usePreloading() {
   useEffect(() => {
-    whenIdle(() => MAIN_SECTION_PATHS.forEach(preloadPage));
+    const cancelSectionPreload = preloadSectionsAfterLoad();
     const onIntent = (event: Event) => {
       const path = intentPathFrom(event);
       if (path) preloadPage(path);
@@ -49,6 +65,7 @@ function usePreloading() {
     document.addEventListener("focusin", onIntent);
     document.addEventListener("touchstart", onIntent, { passive: true });
     return () => {
+      cancelSectionPreload();
       document.removeEventListener("mouseover", onIntent);
       document.removeEventListener("focusin", onIntent);
       document.removeEventListener("touchstart", onIntent);

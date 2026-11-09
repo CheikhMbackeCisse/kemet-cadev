@@ -6,6 +6,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import { fr } from "./src/i18n/fr.js";
 import { SERVER_NAVIGATION_DENYLIST } from "./src/pwa/navigation-denylist.js";
 import { keepShellEntries } from "./src/pwa/precache-shell.js";
+import { preloadFonts } from "./src/vite/preloadFonts.js";
 
 const outDir = resolve(import.meta.dirname, "dist");
 
@@ -24,6 +25,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    preloadFonts(),
     VitePWA({
       registerType: "autoUpdate",
       workbox: {

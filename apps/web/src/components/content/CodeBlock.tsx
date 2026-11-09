@@ -1,14 +1,17 @@
 import { Check, Copy } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ThemedToken } from "shiki/core";
 import { fr } from "../../i18n/fr.js";
+import { whenIdle } from "../../lib/idle.js";
+import { useNearViewport } from "../../lib/useNearViewport.js";
 import { MAX_HIGHLIGHTED_CODE_LENGTH, highlight, resolveLanguage } from "./highlighter.js";
 
 const COPIED_FEEDBACK_MS = 2000;
 // Une réponse de l'assistant arrive morceau par morceau : attendre que le
 // code cesse de changer évite de le recolorer à chaque morceau.
 const HIGHLIGHT_DEBOUNCE_MS = 300;
+const HIGHLIGHT_IDLE_TIMEOUT_MS = 2000;
 
 export interface CodeBlockProps {
   code: string;
@@ -21,24 +24,33 @@ export function CodeBlock({ code, languageLabel }: CodeBlockProps) {
   const [tokens, setTokens] = useState<ThemedToken[][] | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const label = languageLabel || fr.content.plainText;
+  const blockRef = useRef<HTMLDivElement>(null);
+  // Shiki, la grammaire et la coloration (plusieurs centaines de millisecondes
+  // sur un téléphone d'entrée de gamme) n'arrivent qu'avec un bloc à l'écran :
+  // un fil chargé en 3G ne paie pas pour les blocs plus bas.
+  const nearViewport = useNearViewport(blockRef);
 
   useEffect(() => {
     setTokens(null);
-    if (!language || code.length > MAX_HIGHLIGHTED_CODE_LENGTH) return;
+    if (!nearViewport || !language || code.length > MAX_HIGHLIGHTED_CODE_LENGTH) return;
     let cancelled = false;
+    let cancelIdle = () => {};
     const timer = setTimeout(() => {
-      // En cas d'échec du chargement de la grammaire, le code reste affiché
-      // en texte brut : la coloration est un confort, pas le contenu.
-      highlight(code, language).then(
-        (result) => !cancelled && setTokens(result),
-        () => undefined,
-      );
+      cancelIdle = whenIdle(() => {
+        // En cas d'échec du chargement de la grammaire, le code reste affiché
+        // en texte brut : la coloration est un confort, pas le contenu.
+        highlight(code, language).then(
+          (result) => !cancelled && setTokens(result),
+          () => undefined,
+        );
+      }, HIGHLIGHT_IDLE_TIMEOUT_MS);
     }, HIGHLIGHT_DEBOUNCE_MS);
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      cancelIdle();
     };
-  }, [code, language]);
+  }, [code, language, nearViewport]);
 
   useEffect(() => {
     if (copyState === "idle") return;
@@ -63,7 +75,7 @@ export function CodeBlock({ code, languageLabel }: CodeBlockProps) {
         : fr.content.copy;
 
   return (
-    <div className="my-2 overflow-hidden rounded-card border border-border bg-surface-2">
+    <div ref={blockRef} className="my-2 overflow-hidden rounded-card border border-border bg-surface-2">
       <div className="flex items-center justify-between border-b border-border px-3 py-1">
         <span className="font-mono text-xs text-muted">{label}</span>
         <button

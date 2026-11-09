@@ -645,6 +645,7 @@ export const fr = {
     cancel: "Annuler",
   },
   feed: {
+    openImage: (name: string) => `Ouvrir l'image ${name} en entier (nouvel onglet)`,
     openPost: (authorName: string, time: string) => `Ouvrir le post de ${authorName}, ${time}`,
     title: "Fil",
     tabAbonnements: "Abonnements",

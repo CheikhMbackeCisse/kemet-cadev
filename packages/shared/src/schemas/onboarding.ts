@@ -1,30 +1,12 @@
 import { z } from "zod";
+import {
+  INTENTS,
+  INTERESTS,
+  ONBOARDING_STEPS,
+  OTHER_ANSWER_MAX_LENGTH,
+} from "../data/onboarding-values.js";
 import { levelSchema } from "./points.js";
 import { profileSummarySchema } from "./profile.js";
-
-/**
- * Domaines proposés avant l'inscription et à l'écran "Sujets d'intérêt". Ils ne
- * servent qu'aux suggestions d'espaces et de personnes. Les valeurs déjà
- * enregistrées (web, payments, embedded...) gardent leur nom.
- */
-export const INTERESTS = [
-  "web",
-  "mobile",
-  "backend",
-  "ai",
-  "data",
-  "devops",
-  "security",
-  "networks",
-  "embedded",
-  "payments",
-  "blockchain",
-  "games",
-  "design",
-  "testing",
-  "systems",
-  "other",
-] as const;
 
 export const interestSchema = z.enum(INTERESTS);
 
@@ -55,34 +37,11 @@ export const INTEREST_KEYWORDS: Record<Interest, readonly string[]> = {
 };
 
 /** Précision écrite à côté d'un choix "Autre". */
-export const otherAnswerSchema = z.string().trim().min(1).max(60);
-
-/**
- * Ce que la personne vient faire (apprendre, aider, montrer ses travaux,
- * recruter) ou, si elle ne développe pas, ce qu'elle cherche.
- */
-export const INTENTS = [
-  "learn",
-  "help_others",
-  "showcase_work",
-  "recruit",
-  "find_partner",
-  "follow_community",
-] as const;
+export const otherAnswerSchema = z.string().trim().min(1).max(OTHER_ANSWER_MAX_LENGTH);
 
 export const intentSchema = z.enum(INTENTS);
 
 export type Intent = z.infer<typeof intentSchema>;
-
-/** Les six écrans, dans l'ordre. Le pays, le rôle et la spécialité sont des champs du profil. */
-export const ONBOARDING_STEPS = [
-  "country",
-  "role",
-  "specialty",
-  "interests",
-  "spaces",
-  "people",
-] as const;
 
 export const onboardingStepSchema = z.enum(ONBOARDING_STEPS);
 

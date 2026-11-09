@@ -1,6 +1,7 @@
 import { BrainCircuit, Cpu, Lock, Shield, Wifi } from "lucide-react";
 import { useEffect, useState, type CSSProperties } from "react";
 import { cn } from "../../lib/cn.js";
+import { isSlowConnection } from "../../lib/network.js";
 import { AFRICA_OUTLINE_PATH, AFRICA_OUTLINE_VIEWBOX } from "./africaOutline.js";
 import {
   FLOATING_ITEMS,
@@ -148,15 +149,19 @@ function usePageVisible(): boolean {
  * vingtaine d'éléments au plus qui dérivent lentement derrière la carte en
  * verre dépoli. Sur l'accueil ("rich"), le continent occupe le centre avec
  * le réseau de ses capitales, et les logos gardent leurs couleurs.
+ * Sur connexion lente ou en économie de données, tout reste immobile : le
+ * téléphone a déjà assez à faire avec le téléchargement de la page.
  * Purement décoratif.
  */
 export function ArrivalBackground({ motion }: { motion: ArrivalMotion }) {
   const visible = usePageVisible();
+  const [still] = useState(isSlowConnection);
 
   return (
     <div
       aria-hidden="true"
       data-paused={visible ? undefined : ""}
+      data-still={still ? "" : undefined}
       className="arrival-background pointer-events-none fixed inset-0 overflow-hidden"
       style={{ backgroundImage: "linear-gradient(160deg, var(--auth-bg-from), var(--auth-bg-to))" }}
     >
@@ -181,7 +186,7 @@ export function ArrivalBackground({ motion }: { motion: ArrivalMotion }) {
         // Corne compris, soit environ 65 % de la hauteur. Remonté pour que la
         // carte, en bas, ne couvre que l'Afrique australe.
         <div className="absolute inset-0 flex items-center justify-center pb-[14vh] md:pb-[22vh]">
-          <AfricaNetwork paused={!visible} className="h-[min(72svh,135vw)] md:h-[72vh]" />
+          <AfricaNetwork paused={!visible || still} className="h-[min(72svh,135vw)] md:h-[72vh]" />
         </div>
       ) : (
         <svg

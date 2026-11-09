@@ -21,5 +21,6 @@ export * from "./schemas/work-media.js";
 export * from "./schemas/competition.js";
 export * from "./schemas/moderation.js";
 export * from "./data/countries.js";
+export * from "./data/onboarding-values.js";
 export * from "./demo-email.js";
 export * from "./schemas/onboarding.js";

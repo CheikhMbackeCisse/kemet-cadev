@@ -83,7 +83,7 @@ export function MobileSpaceNavigator({
                     )}
                   >
                     {space.imageUrl ? (
-                      <img src={space.imageUrl} alt="" className="size-full object-cover" />
+                      <img src={space.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
                     ) : (
                       monogramOf(space.name)
                     )}

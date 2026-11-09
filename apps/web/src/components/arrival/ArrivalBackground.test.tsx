@@ -49,4 +49,19 @@ describe("ArrivalBackground", () => {
     const { container } = render(<ArrivalBackground motion="rich" />);
     expect(container.firstElementChild?.getAttribute("aria-hidden")).toBe("true");
   });
+
+  it("reste immobile en économie de données", () => {
+    Object.defineProperty(navigator, "connection", { value: { saveData: true }, configurable: true });
+    try {
+      const { container } = render(<ArrivalBackground motion="rich" />);
+      expect(container.querySelector(".arrival-background")!.hasAttribute("data-still")).toBe(true);
+    } finally {
+      Reflect.deleteProperty(navigator, "connection");
+    }
+  });
+
+  it("s'anime sur une connexion normale", () => {
+    const { container } = render(<ArrivalBackground motion="rich" />);
+    expect(container.querySelector(".arrival-background")!.hasAttribute("data-still")).toBe(false);
+  });
 });

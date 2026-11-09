@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COUNTRY_CODES } from "../data/countries.js";
+import { PROFILE_ROLES } from "../data/onboarding-values.js";
 import { levelSchema } from "./points.js";
 import { httpUrlSchema } from "./url.js";
 
@@ -23,7 +24,7 @@ export const profileCountrySchema = z.union([countryCodeSchema, z.literal("")]);
 
 export const stackSchema = z.array(z.string().min(1).max(40)).max(20);
 
-export const profileRoleSchema = z.enum(["developer", "designer", "hr", "student", "project_manager", "entrepreneur", "other"]);
+export const profileRoleSchema = z.enum(PROFILE_ROLES);
 
 export type ProfileRole = z.infer<typeof profileRoleSchema>;
 

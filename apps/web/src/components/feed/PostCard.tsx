@@ -58,7 +58,7 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
         </time>
       </div>
       <p className="mt-1 text-sm text-text-2">{post.body}</p>
-      <PostImages attachments={post.attachments} />
+      <PostImages attachments={post.attachments} linked={false} />
     </a>
   );
 }
