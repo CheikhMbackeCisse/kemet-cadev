@@ -9,10 +9,10 @@ test(
   "une navigation vers l'api atteint le serveur même sous le service worker",
   { tag: "@prod-smoke" },
   async ({ page }) => {
-    // Le service worker ne s'active qu'une fois tout son précache téléchargé
-    // (environ 4 Mo) : une vingtaine de secondes contre la production depuis
-    // Dakar, contre une seule sur la pile locale de la CI.
-    test.setTimeout(90_000);
+    // Le service worker ne s'active qu'une fois sa précache téléchargée, un
+    // fichier après l'autre : la coquille seule (src/pwa/precache-shell.ts),
+    // quelques secondes depuis Dakar.
+    test.setTimeout(45_000);
     // Sans cela, "/" renvoie le visiteur vers l'accueil pendant l'attente.
     await skipIntro(page);
     await page.goto("/fil");
