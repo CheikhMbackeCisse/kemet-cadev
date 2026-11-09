@@ -17,6 +17,7 @@ export const createSkillSchema = z
     tags: z.array(z.string().min(1).max(30)).max(MAX_SKILL_TAGS).default([]),
     visibility: skillVisibilitySchema.default("public"),
     spaceId: z.string().uuid().nullable().optional(),
+    isBeginner: z.boolean().default(false),
   })
   .refine((input) => input.visibility !== "space" || !!input.spaceId, {
     message: "Un skill limité à un espace doit préciser cet espace.",
@@ -42,6 +43,7 @@ export const skillSummarySchema = z.object({
   description: z.string(),
   tags: z.array(z.string()),
   visibility: skillVisibilitySchema,
+  isBeginner: z.boolean(),
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
@@ -52,7 +54,11 @@ export const skillSummarySchema = z.object({
   createdAt: z.string().datetime(),
 });
 
-export const skillListQuerySchema = z.object({ q: z.string().trim().max(100).optional() });
+export const skillListQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  /** "1" : seulement les skills marqués "Débutant". */
+  beginner: z.literal("1").optional(),
+});
 
 export type SkillSummary = z.infer<typeof skillSummarySchema>;
 

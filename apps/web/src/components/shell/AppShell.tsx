@@ -147,7 +147,11 @@ export function AppShell({
             {/* Sous lg, le salon d'abord, en entier sur deux lignes au plus,
               l'espace en dessous : "Espace · #salon" sur une ligne
               coupait le nom du salon dès que l'espace avait un nom long. */}
-            <h1 ref={chatTitleRef} tabIndex={-1} className="flex min-w-0 flex-1 flex-col px-2 outline-none lg:hidden">
+            <h1
+              ref={chatTitleRef}
+              tabIndex={-1}
+              className="flex min-w-0 flex-1 flex-col px-2 outline-none lg:hidden"
+            >
               <span className="line-clamp-2 break-words text-md font-semibold leading-tight text-text">
                 {activeChannelName ?? channelList.spaceName}
               </span>

@@ -21,6 +21,7 @@ import { registerMeRoutes } from "./routes/me.js";
 import { registerOnboardingRoutes } from "./routes/onboarding.js";
 import { registerAccountDeletionRoutes } from "./routes/account-deletion.js";
 import { registerUserRoutes } from "./routes/users.js";
+import { registerLibraryRoutes } from "./routes/library.js";
 import { registerLevelRoutes } from "./routes/levels.js";
 import { registerSpaceRoutes } from "./routes/spaces.js";
 import { registerChannelRoutes } from "./routes/channels.js";
@@ -190,6 +191,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerCredentialRoutes(app, chatDeps);
     registerAccountDeletionRoutes(app, chatDeps);
     registerWorkRoutes(app, chatDeps);
+    registerLibraryRoutes(app, chatDeps);
     registerWorkMediaRoutes(app, chatDeps);
     registerWorkMatchRoutes(app, chatDeps);
     registerConversationRoutes(app, chatDeps);

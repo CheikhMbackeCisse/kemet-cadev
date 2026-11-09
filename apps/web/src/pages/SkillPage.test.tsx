@@ -44,6 +44,7 @@ function skillBy(authorId: string): SkillDetail {
     averageStars: null,
     ratingCount: 0,
     usageCount: 0,
+    isBeginner: false,
     createdAt: new Date(0).toISOString(),
     content: "Contenu",
     spaceId: null,

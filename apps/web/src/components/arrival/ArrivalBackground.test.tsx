@@ -51,7 +51,10 @@ describe("ArrivalBackground", () => {
   });
 
   it("reste immobile en économie de données", () => {
-    Object.defineProperty(navigator, "connection", { value: { saveData: true }, configurable: true });
+    Object.defineProperty(navigator, "connection", {
+      value: { saveData: true },
+      configurable: true,
+    });
     try {
       const { container } = render(<ArrivalBackground motion="rich" />);
       expect(container.querySelector(".arrival-background")!.hasAttribute("data-still")).toBe(true);

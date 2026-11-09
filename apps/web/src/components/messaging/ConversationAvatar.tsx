@@ -3,7 +3,11 @@ import type { Conversation } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 
 /** Photo de l'autre personne ; pour un groupe, une icône plutôt qu'un empilement illisible à 40 px. */
-export function ConversationAvatar({ conversation }: { conversation: Pick<Conversation, "isGroup" | "participants"> }) {
+export function ConversationAvatar({
+  conversation,
+}: {
+  conversation: Pick<Conversation, "isGroup" | "participants">;
+}) {
   const [first] = conversation.participants;
   if (conversation.isGroup || !first) {
     return (

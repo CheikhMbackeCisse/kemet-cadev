@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { updateOnboardingSchema, type OnboardingState } from "@kemet/shared";
+import { isBeginnerAudience, updateOnboardingSchema, type OnboardingState } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden } from "../../errors.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
@@ -52,7 +52,9 @@ export function registerOnboardingRoutes(app: FastifyInstance, { db, auth }: App
   app.get("/api/me/onboarding/spaces", suggestionLimit, async (request) => {
     const userId = await requireSessionUserId(auth, request);
     const profile = await requireOwnProfile(db, userId);
-    const suggestions = await suggestSpaces(db, profile.id, knownInterests(profile.interests));
+    const suggestions = await suggestSpaces(db, profile.id, knownInterests(profile.interests), {
+      beginner: isBeginnerAudience(profile),
+    });
     const memberCounts = await countSpaceMembersBatch(
       db,
       suggestions.map((row) => row.space.id),

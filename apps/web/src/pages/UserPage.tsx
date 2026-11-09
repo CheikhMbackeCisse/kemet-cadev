@@ -1,5 +1,5 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { ArrowLeft, ExternalLink, Settings, Sparkles } from "lucide-react";
+import { ArrowLeft, HeartHandshake, Settings, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   isLevelAtLeast,
@@ -33,7 +33,8 @@ import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { Tabs } from "../components/ui/Tabs.js";
-import { ProfileWorks, WorkInvitations } from "../components/works/ProfileWorks.js";
+import { WorkInvitations } from "../components/works/ProfileWorks.js";
+import { ProfileLibrary } from "../components/library/ProfileLibrary.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { useSession } from "../session/SessionProvider.js";
 import { formatCount } from "../lib/formatCount.js";
@@ -45,6 +46,7 @@ const ROLE_LABELS: Record<string, string> = {
   hr: fr.auth.roleHr,
   student: fr.auth.roleStudent,
   project_manager: fr.auth.roleProjectManager,
+  entrepreneur: fr.auth.roleEntrepreneur,
   other: fr.auth.roleOther,
 };
 
@@ -98,7 +100,7 @@ export function UserPage() {
   const [tab, setTab] = useState(() =>
     new URLSearchParams(window.location.search).get("onglet") === "parcours"
       ? "parcours"
-      : "travaux",
+      : "bibliotheque",
   );
 
   function selectTab(value: string) {
@@ -405,23 +407,22 @@ export function UserPage() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
-          {profile.githubUrl && (
-            <a
-              href={profile.githubUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
-            >
-              <ExternalLink className="size-4" aria-hidden="true" />
-              {fr.profile.githubLink}
-            </a>
-          )}
-          {profile.openToOpportunities &&
-            isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL) && (
-              <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
+        {((profile.openToOpportunities &&
+          isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL)) ||
+          profile.helpsBeginners) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {profile.openToOpportunities &&
+              isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL) && (
+                <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
+              )}
+            {profile.helpsBeginners && (
+              <Badge tone="accent">
+                <HeartHandshake className="size-3.5" aria-hidden="true" />
+                {fr.profile.helpsBeginners}
+              </Badge>
             )}
-        </div>
+          </div>
+        )}
       </div>
 
       {isOwnProfile && <WorkInvitations onDecided={() => setWorksReloadKey((key) => key + 1)} />}
@@ -431,13 +432,13 @@ export function UserPage() {
         onValueChange={selectTab}
         items={[
           {
-            value: "travaux",
-            label: fr.works.profileTab,
+            value: "bibliotheque",
+            label: fr.library.tab,
             content: (
-              <ProfileWorks
-                handle={profile.handle}
+              <ProfileLibrary
+                profile={profile}
                 isOwnProfile={isOwnProfile}
-                reloadKey={worksReloadKey}
+                worksReloadKey={worksReloadKey}
               />
             ),
           },

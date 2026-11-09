@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { boolean, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth.js";
 
 export const profileRoleEnum = pgEnum("profile_role", [
@@ -39,6 +39,13 @@ export const profiles = pgTable("profiles", {
   bio: text("bio"),
   stack: text("stack").array().notNull().default([]),
   githubUrl: text("github_url"),
+  gitlabUrl: text("gitlab_url"),
+  linkedinUrl: text("linkedin_url"),
+  portfolioUrl: text("portfolio_url"),
+  websiteUrl: text("website_url"),
+  // Badge "Aide les débutants", activé par la personne elle-même : elle passe
+  // en tête des personnes proposées à un débutant.
+  helpsBeginners: boolean("helps_beginners").notNull().default(false),
   // Jamais accepté du client : seul le seed en pose un.
   avatarUrl: text("avatar_url"),
   // Même règle que avatarUrl : posée par le seed, jamais par le client.
@@ -72,6 +79,20 @@ export const profiles = pgTable("profiles", {
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
+});
+
+export const cvVisibilityEnum = pgEnum("cv_visibility", ["public", "members"]);
+
+// Un CV au plus par profil : en envoyer un autre remplace le fichier.
+export const profileCvs = pgTable("profile_cvs", {
+  profileId: uuid("profile_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  storageKey: text("storage_key").notNull().unique(),
+  originalName: text("original_name").notNull(),
+  byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+  visibility: cvVisibilityEnum("visibility").notNull().default("members"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const profilesRelations = relations(profiles, ({ one }) => ({

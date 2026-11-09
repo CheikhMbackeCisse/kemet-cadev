@@ -8,6 +8,7 @@ import { computeProfilePoints } from "../api/repositories/points.js";
 import { completeInvocation, failInvocation, insertInvocation, markInvocationStreaming } from "../api/repositories/assistant.js";
 import { AssistantAnswerer, isProviderUnavailable, type ContextBlock, type RecordedAnswersOptions } from "./assistant-answerer.js";
 import type { StreamingLlmProvider } from "./llm-provider.js";
+import { localAssistantRuntime, type AssistantRuntime } from "./assistant-runtime.js";
 import { checkDailyQuota } from "./quota.js";
 import type { ResponseCache } from "./response-cache.js";
 import type { SkillRetriever } from "./skill-retriever.js";
@@ -51,6 +52,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     // quota se calcule par niveau (apps/server/src/ai/quota.ts).
     private readonly dailyQuotaOverride?: number,
     recordedAnswers: RecordedAnswersOptions = { enabled: false, replayDelayMs: 0 },
+    private readonly runtime: AssistantRuntime = localAssistantRuntime(),
   ) {
     this.answerer = new AssistantAnswerer(db, provider, retriever, cache, recordedAnswers);
   }
@@ -61,7 +63,12 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     // Le quota se vérifie avant de créer la ligne d'invocation : sinon elle
     // compterait dans son propre total (toujours au moins une de trop) et
     // rejetterait une personne qui n'a encore jamais dépassé la limite.
-    const quota = await checkDailyQuota(this.db, input.requestedBy, this.dailyQuotaOverride);
+    const quota = await checkDailyQuota(
+      this.db,
+      input.requestedBy,
+      this.dailyQuotaOverride,
+      this.runtime.quotaCounter,
+    );
     if (!quota.allowed) {
       await this.chat.publish({
         type: "assistant:failed",
@@ -79,16 +86,25 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
       triggerMessageId: input.triggerMessageId,
       requestedBy: input.requestedBy,
     });
+    // L'invocation reste "pending" tant qu'elle attend une place dans la file.
+    await this.runtime.limiter.run(() => this.respond(invocation.id, input, question, requestedSlugs));
+  }
 
+  private async respond(
+    invocationId: string,
+    input: AssistantMentionInput,
+    question: string,
+    requestedSlugs: string[],
+  ): Promise<void> {
     try {
-      await markInvocationStreaming(this.db, invocation.id);
+      await markInvocationStreaming(this.db, invocationId);
       const answer = await this.answerer.answer({
         question,
         requestedSlugs,
         requestedBy: input.requestedBy,
         cacheScope: input.channelId,
         loadContext: () => this.loadHistory(input.channelId),
-        onDelta: (delta, recorded) => this.publishChunk(input.channelId, invocation.id, delta, recorded),
+        onDelta: (delta, recorded) => this.publishChunk(input.channelId, invocationId, delta, recorded),
       });
 
       const body = answer.text.trim() || "Je n'ai pas de réponse utile pour cette question.";
@@ -111,7 +127,7 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
         level,
       );
 
-      await completeInvocation(this.db, invocation.id, {
+      await completeInvocation(this.db, invocationId, {
         responseMessageId: message.id,
         provider: answer.provider,
         skillIds: answer.skills.map((skill) => skill.id),
@@ -120,14 +136,14 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
       await this.chat.publish({
         type: "assistant:done",
         channelId: input.channelId,
-        invocationId: invocation.id,
+        invocationId: invocationId,
         message: serialized,
         skill: await this.answerer.describeCitedSkill(answer.skills),
         recorded: answer.recorded,
       });
     } catch (error) {
       const errorCode = isProviderUnavailable(error) ? "assistant_unavailable" : "internal_error";
-      await this.fail(invocation.id, input, errorCode);
+      await this.fail(invocationId, input, errorCode);
     }
   }
 

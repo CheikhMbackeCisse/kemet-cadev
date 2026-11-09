@@ -2,7 +2,7 @@ import { z } from "zod";
 import { COUNTRY_CODES } from "../data/countries.js";
 import { PROFILE_ROLES } from "../data/onboarding-values.js";
 import { levelSchema } from "./points.js";
-import { httpUrlSchema } from "./url.js";
+import { profileLinkSchema } from "./profile-link.js";
 
 export const handleSchema = z
   .string()
@@ -39,8 +39,13 @@ export const updateProfileSchema = z
     title: z.string().max(120).nullable(),
     bio: z.string().max(500).nullable(),
     stack: stackSchema,
-    githubUrl: httpUrlSchema(200).nullable(),
+    githubUrl: profileLinkSchema("github").nullable(),
+    gitlabUrl: profileLinkSchema("gitlab").nullable(),
+    linkedinUrl: profileLinkSchema("linkedin").nullable(),
+    portfolioUrl: profileLinkSchema("portfolio").nullable(),
+    websiteUrl: profileLinkSchema("website").nullable(),
     openToOpportunities: z.boolean(),
+    helpsBeginners: z.boolean(),
   })
   .partial();
 
@@ -56,9 +61,14 @@ export const profileSchema = z.object({
   bio: z.string().nullable(),
   stack: z.array(z.string()),
   githubUrl: z.string().nullable(),
+  gitlabUrl: z.string().nullable(),
+  linkedinUrl: z.string().nullable(),
+  portfolioUrl: z.string().nullable(),
+  websiteUrl: z.string().nullable(),
   avatarUrl: z.string().nullable(),
   bannerUrl: z.string().nullable(),
   openToOpportunities: z.boolean(),
+  helpsBeginners: z.boolean(),
   isDemo: z.boolean(),
   level: levelSchema,
   createdAt: z.string().datetime(),
@@ -73,6 +83,7 @@ export const profileSummarySchema = profileSchema.pick({
   country: true,
   title: true,
   avatarUrl: true,
+  helpsBeginners: true,
   isDemo: true,
 });
 

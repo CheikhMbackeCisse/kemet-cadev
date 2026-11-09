@@ -58,9 +58,9 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
   app.get("/api/skills", { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } }, async (request) => {
     const userId = await getSessionUserId(auth, request);
     const profile = userId ? await findProfileByUserId(db, userId) : null;
-    const { q } = skillListQuerySchema.parse(request.query);
+    const { q, beginner } = skillListQuerySchema.parse(request.query);
     const memberSpaceIds = profile ? await listMemberSpaceIds(db, profile.id) : [];
-    const rows = await listSkillsForViewer(db, profile?.id ?? null, memberSpaceIds, q);
+    const rows = await listSkillsForViewer(db, profile?.id ?? null, memberSpaceIds, q, beginner === "1");
     const items = await Promise.all(
       rows.map(async (skill) => {
         const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillStats(db, skill.id)]);

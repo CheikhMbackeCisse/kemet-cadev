@@ -20,15 +20,17 @@ describe("navigation mobile", () => {
   it("couvre sur mobile chaque section du rail de bureau", () => {
     // Messages se rejoint par le segment en haut de l'onglet Salons.
     const inSalonsSegment = NAV_SECTIONS.filter((section) => section.mobile === "salons");
-    const reachable = new Set([...MOBILE_TABS, ...MOI_ITEMS, ...inSalonsSegment].map((item) => item.id));
+    const reachable = new Set(
+      [...MOBILE_TABS, ...MOI_ITEMS, ...inSalonsSegment].map((item) => item.id),
+    );
     for (const section of RAIL_NAV) expect(reachable.has(section.id)).toBe(true);
   });
 
   it("allume Salons pour les messages privés, rangés dans son segment", () => {
     expect(mobileTabFor("messages")).toBe("salons");
-    expect(NAV_SECTIONS.filter((section) => section.mobile === "salons").map((section) => section.id)).toEqual([
-      "messages",
-    ]);
+    expect(
+      NAV_SECTIONS.filter((section) => section.mobile === "salons").map((section) => section.id),
+    ).toEqual(["messages"]);
   });
 
   it("allume Moi pour une section rangée dans sa page", () => {

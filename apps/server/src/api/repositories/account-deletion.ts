@@ -24,6 +24,7 @@ import {
   votes,
   workAttachments,
   workMedia,
+  profileCvs,
   workAuthors,
   type Db,
 } from "@kemet/db";
@@ -120,6 +121,11 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
       bio: null,
       stack: [],
       githubUrl: null,
+      gitlabUrl: null,
+      linkedinUrl: null,
+      portfolioUrl: null,
+      websiteUrl: null,
+      helpsBeginners: false,
       avatarUrl: null,
       bannerUrl: null,
       openToOpportunities: false,
@@ -197,11 +203,15 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .delete(workMedia)
     .where(eq(workMedia.authorId, profileId))
     .returning({ storageKey: workMedia.storageKey });
+  const cvFiles = await tx
+    .delete(profileCvs)
+    .where(eq(profileCvs.profileId, profileId))
+    .returning({ storageKey: profileCvs.storageKey });
   await tx
     .delete(workAuthors)
     .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "pending")));
   return [
-    ...[...messageFiles, ...postFiles, ...workFiles].map((file) => file.storageKey),
+    ...[...messageFiles, ...postFiles, ...workFiles, ...cvFiles].map((file) => file.storageKey),
     ...mediaFiles.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
   ];
 }

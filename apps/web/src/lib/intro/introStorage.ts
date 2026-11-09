@@ -62,8 +62,10 @@ function parseOtherAnswer(value: unknown): string | undefined {
 function parseStored(raw: unknown): Stored {
   if (typeof raw !== "object" || raw === null) return { seen: false, answers: {} };
   const record = raw as { seen?: unknown; answers?: Record<string, unknown>; savedAt?: unknown };
-  const fresh = typeof record.savedAt === "number" && Date.now() - record.savedAt < ANSWERS_LIFETIME_MS;
-  const answers = fresh && typeof record.answers === "object" && record.answers !== null ? record.answers : {};
+  const fresh =
+    typeof record.savedAt === "number" && Date.now() - record.savedAt < ANSWERS_LIFETIME_MS;
+  const answers =
+    fresh && typeof record.answers === "object" && record.answers !== null ? record.answers : {};
   const role = oneOf(PROFILE_ROLES, answers.role);
   const roleOther = parseOtherAnswer(answers.roleOther);
   const interestOther = parseOtherAnswer(answers.interestOther);
@@ -124,5 +126,7 @@ export function clearIntroAnswers(): void {
 }
 
 export function hasIntroAnswers(answers: IntroAnswers): boolean {
-  return Boolean(answers.role || answers.country || answers.interests?.length || answers.intents?.length);
+  return Boolean(
+    answers.role || answers.country || answers.interests?.length || answers.intents?.length,
+  );
 }

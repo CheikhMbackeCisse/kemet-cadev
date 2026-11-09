@@ -14,7 +14,9 @@ describe("MoreActionsMenu", () => {
     );
 
     expect(screen.queryByText("Supprimer")).toBeNull();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Actions sur ce skill" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Actions sur ce skill" }), {
+      key: "Enter",
+    });
 
     const item = await screen.findByRole("menuitem", { name: "Supprimer" });
     expect(item).toHaveClass("text-danger");

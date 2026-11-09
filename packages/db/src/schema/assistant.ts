@@ -48,6 +48,7 @@ export const skills = pgTable(
     content: text("content").notNull(),
     tags: text("tags").array().notNull().default([]),
     visibility: skillVisibilityEnum("visibility").notNull().default("public"),
+    isBeginner: boolean("is_beginner").notNull().default(false),
     // Valeur de secours sans portée : le trigger `skills_search_vector_trigger`
     // (voir la migration) la recalcule avant chaque insertion ou mise à jour.
     searchVector: tsvector("search_vector")

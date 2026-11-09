@@ -26,6 +26,8 @@ export const spaceKindEnum = pgEnum("space_kind", ["community", "work_discussion
  * au nom du profil de l'assistant : aucun compte ne peut prendre son slug.
  */
 export const WORK_DISCUSSIONS_SPACE_ID = "00000000-0000-0000-0000-000000000002";
+/** Espace "Débuter en informatique", créé par la migration 0031 (même valeur que BEGINNERS_SPACE_ID de @kemet/shared). */
+export const BEGINNERS_SPACE_ID = "00000000-0000-0000-0000-000000000003";
 export const spaceMemberRoleEnum = pgEnum("space_member_role", ["owner", "admin", "member"]);
 
 export const spaces = pgTable("spaces", {

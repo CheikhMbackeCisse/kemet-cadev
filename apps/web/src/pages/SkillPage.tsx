@@ -7,6 +7,7 @@ import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { IconButton } from "../components/ui/IconButton.js";
+import { BeginnerBadge } from "../components/beginners/BeginnerBadge.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { cn } from "../lib/cn.js";
@@ -136,6 +137,7 @@ export function SkillPage() {
           </div>
           <p className="mt-3 text-base text-text-2">{skill.description}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
+            {skill.isBeginner && <BeginnerBadge />}
             {skill.tags.map((tag) => (
               <span key={tag} className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-2">
                 {tag}

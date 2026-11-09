@@ -28,7 +28,10 @@ export function DemoNoticeLine({ className }: { className?: string }) {
   if (!config?.demoContentNotice) return null;
   return (
     <p className={className}>
-      <a href={DEMO_DATA_PATH} className="inline-flex min-h-control-mobile items-center gap-1.5 text-xs text-subtle hover:underline">
+      <a
+        href={DEMO_DATA_PATH}
+        className="inline-flex min-h-control-mobile items-center gap-1.5 text-xs text-subtle hover:underline"
+      >
         <FlaskConical className="size-4" aria-hidden="true" />
         {fr.demo.notice}
       </a>

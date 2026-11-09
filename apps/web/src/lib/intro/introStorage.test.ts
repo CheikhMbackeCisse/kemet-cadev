@@ -19,21 +19,39 @@ describe("introStorage", () => {
     markIntroSeen();
 
     expect(hasSeenIntro()).toBe(true);
-    expect(readIntroAnswers()).toEqual({ role: "developer", interests: ["web"], intents: ["learn"], country: "SN" });
+    expect(readIntroAnswers()).toEqual({
+      role: "developer",
+      interests: ["web"],
+      intents: ["learn"],
+      country: "SN",
+    });
   });
 
   it("oublie les valeurs inconnues lues dans le navigateur", () => {
     window.localStorage.setItem(
       "kemet.intro",
-      JSON.stringify({ seen: true, savedAt: Date.now(), answers: { role: "admin", country: "XX", interests: ["web", "cuisine"], intents: 3 } }),
+      JSON.stringify({
+        seen: true,
+        savedAt: Date.now(),
+        answers: { role: "admin", country: "XX", interests: ["web", "cuisine"], intents: 3 },
+      }),
     );
 
     expect(readIntroAnswers()).toEqual({ interests: ["web"], intents: undefined });
   });
 
   it("garde une précision Autre valide, oublie une précision vide ou trop longue", () => {
-    saveIntroAnswers({ role: "other", roleOther: "Enseignante", interests: ["other"], interestOther: " " });
-    expect(readIntroAnswers()).toMatchObject({ role: "other", roleOther: "Enseignante", interests: ["other"] });
+    saveIntroAnswers({
+      role: "other",
+      roleOther: "Enseignante",
+      interests: ["other"],
+      interestOther: " ",
+    });
+    expect(readIntroAnswers()).toMatchObject({
+      role: "other",
+      roleOther: "Enseignante",
+      interests: ["other"],
+    });
     expect(readIntroAnswers().interestOther).toBeUndefined();
 
     saveIntroAnswers({ role: "other", roleOther: "x".repeat(61) });
@@ -43,7 +61,11 @@ describe("introStorage", () => {
   it("oublie des réponses de plus d'un jour", () => {
     window.localStorage.setItem(
       "kemet.intro",
-      JSON.stringify({ seen: true, savedAt: Date.now() - 25 * 60 * 60 * 1000, answers: { role: "hr" } }),
+      JSON.stringify({
+        seen: true,
+        savedAt: Date.now() - 25 * 60 * 60 * 1000,
+        answers: { role: "hr" },
+      }),
     );
 
     expect(readIntroAnswers().role).toBeUndefined();

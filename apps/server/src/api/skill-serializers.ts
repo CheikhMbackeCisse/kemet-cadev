@@ -14,6 +14,7 @@ export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings
     description: row.description,
     tags: row.tags,
     visibility: row.visibility,
+    isBeginner: row.isBeginner,
     authorId: row.authorId,
     authorHandle: author.handle,
     authorDisplayName: author.displayName,

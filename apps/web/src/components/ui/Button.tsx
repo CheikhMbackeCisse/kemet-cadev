@@ -3,7 +3,8 @@ import { Loader2 } from "lucide-react";
 import { cn } from "../../lib/cn.js";
 
 /** "inverse" et "inverse-ghost" : sur le fond de marque du parcours d'arrivée, toujours sombre. */
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "inverse" | "inverse-ghost";
+export type ButtonVariant =
+  "primary" | "secondary" | "ghost" | "danger" | "inverse" | "inverse-ghost";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;

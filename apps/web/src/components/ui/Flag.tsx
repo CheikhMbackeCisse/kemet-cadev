@@ -27,7 +27,10 @@ export function Flag({ countryCode, className, decorative = false }: FlagProps) 
   const name = COUNTRIES.find((country) => country.code === countryCode)?.name ?? countryCode;
   const src = flagUrl(countryCode);
   // text-[0px] : sans réseau, le texte de remplacement ne déborde pas de la case.
-  const classes = cn("inline-block h-3 w-4 shrink-0 overflow-hidden rounded-[1px] object-cover text-[0px]", className);
+  const classes = cn(
+    "inline-block h-3 w-4 shrink-0 overflow-hidden rounded-[1px] object-cover text-[0px]",
+    className,
+  );
 
   if (!src) {
     return decorative ? (

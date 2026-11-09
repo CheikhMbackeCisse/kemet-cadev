@@ -44,13 +44,25 @@ function text(lines: number): string {
 
 function renderField(variant: TextareaVariant, value: string) {
   const view = render(
-    <Textarea aria-label="Champ" variant={variant} value={value} onChange={() => {}} style={style} />,
+    <Textarea
+      aria-label="Champ"
+      variant={variant}
+      value={value}
+      onChange={() => {}}
+      style={style}
+    />,
   );
   return {
     field: screen.getByRole("textbox", { name: "Champ" }),
     setValue: (next: string) =>
       view.rerender(
-        <Textarea aria-label="Champ" variant={variant} value={next} onChange={() => {}} style={style} />,
+        <Textarea
+          aria-label="Champ"
+          variant={variant}
+          value={next}
+          onChange={() => {}}
+          style={style}
+        />,
       ),
   };
 }

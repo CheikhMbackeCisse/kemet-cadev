@@ -8,6 +8,9 @@ import { buildApp } from "../api/app.js";
 import { createSkill } from "../api/repositories/skills.js";
 import { KEMET_ASSISTANT_PROFILE_ID } from "../chat/kemet-assistant.js";
 import { KemetPostAssistant } from "./post-assistant.js";
+import { databaseQuotaCounter } from "./quota.js";
+import type { AssistantRuntime } from "./assistant-runtime.js";
+import { ConcurrencyLimiter } from "./concurrency-limiter.js";
 import { InMemoryResponseCache } from "./response-cache.js";
 import { FullTextRetriever } from "./skill-retriever.js";
 import {
@@ -28,13 +31,26 @@ class FakeStreamingProvider {
   }
 }
 
+// Ne répond qu'une fois la barrière levée : garde une rédaction "en cours".
+class GatedProvider {
+  private release!: () => void;
+  private readonly gate = new Promise<void>((resolve) => (this.release = resolve));
+  open(): void {
+    this.release();
+  }
+  async *streamResponse(): AsyncGenerator<LlmStreamChunk> {
+    await this.gate;
+    yield { provider: "gemini", model: "gemini-test", delta: "Réponse." };
+  }
+}
+
 describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () => {
   let db: Db;
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
   let postAssistant: KemetPostAssistant;
 
-  function setup(provider: StreamingLlmProvider, quota?: number) {
+  function setup(provider: StreamingLlmProvider, quota?: number, runtime?: AssistantRuntime) {
     const auth = createAuth({
       db,
       emailSender,
@@ -49,6 +65,9 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
       new FullTextRetriever(db),
       new InMemoryResponseCache(),
       quota,
+      false,
+      () => {},
+      runtime,
     );
     app = buildApp({ db, auth, postAssistant });
   }
@@ -123,6 +142,27 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
       assistant: { invocationId: string | null; errorCode: string | null } | null;
     };
   }
+
+  it("fait attendre dans la file une rédaction au-delà de la limite de concurrence", async () => {
+    const provider = new GatedProvider();
+    setup(provider, undefined, { quotaCounter: databaseQuotaCounter, limiter: new ConcurrencyLimiter(1) });
+    const author = await createMember("file-auteur@test.kemet", "fileauteur");
+    const other = await createMember("file-autre@test.kemet", "fileautre");
+    const postId = await createPost(author.cookie, "Un post sur les index.");
+    const first = await reply(author.cookie, postId, "@kemet explique les index");
+    const second = await reply(other.cookie, postId, "@kemet et les index partiels ?");
+
+    const statusOf = async (id: string | null) =>
+      (await db.select().from(assistantInvocations).where(eq(assistantInvocations.id, id!)))[0]!.status;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(await statusOf(first.assistant!.invocationId)).toBe("streaming");
+    expect(await statusOf(second.assistant!.invocationId)).toBe("pending");
+
+    provider.open();
+    await postAssistant.idle();
+    expect(await statusOf(first.assistant!.invocationId)).toBe("done");
+    expect(await statusOf(second.assistant!.invocationId)).toBe("done");
+  });
 
   it("répond sous le post quand une réponse appelle @kemet, avec le post et les réponses passés comme données", async () => {
     const provider = new FakeStreamingProvider(["Ce post ", "explique un index."]);

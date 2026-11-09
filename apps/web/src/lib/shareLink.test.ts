@@ -32,7 +32,9 @@ describe("shareLink", () => {
   });
 
   it("échoue quand ni le partage ni le presse-papiers ne marchent", async () => {
-    stubNavigator({ clipboard: { writeText: vi.fn().mockRejectedValue(new Error("non")) } as unknown as Clipboard });
+    stubNavigator({
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("non")) } as unknown as Clipboard,
+    });
     expect(await shareLink("https://kemetlabs.dev/fil/1", "Post")).toBe("failed");
   });
 });

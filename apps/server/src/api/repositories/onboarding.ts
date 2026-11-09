@@ -1,7 +1,8 @@
 import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
-import { follows, profileBlocks, profiles, spaceMembers, spaces, type Db } from "@kemet/db";
+import { BEGINNERS_SPACE_ID, follows, profileBlocks, profiles, spaceMembers, spaces, type Db } from "@kemet/db";
 import {
   INTEREST_KEYWORDS,
+  isBeginnerAudience,
   interestSchema,
   intentSchema,
   ONBOARDING_PEOPLE_SUGGESTIONS,
@@ -82,7 +83,17 @@ export function countMatchedInterests(text: string, interests: readonly Interest
   return interests.filter((interest) => KEYWORD_PATTERNS[interest]?.test(haystack)).length;
 }
 
-export async function suggestSpaces(db: Db, profileId: string, interests: readonly Interest[]) {
+/**
+ * Espaces proposés : CADEV 2026 toujours, "Débuter en informatique" en tête
+ * pour un débutant (isBeginnerAudience), puis les espaces qui parlent des
+ * sujets choisis.
+ */
+export async function suggestSpaces(
+  db: Db,
+  profileId: string,
+  interests: readonly Interest[],
+  options: { beginner?: boolean } = {},
+) {
   const rows = await db
     .select({ space: spaces, role: spaceMembers.role })
     .from(spaces)
@@ -95,11 +106,13 @@ export async function suggestSpaces(db: Db, profileId: string, interests: readon
     score: countMatchedInterests(`${row.space.name} ${row.space.description ?? ""}`, interests),
   }));
   const always = scored.find((row) => row.space.slug === ALWAYS_SUGGESTED_SPACE_SLUG);
+  const beginners = options.beginner ? scored.find((row) => row.space.id === BEGINNERS_SPACE_ID) : undefined;
+  const pinned = [beginners, always].filter((row): row is (typeof scored)[number] => row !== undefined);
   const others = scored
-    .filter((row) => row !== always && row.score > 0)
+    .filter((row) => !pinned.includes(row) && row.score > 0)
     // À égalité, le plus récent d'abord : un nouvel espace a besoin d'être vu.
     .sort((a, b) => b.score - a.score || b.space.createdAt.getTime() - a.space.createdAt.getTime());
-  return [...(always ? [always] : []), ...others].slice(0, MAX_SPACE_SUGGESTIONS) as {
+  return [...pinned, ...others].slice(0, MAX_SPACE_SUGGESTIONS) as {
     space: SpaceRow;
     role: (typeof spaceMembers.$inferSelect)["role"] | null;
     score: number;
@@ -129,7 +142,8 @@ function personScoreSql(viewer: ProfileRow) {
 }
 
 /**
- * Cinq personnes à suivre : deux points par sujet commun trouvé dans la
+ * Cinq personnes à suivre. Pour un débutant, celles qui ont activé "Aide les
+ * débutants" passent d'abord. Ensuite deux points par sujet commun trouvé dans la
  * spécialité, la bio ou la stack, un de plus pour le même pays, puis les
  * plus suivies. Aucun appel à l'assistant, qui n'est jamais proposé, pas
  * plus qu'un compte suspendu ou supprimé, ni un blocage dans un sens ou l'autre. Classé par PostgreSQL : la base
@@ -137,6 +151,9 @@ function personScoreSql(viewer: ProfileRow) {
  */
 export async function suggestPeople(db: Db, viewer: ProfileRow) {
   const score = personScoreSql(viewer);
+  const helpersFirst = isBeginnerAudience(viewer)
+    ? [desc(profiles.helpsBeginners)]
+    : [];
   const followerCount = sql<number>`(select count(*) from ${follows} where ${follows.followeeId} = ${profiles.id})`;
   const rows = await db
     .select({ profile: profiles, followId: follows.id })
@@ -152,7 +169,7 @@ export async function suggestPeople(db: Db, viewer: ProfileRow) {
         sql`not exists (select 1 from ${profileBlocks} where (${profileBlocks.blockerId} = ${viewer.id} and ${profileBlocks.blockedId} = ${profiles.id}) or (${profileBlocks.blockerId} = ${profiles.id} and ${profileBlocks.blockedId} = ${viewer.id}))`,
       ),
     )
-    .orderBy(desc(score), desc(followerCount), asc(profiles.createdAt))
+    .orderBy(...helpersFirst, desc(score), desc(followerCount), asc(profiles.createdAt))
     .limit(ONBOARDING_PEOPLE_SUGGESTIONS);
   return rows.map((row) => ({ profile: row.profile, isFollowed: row.followId !== null }));
 }

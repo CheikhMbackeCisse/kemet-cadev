@@ -5,6 +5,7 @@ import { skillDomain } from "../../lib/skills/skillDomain.js";
 import { fr } from "../../i18n/fr.js";
 import { SkillBanner, SkillDomainIcon } from "./SkillBanner.js";
 import { SkillRating } from "./SkillRating.js";
+import { BeginnerBadge } from "../beginners/BeginnerBadge.js";
 
 /**
  * Carte d'un skill, sur le modèle des Quêtes de Discord : bannière, icône,
@@ -26,8 +27,11 @@ export function SkillCard({ skill }: { skill: SkillSummary }) {
           <span id={nameId} className="line-clamp-2 break-words text-base font-semibold text-text">
             {skill.name}
           </span>
-          <span className="truncate text-xs text-subtle">{fr.skills.byAuthor(skill.authorDisplayName)}</span>
+          <span className="truncate text-xs text-subtle">
+            {fr.skills.byAuthor(skill.authorDisplayName)}
+          </span>
         </div>
+        {skill.isBeginner && <BeginnerBadge className="self-start" />}
         <p className="line-clamp-2 text-base text-text-2">{skill.description}</p>
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
           <div className="flex min-w-0 flex-col gap-1">

@@ -84,7 +84,11 @@ export function ReportDialog({
       toast.show(fr.moderation.reportSent, "success");
       close();
     } catch (err) {
-      setError(err instanceof ChatApiError && err.statusCode === 409 ? fr.moderation.reportAlreadySent : fr.moderation.reportError);
+      setError(
+        err instanceof ChatApiError && err.statusCode === 409
+          ? fr.moderation.reportAlreadySent
+          : fr.moderation.reportError,
+      );
     } finally {
       setSubmitting(false);
     }

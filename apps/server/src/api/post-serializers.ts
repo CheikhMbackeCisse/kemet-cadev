@@ -77,6 +77,7 @@ export function serializePostSummary(
     format: row.format,
     testUrl: deleted ? null : row.testUrl,
     testAsk: deleted ? null : row.testAsk,
+    isBeginner: row.isBeginner,
     attachments: deleted
       ? []
       : attachments.map((attachment) => serializePostAttachment(attachment, author.deletedAt !== null)),

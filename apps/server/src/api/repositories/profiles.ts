@@ -1,5 +1,5 @@
-import { and, count, desc, eq, lt } from "drizzle-orm";
-import { credentials, follows, profiles, user, type Db } from "@kemet/db";
+import { and, count, desc, eq, isNull, lt, ne, sql } from "drizzle-orm";
+import { credentials, follows, profileBlocks, profiles, user, type Db } from "@kemet/db";
 import type { UpdateProfileInput } from "@kemet/shared";
 
 export async function findAccountById(db: Db, userId: string) {
@@ -54,6 +54,11 @@ export async function upsertProfile(db: Db, userId: string, patch: UpdateProfile
         bio: patch.bio,
         stack: patch.stack,
         githubUrl: patch.githubUrl,
+        gitlabUrl: patch.gitlabUrl,
+        linkedinUrl: patch.linkedinUrl,
+        portfolioUrl: patch.portfolioUrl,
+        websiteUrl: patch.websiteUrl,
+        helpsBeginners: patch.helpsBeginners,
         openToOpportunities: patch.openToOpportunities,
       })
       .returning();
@@ -164,4 +169,30 @@ export async function countHiddenFollows(db: Db, profileId: string, side: "follo
       ),
     );
   return row?.value ?? 0;
+}
+
+/**
+ * Candidats aux cartes "Profils ouverts aux opportunités" : comptes réels qui
+ * ont coché la case, les plus récemment mis à jour d'abord. Le niveau minimal
+ * est vérifié ensuite par l'appelant, comme à la lecture d'un profil.
+ */
+/** Profils ouverts aux opportunités, sans le lecteur ni personne qu'il bloque ou qui le bloque. */
+export async function listOpenToOpportunityCandidates(db: Db, viewerId: string | null, limit: number) {
+  return db
+    .select()
+    .from(profiles)
+    .where(
+      and(
+        eq(profiles.openToOpportunities, true),
+        eq(profiles.isFiller, false),
+        isNull(profiles.deletedAt),
+        isNull(profiles.suspendedAt),
+        viewerId ? ne(profiles.id, viewerId) : undefined,
+        viewerId
+          ? sql`not exists (select 1 from ${profileBlocks} where (${profileBlocks.blockerId} = ${viewerId} and ${profileBlocks.blockedId} = ${profiles.id}) or (${profileBlocks.blockerId} = ${profiles.id} and ${profileBlocks.blockedId} = ${viewerId}))`
+          : undefined,
+      ),
+    )
+    .orderBy(desc(profiles.updatedAt))
+    .limit(limit);
 }

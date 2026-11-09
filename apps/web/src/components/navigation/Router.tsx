@@ -44,7 +44,10 @@ function preloadSectionsAfterLoad(): () => void {
   if (isSlowConnection()) return () => {};
   let cancelIdle = () => {};
   const start = () => {
-    cancelIdle = whenIdle(() => MAIN_SECTION_PATHS.forEach(preloadPage), SECTION_PRELOAD_IDLE_TIMEOUT_MS);
+    cancelIdle = whenIdle(
+      () => MAIN_SECTION_PATHS.forEach(preloadPage),
+      SECTION_PRELOAD_IDLE_TIMEOUT_MS,
+    );
   };
   if (document.readyState === "complete") start();
   else window.addEventListener("load", start, { once: true });

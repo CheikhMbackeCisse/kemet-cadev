@@ -35,7 +35,11 @@ export async function canViewSkill(
   return member != null;
 }
 
-export async function createSkill(db: Db, authorId: string, input: CreateSkillInput) {
+export async function createSkill(
+  db: Db,
+  authorId: string,
+  input: Omit<CreateSkillInput, "isBeginner"> & { isBeginner?: boolean },
+) {
   const [skill] = await db
     .insert(skills)
     .values({
@@ -46,6 +50,7 @@ export async function createSkill(db: Db, authorId: string, input: CreateSkillIn
       content: input.content,
       tags: input.tags,
       visibility: input.visibility,
+      isBeginner: input.isBeginner ?? false,
       // Un skill qui n'est pas limité à un espace n'en garde aucun : sinon la
       // liste le montrerait aux membres de cet espace.
       spaceId: input.visibility === "space" ? (input.spaceId ?? null) : null,
@@ -64,6 +69,7 @@ export async function updateSkill(db: Db, skillId: string, input: UpdateSkillInp
       ...(input.tags !== undefined ? { tags: input.tags } : {}),
       ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
       ...(input.spaceId !== undefined ? { spaceId: input.spaceId } : {}),
+      ...(input.isBeginner !== undefined ? { isBeginner: input.isBeginner } : {}),
       ...(input.visibility !== undefined && input.visibility !== "space" ? { spaceId: null } : {}),
     })
     .where(eq(skills.id, skillId))
@@ -89,6 +95,7 @@ export async function listSkillsForViewer(
   profileId: string | null,
   memberSpaceIds: string[],
   query?: string,
+  beginnerOnly = false,
 ) {
   const visibility = !profileId
     ? eq(skills.visibility, "public")
@@ -106,7 +113,7 @@ export async function listSkillsForViewer(
   return db
     .select()
     .from(skills)
-    .where(matches ? and(visibility, matches) : visibility)
+    .where(and(visibility, matches, beginnerOnly ? eq(skills.isBeginner, true) : undefined))
     .orderBy(desc(skills.createdAt));
 }
 

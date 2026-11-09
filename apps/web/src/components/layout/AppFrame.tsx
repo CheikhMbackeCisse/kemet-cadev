@@ -5,7 +5,10 @@ import { MobileTabBar } from "../shell/MobileTabBar.js";
 import { SidePanelColumn } from "../shell/SidePanelColumn.js";
 import { SidePanelProvider } from "../shell/sidePanel.js";
 import { useSession } from "../../session/SessionProvider.js";
-import { messagesBadgeCount, useConversationUnread } from "../../lib/messaging/conversationUnread.js";
+import {
+  messagesBadgeCount,
+  useConversationUnread,
+} from "../../lib/messaging/conversationUnread.js";
 
 export interface AppFrameSidePanel {
   title: string;

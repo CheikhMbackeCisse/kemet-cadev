@@ -51,7 +51,9 @@ export function navigate(href: string, options: { replace?: boolean } = {}) {
     window.history.replaceState({ ...historyState(), [SCROLL_STATE_KEY]: window.scrollY }, "");
     window.history.pushState({ [ROUTER_STATE_KEY]: true }, "", path);
   }
-  window.dispatchEvent(new CustomEvent<NavigateEventDetail>(NAVIGATE_EVENT, { detail: { replace } }));
+  window.dispatchEvent(
+    new CustomEvent<NavigateEventDetail>(NAVIGATE_EVENT, { detail: { replace } }),
+  );
 }
 
 export function markInitialEntry() {
@@ -91,7 +93,11 @@ export function handleDocumentClick(event: MouseEvent) {
   if (!path) return;
   const url = new URL(path, window.location.href);
   // Une ancre sur la même page : le navigateur sait faire.
-  if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash)
+  if (
+    url.pathname === window.location.pathname &&
+    url.search === window.location.search &&
+    url.hash
+  )
     return;
   event.preventDefault();
   navigate(path);

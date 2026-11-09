@@ -1,7 +1,7 @@
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { and, count, eq, inArray, isNotNull, isNull, like, notInArray, sql } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, isNull, like, sql } from "drizzle-orm";
 import type { DbOrTx } from "../client.js";
 import {
   assistantInvocations,
@@ -29,7 +29,6 @@ import { daysAgo, hoursAgo } from "./time.js";
 /** Fichiers générés par seed-assets/render.ts, livrés avec le paquet. */
 export const DEMO_ASSETS_DIR = fileURLToPath(new URL("../../seed-assets/out/", import.meta.url));
 
-const ASSISTANT_HANDLE = "kemet";
 const INSERT_BATCH = 1_000;
 
 export type DemoMediaResult =
@@ -241,15 +240,7 @@ async function fillerProfileIds(db: DbOrTx): Promise<string[]> {
   const rows = await db
     .select({ id: profiles.id })
     .from(profiles)
-    .where(
-      and(
-        eq(profiles.isDemo, true),
-        notInArray(profiles.handle, [
-          ...DEMO_ACCOUNTS.map((account) => account.handle),
-          ASSISTANT_HANDLE,
-        ]),
-      ),
-    )
+    .where(and(eq(profiles.isDemo, true), eq(profiles.isFiller, true)))
     .orderBy(profiles.handle);
   return rows.map((row) => row.id);
 }

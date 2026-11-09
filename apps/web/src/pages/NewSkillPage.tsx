@@ -10,6 +10,7 @@ import { slugify } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
+import { BeginnerCheckbox } from "../components/beginners/BeginnerCheckbox.js";
 
 export function NewSkillPage() {
   const { status } = useSession();
@@ -19,6 +20,7 @@ export function NewSkillPage() {
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
   const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [isBeginner, setIsBeginner] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +43,7 @@ export function NewSkillPage() {
           .map((tag) => tag.trim())
           .filter(Boolean),
         visibility,
+        isBeginner,
       });
       navigate("/skills");
     } catch {
@@ -102,6 +105,12 @@ export function NewSkillPage() {
           ]}
         />
       </label>
+      <BeginnerCheckbox
+        checked={isBeginner}
+        onCheckedChange={setIsBeginner}
+        label={fr.beginners.skillCheckbox}
+        hint={fr.beginners.skillCheckboxHint}
+      />
     </FormPage>
   );
 }

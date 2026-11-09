@@ -16,7 +16,11 @@ export function formatRelativeTime(iso: string, now: Date = new Date()): string 
   if (elapsed < 2 * DAY) return "hier";
   if (elapsed < 7 * DAY) return `il y a ${Math.floor(elapsed / DAY)} j`;
   const sameYear = date.getFullYear() === now.getFullYear();
-  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", ...(sameYear ? {} : { year: "numeric" }) });
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
 }
 
 /** Date et heure complètes, pour l'infobulle et le lecteur d'écran. */

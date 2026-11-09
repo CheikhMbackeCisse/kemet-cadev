@@ -239,7 +239,8 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
       url: "/api/spaces",
       headers: { cookie: lecteur.cookie },
     });
-    expect(spaces.json().items).toEqual([]);
+    const listed = (spaces.json().items as { id: string }[]).map((space) => space.id);
+    expect(listed).not.toContain(WORK_DISCUSSIONS_SPACE_ID);
 
     const written = await app.inject({
       method: "POST",

@@ -75,7 +75,10 @@ export function CodeBlock({ code, languageLabel }: CodeBlockProps) {
         : fr.content.copy;
 
   return (
-    <div ref={blockRef} className="my-2 overflow-hidden rounded-card border border-border bg-surface-2">
+    <div
+      ref={blockRef}
+      className="my-2 overflow-hidden rounded-card border border-border bg-surface-2"
+    >
       <div className="flex items-center justify-between border-b border-border px-3 py-1">
         <span className="font-mono text-xs text-muted">{label}</span>
         <button

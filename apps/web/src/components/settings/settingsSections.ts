@@ -77,10 +77,15 @@ function normalize(text: string): string {
     .trim();
 }
 
-export function filterSettingsSections(sections: SettingsSection[], query: string): SettingsSection[] {
+export function filterSettingsSections(
+  sections: SettingsSection[],
+  query: string,
+): SettingsSection[] {
   const needle = normalize(query);
   if (!needle) return sections;
   return sections.filter((section) =>
-    [section.label, section.hint, ...section.keywords].some((text) => normalize(text).includes(needle)),
+    [section.label, section.hint, ...section.keywords].some((text) =>
+      normalize(text).includes(needle),
+    ),
   );
 }

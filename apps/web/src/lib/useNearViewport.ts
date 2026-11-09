@@ -6,7 +6,10 @@ const DEFAULT_MARGIN = "200px";
  * Passe à true quand l'élément approche de l'écran, puis le reste. Sans
  * IntersectionObserver (vieux navigateur, tests), l'élément compte comme visible.
  */
-export function useNearViewport(ref: RefObject<Element | null>, rootMargin = DEFAULT_MARGIN): boolean {
+export function useNearViewport(
+  ref: RefObject<Element | null>,
+  rootMargin = DEFAULT_MARGIN,
+): boolean {
   const [near, setNear] = useState(() => typeof IntersectionObserver === "undefined");
 
   useEffect(() => {

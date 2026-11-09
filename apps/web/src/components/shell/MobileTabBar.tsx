@@ -76,7 +76,9 @@ export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarPro
                   )}
                 </span>
                 {tab.label}
-                {unread > 0 && <span className="sr-only">{fr.messages.unreadPrivateSuffix(unread)}</span>}
+                {unread > 0 && (
+                  <span className="sr-only">{fr.messages.unreadPrivateSuffix(unread)}</span>
+                )}
               </>
             );
             return (
@@ -92,8 +94,6 @@ export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarPro
           })}
         </nav>
       </div>
-
     </>
   );
 }
-

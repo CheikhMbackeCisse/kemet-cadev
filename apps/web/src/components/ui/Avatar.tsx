@@ -33,7 +33,14 @@ const ICON_SIZES: Record<NonNullable<AvatarProps["size"]>, string> = {
   40: "size-5",
 };
 
-export function Avatar({ name, src, size = 32, countryCode, deleted = false, className }: AvatarProps) {
+export function Avatar({
+  name,
+  src,
+  size = 32,
+  countryCode,
+  deleted = false,
+  className,
+}: AvatarProps) {
   if (deleted) {
     return (
       <span
@@ -50,7 +57,11 @@ export function Avatar({ name, src, size = 32, countryCode, deleted = false, cla
     );
   }
   const photo = src ? (
-    <img src={src} alt="" className={cn("rounded-full object-cover", SIZE_CLASSES[size], className)} />
+    <img
+      src={src}
+      alt=""
+      className={cn("rounded-full object-cover", SIZE_CLASSES[size], className)}
+    />
   ) : (
     <span
       role="img"
@@ -70,7 +81,10 @@ export function Avatar({ name, src, size = 32, countryCode, deleted = false, cla
   return (
     <span className="relative inline-flex shrink-0">
       {photo}
-      <Flag countryCode={countryCode} className="absolute -bottom-0.5 -right-1 ring-2 ring-surface" />
+      <Flag
+        countryCode={countryCode}
+        className="absolute -bottom-0.5 -right-1 ring-2 ring-surface"
+      />
     </span>
   );
 }

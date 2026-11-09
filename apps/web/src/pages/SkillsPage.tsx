@@ -1,5 +1,5 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { Plus, Search, Star } from "lucide-react";
+import { Plus, Search, Sprout, Star } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
 import type { SkillSummary } from "@kemet/shared";
 import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
@@ -8,6 +8,7 @@ import { SkillCard } from "../components/skills/SkillCard.js";
 import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
+import { FilterChip } from "../components/ui/FilterChip.js";
 import { Input } from "../components/ui/Input.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { listSkills } from "../lib/chat/api.js";
@@ -20,6 +21,9 @@ export function SkillsPage() {
   const searchId = useId();
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
+  const [beginnerOnly, setBeginnerOnly] = useState(
+    () => new URLSearchParams(window.location.search).get("filtre") === "debuter",
+  );
   const [skills, setSkills] = useState<SkillSummary[]>([]);
   // Squelettes au premier chargement seulement : pendant une recherche, les
   // résultats précédents restent affichés.
@@ -32,11 +36,11 @@ export function SkillsPage() {
     return () => window.clearTimeout(timer);
   }, [query]);
 
-  const load = useCallback((search: string) => {
+  const load = useCallback((search: string, beginner: boolean) => {
     let current = true;
     setLoading(true);
     setError(false);
-    listSkills(search)
+    listSkills(search, { beginner })
       .then((page) => current && setSkills(page.items))
       .catch(() => current && setError(true))
       .finally(() => {
@@ -49,7 +53,16 @@ export function SkillsPage() {
     };
   }, []);
 
-  useEffect(() => load(appliedQuery), [appliedQuery, load]);
+  useEffect(() => load(appliedQuery, beginnerOnly), [appliedQuery, beginnerOnly, load]);
+
+  function toggleBeginner(pressed: boolean) {
+    setBeginnerOnly(pressed);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      pressed ? "/skills?filtre=debuter" : "/skills",
+    );
+  }
 
   return (
     <RailPage activeSection="skills" className="gap-6 px-4 pt-3 lg:pt-6">
@@ -60,23 +73,33 @@ export function SkillsPage() {
         </HeaderActionLink>
       </div>
 
-      <div className="relative max-w-xl">
-        <label htmlFor={searchId} className="sr-only">
-          {fr.skills.searchLabel}
-        </label>
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
-          aria-hidden="true"
-        />
-        <Input
-          id={searchId}
-          type="search"
-          autoComplete="off"
-          placeholder={fr.skills.searchPlaceholder}
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col gap-3">
+        <div className="relative max-w-xl">
+          <label htmlFor={searchId} className="sr-only">
+            {fr.skills.searchLabel}
+          </label>
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+            aria-hidden="true"
+          />
+          <Input
+            id={searchId}
+            type="search"
+            autoComplete="off"
+            placeholder={fr.skills.searchPlaceholder}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div>
+          <FilterChip
+            pressed={beginnerOnly}
+            onPressedChange={toggleBeginner}
+            label={fr.beginners.filter}
+            icon={Sprout}
+          />
+        </div>
       </div>
 
       {loading && !loadedOnce ? (
@@ -88,10 +111,17 @@ export function SkillsPage() {
       ) : error ? (
         <ErrorState
           message={fr.skills.loadingError}
-          retry={{ label: fr.chat.retry, onClick: () => load(appliedQuery) }}
+          retry={{ label: fr.chat.retry, onClick: () => load(appliedQuery, beginnerOnly) }}
         />
       ) : skills.length === 0 ? (
-        appliedQuery ? (
+        beginnerOnly && !appliedQuery ? (
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-base text-text-2">{fr.beginners.noSkills}</p>
+            <Button variant="secondary" onClick={() => toggleBeginner(false)}>
+              {fr.skills.showAll}
+            </Button>
+          </div>
+        ) : appliedQuery ? (
           <div className="flex flex-col items-start gap-3">
             <p className="text-base text-text-2">{fr.skills.searchNoResult(appliedQuery)}</p>
             <Button variant="secondary" onClick={() => setQuery("")}>

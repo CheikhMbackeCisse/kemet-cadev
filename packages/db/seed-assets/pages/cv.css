@@ -1,0 +1,110 @@
+/* CV de démonstration, imprimés en PDF A4 par render.ts (pages cv-*.html).
+   Polices du système seulement, rien n'est chargé depuis le réseau. */
+@page {
+  size: A4;
+  margin: 0;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #1c2430;
+  font-size: 10.5pt;
+  line-height: 1.45;
+}
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 18mm 18mm 14mm;
+  display: flex;
+  flex-direction: column;
+  gap: 7mm;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 2px solid #1463d6;
+  padding-bottom: 4mm;
+}
+h1 {
+  font-size: 22pt;
+  letter-spacing: -0.5px;
+}
+.role {
+  font-size: 12pt;
+  color: #1463d6;
+  font-weight: 600;
+  margin-top: 1mm;
+}
+.contact {
+  text-align: right;
+  font-size: 9pt;
+  color: #4a5566;
+}
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 55mm;
+  gap: 8mm;
+}
+h2 {
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #4a5566;
+  margin-bottom: 2.5mm;
+}
+section + section {
+  margin-top: 6mm;
+}
+.entry + .entry {
+  margin-top: 3.5mm;
+}
+.entry .head {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  font-weight: 600;
+}
+.entry .dates {
+  font-weight: 400;
+  color: #4a5566;
+  font-size: 9pt;
+  white-space: nowrap;
+}
+.entry .org {
+  color: #4a5566;
+  font-size: 9.5pt;
+}
+ul {
+  padding-left: 4.5mm;
+  margin-top: 1mm;
+}
+li + li {
+  margin-top: 0.8mm;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5mm;
+}
+.tags span {
+  background: #eaf1fc;
+  color: #0f3f86;
+  border-radius: 3px;
+  padding: 0.6mm 2mm;
+  font-size: 9pt;
+}
+aside p {
+  font-size: 9.5pt;
+}
+footer {
+  margin-top: auto;
+  border-top: 1px solid #d6dbe3;
+  padding-top: 2.5mm;
+  font-size: 8pt;
+  color: #7a8494;
+}

@@ -4,6 +4,7 @@ import { Bookmark, CheckCircle2, Heart, MessageSquare, Share2 } from "lucide-rea
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
+import { BeginnerBadge } from "../beginners/BeginnerBadge.js";
 import { Button } from "../ui/Button.js";
 import { IconButton } from "../ui/IconButton.js";
 import { MoreActionsMenu } from "../ui/MoreActionsMenu.js";
@@ -175,6 +176,7 @@ export function PostCard({
               level={authorLevel(post.authorHandle, post.authorLevel)}
             />
             {post.format && <Badge>{FORMAT_LABELS[post.format]}</Badge>}
+            {post.isBeginner && !post.deletedAt && <BeginnerBadge />}
             {post.work && !post.deletedAt && (
               <span className="text-xs text-subtle">{fr.works.feedAnnouncement}</span>
             )}

@@ -40,6 +40,7 @@ import {
   votes,
   workAttachments,
   workMedia,
+  profileCvs,
   workAuthors,
   workExternalAuthors,
   workLinks,
@@ -67,6 +68,7 @@ const reportColumns = omit(getTableColumns(reports), "resolvedBy");
 const workColumns = omit(getTableColumns(works), "searchVector");
 const workAttachmentColumns = omit(getTableColumns(workAttachments), "storageKey");
 const workMediaColumns = omit(getTableColumns(workMedia), "storageKey");
+const cvColumns = omit(getTableColumns(profileCvs), "storageKey");
 
 /**
  * Toutes les données rattachées à un compte, lisibles par la personne
@@ -228,6 +230,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     workMediaRows,
     coauthorshipRows,
     workMatchRows,
+    cvRows,
   ] = await Promise.all([
     workIds.length === 0
       ? []
@@ -242,6 +245,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     db.select(workMediaColumns).from(workMedia).where(eq(workMedia.authorId, profileId)),
     db.select().from(workAuthors).where(eq(workAuthors.profileId, profileId)),
     db.select().from(workMatchRequests).where(eq(workMatchRequests.requestedBy, profileId)),
+    db.select(cvColumns).from(profileCvs).where(eq(profileCvs.profileId, profileId)),
   ]);
 
   return {
@@ -288,5 +292,6 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     workMatchRequests: workMatchRows,
     conversations: conversationRows,
     blockedProfiles: blockRows,
+    cv: cvRows[0] ?? null,
   };
 }

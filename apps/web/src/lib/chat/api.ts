@@ -71,6 +71,10 @@ import type {
   WorkSort,
   WorkStatus,
   WorkType,
+  Cv,
+  CvVisibility,
+  Profile,
+  ProfileLibrary,
 } from "@kemet/shared";
 
 class ChatApiError extends Error {
@@ -353,8 +357,11 @@ export function revokeInvite(inviteId: string) {
   return request<{ revoked: boolean }>(`/api/invites/${inviteId}`, { method: "DELETE" });
 }
 
-export function listSkills(query = "") {
-  const search = query ? `?q=${encodeURIComponent(query)}` : "";
+export function listSkills(query = "", options: { beginner?: boolean } = {}) {
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  if (options.beginner) params.set("beginner", "1");
+  const search = params.toString() ? `?${params.toString()}` : "";
   return request<{ items: SkillSummary[] }>(`/api/skills${search}`);
 }
 
@@ -1009,4 +1016,48 @@ export function findWorkMatches(subject: WorkMatchSubject) {
     method: "POST",
     body: JSON.stringify({ subject }),
   });
+}
+
+export function getUserLibrary(handle: string) {
+  return request<ProfileLibrary>(`/api/users/${encodeURIComponent(handle)}/library`);
+}
+
+/** Adresse du PDF, lue par l'aperçu et par le lien de téléchargement. */
+export function cvContentUrl(handle: string): string {
+  return `/api/users/${encodeURIComponent(handle)}/cv/content`;
+}
+
+export async function uploadCv(file: File): Promise<Cv> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/me/cv", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { cv } = (await response.json()) as { cv: Cv };
+  return cv;
+}
+
+export function updateCvVisibility(visibility: CvVisibility) {
+  return request<{ cv: Cv }>("/api/me/cv", {
+    method: "PATCH",
+    body: JSON.stringify({ visibility }),
+  });
+}
+
+export function deleteCv() {
+  return request<{ deleted: true }>("/api/me/cv", { method: "DELETE" });
+}
+
+export function listOpenProfiles() {
+  return request<{ items: Profile[] }>("/api/feed/open-profiles");
 }

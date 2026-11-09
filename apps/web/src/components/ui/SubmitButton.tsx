@@ -46,13 +46,24 @@ export function SubmitButton({
           if (softBlocked) event.preventDefault();
         }}
         aria-describedby={reason ? reasonId : undefined}
-        className={block ? (softBlocked ? "w-full cursor-not-allowed opacity-50" : "w-full") : undefined}
+        className={
+          block ? (softBlocked ? "w-full cursor-not-allowed opacity-50" : "w-full") : undefined
+        }
       >
         {label}
       </Button>
       {secondary}
       {reason && (
-        <p id={reasonId} className={block ? "sr-only" : variant === "inverse" ? "text-sm text-auth-text-muted" : "text-sm text-subtle"}>
+        <p
+          id={reasonId}
+          className={
+            block
+              ? "sr-only"
+              : variant === "inverse"
+                ? "text-sm text-auth-text-muted"
+                : "text-sm text-subtle"
+          }
+        >
           {reason}
         </p>
       )}

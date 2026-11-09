@@ -30,7 +30,7 @@ import {
   type LlmProviderName,
   type StreamingLlmProvider,
 } from "./llm-provider.js";
-import { checkDailyQuota } from "./quota.js";
+import { checkDailyQuota, databaseQuotaCounter, type QuotaCounter } from "./quota.js";
 import type { WorkRetriever } from "./work-retriever.js";
 
 const CANDIDATE_SUMMARY_LENGTH = 500;
@@ -69,6 +69,8 @@ export interface WorkMatchOptions {
   recordedAnswers: boolean;
   /** Limite fixe pour les tests ; en production, le quota dépend du niveau. */
   dailyQuotaOverride?: number;
+  /** Compteur partagé avec l'assistant ; compté en base par défaut (tests). */
+  quotaCounter?: QuotaCounter;
 }
 
 interface ResolvedSubject {
@@ -224,7 +226,12 @@ export class WorkMatcher {
 
     // Vérifié avant d'écrire la ligne du jour, qui compterait sinon dans son
     // propre total (même piège que pour les mentions dans un salon).
-    const quota = await checkDailyQuota(this.db, viewer.id, this.options.dailyQuotaOverride);
+    const quota = await checkDailyQuota(
+      this.db,
+      viewer.id,
+      this.options.dailyQuotaOverride,
+      this.options.quotaCounter,
+    );
     if (!quota.allowed) return this.fullText(candidates, "quota_exceeded");
 
     const prompt = buildMatchMessages(subject.text, candidates);
@@ -247,7 +254,9 @@ export class WorkMatcher {
       const result = recorded
         ? { mode: "recorded" as const, fallbackReason: null, suggestions: recorded }
         : this.fullText(candidates, "unavailable");
-      // Aucun fournisseur n'a répondu : rien ne compte dans le quota.
+      // Aucun fournisseur n'a répondu : rien n'est écrit en base, l'appel
+      // compté par le compteur du jour est rendu.
+      await (this.options.quotaCounter ?? databaseQuotaCounter).release(viewer.id);
       return result;
     }
 

@@ -1,8 +1,9 @@
-// Régénère les images et vidéos de démonstration à partir des pages HTML de
-// `pages/`. Usage : pnpm --filter @kemet/db seed-assets:render [--no-video]
+// Régénère les images, vidéos et CV de démonstration à partir des pages HTML
+// de `pages/`. Usage : pnpm --filter @kemet/db seed-assets:render [--no-video] [--only-cv]
 // Chaque `.frame[data-out]` devient `out/<data-out>.jpg` ; chaque page de
 // `VIDEOS` est filmée quelques secondes en WebM. Rien n'est chargé depuis le
 // réseau : les pages n'utilisent que du HTML, du CSS et les polices du système.
+// Chaque page `cv-<identifiant>.html` est imprimée en `out/cv-<identifiant>.pdf`.
 import { mkdir, readdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -19,7 +20,7 @@ const VIDEOS = [
 
 async function renderFrames(browser: Browser): Promise<void> {
   const files = (await readdir(pagesDir)).filter(
-    (name) => name.endsWith(".html") && !name.startsWith("video-"),
+    (name) => name.endsWith(".html") && !name.startsWith("video-") && !name.startsWith("cv-"),
   );
   const page = await browser.newPage({
     viewport: { width: 1600, height: 900 },
@@ -31,9 +32,21 @@ async function renderFrames(browser: Browser): Promise<void> {
     for (const frame of frames) {
       const name = await frame.getAttribute("data-out");
       const path = join(outDir, `${name}.jpg`);
-      await frame.screenshot({ path, type: "jpeg", quality: 82, animations: "disabled" });
+      await frame.screenshot({ path, type: "jpeg", quality: 80, animations: "disabled" });
       console.log(`${name}.jpg  ${Math.round((await stat(path)).size / 1024)} ko`);
     }
+  }
+  await page.close();
+}
+
+async function renderCvs(browser: Browser): Promise<void> {
+  const files = (await readdir(pagesDir)).filter((name) => name.startsWith("cv-") && name.endsWith(".html"));
+  const page = await browser.newPage();
+  for (const file of files) {
+    await page.goto(pathToFileURL(join(pagesDir, file)).href);
+    const path = join(outDir, file.replace(/.html$/, ".pdf"));
+    await page.pdf({ path, format: "A4", printBackground: true, preferCSSPageSize: true });
+    console.log(`${file.replace(/.html$/, ".pdf")}  ${Math.round((await stat(path)).size / 1024)} ko`);
   }
   await page.close();
 }
@@ -59,8 +72,10 @@ async function renderVideo(browser: Browser, video: (typeof VIDEOS)[number]): Pr
 await mkdir(outDir, { recursive: true });
 const browser = await chromium.launch();
 try {
-  await renderFrames(browser);
-  const skipVideos = process.argv.includes("--no-video");
+  const onlyCv = process.argv.includes("--only-cv");
+  if (!onlyCv) await renderFrames(browser);
+  await renderCvs(browser);
+  const skipVideos = onlyCv || process.argv.includes("--no-video");
   if (!skipVideos) for (const video of VIDEOS) await renderVideo(browser, video);
 } finally {
   await browser.close();

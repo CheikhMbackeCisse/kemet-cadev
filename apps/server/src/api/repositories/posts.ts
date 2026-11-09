@@ -9,6 +9,9 @@ import { notWrittenByFiller } from "./fillers.js";
 // Fenêtre du classement "Pour toi" : "Utile" et retours de test sur les
 // posts récents, sans pondération par niveau (docs/adr/0010-fil-de-posts.md).
 const POUR_TOI_WINDOW_DAYS = 14;
+const TALENT_WORK_BONUS = 6;
+const TALENT_CODE_PENALTY = 4;
+const CODE_FENCE = "```";
 
 function toPage<T extends { createdAt: Date }>(rows: T[], limit: number) {
   const hasMore = rows.length > limit;
@@ -27,6 +30,7 @@ export async function insertPost(
     testAsk: string | null;
     sharedPostId: string | null;
     workId?: string | null;
+    isBeginner?: boolean;
   },
 ) {
   const [post] = await db
@@ -39,6 +43,7 @@ export async function insertPost(
       testAsk: input.testAsk ?? null,
       sharedPostId: input.sharedPostId,
       workId: input.workId ?? null,
+      isBeginner: input.isBeginner ?? false,
     })
     .returning();
   return post!;
@@ -74,15 +79,31 @@ export async function listAbonnementsFeed(db: Db, viewerProfileId: string, curso
   return toPage(rows, limit);
 }
 
+/** Posts marqués "Débutant", du plus récent au plus ancien : filtre "Pour débuter". */
+export async function listBeginnerFeed(db: Db, cursor: string | undefined, limit: number) {
+  const visible = and(isNull(posts.deletedAt), eq(posts.isBeginner, true), notWrittenByFiller(posts.authorId));
+  const condition = cursor ? and(visible, lt(posts.createdAt, new Date(cursor))) : visible;
+  const rows = await db.select().from(posts).where(condition).orderBy(desc(posts.createdAt)).limit(limit + 1);
+  return toPage(rows, limit);
+}
+
 /**
  * Liste bornée, sans curseur : le score n'est pas monotone avec la date, un
  * curseur stable demanderait de figer le score au premier chargement.
  */
-export async function listPourToiFeed(db: Db, limit: number) {
+export async function listPourToiFeed(db: Db, limit: number, options: { talent?: boolean } = {}) {
   const since = new Date(Date.now() - POUR_TOI_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  // RH et entrepreneurs (prefersTalentFeed) : un travail annoncé passe devant,
+  // un post qui contient un bloc de code recule. Les profils ouverts aux
+  // opportunités et les projets ont leurs propres cartes dans le fil.
+  const talentBonus = options.talent
+    ? sql` + (case when ${posts.workId} is not null then ${TALENT_WORK_BONUS} else 0 end)
+        - (case when strpos(${posts.body}, ${CODE_FENCE}) > 0 then ${TALENT_CODE_PENALTY} else 0 end)`
+    : sql``;
   const score = sql<number>`(
     (select count(*) from ${postReactions} where ${postReactions.postId} = ${posts.id}) * 2 +
     (select count(*) from ${postFeedback} where ${postFeedback.postId} = ${posts.id}) * 3
+    ${talentBonus}
   )`;
   // Le score reste hors du select : dans une requête sur une seule table,
   // Drizzle y écrit les colonnes sans leur table et la sous-requête compterait

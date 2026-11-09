@@ -9,6 +9,7 @@ import { ErrorState } from "../ui/ErrorState.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { useToast } from "../ui/Toast.js";
 import { fr } from "../../i18n/fr.js";
+import { WorkCard } from "./WorkCard.js";
 import { WorkListItem } from "./WorkListItem.js";
 import { WORK_TYPE_LABELS } from "./workLabels.js";
 
@@ -102,10 +103,17 @@ export interface ProfileWorksProps {
   isOwnProfile: boolean;
   /** Change pour forcer un rechargement, après une invitation acceptée. */
   reloadKey: number;
+  /** Cartes avec couverture dans la bibliothèque du profil, liste ailleurs. */
+  layout?: "list" | "cards";
 }
 
 /** Travaux publiés et co-signés (acceptés) d'un profil. */
-export function ProfileWorks({ handle, isOwnProfile, reloadKey }: ProfileWorksProps) {
+export function ProfileWorks({
+  handle,
+  isOwnProfile,
+  reloadKey,
+  layout = "list",
+}: ProfileWorksProps) {
   const toast = useToast();
   const [works, setWorks] = useState<ProfileWork[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -171,17 +179,27 @@ export function ProfileWorks({ handle, isOwnProfile, reloadKey }: ProfileWorksPr
   }
   return (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col divide-y divide-border">
-        {works.map((work) => (
-          <WorkListItem
-            key={work.id}
-            work={work}
-            relationLabel={
-              work.relation === "published" ? fr.works.profilePublished : fr.works.profileCoauthored
-            }
-          />
-        ))}
-      </ul>
+      {layout === "cards" ? (
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {works.map((work) => (
+            <WorkCard key={work.id} work={work} />
+          ))}
+        </ul>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {works.map((work) => (
+            <WorkListItem
+              key={work.id}
+              work={work}
+              relationLabel={
+                work.relation === "published"
+                  ? fr.works.profilePublished
+                  : fr.works.profileCoauthored
+              }
+            />
+          ))}
+        </ul>
+      )}
       {nextCursor && (
         <Button
           variant="secondary"

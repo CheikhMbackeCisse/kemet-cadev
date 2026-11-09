@@ -9,6 +9,7 @@ import {
   paginationQuerySchema,
   postBookmarkInputSchema,
   sharePostSchema,
+  prefersTalentFeed,
 } from "@kemet/shared";
 import { z } from "zod";
 import type { postReplies, posts } from "@kemet/db";
@@ -34,6 +35,7 @@ import {
   listBookmarkedPosts,
   listPostFeedback,
   listPostReplies,
+  listBeginnerFeed,
   listPourToiFeed,
   setPostBookmark,
   setPostReplySolution,
@@ -163,12 +165,14 @@ export function registerPostRoutes(
       const userId = await getSessionUserId(auth, request);
       const profile = await findOwnProfile(db, userId);
       const query = feedQuerySchema.parse(request.query);
-      // Un visiteur n'a pas d'abonnements : l'onglet "Pour toi" lui est servi
-      // quel que soit l'onglet demandé, l'interface ne lui proposant que celui-là.
+      // Un visiteur n'a pas d'abonnements : "Pour toi" lui est servi à la
+      // place de l'onglet Abonnements. "Pour débuter" lui reste ouvert.
       const page =
-        query.tab === "pour-toi" || !profile
-          ? await listPourToiFeed(db, query.limit)
-          : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
+        query.tab === "debuter"
+          ? await listBeginnerFeed(db, query.cursor, query.limit)
+          : query.tab === "pour-toi" || !profile
+            ? await listPourToiFeed(db, query.limit, { talent: prefersTalentFeed(profile?.role ?? null) })
+            : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
       const items = await toSerializedPosts(db, page.items, profile?.id ?? null);
       return { items, nextCursor: page.nextCursor };
     },
@@ -201,6 +205,7 @@ export function registerPostRoutes(
           format: input.format ?? null,
           testUrl: input.testUrl ?? null,
           testAsk: input.testAsk ?? null,
+          isBeginner: input.isBeginner ?? false,
           sharedPostId: null,
         });
         await attachToPost(tx, attachmentIds, created.id);

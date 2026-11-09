@@ -1,6 +1,9 @@
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
-import { messagesBadgeCount, useConversationUnread } from "../../lib/messaging/conversationUnread.js";
+import {
+  messagesBadgeCount,
+  useConversationUnread,
+} from "../../lib/messaging/conversationUnread.js";
 import { useSession } from "../../session/SessionProvider.js";
 
 export interface SalonsSegmentProps {
@@ -19,11 +22,19 @@ export function SalonsSegment({ active }: SalonsSegmentProps) {
 
   const items = [
     { id: "salons" as const, label: fr.messages.segmentSalons, href: "/salons", count: 0 },
-    { id: "messages" as const, label: fr.messages.segmentMessages, href: "/messages", count: unread },
+    {
+      id: "messages" as const,
+      label: fr.messages.segmentMessages,
+      href: "/messages",
+      count: unread,
+    },
   ];
 
   return (
-    <nav aria-label={fr.messages.segmentLabel} className="shrink-0 border-b border-border px-3 lg:hidden">
+    <nav
+      aria-label={fr.messages.segmentLabel}
+      className="shrink-0 border-b border-border px-3 lg:hidden"
+    >
       <ul className="grid grid-cols-2">
         {items.map((item) => (
           <li key={item.id}>
@@ -33,7 +44,9 @@ export function SalonsSegment({ active }: SalonsSegmentProps) {
               className={cn(
                 "relative flex h-control-mobile items-center justify-center gap-2 text-sm font-medium transition-colors duration-150",
                 "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary",
-                item.id === active ? "text-text after:opacity-100" : "text-muted after:opacity-0 hover:text-text",
+                item.id === active
+                  ? "text-text after:opacity-100"
+                  : "text-muted after:opacity-0 hover:text-text",
               )}
             >
               {item.label}

@@ -83,7 +83,13 @@ export function MobileSpaceNavigator({
                     )}
                   >
                     {space.imageUrl ? (
-                      <img src={space.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+                      <img
+                        src={space.imageUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="size-full object-cover"
+                      />
                     ) : (
                       monogramOf(space.name)
                     )}
@@ -130,7 +136,9 @@ export function MobileSpaceNavigator({
             {status === "loading" ? (
               <Skeleton className="mx-4 mb-2 mt-4 h-5 w-32" />
             ) : (
-              <h2 className="truncate px-4 pb-2 pt-4 text-md font-semibold text-text">{spaceName}</h2>
+              <h2 className="truncate px-4 pb-2 pt-4 text-md font-semibold text-text">
+                {spaceName}
+              </h2>
             )}
             {channelsLoading || status === "loading" ? (
               <div className="flex flex-col gap-1 px-2">

@@ -21,6 +21,7 @@ export const createPostSchema = z
     testUrl: httpUrlSchema(500).nullable().optional(),
     testAsk: z.string().min(1).max(MAX_POST_TEST_ASK_LENGTH).nullable().optional(),
     attachmentIds: z.array(z.string().uuid()).max(MAX_POST_ATTACHMENTS).optional(),
+    isBeginner: z.boolean().optional(),
   })
   .refine((input) => input.body.trim().length > 0 || (input.attachmentIds?.length ?? 0) > 0, {
     message: "Un post doit contenir du texte ou au moins une image.",
@@ -67,13 +68,13 @@ export const createPostFeedbackSchema = z.object({
 
 export type CreatePostFeedbackInput = z.infer<typeof createPostFeedbackSchema>;
 
-export const feedTabSchema = z.enum(["abonnements", "pour-toi"]);
+export const feedTabSchema = z.enum(["abonnements", "pour-toi", "debuter"]);
 
 export type FeedTab = z.infer<typeof feedTabSchema>;
 
 export const feedQuerySchema = z.object({
   tab: feedTabSchema.default("abonnements"),
-  cursor: z.string().optional(),
+  cursor: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
@@ -118,6 +119,7 @@ export const postSummarySchema = z.object({
   format: postFormatSchema.nullable(),
   testUrl: z.string().nullable(),
   testAsk: z.string().nullable(),
+  isBeginner: z.boolean(),
   attachments: z.array(attachmentSchema),
   sharedPost: sharedPostPreviewSchema.nullable(),
   work: postWorkPreviewSchema.nullable(),

@@ -14,7 +14,11 @@ export interface MoreActionsMenuProps {
  * Actions secondaires d'un objet derrière un bouton "…". Une action
  * destructive y vit en élément de danger, jamais en bouton rouge posé seul.
  */
-export function MoreActionsMenu({ items, onSelect, label = fr.common.moreActions }: MoreActionsMenuProps) {
+export function MoreActionsMenu({
+  items,
+  onSelect,
+  label = fr.common.moreActions,
+}: MoreActionsMenuProps) {
   return (
     <Menu
       trigger={

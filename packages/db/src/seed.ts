@@ -1,6 +1,8 @@
 import { createDb } from "./client.js";
 import { DEMO_PASSWORD, seedDemoDataset } from "./seed/demo-dataset.js";
+import { hash } from "@node-rs/argon2";
 import { seedDemoMedia } from "./seed/demo-media.js";
+import { seedNewcomers } from "./seed/newcomers.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -28,6 +30,17 @@ async function main(): Promise<void> {
     console.log(`Médias de démonstration sautés : ${media.reason}.`);
     return;
   }
+  const newcomers = await seedNewcomers(db, {
+    uploadsDir,
+    passwordHash: () => hash(DEMO_PASSWORD),
+  });
+  if (newcomers.status === "skipped")
+    console.log(`Débutants et recruteurs sautés : ${newcomers.reason}.`);
+  else
+    console.log(
+      `Débutants et recruteurs : ${newcomers.accounts} comptes, ${newcomers.cvs} CV, ${newcomers.posts} posts ` +
+        `et ${newcomers.spaceMessages} messages ajoutés.`,
+    );
   console.log(
     `Médias de démonstration : ${media.posts} posts, ${media.postImages} images sur des posts existants, ` +
       `${media.works} travaux illustrés, ${media.banners} bannières, ${media.skillUses} utilisations ` +

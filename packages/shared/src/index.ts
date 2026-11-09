@@ -1,5 +1,7 @@
 export * from "./schemas/healthcheck.js";
 export * from "./schemas/profile.js";
+export * from "./schemas/profile-link.js";
+export * from "./schemas/library.js";
 export * from "./schemas/credential.js";
 export * from "./schemas/pagination.js";
 export * from "./schemas/me.js";
@@ -22,5 +24,6 @@ export * from "./schemas/competition.js";
 export * from "./schemas/moderation.js";
 export * from "./data/countries.js";
 export * from "./data/onboarding-values.js";
+export * from "./data/audience.js";
 export * from "./demo-email.js";
 export * from "./schemas/onboarding.js";

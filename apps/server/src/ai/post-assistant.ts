@@ -10,6 +10,7 @@ import { findPostById, findPostReplyById, insertPostReply, listRepliesBefore } f
 import { findWorkById } from "../api/repositories/works.js";
 import { AssistantAnswerer, isProviderUnavailable, type ContextBlock, type RecordedAnswersOptions } from "./assistant-answerer.js";
 import type { StreamingLlmProvider } from "./llm-provider.js";
+import { localAssistantRuntime, type AssistantRuntime } from "./assistant-runtime.js";
 import { checkDailyQuota } from "./quota.js";
 import type { ResponseCache } from "./response-cache.js";
 import type { SkillRetriever } from "./skill-retriever.js";
@@ -56,6 +57,7 @@ export class KemetPostAssistant implements PostAssistant {
     private readonly dailyQuotaOverride?: number,
     recordedAnswersEnabled = false,
     private readonly onError: (error: unknown) => void = () => {},
+    private readonly runtime: AssistantRuntime = localAssistantRuntime(),
   ) {
     // Aucun streaming vers le navigateur sous un post : rejouer une réponse
     // enregistrée morceau par morceau ne ferait que la retarder.
@@ -65,7 +67,12 @@ export class KemetPostAssistant implements PostAssistant {
 
   async start(input: PostAssistantInput): Promise<PostAssistantStart> {
     // Avant l'invocation, comme dans un salon : sinon elle compterait dans son propre total.
-    const quota = await checkDailyQuota(this.db, input.requestedBy, this.dailyQuotaOverride);
+    const quota = await checkDailyQuota(
+      this.db,
+      input.requestedBy,
+      this.dailyQuotaOverride,
+      this.runtime.quotaCounter,
+    );
     if (!quota.allowed) return { invocationId: null, errorCode: "quota_exceeded" };
 
     const invocation = await insertPostInvocation(this.db, {
@@ -73,7 +80,9 @@ export class KemetPostAssistant implements PostAssistant {
       triggerReplyId: input.triggerReplyId,
       requestedBy: input.requestedBy,
     });
-    const task = this.run(invocation.id, input)
+    // L'invocation reste "pending" tant qu'elle attend une place dans la file.
+    const task = this.runtime.limiter
+      .run(() => this.run(invocation.id, input))
       .catch(this.onError)
       .finally(() => this.running.delete(task));
     this.running.add(task);

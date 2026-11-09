@@ -31,6 +31,8 @@ export const posts = pgTable(
     format: postFormatEnum("format"),
     testUrl: text("test_url"),
     testAsk: text("test_ask"),
+    // Étiquette "Débutant", posée par l'auteur : alimente le filtre "Pour débuter".
+    isBeginner: boolean("is_beginner").notNull().default(false),
     // Post publié automatiquement avec un travail : il renvoie vers lui.
     workId: uuid("work_id").references(() => works.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),

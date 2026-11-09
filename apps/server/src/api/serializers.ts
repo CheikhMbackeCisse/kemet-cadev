@@ -15,10 +15,15 @@ export function serializeProfile(row: ProfileRow, level: Level): Profile {
     bio: row.bio,
     stack: row.stack,
     githubUrl: row.githubUrl,
+    gitlabUrl: row.gitlabUrl,
+    linkedinUrl: row.linkedinUrl,
+    portfolioUrl: row.portfolioUrl,
+    websiteUrl: row.websiteUrl,
     avatarUrl: row.avatarUrl,
     bannerUrl: row.bannerUrl,
     // Masqué aussi à la lecture : un total revu à la baisse le retire.
     openToOpportunities: row.openToOpportunities && isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL),
+    helpsBeginners: row.helpsBeginners,
     isDemo: row.isDemo,
     level,
     createdAt: row.createdAt.toISOString(),
@@ -33,6 +38,7 @@ export function serializeProfileSummary(row: ProfileRow): ProfileSummary {
     country: row.country as ProfileSummary["country"],
     title: row.title,
     avatarUrl: row.avatarUrl,
+    helpsBeginners: row.helpsBeginners,
     isDemo: row.isDemo,
   };
 }

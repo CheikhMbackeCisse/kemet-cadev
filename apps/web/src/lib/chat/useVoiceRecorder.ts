@@ -122,7 +122,9 @@ export function useVoiceRecorder(onLimit: (recording: VoiceRecording | null) => 
     recorder.addEventListener("stop", () => {
       const durationMs = Math.min(Date.now() - current.startedAt, VOICE_MAX_DURATION_MS);
       const result =
-        current.ending === "send" && durationMs >= VOICE_MIN_DURATION_MS && current.chunks.length > 0
+        current.ending === "send" &&
+        durationMs >= VOICE_MIN_DURATION_MS &&
+        current.chunks.length > 0
           ? { blob: new Blob(current.chunks, { type: recorder.mimeType }), durationMs }
           : null;
       current.resolve(result);

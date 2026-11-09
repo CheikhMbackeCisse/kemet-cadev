@@ -167,7 +167,13 @@ function SpaceAvatar({ space }: { space: SpaceItem }) {
       className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-accent-soft text-xs font-semibold text-link"
     >
       {space.imageUrl ? (
-        <img src={space.imageUrl} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
+        <img
+          src={space.imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="size-full object-cover"
+        />
       ) : (
         monogramOf(space.name)
       )}

@@ -8,7 +8,10 @@ const EXCERPT_LENGTH = 80;
 export function conversationTitle(conversation: Pick<Conversation, "participants">): string {
   const names = conversation.participants.map((participant) => participant.displayName);
   if (names.length === 0) return fr.messages.alone;
-  return fr.messages.groupOf(names.slice(0, NAMES_IN_TITLE), Math.max(0, names.length - NAMES_IN_TITLE));
+  return fr.messages.groupOf(
+    names.slice(0, NAMES_IN_TITLE),
+    Math.max(0, names.length - NAMES_IN_TITLE),
+  );
 }
 
 /** Aperçu du dernier message dans la liste, préfixé de "Toi" quand on l'a écrit. */
@@ -23,7 +26,7 @@ export function conversationExcerpt(conversation: Conversation, viewerId: string
         ? fr.chat.voiceMessage
         : last.hasAttachments
           ? fr.messages.attachmentOnly
-        : "";
+          : "";
   const short = text.length > EXCERPT_LENGTH ? `${text.slice(0, EXCERPT_LENGTH)}…` : text;
   return last.authorId === viewerId ? `${fr.messages.you} : ${short}` : short;
 }

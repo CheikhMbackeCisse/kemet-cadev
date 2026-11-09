@@ -1,4 +1,13 @@
-import { BrainCircuit, Code2, Database, LayoutTemplate, Server, Wallet, Wrench, type LucideIcon } from "lucide-react";
+import {
+  BrainCircuit,
+  Code2,
+  Database,
+  LayoutTemplate,
+  Server,
+  Wallet,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import type { SkillDomain } from "../../lib/skills/skillDomain.js";
 import { cn } from "../../lib/cn.js";
 
@@ -41,12 +50,21 @@ function hash(value: string): number {
 /** Bannière décorative, sans image externe : dégradé du domaine et motif de code. */
 export function SkillBanner({ domain, seed, className }: SkillBannerProps) {
   const offset = hash(seed);
-  const glyphs = Array.from({ length: 6 }, (_, index) => CODE_MOTIF[(offset + index * 3) % CODE_MOTIF.length]!);
+  const glyphs = Array.from(
+    { length: 6 },
+    (_, index) => CODE_MOTIF[(offset + index * 3) % CODE_MOTIF.length]!,
+  );
   return (
-    <div aria-hidden="true" className={cn("relative overflow-hidden", DOMAIN_GRADIENTS[domain], className)}>
+    <div
+      aria-hidden="true"
+      className={cn("relative overflow-hidden", DOMAIN_GRADIENTS[domain], className)}
+    >
       <div className="absolute inset-0 grid grid-cols-3 place-items-center font-mono text-base font-semibold text-white/20">
         {glyphs.map((glyph, index) => (
-          <span key={index} className={index % 2 === offset % 2 ? "translate-y-2" : "-translate-y-2"}>
+          <span
+            key={index}
+            className={index % 2 === offset % 2 ? "translate-y-2" : "-translate-y-2"}
+          >
             {glyph}
           </span>
         ))}
@@ -56,7 +74,13 @@ export function SkillBanner({ domain, seed, className }: SkillBannerProps) {
 }
 
 /** Icône du domaine, posée à cheval sur la bannière. */
-export function SkillDomainIcon({ domain, className }: { domain: SkillDomain; className?: string }) {
+export function SkillDomainIcon({
+  domain,
+  className,
+}: {
+  domain: SkillDomain;
+  className?: string;
+}) {
   const Icon = DOMAIN_ICONS[domain];
   return (
     <span

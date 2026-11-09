@@ -17,6 +17,7 @@ import {
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { BeginnerCheckbox } from "../components/beginners/BeginnerCheckbox.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 export function NewPostPage() {
@@ -26,6 +27,7 @@ export function NewPostPage() {
   const [format, setFormat] = useState<"none" | PostFormat>("none");
   const [testUrl, setTestUrl] = useState("");
   const [testAsk, setTestAsk] = useState("");
+  const [isBeginner, setIsBeginner] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -66,6 +68,7 @@ export function NewPostPage() {
         testUrl: format === "a_tester" ? testUrl.trim() : null,
         testAsk: format === "a_tester" ? testAsk.trim() : null,
         attachmentIds: attachments.map((attachment) => attachment.id),
+        isBeginner,
       });
       navigate("/fil");
     } catch (err) {
@@ -185,6 +188,13 @@ export function NewPostPage() {
           </label>
         </>
       )}
+
+      <BeginnerCheckbox
+        checked={isBeginner}
+        onCheckedChange={setIsBeginner}
+        label={fr.beginners.postCheckbox}
+        hint={fr.beginners.postCheckboxHint}
+      />
     </FormPage>
   );
 }
