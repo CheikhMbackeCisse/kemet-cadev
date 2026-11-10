@@ -172,61 +172,190 @@
 }
 
 /*
- * Fond du parcours d'arrivée (components/arrival/ArrivalBackground.tsx) :
- * chaque élément dérive lentement autour de sa place. Seuls transform et
- * opacity bougent, pour rester sur le compositeur. Arrêté quand l'onglet est
- * caché, figé si le système demande moins de mouvement.
+ * Parcours d'arrivée (components/arrival/). La scène pose la carte au centre,
+ * entre deux bandes de décor : au-dessus et au-dessous sur téléphone, à
+ * gauche et à droite à partir de 768 px. Le décor ne passe jamais sous la
+ * carte ; une bande trop petite pour lui reste vide.
  */
-@keyframes arrival-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-    opacity: var(--float-opacity-low);
+.arrival-stage {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.arrival-stage-md {
+  --arrival-column: calc(28rem + 2rem);
+}
+
+.arrival-stage-lg {
+  --arrival-column: calc(42rem + 2rem);
+}
+
+.arrival-stage > main {
+  justify-self: center;
+  width: 100%;
+  max-width: var(--arrival-column);
+}
+
+@media (min-width: 768px) {
+  .arrival-stage {
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, var(--arrival-column)) minmax(0, 1fr);
   }
-  50% {
-    transform: translate3d(var(--float-dx), var(--float-dy), 0) rotate(var(--float-rotate));
-    opacity: var(--float-opacity-high);
+}
+
+.arrival-footer-space {
+  flex-shrink: 0;
+  height: 3rem;
+}
+
+/* Tailles minimales tirées de DECOR_MIN_BAND (components/arrival/decorLayout.ts). */
+.arrival-band {
+  container: arrival-band / size;
+}
+
+.arrival-band-items {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  @container arrival-band (min-width: 320px) and (min-height: 150px) {
+    .arrival-band-items[data-screen="mobile"] {
+      display: block;
+    }
   }
 }
 
-.arrival-float {
-  opacity: var(--float-opacity-high);
-  animation: arrival-float var(--float-duration) ease-in-out var(--float-delay) infinite;
-  will-change: transform, opacity;
-}
-
-.arrival-background[data-paused] .arrival-float {
-  animation-play-state: paused;
-}
-
-.arrival-background[data-still] .arrival-float {
-  animation: none;
-  will-change: auto;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arrival-float {
-    animation: none;
-    will-change: auto;
+@media (min-width: 768px) {
+  @container arrival-band (min-width: 240px) and (min-height: 560px) {
+    .arrival-band-items[data-screen="desktop"] {
+      display: block;
+    }
   }
 }
 
 /*
- * Carte en verre dépoli posée sur ce fond : les éléments qui passent dessous
- * deviennent flous. Sans backdrop-filter, la teinte seule garde le contraste.
+ * Dérive lente d'un élément autour de sa place, sans rotation ni fondu : une
+ * pastille reste nette. Seul transform bouge. Arrêtée quand l'onglet est
+ * caché, absente sur connexion lente et avec prefers-reduced-motion.
+ */
+@keyframes arrival-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(var(--drift-x), var(--drift-y), 0);
+  }
+}
+
+.arrival-drift {
+  animation: arrival-drift var(--drift-duration) ease-in-out var(--drift-delay) infinite;
+}
+
+.arrival-decor-icon {
+  color: var(--auth-decor-icon);
+}
+
+.arrival-decor-code {
+  color: var(--auth-decor-code);
+}
+
+.arrival-decor-calm {
+  color: var(--auth-text);
+  opacity: var(--auth-decor-calm-opacity);
+}
+
+/* Pastille d'un logo en couleur sur l'accueil : blanche, pleine, sans flou. */
+.arrival-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-card);
+  background-color: var(--auth-tile-bg);
+}
+
+/*
+ * Capitales sur le continent de l'accueil : un point fixe, et un anneau qui
+ * s'élargit puis s'efface, une capitale toutes les 1,6 s.
+ */
+@keyframes capital-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  40%,
+  100% {
+    transform: scale(4.5);
+    opacity: 0;
+  }
+}
+
+.africa-watermark {
+  height: min(78vh, calc(90vw * 1.124));
+}
+
+.capital-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--auth-network-core);
+  transform: translate(-50%, -50%);
+}
+
+.capital-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--auth-network-pulse);
+  border-radius: 999px;
+  opacity: 0;
+  animation: capital-pulse 8s ease-out var(--pulse-delay) infinite;
+}
+
+.arrival-root[data-paused] .arrival-drift,
+.arrival-root[data-paused] .capital-dot::after {
+  animation-play-state: paused;
+}
+
+.arrival-root[data-still] .arrival-drift,
+.arrival-root[data-still] .capital-dot::after {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrival-drift,
+  .capital-dot::after {
+    animation: none;
+  }
+}
+
+/*
+ * Carte en verre dépoli posée sur ce fond. Le décor n'y passe jamais ; un
+ * flou léger laisse lire le continent à travers la carte, sur téléphone
+ * surtout, où la carte en couvre la plus grande part.
  */
 .arrival-glass {
-  background-color: color-mix(in srgb, var(--auth-glass) calc(var(--auth-glass-opacity) * 100%), transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--auth-glass) calc(var(--auth-glass-opacity) * 100%),
+    transparent
+  );
   border: 1px solid var(--auth-glass-border);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.arrival-glass-clear {
+  --auth-glass-opacity: var(--auth-glass-clear-opacity);
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
 }
 
 /*
  * Page "Moi" sur téléphone : elle monte depuis le bas, comme une feuille,
  * en 200 ms (DESIGN.md, Mouvement).
  */
-
 
 /*
  * Navigation entre deux pages (components/navigation/Router.tsx) : l'écran
@@ -273,76 +402,6 @@
   to {
     opacity: 1;
   }
-}
-
-/*
- * Réseau des capitales sur l'accueil (components/arrival/AfricaNetwork.tsx).
- * Une liaison passe à "is-lit" à tour de rôle : elle s'allume en 0,4 s puis
- * s'éteint en 0,6 s quand la classe tombe. Une capitale "is-pulsing" lance
- * un seul battement. Opacité et transform seulement.
- */
-.network-link {
-  opacity: 0;
-  transition: opacity 600ms ease-in;
-}
-
-.network-link.is-lit {
-  opacity: 1;
-  transition: opacity 400ms ease-out;
-}
-
-@keyframes capital-pulse {
-  0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(3.4);
-    opacity: 0;
-  }
-}
-
-.capital-dot {
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background-color: var(--auth-network-core);
-  box-shadow: 0 0 6px 2px color-mix(in srgb, var(--auth-network-glow) 70%, transparent);
-  transform: translate(-50%, -50%);
-}
-
-.capital-dot::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  background-color: var(--auth-network-pulse);
-  opacity: 0;
-  transform: translate(-50%, -50%);
-}
-
-.capital-dot.is-pulsing::after {
-  animation: capital-pulse 2.4s ease-out;
-}
-
-/* Image fixe : quelques liaisons allumées, aucun battement. */
-@media (prefers-reduced-motion: reduce) {
-  .network-link:nth-of-type(4n) {
-    opacity: 0.8;
-  }
-}
-
-/* Pastille d'un logo en couleur sur l'accueil : sans flou, elle ne coûte rien à animer. */
-.arrival-tile {
-  display: inline-flex;
-  padding: 8px;
-  border-radius: 14px;
-  background-color: var(--auth-tile-bg);
-  box-shadow: 0 4px 16px rgb(2 6 23 / 0.35);
 }
 
 @keyframes voice-recording-blink {

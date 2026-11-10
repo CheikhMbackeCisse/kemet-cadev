@@ -164,29 +164,38 @@ Ces choix font "interface générée par une IA" :
 
 #### Parcours d'arrivée
 
-L'accueil d'une première visite (`/decouvrir`), les quatre questions posées
+L'accueil d'une première visite (`/decouvrir`), les trois questions posées
 avant l'inscription, la connexion, l'inscription, les écrans de mot de passe,
 et depuis le 08/11/2026 (demandé explicitement) la fin du profil
 (`/completer-profil`) et les six écrans d'onboarding (`/bienvenue`)
 partagent un même fond de marque : dégradé et halos (levés le 20/10/2026, voir
-`docs/adr/0019-fond-des-ecrans-de-compte.md`), silhouette de l'Afrique, et
-vingt et un éléments au plus qui flottent lentement (treize logos de langages
-et d'outils, trois symboles IA, cybersécurité et IoT, cinq bouts de code en
-Geist Mono), onze sur mobile. Le logo Kemet est en haut à gauche, sauf sur
-l'accueil.
+`docs/adr/0019-fond-des-ecrans-de-compte.md`), et le continent africain
+entier, centré, en filigrane derrière la carte (remplissage à 6 %, contour
+d'un pixel à 40 %). On reconnaît la forme sans qu'elle attire l'oeil ;
+jamais un morceau coupé par le bord de l'écran. Le logo Kemet est en haut à
+gauche, sauf sur l'accueil.
 
-L'accueil met le continent au centre (70 % de la hauteur sur mobile) : un
-point lumineux sur trente-trois capitales qui pulse à tour de rôle, et un
-réseau de liaisons courbes dont une s'allume puis s'éteint toutes les 0,6 s.
-Les logos y sont dans leurs vraies couleurs (Simple Icons), posés sur une
-pastille blanche qui garde le contraste sur le fond sombre, et les symboles
-IA, cybersécurité et IoT en couleur. La carte en verre est en bas, avec le
-logo Kemet complet ("kemet") au lieu du symbole seul. Tout en bas de l'écran,
-"Propulsé par" en blanc, puis "Systalink" écrit en texte dans la couleur de
-Systalink (#1265dd) sur une pastille blanche : ni leur logo ni leur police.
+La carte est au centre de l'écran, entre deux bandes de décor : au-dessus et
+au-dessous sur téléphone, à gauche et à droite à partir de 768 px. Le décor
+ne passe donc jamais sous la carte, ne touche ni elle ni le bord de l'écran
+(16 px au moins, dérive comprise) et deux éléments ne se chevauchent jamais
+(`decorLayout.test.ts`) ; une bande trop petite reste vide, un formulaire
+long sur un petit écran n'a aucun décor. Dix éléments au plus sur ordinateur,
+six sur téléphone : quatre logos de langages (Python, JavaScript,
+TypeScript, Kotlin), trois icônes Lucide (terminal, base de données, réseau)
+et trois bouts de code en Geist Mono.
+
+Sur l'accueil, les logos sont dans leurs vraies couleurs (Simple Icons) sur
+une pastille blanche pleine, sans flou ni ombre, et cinq capitales (Dakar,
+Le Caire, Abuja, Nairobi, Pretoria) battent lentement, une toutes les
+1,6 s. Pas de réseau de liaisons. La carte de l'accueil est plus claire (teinte
+à 50 %) pour laisser lire le continent qu'elle couvre sur téléphone. Tout en
+bas de l'écran, "Propulsé par" en petit et en blanc atténué, puis
+"Systalink" en blanc, graisse moyenne, S majuscule, sur la même ligne : ni
+pastille, ni leur symbole, ni leur police.
 
 Le contenu de chaque écran est posé sur une carte en verre dépoli (teinte du
-fond à 60 %, flou de 16 px, bord blanc à 20 %), demandée explicitement le
+fond à 60 %, flou de 3 px, bord blanc à 20 %), demandée explicitement le
 08/11/2026. Le texte de la carte est blanc dans les deux thèmes (`--auth-*`),
 les champs gardent leurs couleurs ordinaires, le bouton principal est blanc.
 Aucun texte descriptif sous les titres, une barre de progression sans
@@ -194,15 +203,17 @@ Aucun texte descriptif sous les titres, une barre de progression sans
 la raison d'un bouton Continuer bloqué est écrite sous lui (une liste longue
 peut la cacher). Un insigne de niveau posé sur la carte prend les couleurs
 du thème sombre dans les deux thèmes (`LevelBadge tone="onDark"`), et les
-couleurs propres au fond (réseau, symboles, pastilles, séparateurs) sont des
+couleurs propres au fond (continent, capitales, décor, séparateurs) sont des
 variables `--auth-*` de `tokens.css`. Le fond de `html` est écrit en dur dans
 `index.html`, la feuille de style n'étant pas encore chargée au premier
 octet. Voir
 `docs/adr/0030-parcours-d-arrivee.md`.
 
-Deux intensités de mouvement : riche sur l'accueil, calme ailleurs. Seuls
-`transform` et `opacity` bougent, l'animation s'arrête quand l'onglet est
-caché et devient une image fixe avec `prefers-reduced-motion`.
+Deux intensités : sur l'accueil, décor en couleur et capitales qui battent ;
+ailleurs, décor blanc à 16 %, sans capitales. Les éléments dérivent de 6 px
+au plus, sans rotation ni fondu. Seuls `transform` et `opacity` bougent ;
+l'animation s'arrête quand l'onglet est caché, et rien ne bouge sur
+connexion lente, en économie de données ou avec `prefers-reduced-motion`.
 
 Les logos de Simple Icons sont la seule exception au « jamais le logo d'un
 autre produit » du principe 6 : décor qui dit de quoi on parle, jamais

@@ -7,24 +7,20 @@ import { markIntroSeen } from "../lib/intro/introStorage.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
-// Couleur principale de Systalink (#1265dd, la même que le bleu de Kemet),
-// écrite sur une pastille blanche : directement sur le bleu nuit, elle ne
-// serait pas lisible. Le nom en texte, sans leur logo ni leur police.
+// "Systalink" écrit comme leur nom : S majuscule, graisse moyenne, en blanc
+// sur le fond bleu, comme sur leur propre page. Ni leur symbole ni leur police.
 function PoweredBy() {
   return (
-    <p className="flex items-center gap-2 text-sm text-auth-text">
-      {fr.intro.poweredBy}
-      <span className="rounded-full bg-white px-2.5 py-0.5 font-bold tracking-tight text-[#1265dd]">
-        Systalink
-      </span>
+    <p className="flex items-baseline gap-1.5">
+      <span className="text-xs text-auth-text-muted">{fr.intro.poweredBy}</span>
+      <span className="text-sm font-medium text-auth-text">Systalink</span>
     </p>
   );
 }
 
 /**
- * Première arrivée d'un visiteur : le continent et le réseau de ses
- * capitales au centre, le logo, le titre et deux actions sur la carte en
- * verre dépoli.
+ * Première arrivée d'un visiteur : la carte en verre au centre de l'écran,
+ * sur le continent en filigrane, avec le logo, le titre et deux actions.
  */
 export function WelcomePage() {
   const { status } = useSession();
@@ -44,7 +40,6 @@ export function WelcomePage() {
       motion="rich"
       width="md"
       showLogo={false}
-      placement="bottom"
       pageFooter={<PoweredBy />}
       busy={status === "loading" || signedIn}
     >

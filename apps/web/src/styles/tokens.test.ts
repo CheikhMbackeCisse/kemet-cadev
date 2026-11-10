@@ -94,9 +94,16 @@ describe("carte en verre dépoli du parcours d'arrivée", () => {
     return Number(match[1]);
   }
 
-  // Pire cas, sans compter le flou qui l'adoucit : un élément flottant blanc à
-  // son opacité maximale, sur le halo le plus clair pris à pleine intensité.
-  const backdrop = over("#ffffff", number("auth-float-opacity"), token(root, "auth-glow-a"));
+  function rgbaAlpha(name: string): number {
+    const match = new RegExp(`--${name}:\\s*rgba\\([^)]*,\\s*([0-9.]+)\\)`).exec(root);
+    if (!match?.[1]) throw new Error(`Variable introuvable : --${name}`);
+    return Number(match[1]);
+  }
+
+  // Pire cas, sans compter le flou qui l'adoucit : le contour du continent,
+  // seul élément du décor qui passe sous la carte, sur le halo le plus clair
+  // pris à pleine intensité. Le décor qui dérive reste dans ses bandes.
+  const backdrop = over("#93c5fd", rgbaAlpha("auth-continent-line"), token(root, "auth-glow-a"));
   const card = over(token(root, "auth-glass"), number("auth-glass-opacity"), backdrop);
   // --auth-text-muted est un blanc à 72 %.
   const muted = over("#ffffff", 0.72, card);
@@ -107,23 +114,16 @@ describe("carte en verre dépoli du parcours d'arrivée", () => {
     expect(contrast(token(root, "auth-danger"), card)).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("garde 4,5:1 sur la carte plus claire de l'accueil", () => {
+    const clear = over(token(root, "auth-glass"), number("auth-glass-clear-opacity"), backdrop);
+    expect(contrast(token(root, "auth-text"), clear)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(over("#ffffff", 0.72, clear), clear)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("garde 3:1 pour un insigne de niveau posé sur la carte", () => {
     const onDark = block(".level-on-dark");
     for (const level of LEVELS) {
       expect(contrast(token(onDark, `level-${level}`), card)).toBeGreaterThanOrEqual(3);
     }
-  });
-
-  it("ne dépasse jamais l'opacité prévue pour les éléments flottants derrière un formulaire", () => {
-    const component = readFileSync(
-      new URL("../components/arrival/ArrivalBackground.tsx", import.meta.url),
-      "utf8",
-    );
-    // Sur l'accueil (mouvement riche), les logos sont en couleur sur une
-    // pastille blanche et peuvent monter plus haut : seul le mouvement calme,
-    // derrière les formulaires, reste sous ce plafond.
-    const calm = /calm: \{[^}]*high: ([0-9.]+)/.exec(component);
-    expect(calm).not.toBeNull();
-    expect(Number(calm![1])).toBeLessThanOrEqual(number("auth-float-opacity"));
   });
 });

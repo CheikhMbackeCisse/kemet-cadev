@@ -59,3 +59,36 @@ ressources sont notées dans `THIRD_PARTY_LICENSES.md` par
   comme un seul parcours jusqu'au fil.
 - Le reste de la liste « Ce qui est interdit » s'applique toujours sur ces
   écrans, et aucun autre écran n'hérite de ces exceptions.
+
+## Complément du 10/11/2026 : le continent en fond, le décor autour de la carte
+
+Contexte. Sur l'accueil, le continent et son réseau de trente-trois capitales
+étaient devenus le sujet de l'écran, la carte était repoussée en bas, et des
+logos passaient sous la carte ou se chevauchaient selon la taille de l'écran.
+Sur les autres écrans, un morceau du continent sortait coupé en bas.
+
+Décision.
+
+- Le continent entier, centré, en filigrane sur tous les écrans du parcours.
+  Contour régénéré depuis countries-50m de world-atlas en projection de
+  Mercator par `scripts/build-africa-outline.ts` (d3-geo et topojson-client
+  en dépendances de développement, ISC) : pays fusionnés, petites îles
+  écartées, Madagascar gardée, 3,9 Ko. Plus de réseau ; cinq capitales sur
+  l'accueil, placées par le même script.
+- La carte revient au centre. La page devient une grille : bande de décor,
+  carte, bande de décor, en lignes sur téléphone et en colonnes à partir de
+  768 px. Chaque élément a une place en pourcentage de sa bande, et une
+  requête de conteneur n'affiche une bande qu'au-dessus d'une taille
+  minimale. `decorLayout.test.ts` vérifie, à cette taille minimale, qu'aucun
+  élément ne touche un bord ni un autre élément, dérive comprise ; une bande
+  plus grande ne peut que les éloigner.
+- Dix éléments au plus sur ordinateur, six sur téléphone. Pastilles blanches
+  pleines, plus de fondu ni de rotation : un logo reste net.
+- Carte de l'accueil plus claire (teinte à 50 %, flou de 3 px) : sur
+  téléphone, elle couvre presque tout le continent, qu'on doit pouvoir lire
+  à travers.
+
+Conséquences. Sur un formulaire long ou un petit écran, les bandes sont trop
+petites et le décor disparaît : c'est voulu. Le contraste du texte de la
+carte est vérifié contre le contour du continent posé sur le halo le plus
+clair (`tokens.test.ts`), seul élément du fond qui passe encore sous elle.

@@ -179,25 +179,28 @@
   /*
    * Carte en verre dépoli du parcours d'arrivée : teinte du fond, opacité,
    * bord clair. Le fond restant sombre dans les deux thèmes, le texte de la
-   * carte est blanc ; tokens.test.ts vérifie son contraste au pire cas, un
-   * élément flottant à son opacité maximale posé sur le halo le plus clair.
+   * carte est blanc ; tokens.test.ts vérifie son contraste au pire cas, le
+   * contour du continent posé sur le halo le plus clair.
    */
   --auth-glass: #061b47;
   --auth-glass-opacity: 0.6;
+  /* Carte de l'accueil, plus claire : le continent se lit au travers. */
+  --auth-glass-clear-opacity: 0.5;
   --auth-glass-border: rgba(255, 255, 255, 0.2);
-  --auth-float-opacity: 0.35;
   --auth-danger: #ffc9c2;
-  /* Continent et réseau de l'accueil, symboles en couleur, pastille des logos. */
-  --auth-network-fill-from: #3b82f6;
-  --auth-network-fill-to: #0ea5e9;
-  --auth-network-line: #93c5fd;
-  --auth-network-glow: #38bdf8;
+  /*
+   * Continent en filigrane, capitales de l'accueil, décor autour de la
+   * carte : pastille blanche pleine des logos, icônes et code en blanc
+   * atténué, tout le décor à 16 % sur les écrans calmes.
+   */
+  --auth-continent-fill: rgba(147, 197, 253, 0.06);
+  --auth-continent-line: rgba(147, 197, 253, 0.4);
   --auth-network-core: #e0f2fe;
   --auth-network-pulse: #7dd3fc;
-  --auth-symbol-ai: #7c3aed;
-  --auth-symbol-security: #059669;
-  --auth-symbol-iot: #0891b2;
-  --auth-tile-bg: rgba(255, 255, 255, 0.9);
+  --auth-tile-bg: #ffffff;
+  --auth-decor-icon: rgba(255, 255, 255, 0.72);
+  --auth-decor-code: rgba(255, 255, 255, 0.56);
+  --auth-decor-calm-opacity: 0.16;
   --auth-divider: rgba(255, 255, 255, 0.15);
   --auth-skeleton: rgba(255, 255, 255, 0.1);
 }
