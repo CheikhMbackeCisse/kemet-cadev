@@ -4,8 +4,15 @@ import { ONBOARDING_BASE_PATH } from "../onboarding/steps.js";
 
 type PageModule = Promise<{ default: ComponentType }>;
 
+const loadedPages = new WeakSet<() => PageModule>();
+
 function page<K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) {
-  return (): PageModule => load().then((module) => ({ default: module[name] }));
+  const loader = (): PageModule =>
+    load().then((module) => {
+      loadedPages.add(loader);
+      return { default: module[name] };
+    });
+  return loader;
 }
 
 // Chaque page est chargée à la demande : un seul fichier pour tous les écrans
@@ -136,6 +143,13 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
 
 function isPageKey(page: PageKey | SpecialPage): page is PageKey {
   return page in PAGE_LOADERS;
+}
+
+/** Code de la page déjà téléchargé : l'afficher ne demande plus rien au réseau. */
+export function isPageLoaded(pathname: string): boolean {
+  const key = pageFor(pathname);
+  const target = key === "root" ? "feed" : key;
+  return isPageKey(target) && loadedPages.has(PAGE_LOADERS[target]);
 }
 
 const preloaded = new Set<PageKey>();

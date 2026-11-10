@@ -19,7 +19,7 @@ import {
   NAVIGATE_EVENT,
   savedScrollY,
 } from "../../lib/navigation/navigate.js";
-import { MAIN_SECTION_PATHS, pageFor, preloadPage } from "../../lib/navigation/pages.js";
+import { isPageLoaded, MAIN_SECTION_PATHS, pageFor, preloadPage } from "../../lib/navigation/pages.js";
 import { whenIdle } from "../../lib/idle.js";
 import { isSlowConnection } from "../../lib/network.js";
 
@@ -179,10 +179,22 @@ export function Router({
       const samePage = pageFor(window.location.pathname) === pageFor(shown.pathname);
       const sameAddress =
         window.location.pathname === shown.pathname && window.location.search === shown.search;
+      // Retour pendant qu'une page se charge encore : l'écran affiché est déjà
+      // le bon. Sans cette mise à jour, la page attendue se monterait quand
+      // même, plus tard, à une adresse qui n'est plus la sienne.
+      if (sameAddress) {
+        startTransition(() => setLocation(() => shown));
+        return;
+      }
       // Une entrée ajoutée par la page elle-même (question suivante, vue d'un
       // salon sur mobile) se gère dans la page.
-      if (samePage && (sameAddress || !isRouterEntry(event.state))) return;
-      startTransition(() => setLocation(readLocation(shown.id + 1, "pop")));
+      if (samePage && !isRouterEntry(event.state)) return;
+      const showPrevious = () => setLocation(readLocation(shown.id + 1, "pop"));
+      // Page déjà visitée : un seul rendu, d'un bloc. Une transition découpe
+      // le travail en tranches qui, sur un téléphone lent, multiplient le
+      // temps du retour ; elle ne sert qu'à attendre du code à télécharger.
+      if (isPageLoaded(window.location.pathname)) showPrevious();
+      else startTransition(showPrevious);
     };
     document.addEventListener("click", handleDocumentClick);
     window.addEventListener(NAVIGATE_EVENT, onNavigate);
