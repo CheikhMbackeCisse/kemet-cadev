@@ -49,6 +49,15 @@ describe("monogramme d'espace inactif", () => {
   });
 });
 
+describe("icône d'un espace sans logo", () => {
+  // Icône blanche sur la teinte propre à l'espace.
+  it.each(Object.entries(themes))("garde 4,5:1 en thème %s", (_theme, source) => {
+    for (let tint = 1; tint <= 6; tint += 1) {
+      expect(contrast("#ffffff", token(source, `space-tint-${tint}`))).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
 const LEVELS = ["apprenti", "artisan", "scribe", "architecte", "legende"] as const;
 
 describe("icônes de niveau", () => {

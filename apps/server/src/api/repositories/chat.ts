@@ -31,7 +31,13 @@ function toPage<T extends { createdAt: Date }>(rows: T[], limit: number) {
 
 export async function createSpaceWithDefaults(
   db: Db,
-  input: { name: string; slug: string; description: string | null; visibility: "public" | "private"; creatorProfileId: string },
+  input: {
+    name: string;
+    slug: string;
+    description: string | null;
+    visibility: "public" | "private";
+    creatorProfileId: string;
+  },
 ) {
   return db.transaction(async (tx) => {
     const [space] = await tx
@@ -80,14 +86,24 @@ export async function findSpaceMembership(db: Db, spaceId: string, profileId: st
 }
 
 // `profileId` est `null` pour un visiteur : seuls les espaces publics sont visibles.
-export async function listSpacesForViewer(db: Db, profileId: string | null, cursor: string | undefined, limit: number) {
+export async function listSpacesForViewer(
+  db: Db,
+  profileId: string | null,
+  cursor: string | undefined,
+  limit: number,
+) {
   const memberIds = profileId
-    ? (await db.select({ id: spaceMembers.spaceId }).from(spaceMembers).where(eq(spaceMembers.profileId, profileId))).map(
-        (row) => row.id,
-      )
+    ? (
+        await db
+          .select({ id: spaceMembers.spaceId })
+          .from(spaceMembers)
+          .where(eq(spaceMembers.profileId, profileId))
+      ).map((row) => row.id)
     : [];
   const visibility =
-    memberIds.length > 0 ? or(eq(spaces.visibility, "public"), inArray(spaces.id, memberIds)) : eq(spaces.visibility, "public");
+    memberIds.length > 0
+      ? or(eq(spaces.visibility, "public"), inArray(spaces.id, memberIds))
+      : eq(spaces.visibility, "public");
   // L'espace système des discussions de travaux ne figure jamais dans la liste.
   const listed = and(visibility, isNull(spaces.archivedAt), eq(spaces.kind, "community"));
   const condition = cursor ? and(listed, lt(spaces.createdAt, new Date(cursor))) : listed;
@@ -95,13 +111,21 @@ export async function listSpacesForViewer(db: Db, profileId: string | null, curs
     ? await db
         .select({ space: spaces, role: spaceMembers.role })
         .from(spaces)
-        .leftJoin(spaceMembers, and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.profileId, profileId)))
+        .leftJoin(
+          spaceMembers,
+          and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.profileId, profileId)),
+        )
         .where(condition)
         .orderBy(desc(spaces.createdAt))
         .limit(limit + 1)
-    : (await db.select({ space: spaces }).from(spaces).where(condition).orderBy(desc(spaces.createdAt)).limit(limit + 1)).map(
-        (row) => ({ ...row, role: null }),
-      );
+    : (
+        await db
+          .select({ space: spaces })
+          .from(spaces)
+          .where(condition)
+          .orderBy(desc(spaces.createdAt))
+          .limit(limit + 1)
+      ).map((row) => ({ ...row, role: null }));
   const page = toPage(
     rows.map((row) => ({ ...row.space, role: row.role })),
     limit,
@@ -109,15 +133,50 @@ export async function listSpacesForViewer(db: Db, profileId: string | null, curs
   return page;
 }
 
-export async function addSpaceMember(db: Db, spaceId: string, profileId: string, role: "owner" | "admin" | "member" = "member") {
+/** Espace public le plus actif sur la période, pour ouvrir les salons d'un visiteur. */
+export async function findMostActivePublicSpaceId(db: Db, since: Date): Promise<string | null> {
+  const [row] = await db
+    .select({ id: spaces.id, total: count(messages.id) })
+    .from(spaces)
+    .innerJoin(channels, eq(channels.spaceId, spaces.id))
+    .innerJoin(
+      messages,
+      and(
+        eq(messages.channelId, channels.id),
+        gt(messages.createdAt, since),
+        isNull(messages.deletedAt),
+      ),
+    )
+    .where(
+      and(eq(spaces.visibility, "public"), isNull(spaces.archivedAt), eq(spaces.kind, "community")),
+    )
+    .groupBy(spaces.id)
+    .orderBy(desc(count(messages.id)))
+    .limit(1);
+  return row?.id ?? null;
+}
+
+export async function addSpaceMember(
+  db: Db,
+  spaceId: string,
+  profileId: string,
+  role: "owner" | "admin" | "member" = "member",
+) {
   await db.insert(spaceMembers).values({ spaceId, profileId, role }).onConflictDoNothing();
 }
 
 export async function removeSpaceMember(db: Db, spaceId: string, profileId: string) {
-  await db.delete(spaceMembers).where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.profileId, profileId)));
+  await db
+    .delete(spaceMembers)
+    .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.profileId, profileId)));
 }
 
-export async function listSpaceMembers(db: Db, spaceId: string, cursor: string | undefined, limit: number) {
+export async function listSpaceMembers(
+  db: Db,
+  spaceId: string,
+  cursor: string | undefined,
+  limit: number,
+) {
   // Les figurants du seed comptent dans le nombre de membres, jamais dans la liste.
   const visible = and(eq(spaceMembers.spaceId, spaceId), eq(profiles.isFiller, false));
   const condition = cursor ? and(visible, gt(spaceMembers.joinedAt, new Date(cursor))) : visible;
@@ -135,13 +194,19 @@ export async function listSpaceMembers(db: Db, spaceId: string, cursor: string |
 }
 
 export async function countSpaceMembers(db: Db, spaceId: string) {
-  const [row] = await db.select({ value: count() }).from(spaceMembers).where(eq(spaceMembers.spaceId, spaceId));
+  const [row] = await db
+    .select({ value: count() })
+    .from(spaceMembers)
+    .where(eq(spaceMembers.spaceId, spaceId));
   return row?.value ?? 0;
 }
 
 // Pour l'affichage d'un nombre de membres sur une liste d'espaces : une
 // requête groupée plutôt qu'un countSpaceMembers par espace.
-export async function countSpaceMembersBatch(db: Db, spaceIds: string[]): Promise<Map<string, number>> {
+export async function countSpaceMembersBatch(
+  db: Db,
+  spaceIds: string[],
+): Promise<Map<string, number>> {
   if (spaceIds.length === 0) return new Map();
   const rows = await db
     .select({ spaceId: spaceMembers.spaceId, value: count() })
@@ -153,14 +218,24 @@ export async function countSpaceMembersBatch(db: Db, spaceIds: string[]): Promis
 
 // Même règle que countUnreadMessages : un message est non lu s'il est plus
 // récent que la dernière lecture du salon, ou que l'arrivée dans l'espace.
-export async function findSpacesWithUnread(db: Db, profileId: string, spaceIds: string[]): Promise<Set<string>> {
+export async function findSpacesWithUnread(
+  db: Db,
+  profileId: string,
+  spaceIds: string[],
+): Promise<Set<string>> {
   if (spaceIds.length === 0) return new Set();
   const rows = await db
     .selectDistinct({ spaceId: spaceMembers.spaceId })
     .from(messages)
     .innerJoin(channels, eq(channels.id, messages.channelId))
-    .innerJoin(spaceMembers, and(eq(spaceMembers.spaceId, channels.spaceId), eq(spaceMembers.profileId, profileId)))
-    .leftJoin(readStates, and(eq(readStates.channelId, channels.id), eq(readStates.profileId, profileId)))
+    .innerJoin(
+      spaceMembers,
+      and(eq(spaceMembers.spaceId, channels.spaceId), eq(spaceMembers.profileId, profileId)),
+    )
+    .leftJoin(
+      readStates,
+      and(eq(readStates.channelId, channels.id), eq(readStates.profileId, profileId)),
+    )
     .where(
       and(
         inArray(channels.spaceId, spaceIds),
@@ -171,7 +246,11 @@ export async function findSpacesWithUnread(db: Db, profileId: string, spaceIds: 
 }
 
 export async function listChannelsBySpace(db: Db, spaceId: string) {
-  return db.select().from(channels).where(eq(channels.spaceId, spaceId)).orderBy(asc(channels.displayOrder));
+  return db
+    .select()
+    .from(channels)
+    .where(eq(channels.spaceId, spaceId))
+    .orderBy(asc(channels.displayOrder));
 }
 
 export async function findChannelById(db: Db, channelId: string) {
@@ -179,13 +258,26 @@ export async function findChannelById(db: Db, channelId: string) {
   return channel ?? null;
 }
 
-export async function createChannel(db: Db, spaceId: string, name: string, slug: string, displayOrder: number) {
-  const [channel] = await db.insert(channels).values({ spaceId, name, slug, displayOrder }).returning();
+export async function createChannel(
+  db: Db,
+  spaceId: string,
+  name: string,
+  slug: string,
+  displayOrder: number,
+) {
+  const [channel] = await db
+    .insert(channels)
+    .values({ spaceId, name, slug, displayOrder })
+    .returning();
   return channel!;
 }
 
 export async function renameChannel(db: Db, channelId: string, name: string) {
-  const [channel] = await db.update(channels).set({ name }).where(eq(channels.id, channelId)).returning();
+  const [channel] = await db
+    .update(channels)
+    .set({ name })
+    .where(eq(channels.id, channelId))
+    .returning();
   return channel!;
 }
 
@@ -197,7 +289,12 @@ export async function getReadState(db: Db, channelId: string, profileId: string)
   return state ?? null;
 }
 
-export async function countUnreadMessages(db: Db, channelId: string, profileId: string, sinceFallback: Date) {
+export async function countUnreadMessages(
+  db: Db,
+  channelId: string,
+  profileId: string,
+  sinceFallback: Date,
+) {
   const state = await getReadState(db, channelId, profileId);
   const since = state?.lastReadAt ?? sinceFallback;
   const rows = await db
@@ -207,7 +304,12 @@ export async function countUnreadMessages(db: Db, channelId: string, profileId: 
   return rows.length;
 }
 
-export async function markChannelRead(db: Db, channelId: string, profileId: string, messageId: string) {
+export async function markChannelRead(
+  db: Db,
+  channelId: string,
+  profileId: string,
+  messageId: string,
+) {
   await db
     .insert(readStates)
     .values({ channelId, profileId, lastReadMessageId: messageId, lastReadAt: new Date() })
@@ -219,7 +321,13 @@ export async function markChannelRead(db: Db, channelId: string, profileId: stri
 
 export async function insertMessage(
   db: DbOrTx,
-  input: { channelId: string; authorId: string; clientId: string; body: string; parentMessageId: string | null },
+  input: {
+    channelId: string;
+    authorId: string;
+    clientId: string;
+    body: string;
+    parentMessageId: string | null;
+  },
 ) {
   const [inserted] = await db
     .insert(messages)
@@ -249,7 +357,11 @@ export async function editMessage(db: Db, messageId: string, body: string) {
 }
 
 export async function softDeleteMessage(db: Db, messageId: string) {
-  const [message] = await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, messageId)).returning();
+  const [message] = await db
+    .update(messages)
+    .set({ deletedAt: new Date() })
+    .where(eq(messages.id, messageId))
+    .returning();
   return message!;
 }
 
@@ -258,8 +370,16 @@ export async function softDeleteMessage(db: Db, messageId: string) {
  * comparé sur (created_at, id) : une date seule, arrondie à la milliseconde
  * en JavaScript, faisait sauter des messages en bord de page.
  */
-export async function listChannelMessages(db: Db, channelId: string, cursor: string | undefined, limit: number) {
-  const topLevelInChannel = and(eq(messages.channelId, channelId), isNull(messages.parentMessageId));
+export async function listChannelMessages(
+  db: Db,
+  channelId: string,
+  cursor: string | undefined,
+  limit: number,
+) {
+  const topLevelInChannel = and(
+    eq(messages.channelId, channelId),
+    isNull(messages.parentMessageId),
+  );
   const condition = cursor
     ? and(
         topLevelInChannel,
@@ -282,25 +402,44 @@ export async function listChannelMessages(db: Db, channelId: string, cursor: str
  * (countUnreadMessages) : postérieur à la dernière lecture, ou à l'arrivée
  * dans l'espace pour un salon jamais ouvert.
  */
-export async function findFirstUnreadMessageId(db: Db, channelId: string, profileId: string, joinedAt: Date) {
+export async function findFirstUnreadMessageId(
+  db: Db,
+  channelId: string,
+  profileId: string,
+  joinedAt: Date,
+) {
   const state = await getReadState(db, channelId, profileId);
   const since = state?.lastReadAt ?? joinedAt;
   const [row] = await db
     .select({ id: messages.id })
     .from(messages)
-    .where(and(eq(messages.channelId, channelId), isNull(messages.parentMessageId), gt(messages.createdAt, since)))
+    .where(
+      and(
+        eq(messages.channelId, channelId),
+        isNull(messages.parentMessageId),
+        gt(messages.createdAt, since),
+      ),
+    )
     .orderBy(asc(messages.createdAt), asc(messages.id))
     .limit(1);
   return row?.id ?? null;
 }
 
-export async function listThreadReplies(db: Db, parentMessageId: string, cursor: string | undefined, limit: number) {
+export async function listThreadReplies(
+  db: Db,
+  parentMessageId: string,
+  cursor: string | undefined,
+  limit: number,
+) {
   const rows = await db
     .select()
     .from(messages)
     .where(
       cursor
-        ? and(eq(messages.parentMessageId, parentMessageId), gt(messages.createdAt, new Date(cursor)))
+        ? and(
+            eq(messages.parentMessageId, parentMessageId),
+            gt(messages.createdAt, new Date(cursor)),
+          )
         : eq(messages.parentMessageId, parentMessageId),
     )
     .orderBy(asc(messages.createdAt))
@@ -312,7 +451,10 @@ export async function listThreadReplies(db: Db, parentMessageId: string, cursor:
 }
 
 export async function countReplies(db: Db, parentMessageId: string) {
-  const rows = await db.select({ id: messages.id }).from(messages).where(eq(messages.parentMessageId, parentMessageId));
+  const rows = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .where(eq(messages.parentMessageId, parentMessageId));
   return rows.length;
 }
 
@@ -340,13 +482,20 @@ export async function resolveMentionableProfiles(db: DbOrTx, spaceId: string, ha
     .from(spaceMembers)
     .innerJoin(profiles, eq(profiles.id, spaceMembers.profileId))
     .where(
-      and(eq(spaceMembers.spaceId, spaceId), inArray(profiles.handle, handles), eq(profiles.isFiller, false)),
+      and(
+        eq(spaceMembers.spaceId, spaceId),
+        inArray(profiles.handle, handles),
+        eq(profiles.isFiller, false),
+      ),
     );
   return rows;
 }
 
 export async function getMessageReactions(db: Db, messageId: string) {
-  const rows = await db.select().from(messageReactions).where(eq(messageReactions.messageId, messageId));
+  const rows = await db
+    .select()
+    .from(messageReactions)
+    .where(eq(messageReactions.messageId, messageId));
   const byEmoji = new Map<string, string[]>();
   for (const row of rows) {
     const entry = byEmoji.get(row.emoji) ?? [];
@@ -360,7 +509,13 @@ export async function toggleReaction(db: Db, messageId: string, profileId: strin
   const [existing] = await db
     .select()
     .from(messageReactions)
-    .where(and(eq(messageReactions.messageId, messageId), eq(messageReactions.profileId, profileId), eq(messageReactions.emoji, emoji)));
+    .where(
+      and(
+        eq(messageReactions.messageId, messageId),
+        eq(messageReactions.profileId, profileId),
+        eq(messageReactions.emoji, emoji),
+      ),
+    );
   if (existing) {
     await db.delete(messageReactions).where(eq(messageReactions.id, existing.id));
   } else {
@@ -411,8 +566,7 @@ export async function findInviteByCode(db: Db, code: string) {
 }
 
 export type InviteRedemptionResult =
-  | { status: "ok"; spaceId: string }
-  | { status: "not_found" | "expired" | "revoked" | "exhausted" };
+  { status: "ok"; spaceId: string } | { status: "not_found" | "expired" | "revoked" | "exhausted" };
 
 export async function findProfileById(db: Db, profileId: string) {
   const [profile] = await db.select().from(profiles).where(eq(profiles.id, profileId));
@@ -430,7 +584,11 @@ export async function hydrateMessage(db: Db, row: typeof messages.$inferSelect) 
   return { row, author: author!, mentionedHandles, reactions, replyCount, attachments };
 }
 
-export async function redeemInvite(db: Db, code: string, profileId: string): Promise<InviteRedemptionResult> {
+export async function redeemInvite(
+  db: Db,
+  code: string,
+  profileId: string,
+): Promise<InviteRedemptionResult> {
   return db.transaction(async (tx) => {
     // Un seul UPDATE conditionnel : le verrou de ligne sérialise les essais
     // concurrents. Un SELECT puis UPDATE pourrait dépasser max_uses.
@@ -456,7 +614,10 @@ export async function redeemInvite(db: Db, code: string, profileId: string): Pro
       return { status: "exhausted" };
     }
 
-    await tx.insert(spaceMembers).values({ spaceId: updated.spaceId, profileId, role: "member" }).onConflictDoNothing();
+    await tx
+      .insert(spaceMembers)
+      .values({ spaceId: updated.spaceId, profileId, role: "member" })
+      .onConflictDoNothing();
     return { status: "ok", spaceId: updated.spaceId };
   });
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { SpaceIcon } from "../ui/SpaceIcon.js";
 import type { Space } from "@kemet/shared";
 import { Button } from "../ui/Button.js";
 import { GlassState } from "./GlassState.js";
@@ -73,6 +74,12 @@ export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) 
         const manages = space.role === "owner" || space.role === "admin";
         return (
           <li key={space.id} className="flex items-center gap-3 py-3">
+            <SpaceIcon
+              id={space.id}
+              name={space.name}
+              className="size-10 rounded-control"
+              glyphClassName="size-5"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-auth-text">{space.name}</p>
               {space.description && (

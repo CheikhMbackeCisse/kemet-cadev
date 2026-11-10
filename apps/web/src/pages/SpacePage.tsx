@@ -20,6 +20,7 @@ import {
   listChannels,
   listSpaceMembers,
   listSpaces,
+  getMostActiveSpaceId,
   removeSpaceMember,
   uploadAttachment,
 } from "../lib/chat/api.js";
@@ -101,6 +102,7 @@ function formatTime(iso: string): string {
 export function SpacePage() {
   const toast = useToast();
   const { status, profile, isSuspended } = useSession();
+  const isVisitor = status === "visitor";
   const canInteract = status === "ready";
   // Un compte suspendu garde la lecture (canInteract) mais pas l'écriture :
   // composeur, réactions et signalement s'appuient sur canWrite plutôt que
@@ -189,18 +191,25 @@ export function SpacePage() {
     setSpacesError(false);
     try {
       const page = await listSpaces();
+      // Visiteur : l'espace le plus actif de la semaine plutôt que le plus récent.
+      const mostActive = isVisitor
+        ? (await getMostActiveSpaceId().catch(() => ({ spaceId: null }))).spaceId
+        : null;
+      const preferred = page.items.some((space) => space.id === mostActive) ? mostActive : null;
       setSpaces(page.items);
-      setActiveSpaceId((current) => current ?? page.items[0]?.id ?? null);
+      setActiveSpaceId((current) => current ?? preferred ?? page.items[0]?.id ?? null);
     } catch {
       setSpacesError(true);
     } finally {
       setSpacesLoading(false);
     }
-  }, []);
+  }, [isVisitor]);
 
+  // Attendre la session : un visiteur n'ouvre pas le même espace par défaut.
+  const sessionKnown = status !== "loading";
   useEffect(() => {
-    void refreshSpaces();
-  }, [refreshSpaces]);
+    if (sessionKnown) void refreshSpaces();
+  }, [refreshSpaces, sessionKnown]);
 
   const refreshChannels = useCallback(async (spaceId: string) => {
     setChannelsLoading(true);

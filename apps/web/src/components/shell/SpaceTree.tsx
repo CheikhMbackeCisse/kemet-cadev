@@ -1,7 +1,7 @@
 import { Hash } from "lucide-react";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
-import { monogramOf } from "../../lib/monogram.js";
+import { SpaceIcon } from "../ui/SpaceIcon.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import type { ChannelItem, SpaceItem } from "./types.js";
 
@@ -162,21 +162,12 @@ function RowSkeletons({ count }: { count: number }) {
 // posée dans une ligne arrondie à 8 px.
 function SpaceAvatar({ space }: { space: SpaceItem }) {
   return (
-    <span
-      aria-hidden="true"
-      className="flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-accent-soft text-xs font-semibold text-link"
-    >
-      {space.imageUrl ? (
-        <img
-          src={space.imageUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="size-full object-cover"
-        />
-      ) : (
-        monogramOf(space.name)
-      )}
-    </span>
+    <SpaceIcon
+      id={space.id}
+      name={space.name}
+      imageUrl={space.imageUrl}
+      className="size-6 rounded-[6px]"
+      glyphClassName="size-3.5"
+    />
   );
 }

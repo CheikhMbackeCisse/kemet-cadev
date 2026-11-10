@@ -154,6 +154,10 @@ export function listSpaces(cursor?: string): Promise<Page<Space>> {
   return request(`/api/spaces${query}`);
 }
 
+export function getMostActiveSpaceId(): Promise<{ spaceId: string | null }> {
+  return request("/api/spaces/most-active");
+}
+
 export function createSpace(input: {
   name: string;
   slug: string;

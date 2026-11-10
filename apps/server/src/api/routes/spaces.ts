@@ -13,6 +13,7 @@ import {
   findSpaceMembership,
   listSpaceMembers,
   listSpacesForViewer,
+  findMostActivePublicSpaceId,
   removeSpaceMember,
 } from "../repositories/chat.js";
 import { findProfileByHandle, findProfileByUserId } from "../repositories/profiles.js";
@@ -33,7 +34,11 @@ async function findOwnProfile(db: ChatAppDeps["db"], userId: string | null) {
   return userId ? findProfileByUserId(db, userId) : null;
 }
 
-async function requireVisibleSpace(db: ChatAppDeps["db"], spaceId: string, profileId: string | null) {
+async function requireVisibleSpace(
+  db: ChatAppDeps["db"],
+  spaceId: string,
+  profileId: string | null,
+) {
   const space = await findSpaceById(db, spaceId);
   if (!space) throw notFound("Cet espace n'existe pas.");
   const membership = profileId ? await findSpaceMembership(db, spaceId, profileId) : null;
@@ -46,6 +51,8 @@ function requireAdmin(membership: { role: string } | null) {
     throw forbidden("Seuls les administrateurs de l'espace peuvent faire cette action.");
   }
 }
+
+const MOST_ACTIVE_WINDOW_DAYS = 7;
 
 export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: ChatAppDeps): void {
   app.post(
@@ -76,7 +83,9 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     const page = await listSpacesForViewer(db, profile?.id ?? null, query.cursor, query.limit);
     const spaceIds = page.items.map((row) => row.id);
     const memberCounts = await countSpaceMembersBatch(db, spaceIds);
-    const unreadSpaceIds = profile ? await findSpacesWithUnread(db, profile.id, spaceIds) : new Set<string>();
+    const unreadSpaceIds = profile
+      ? await findSpacesWithUnread(db, profile.id, spaceIds)
+      : new Set<string>();
     return {
       items: page.items.map((row) =>
         serializeSpace(row, row.role, memberCounts.get(row.id) ?? 0, unreadSpaceIds.has(row.id)),
@@ -85,12 +94,25 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
     };
   });
 
+  // Public : un visiteur arrive sur l'espace public qui a le plus de messages
+  // sur les sept derniers jours.
+  app.get("/api/spaces/most-active", async () => {
+    const since = new Date(Date.now() - MOST_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    return { spaceId: await findMostActivePublicSpaceId(db, since) };
+  });
+
   app.get<{ Params: { id: string } }>("/api/spaces/:id", async (request) => {
     const userId = await getSessionUserId(auth, request);
     const profile = await findOwnProfile(db, userId);
-    const { space, membership } = await requireVisibleSpace(db, request.params.id, profile?.id ?? null);
+    const { space, membership } = await requireVisibleSpace(
+      db,
+      request.params.id,
+      profile?.id ?? null,
+    );
     const memberCount = await countSpaceMembers(db, space.id);
-    const hasUnread = profile ? (await findSpacesWithUnread(db, profile.id, [space.id])).has(space.id) : false;
+    const hasUnread = profile
+      ? (await findSpacesWithUnread(db, profile.id, [space.id])).has(space.id)
+      : false;
     return { space: serializeSpace(space, membership?.role ?? null, memberCount, hasUnread) };
   });
 
@@ -134,7 +156,8 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const { space } = await requireVisibleSpace(db, request.params.id, profile.id);
-      if (space.visibility !== "public" || space.kind !== "community") throw notFound("Cet espace n'existe pas.");
+      if (space.visibility !== "public" || space.kind !== "community")
+        throw notFound("Cet espace n'existe pas.");
       requireWritableSpace(space);
       await addSpaceMember(db, space.id, profile.id, "member");
       return { joined: true };
@@ -154,10 +177,15 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
       } else {
         requireAdmin(membership);
         const target = await findSpaceMembership(db, request.params.id, request.params.profileId);
-        if (target?.role === "owner") throw forbidden("Le propriétaire de l'espace ne peut pas être retiré.");
+        if (target?.role === "owner")
+          throw forbidden("Le propriétaire de l'espace ne peut pas être retiré.");
         await removeSpaceMember(db, request.params.id, request.params.profileId);
       }
-      await chat.publish({ type: "member:removed", spaceId: request.params.id, profileId: request.params.profileId });
+      await chat.publish({
+        type: "member:removed",
+        spaceId: request.params.id,
+        profileId: request.params.profileId,
+      });
       return { removed: true };
     },
   );

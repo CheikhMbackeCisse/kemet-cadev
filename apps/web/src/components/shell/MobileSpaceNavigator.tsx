@@ -1,7 +1,7 @@
 import { Hash, Plus } from "lucide-react";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
-import { monogramOf } from "../../lib/monogram.js";
+import { SpaceIcon } from "../ui/SpaceIcon.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import type { SpaceTreeStatus } from "./SpaceTree.js";
 import type { ChannelItem, SpaceItem } from "./types.js";
@@ -78,21 +78,17 @@ export function MobileSpaceNavigator({
                       space.hasUnread ? fr.spaces.spaceWithUnread(space.name) : space.name
                     }
                     className={cn(
-                      "relative flex size-12 items-center justify-center overflow-hidden rounded-card text-sm font-semibold transition-colors duration-150",
-                      active ? "bg-primary text-white" : "bg-accent-soft text-link",
+                      "relative flex size-12 items-center justify-center rounded-card",
+                      active && "ring-2 ring-primary ring-offset-2 ring-offset-bg",
                     )}
                   >
-                    {space.imageUrl ? (
-                      <img
-                        src={space.imageUrl}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      monogramOf(space.name)
-                    )}
+                    <SpaceIcon
+                      id={space.id}
+                      name={space.name}
+                      imageUrl={space.imageUrl}
+                      className="size-12 rounded-card"
+                      glyphClassName="size-6"
+                    />
                   </button>
                   {space.hasUnread && !active && (
                     <span
