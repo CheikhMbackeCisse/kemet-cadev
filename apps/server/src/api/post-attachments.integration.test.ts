@@ -27,6 +27,15 @@ function buildMultipartBody(filename: string, contentType: string, data: Buffer,
 describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
+  let failReads = false;
+
+  // Fichier présent en base mais illisible sur le disque.
+  class FlakyStorage extends InMemoryStorage {
+    override read(...args: Parameters<InMemoryStorage["read"]>) {
+      if (failReads) throw new Error("lecture impossible");
+      return super.read(...args);
+    }
+  }
 
   function createApp(attachmentLimits?: { maxAttachmentBytes: number; maxUserStorageBytes: number }) {
     return async () => {
@@ -43,7 +52,7 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
       return buildApp({
         db,
         auth,
-        storage: new InMemoryStorage(),
+        storage: new FlakyStorage(),
         attachmentLimits: attachmentLimits ?? { maxAttachmentBytes: 25 * 1024 * 1024, maxUserStorageBytes: 500 * 1024 * 1024 },
       });
     };
@@ -51,6 +60,7 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
 
   beforeEach(async () => {
     await resetTestDatabase(databaseUrl!);
+    failReads = false;
     app = await createApp()();
   });
 
@@ -118,6 +128,25 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
     expect(served.headers["content-disposition"]).toContain("inline");
     expect(served.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
     expect(served.rawPayload.equals(PNG_BYTES)).toBe(true);
+  });
+
+  it("répond une erreur JSON sans cache quand le fichier ne se lit plus", async () => {
+    const owner = await createMember("owner-disk@test.kemet", "ownerdisk");
+    const attachmentId = (await uploadPostAttachment(owner, "photo.png", "image/png", PNG_BYTES)).json().attachment.id as string;
+    await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { cookie: owner },
+      payload: { body: "", attachmentIds: [attachmentId] },
+    });
+
+    failReads = true;
+    const served = await app.inject({ method: "GET", url: `/api/post-attachments/${attachmentId}/content` });
+    expect(served.statusCode).toBe(500);
+    expect(served.headers["content-type"]).toContain("application/json");
+    expect(served.headers["cache-control"]).toBe("no-store");
+    expect(served.headers["content-disposition"]).toBeUndefined();
+    expect(served.json().error.code).toBe("internal_error");
   });
 
   it("refuse un post sans texte ni image", async () => {

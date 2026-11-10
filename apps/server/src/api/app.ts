@@ -102,10 +102,23 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     contentSecurityPolicy: { useDefaults: false, directives: { defaultSrc: ["'none'"] } },
   });
 
+  // Une réponse sans consigne pourrait être gardée par le navigateur ou un
+  // proxy : seules les routes qui en posent une (fichiers) sont mises en cache.
+  app.addHook("onSend", async (_request, reply, payload) => {
+    if (!reply.hasHeader("cache-control")) reply.header("Cache-Control", "no-store");
+    return payload;
+  });
+
   app.setErrorHandler((error, _request, reply) => {
-    // Une route de fichier pose son Cache-Control avant de lire le disque :
-    // une erreur survenue ensuite ne doit pas rester en cache un an.
-    reply.header("Cache-Control", "no-store");
+    // Une route de fichier pose ses en-têtes avant de lire le disque : une
+    // erreur survenue ensuite ne doit ni rester en cache un an, ni partir
+    // avec le type et la longueur du fichier (Fastify refuserait le JSON).
+    reply
+      .removeHeader("content-length")
+      .removeHeader("content-disposition")
+      .removeHeader("content-range")
+      .header("Cache-Control", "no-store")
+      .type("application/json; charset=utf-8");
     if (error instanceof AppError) {
       reply.status(error.statusCode).send({ error: { code: error.code, message: error.message } });
       return;
