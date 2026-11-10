@@ -33,7 +33,7 @@ describe("mise à jour du fil en arrière-plan", () => {
 
   it("retrouve un post dans n'importe quel fil déjà en cache", () => {
     const client = new QueryClient();
-    client.setQueryData(feedQueryKey("abonnements", false), feed(["x", "y"], null));
+    client.setQueryData(feedQueryKey("abonnements"), feed(["x", "y"], null));
     expect(postFromFeedCache(client, "y")?.id).toBe("y");
     expect(postFromFeedCache(client, "z")).toBeUndefined();
   });
@@ -42,12 +42,12 @@ describe("mise à jour du fil en arrière-plan", () => {
 describe("post supprimé", () => {
   it("disparaît de tous les fils en cache et sa page sera relue", () => {
     const client = new QueryClient();
-    client.setQueryData(feedQueryKey("pour-toi", false), feed(["x", "y"], null));
-    client.setQueryData(feedQueryKey("abonnements", false), feed(["y"], null));
+    client.setQueryData(feedQueryKey("pour-toi"), feed(["x", "y"], null));
+    client.setQueryData(feedQueryKey("abonnements"), feed(["y"], null));
     client.setQueryData(postQueryKey("y"), post("y"));
     forgetPost(client, "y");
     expect(postFromFeedCache(client, "y")).toBeUndefined();
-    expect(client.getQueryData<FeedData>(feedQueryKey("pour-toi", false))?.posts).toHaveLength(1);
+    expect(client.getQueryData<FeedData>(feedQueryKey("pour-toi"))?.posts).toHaveLength(1);
     expect(client.getQueryState(postQueryKey("y"))?.isInvalidated).toBe(true);
   });
 });

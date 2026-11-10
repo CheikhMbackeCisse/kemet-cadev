@@ -9,6 +9,7 @@ import {
   paginationQuerySchema,
   postBookmarkInputSchema,
   sharePostSchema,
+  isBeginnerAudience,
   prefersTalentFeed,
 } from "@kemet/shared";
 import { z } from "zod";
@@ -171,7 +172,10 @@ export function registerPostRoutes(
         query.tab === "debuter"
           ? await listBeginnerFeed(db, query.cursor, query.limit)
           : query.tab === "pour-toi" || !profile
-            ? await listPourToiFeed(db, query.limit, { talent: prefersTalentFeed(profile?.role ?? null) })
+            ? await listPourToiFeed(db, query.limit, {
+                talent: prefersTalentFeed(profile?.role ?? null),
+                beginner: profile !== null && isBeginnerAudience(profile),
+              })
             : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
       const items = await toSerializedPosts(db, page.items, profile?.id ?? null);
       return { items, nextCursor: page.nextCursor };

@@ -3,8 +3,9 @@ export const BEGINNERS_SPACE_ID = "00000000-0000-0000-0000-000000000003";
 export const BEGINNERS_SPACE_SLUG = "debuter-en-informatique";
 
 /**
- * Débutant : rôle Étudiant, ou venu pour apprendre sans aucun domaine choisi.
- * Un compte qui n'a répondu à rien n'est pas débutant.
+ * Débutant : rôle Étudiant, ou un rôle choisi sans aucun domaine (hors RH et
+ * entrepreneurs, qui répondent à une autre question), ou un ancien compte venu
+ * pour apprendre sans domaine. Un compte qui n'a répondu à rien n'est pas débutant.
  */
 export function isBeginnerAudience(profile: {
   role: string | null;
@@ -13,7 +14,9 @@ export function isBeginnerAudience(profile: {
 }): boolean {
   return (
     profile.role === "student" ||
-    (profile.intents.includes("learn") && profile.interests.length === 0)
+    (profile.interests.length === 0 &&
+      ((profile.role !== null && !prefersTalentFeed(profile.role)) ||
+        profile.intents.includes("learn")))
   );
 }
 

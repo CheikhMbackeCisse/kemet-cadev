@@ -11,6 +11,13 @@ describe("isBeginnerAudience", () => {
     expect(isBeginnerAudience({ role: null, interests: ["data"], intents: ["learn"] })).toBe(false);
   });
 
+  it("retient un rôle choisi sans aucun domaine, sauf RH et entrepreneurs", () => {
+    expect(isBeginnerAudience({ role: "developer", interests: [], intents: [] })).toBe(true);
+    expect(isBeginnerAudience({ role: "developer", interests: ["web"], intents: [] })).toBe(false);
+    expect(isBeginnerAudience({ role: "hr", interests: [], intents: [] })).toBe(false);
+    expect(isBeginnerAudience({ role: "entrepreneur", interests: [], intents: [] })).toBe(false);
+  });
+
   it("ne retient pas un compte qui n'a répondu à rien", () => {
     expect(isBeginnerAudience({ role: null, interests: [], intents: [] })).toBe(false);
   });

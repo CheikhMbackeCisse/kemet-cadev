@@ -1,5 +1,5 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { Plus, Search, Sprout, Star } from "lucide-react";
+import { Plus, Search, Star } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
@@ -8,7 +8,6 @@ import { SkillCard } from "../components/skills/SkillCard.js";
 import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
-import { FilterChip } from "../components/ui/FilterChip.js";
 import { Input } from "../components/ui/Input.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { listSkills } from "../lib/chat/api.js";
@@ -21,13 +20,10 @@ export function SkillsPage() {
   const searchId = useId();
   const [query, setQuery] = useState("");
   const [appliedQuery, setAppliedQuery] = useState("");
-  const [beginnerOnly, setBeginnerOnly] = useState(
-    () => new URLSearchParams(window.location.search).get("filtre") === "debuter",
-  );
   // Pendant une recherche, les résultats précédents restent affichés.
   const skillsQuery = useQuery({
-    queryKey: ["skills", appliedQuery, beginnerOnly],
-    queryFn: () => listSkills(appliedQuery, { beginner: beginnerOnly }).then((page) => page.items),
+    queryKey: ["skills", appliedQuery],
+    queryFn: () => listSkills(appliedQuery).then((page) => page.items),
     placeholderData: keepPreviousData,
   });
   const skills = skillsQuery.data ?? [];
@@ -37,15 +33,6 @@ export function SkillsPage() {
     const timer = window.setTimeout(() => setAppliedQuery(query.trim()), SEARCH_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [query]);
-
-  function toggleBeginner(pressed: boolean) {
-    setBeginnerOnly(pressed);
-    window.history.replaceState(
-      window.history.state,
-      "",
-      pressed ? "/skills?filtre=debuter" : "/skills",
-    );
-  }
 
   return (
     <RailPage activeSection="skills" className="gap-6 px-4 pt-3 lg:pt-6">
@@ -75,14 +62,6 @@ export function SkillsPage() {
             className="pl-9"
           />
         </div>
-        <div>
-          <FilterChip
-            pressed={beginnerOnly}
-            onPressedChange={toggleBeginner}
-            label={fr.beginners.filter}
-            icon={Sprout}
-          />
-        </div>
       </div>
 
       {skillsQuery.isPending ? (
@@ -97,14 +76,7 @@ export function SkillsPage() {
           retry={{ label: fr.chat.retry, onClick: () => void skillsQuery.refetch() }}
         />
       ) : skills.length === 0 ? (
-        beginnerOnly && !appliedQuery ? (
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-base text-text-2">{fr.beginners.noSkills}</p>
-            <Button variant="secondary" onClick={() => toggleBeginner(false)}>
-              {fr.skills.showAll}
-            </Button>
-          </div>
-        ) : appliedQuery ? (
+        appliedQuery ? (
           <div className="flex flex-col items-start gap-3">
             <p className="text-base text-text-2">{fr.skills.searchNoResult(appliedQuery)}</p>
             <Button variant="secondary" onClick={() => setQuery("")}>

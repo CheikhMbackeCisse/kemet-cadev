@@ -3,7 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { listFeedProjects, listPosts } from "../chat/api.js";
 
 // Onglet "Projets" : seulement les cartes projet, sans les posts. "debuter"
-// n'est pas un onglet : c'est le filtre "Pour débuter", qui remplace les onglets.
+// reste une source de l'API, plus montrée dans l'interface.
 export type FeedView = Exclude<FeedTab, "debuter"> | "projets";
 
 export interface FeedData {
@@ -16,15 +16,11 @@ export interface FeedData {
 const PROJECTS_PER_POST_PAGE = 6;
 const PROJECTS_TAB_SIZE = 20;
 
-export function feedQueryKey(view: FeedView, beginnerOnly: boolean) {
-  return ["feed", beginnerOnly ? "debuter" : view] as const;
+export function feedQueryKey(view: FeedView) {
+  return ["feed", view] as const;
 }
 
-export async function fetchFeed(view: FeedView, beginnerOnly: boolean): Promise<FeedData> {
-  if (beginnerOnly) {
-    const page = await listPosts("debuter");
-    return { posts: page.items, projects: [], nextCursor: page.nextCursor };
-  }
+export async function fetchFeed(view: FeedView): Promise<FeedData> {
   if (view === "projets") {
     const result = await listFeedProjects("pour-toi", PROJECTS_TAB_SIZE);
     return { posts: [], projects: result.items, nextCursor: null };
