@@ -5,16 +5,16 @@ import { useToast } from "../components/ui/Toast.js";
 import { FormPage } from "../components/layout/FormPage.js";
 import { ChatApiError, requestCompetition } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
-import { slugify } from "../lib/slugify.js";
+import { createWithSlugFromTitle } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { hasFieldErrors, validateFields, type FieldErrors } from "../lib/forms.js";
+import { FormField } from "../components/ui/FormField.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 export function NewCompetitionPage() {
   const toast = useToast();
   const { status } = useSession();
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [pitch, setPitch] = useState("");
   const [description, setDescription] = useState("");
   const [registrationClosesAt, setRegistrationClosesAt] = useState("");
@@ -22,6 +22,9 @@ export function NewCompetitionPage() {
   const [votingClosesAt, setVotingClosesAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    FieldErrors<"name" | "pitch" | "registration" | "submission" | "voting">
+  >({});
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -30,17 +33,28 @@ export function NewCompetitionPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors = validateFields({
+      name: { value: name, min: 2 },
+      pitch: { value: pitch, min: 10 },
+      registration: { value: registrationClosesAt },
+      submission: { value: submissionClosesAt },
+      voting: { value: votingClosesAt },
+    });
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
     setSubmitting(true);
     try {
-      await requestCompetition({
-        slug,
-        name,
-        pitch,
-        description,
-        registrationClosesAt: new Date(registrationClosesAt).toISOString(),
-        submissionClosesAt: new Date(submissionClosesAt).toISOString(),
-        votingClosesAt: new Date(votingClosesAt).toISOString(),
-      });
+      await createWithSlugFromTitle(name, "competition", (slug) =>
+        requestCompetition({
+          slug,
+          name,
+          pitch,
+          description,
+          registrationClosesAt: new Date(registrationClosesAt).toISOString(),
+          submissionClosesAt: new Date(submissionClosesAt).toISOString(),
+          votingClosesAt: new Date(votingClosesAt).toISOString(),
+        }),
+      );
       toast.show(fr.competitions.requestSent, "success");
       navigate("/competitions");
     } catch (err) {
@@ -52,70 +66,45 @@ export function NewCompetitionPage() {
   return (
     <FormPage
       title={fr.competitions.requestTitle}
-      subtitle={fr.competitions.requestSubtitle}
       activeSection="competitions"
       backHref="/competitions"
       submitLabel={fr.competitions.requestSubmit}
       submitting={submitting}
-      submitDisabledReason={missingFieldsReason([
-        [name, fr.competitions.nameLabel],
-        [slug, fr.competitions.slugLabel],
-        [pitch, fr.competitions.pitchLabel],
-        [registrationClosesAt, fr.competitions.registrationClosesAtLabel],
-        [submissionClosesAt, fr.competitions.submissionClosesAtLabel],
-        [votingClosesAt, fr.competitions.votingClosesAtLabel],
-      ])}
       error={error}
       onSubmit={handleSubmit}
     >
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.nameLabel}
-        <Input
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-            setSlug(slugify(event.target.value));
-          }}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.slugLabel}
-        <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} />
-        <span className="text-xs text-subtle">{fr.competitions.slugHint}</span>
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.pitchLabel}
+      <FormField label={fr.competitions.nameLabel} error={fieldErrors.name}>
+        <Input value={name} onChange={(event) => setName(event.target.value)} />
+      </FormField>
+      <FormField label={fr.competitions.pitchLabel} error={fieldErrors.pitch}>
         <Input value={pitch} onChange={(event) => setPitch(event.target.value)} />
-      </label>
+      </FormField>
       <CodeTextarea
         label={fr.competitions.descriptionLabel}
         value={description}
         onValueChange={setDescription}
       />
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.registrationClosesAtLabel}
+      <FormField label={fr.competitions.registrationClosesAtLabel} error={fieldErrors.registration}>
         <Input
           type="datetime-local"
           value={registrationClosesAt}
           onChange={(event) => setRegistrationClosesAt(event.target.value)}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.submissionClosesAtLabel}
+      </FormField>
+      <FormField label={fr.competitions.submissionClosesAtLabel} error={fieldErrors.submission}>
         <Input
           type="datetime-local"
           value={submissionClosesAt}
           onChange={(event) => setSubmissionClosesAt(event.target.value)}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.votingClosesAtLabel}
+      </FormField>
+      <FormField label={fr.competitions.votingClosesAtLabel} error={fieldErrors.voting}>
         <Input
           type="datetime-local"
           value={votingClosesAt}
           onChange={(event) => setVotingClosesAt(event.target.value)}
         />
-      </label>
+      </FormField>
     </FormPage>
   );
 }

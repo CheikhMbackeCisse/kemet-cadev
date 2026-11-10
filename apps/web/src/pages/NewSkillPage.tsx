@@ -6,16 +6,16 @@ import { Textarea } from "../components/ui/Textarea.js";
 import { FormPage } from "../components/layout/FormPage.js";
 import { createSkill } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
-import { slugify } from "../lib/slugify.js";
+import { createWithSlugFromTitle } from "../lib/slugify.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { hasFieldErrors, validateFields, type FieldErrors } from "../lib/forms.js";
+import { FormField } from "../components/ui/FormField.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { BeginnerCheckbox } from "../components/beginners/BeginnerCheckbox.js";
 
 export function NewSkillPage() {
   const { status } = useSession();
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
@@ -23,6 +23,9 @@ export function NewSkillPage() {
   const [isBeginner, setIsBeginner] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<"name" | "description" | "content">>(
+    {},
+  );
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -31,20 +34,29 @@ export function NewSkillPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors = validateFields({
+      name: { value: name, min: 3 },
+      description: { value: description, min: 10 },
+      content: { value: content },
+    });
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
     setSubmitting(true);
     try {
-      await createSkill({
-        name,
-        slug,
-        description,
-        content,
-        tags: tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean),
-        visibility,
-        isBeginner,
-      });
+      await createWithSlugFromTitle(name, "skill", (slug) =>
+        createSkill({
+          name,
+          slug,
+          description,
+          content,
+          tags: tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean),
+          visibility,
+          isBeginner,
+        }),
+      );
       navigate("/skills");
     } catch {
       setError(fr.skills.createError);
@@ -55,40 +67,25 @@ export function NewSkillPage() {
   return (
     <FormPage
       title={fr.skills.createTitle}
-      subtitle={fr.skills.createSubtitle}
       activeSection="skills"
       backHref="/skills"
       submitLabel={fr.skills.create}
       submitting={submitting}
-      submitDisabledReason={missingFieldsReason([
-        [name, fr.skills.nameLabel],
-        [slug, fr.skills.slugLabel],
-        [description, fr.skills.descriptionLabel],
-        [content, fr.skills.contentLabel],
-      ])}
       error={error}
       onSubmit={handleSubmit}
     >
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.skills.nameLabel}
-        <Input
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-            setSlug(slugify(event.target.value));
-          }}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.skills.slugLabel}
-        <Input value={slug} onChange={(event) => setSlug(slugify(event.target.value))} />
-        <span className="text-xs text-subtle">{fr.skills.slugHint}</span>
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.skills.descriptionLabel}
+      <FormField label={fr.skills.nameLabel} error={fieldErrors.name}>
+        <Input value={name} onChange={(event) => setName(event.target.value)} />
+      </FormField>
+      <FormField label={fr.skills.descriptionLabel} error={fieldErrors.description}>
         <Textarea value={description} onChange={(event) => setDescription(event.target.value)} />
-      </label>
-      <CodeTextarea label={fr.skills.contentLabel} value={content} onValueChange={setContent} />
+      </FormField>
+      <CodeTextarea
+        label={fr.skills.contentLabel}
+        value={content}
+        onValueChange={setContent}
+        error={fieldErrors.content}
+      />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.skills.tagsLabel}
         <Input value={tags} onChange={(event) => setTags(event.target.value)} />
@@ -109,7 +106,6 @@ export function NewSkillPage() {
         checked={isBeginner}
         onCheckedChange={setIsBeginner}
         label={fr.beginners.skillCheckbox}
-        hint={fr.beginners.skillCheckboxHint}
       />
     </FormPage>
   );

@@ -89,6 +89,11 @@
     }
   }
 
+  /* Champ en erreur après un envoi (FormField) : bordure de danger. */
+  [data-field][aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+
   /* Contour réservé à la navigation au clavier. Un champ de saisie
      (data-field) montre son focus par sa bordure, jamais par un second
      cadre autour. */

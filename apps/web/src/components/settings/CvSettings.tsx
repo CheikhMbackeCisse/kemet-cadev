@@ -58,7 +58,8 @@ export function CvSettings({ handle, disabled }: { handle: string; disabled: boo
     if (!file) return;
     // Certains systèmes ne donnent aucun type : l'extension suffit alors, le serveur lit le contenu.
     const looksLikePdf =
-      file.type === "application/pdf" || (file.type === "" && file.name.toLowerCase().endsWith(".pdf"));
+      file.type === "application/pdf" ||
+      (file.type === "" && file.name.toLowerCase().endsWith(".pdf"));
     if (!looksLikePdf) {
       toast.show(fr.settings.cvNotPdf, "danger");
       return;
@@ -73,7 +74,9 @@ export function CvSettings({ handle, disabled }: { handle: string; disabled: boo
       toast.show(fr.settings.cvUploaded, "success");
     } catch (err) {
       toast.show(
-        err instanceof ChatApiError && err.statusCode === 400 ? err.message : fr.settings.cvUploadError,
+        err instanceof ChatApiError && err.statusCode === 400
+          ? err.message
+          : fr.settings.cvUploadError,
         "danger",
       );
     } finally {
@@ -114,12 +117,9 @@ export function CvSettings({ handle, disabled }: { handle: string; disabled: boo
       aria-labelledby="cv-title"
       className="flex max-w-sm scroll-mt-20 flex-col gap-3"
     >
-      <div>
-        <h2 id="cv-title" className="text-md font-semibold text-text">
-          {fr.settings.cvTitle}
-        </h2>
-        <p className="text-sm text-text-2">{fr.settings.cvHint}</p>
-      </div>
+      <h2 id="cv-title" className="text-md font-semibold text-text">
+        {fr.settings.cvTitle}
+      </h2>
       <input
         ref={inputRef}
         type="file"
@@ -132,7 +132,11 @@ export function CvSettings({ handle, disabled }: { handle: string; disabled: boo
       {!loaded ? (
         <Skeleton className="h-16 w-full" />
       ) : loadError ? (
-        <ErrorState message={fr.settings.cvLoadError} retry={{ label: fr.chat.retry, onClick: load }} className="py-6" />
+        <ErrorState
+          message={fr.settings.cvLoadError}
+          retry={{ label: fr.chat.retry, onClick: load }}
+          className="py-6"
+        />
       ) : cv ? (
         <>
           <div className="flex items-center gap-2">

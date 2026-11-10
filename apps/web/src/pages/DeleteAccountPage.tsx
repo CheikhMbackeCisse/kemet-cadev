@@ -17,6 +17,8 @@ import {
 import { clearChannelDrafts } from "../lib/chat/useChannelDraft.js";
 import { useAccountExport } from "../lib/useAccountExport.js";
 import { useSession } from "../session/SessionProvider.js";
+import { FormField } from "../components/ui/FormField.js";
+import { hasFieldErrors, type FieldErrors } from "../lib/forms.js";
 import { fr } from "../i18n/fr.js";
 
 const PAGE_PATH = "/parametres/supprimer-mon-compte";
@@ -61,6 +63,7 @@ export function DeleteAccountPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<"password" | "confirmed">>({});
 
   const [reauthenticated, setReauthenticated] = useState(
     () => new URLSearchParams(window.location.search).get(REAUTHENTICATED_PARAM) === "1",
@@ -81,19 +84,15 @@ export function DeleteAccountPage() {
 
   const providers = (me?.socialProviders ?? []).filter(isSocialProvider);
   const needsPassword = me?.hasPassword ?? false;
-  const disabledReason = loadFailed
-    ? fr.accountDeletion.loadError
-    : !me
-      ? fr.accountDeletion.loading
-      : !confirmed
-        ? fr.accountDeletion.missingConfirmation
-        : needsPassword && !password
-          ? fr.accountDeletion.missingPassword
-          : null;
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors: FieldErrors<"password" | "confirmed"> = {
+      ...(needsPassword && !password ? { password: fr.accountDeletion.missingPassword } : {}),
+      ...(!confirmed ? { confirmed: fr.accountDeletion.missingConfirmation } : {}),
+    };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
     setSubmitting(true);
     try {
       await deleteMyAccount(needsPassword ? password : undefined);
@@ -111,17 +110,16 @@ export function DeleteAccountPage() {
   return (
     <FormPage
       title={fr.accountDeletion.title}
-      subtitle={fr.accountDeletion.subtitle}
       activeSection="parametres"
       backHref="/parametres"
       submitLabel={fr.accountDeletion.submit}
       submitVariant="danger"
       submitting={submitting}
       submitDisabled={!me}
-      submitDisabledReason={disabledReason}
       error={error}
       onSubmit={handleSubmit}
     >
+      <p className="text-sm font-medium text-danger">{fr.accountDeletion.subtitle}</p>
       <section className="flex flex-col gap-2">
         <h2 className="text-md font-semibold text-text">{fr.accountDeletion.whatGoes}</h2>
         <List items={fr.accountDeletion.goes} />
@@ -160,15 +158,14 @@ export function DeleteAccountPage() {
       )}
 
       {me && needsPassword && (
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.accountDeletion.passwordLabel}
+        <FormField label={fr.accountDeletion.passwordLabel} error={fieldErrors.password}>
           <Input
             type="password"
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-        </label>
+        </FormField>
       )}
 
       {me && !needsPassword && reauthenticated && (
@@ -198,10 +195,23 @@ export function DeleteAccountPage() {
         </div>
       )}
 
-      <label className="flex items-start gap-2 text-sm text-text">
-        <Checkbox checked={confirmed} onCheckedChange={setConfirmed} className="mt-0.5" />
-        {fr.accountDeletion.confirmLabel}
-      </label>
+      <div className="flex flex-col gap-1">
+        <label className="flex items-start gap-2 text-sm text-text">
+          <Checkbox
+            checked={confirmed}
+            onCheckedChange={setConfirmed}
+            aria-invalid={fieldErrors.confirmed ? true : undefined}
+            aria-describedby={fieldErrors.confirmed ? "delete-confirm-error" : undefined}
+            className="mt-0.5"
+          />
+          {fr.accountDeletion.confirmLabel}
+        </label>
+        {fieldErrors.confirmed && (
+          <p id="delete-confirm-error" className="pl-6 text-sm text-danger">
+            {fieldErrors.confirmed}
+          </p>
+        )}
+      </div>
     </FormPage>
   );
 }

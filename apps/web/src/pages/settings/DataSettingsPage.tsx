@@ -86,7 +86,6 @@ export function DataSettingsPage() {
         <Button variant="secondary" loading={exporting} onClick={() => void exportAccount()}>
           {fr.settings.exportLink}
         </Button>
-        <span className="text-xs text-subtle">{fr.settings.exportHint}</span>
       </section>
 
       <a href="/confidentialite" className="w-fit text-base text-link hover:underline">
@@ -103,7 +102,6 @@ export function DataSettingsPage() {
         >
           {fr.settings.deleteLink}
         </a>
-        <span className="text-xs text-subtle">{fr.settings.deleteHint}</span>
       </section>
     </SettingsSubPage>
   );

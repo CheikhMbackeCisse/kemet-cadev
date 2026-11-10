@@ -22,7 +22,6 @@ export function AppearanceSettingsPage() {
           onValueChange={(value) => setChoice(value as ThemeChoice)}
           options={THEME_OPTIONS}
         />
-        <span className="text-xs text-subtle">{fr.settings.themeHint}</span>
       </label>
     </SettingsSubPage>
   );

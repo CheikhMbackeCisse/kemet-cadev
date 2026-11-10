@@ -1,5 +1,5 @@
 import { navigate } from "../../lib/navigation/navigate.js";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { isValidProfileLink, type ProfileLinkKind, type ProfileRole } from "@kemet/shared";
 import { SettingsSubPage } from "../../components/settings/SettingsSubPage.js";
 import { SuspendedBanner } from "../../components/shell/SuspendedBanner.js";
@@ -12,7 +12,14 @@ import { SubmitButton } from "../../components/ui/SubmitButton.js";
 import { Textarea } from "../../components/ui/Textarea.js";
 import { useToast } from "../../components/ui/Toast.js";
 import { ChatApiError, updateMyProfile } from "../../lib/chat/api.js";
-import { missingFieldsReason } from "../../lib/forms.js";
+import {
+  focusFirstInvalidField,
+  handleError,
+  hasFieldErrors,
+  requiredFieldErrors,
+  type FieldErrors,
+} from "../../lib/forms.js";
+import { FormField } from "../../components/ui/FormField.js";
 import { PROFILE_ROLE_OPTIONS } from "../../lib/profileRoles.js";
 import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
@@ -35,6 +42,8 @@ export function ProfileSettingsPage() {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [helpsBeginners, setHelpsBeginners] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const formRef = useRef<HTMLFormElement>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -109,13 +118,22 @@ export function ProfileSettingsPage() {
       invalid: fr.settings.httpsInvalid(fr.settings.websiteLabel),
     },
   ];
-  const invalidLink = linkFields.find(
-    (field) => field.value.trim() !== "" && !isValidProfileLink(field.kind, field.value.trim()),
-  );
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors: FieldErrors = {
+      ...requiredFieldErrors({ displayName }),
+      handle: handleError(handle),
+    };
+    for (const field of linkFields) {
+      const value = field.value.trim();
+      if (value && !isValidProfileLink(field.kind, value)) errors[field.kind] = field.invalid;
+    }
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) {
+      focusFirstInvalidField(formRef.current);
+      return;
+    }
     setSubmitting(true);
     try {
       await updateMyProfile({
@@ -147,24 +165,26 @@ export function ProfileSettingsPage() {
   return (
     <SettingsSubPage title={fr.settings.profileSection}>
       {isSuspended && <SuspendedBanner />}
-      <form className="flex max-w-sm flex-col gap-3" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.displayNameLabel}
+      <form
+        ref={formRef}
+        noValidate
+        className="flex max-w-sm flex-col gap-3"
+        onSubmit={handleSubmit}
+      >
+        <FormField label={fr.auth.displayNameLabel} error={fieldErrors.displayName}>
           <Input
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             disabled={isSuspended}
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.auth.handleLabel}
+        </FormField>
+        <FormField label={fr.auth.handleLabel} error={fieldErrors.handle}>
           <Input
             value={handle}
             onChange={(event) => setHandle(event.target.value.toLowerCase())}
             disabled={isSuspended}
           />
-          <span className="text-xs text-subtle">{fr.auth.handleHint}</span>
-        </label>
+        </FormField>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.countryLabel}
           <CountrySelect
@@ -206,17 +226,11 @@ export function ProfileSettingsPage() {
           />
         </label>
         <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-0.5">
-            <label htmlFor="helps-beginners" className="text-sm text-text">
-              {fr.settings.helpsBeginnersLabel}
-            </label>
-            <p id="helps-beginners-hint" className="text-xs text-subtle">
-              {fr.settings.helpsBeginnersHint}
-            </p>
-          </div>
+          <label htmlFor="helps-beginners" className="text-sm text-text">
+            {fr.settings.helpsBeginnersLabel}
+          </label>
           <Switch
             id="helps-beginners"
-            aria-describedby="helps-beginners-hint"
             checked={helpsBeginners}
             onCheckedChange={setHelpsBeginners}
             disabled={isSuspended}
@@ -225,8 +239,7 @@ export function ProfileSettingsPage() {
         <fieldset className="flex flex-col gap-3 border-t border-border pt-4">
           <legend className="mb-1 text-md font-semibold text-text">{fr.settings.linksTitle}</legend>
           {linkFields.map((field) => (
-            <label key={field.kind} className="flex flex-col gap-1 text-sm text-text-2">
-              {field.label}
+            <FormField key={field.kind} label={field.label} error={fieldErrors[field.kind]}>
               <Input
                 type="url"
                 inputMode="url"
@@ -235,7 +248,7 @@ export function ProfileSettingsPage() {
                 onChange={(event) => field.set(event.target.value)}
                 disabled={isSuspended}
               />
-            </label>
+            </FormField>
           ))}
         </fieldset>
         {error && (
@@ -243,20 +256,7 @@ export function ProfileSettingsPage() {
             {error}
           </p>
         )}
-        <SubmitButton
-          label={fr.settings.save}
-          loading={submitting}
-          disabledReason={
-            isSuspended
-              ? fr.common.suspendedCannotSubmit
-              : invalidLink
-                ? invalidLink.invalid
-                : missingFieldsReason([
-                    [handle, fr.auth.handleLabel],
-                    [displayName, fr.auth.displayNameLabel],
-                  ])
-          }
-        />
+        <SubmitButton label={fr.settings.save} loading={submitting} disabled={isSuspended} />
       </form>
       <div className="border-t border-border pt-6">
         <CvSettings handle={profile.handle} disabled={isSuspended} />

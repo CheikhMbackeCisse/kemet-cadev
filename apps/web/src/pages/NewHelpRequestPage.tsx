@@ -7,7 +7,8 @@ import { FormPage } from "../components/layout/FormPage.js";
 import { createHelpRequest } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { hasFieldErrors, validateFields, type FieldErrors } from "../lib/forms.js";
+import { FormField } from "../components/ui/FormField.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 function parseStack(value: string): string[] {
@@ -29,6 +30,7 @@ export function NewHelpRequestPage() {
   const [stack, setStack] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<"title" | "description">>({});
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -37,6 +39,12 @@ export function NewHelpRequestPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors = validateFields({
+      title: { value: title, min: 5 },
+      description: { value: description, min: 10 },
+    });
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
     setSubmitting(true);
     try {
       await createHelpRequest(slug, {
@@ -55,15 +63,10 @@ export function NewHelpRequestPage() {
   return (
     <FormPage
       title={fr.projects.createHelpRequestTitle}
-      subtitle={fr.projects.createHelpRequestSubtitle}
       activeSection="projets"
       backHref={`/projets/${slug}`}
       submitLabel={fr.projects.create}
       submitting={submitting}
-      submitDisabledReason={missingFieldsReason([
-        [title, fr.projects.titleLabel],
-        [description, fr.projects.descriptionLabel],
-      ])}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -79,14 +82,14 @@ export function NewHelpRequestPage() {
           ]}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.projects.titleLabel}
+      <FormField label={fr.projects.titleLabel} error={fieldErrors.title}>
         <Input value={title} onChange={(event) => setTitle(event.target.value)} />
-      </label>
+      </FormField>
       <CodeTextarea
         label={fr.projects.descriptionLabel}
         value={description}
         onValueChange={setDescription}
+        error={fieldErrors.description}
       />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.projects.stackLabel}

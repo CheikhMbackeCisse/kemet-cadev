@@ -6,7 +6,9 @@ import { ChatApiError, updateMyProfile } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { landingPath, onboardingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { handleError, requiredFieldErrors } from "../lib/forms.js";
+import { FormField } from "../components/ui/FormField.js";
+import { useFieldErrors } from "../lib/useFieldErrors.js";
 import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 
@@ -16,6 +18,7 @@ export function CompleteProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { formRef, errors: fieldErrors, report } = useFieldErrors<"displayName" | "handle">();
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion", { replace: true });
@@ -25,6 +28,7 @@ export function CompleteProfilePage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!report({ ...requiredFieldErrors({ displayName }), handle: handleError(handle) })) return;
     setSubmitting(true);
     try {
       await updateMyProfile({ handle: handle.toLowerCase(), displayName });
@@ -40,20 +44,26 @@ export function CompleteProfilePage() {
 
   return (
     <AuthLayout title={fr.auth.completeProfileTitle}>
-      <form className="relative flex flex-col gap-3" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm text-auth-text">
-          {fr.auth.displayNameLabel}
+      <form
+        ref={formRef}
+        noValidate
+        className="relative flex flex-col gap-3"
+        onSubmit={handleSubmit}
+      >
+        <FormField tone="inverse" label={fr.auth.displayNameLabel} error={fieldErrors.displayName}>
           <Input
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             autoFocus
           />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-auth-text">
-          {fr.auth.handleLabel}
-          <Input value={handle} onChange={(event) => setHandle(event.target.value.toLowerCase())} />
-          <span className="text-xs text-auth-text-muted">{fr.auth.handleHint}</span>
-        </label>
+        </FormField>
+        <FormField tone="inverse" label={fr.auth.handleLabel} error={fieldErrors.handle}>
+          <Input
+            placeholder={fr.auth.handlePlaceholder}
+            value={handle}
+            onChange={(event) => setHandle(event.target.value.toLowerCase())}
+          />
+        </FormField>
         <ArrivalAction>
           {error && (
             <p className="text-sm text-auth-danger" role="alert">
@@ -64,10 +74,6 @@ export function CompleteProfilePage() {
             variant="inverse"
             label={fr.auth.completeProfileSubmit}
             loading={submitting}
-            disabledReason={missingFieldsReason([
-              [displayName, fr.auth.displayNameLabel],
-              [handle, fr.auth.handleLabel],
-            ])}
           />
         </ArrivalAction>
       </form>

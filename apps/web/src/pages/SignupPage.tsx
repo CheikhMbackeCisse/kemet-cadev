@@ -9,8 +9,10 @@ import { ChatApiError, resendVerificationEmail, signIn, signUp } from "../lib/ch
 import { useToast } from "../components/ui/Toast.js";
 import { useSession } from "../session/SessionProvider.js";
 import { landingPath } from "../lib/onboarding/steps.js";
+import { FormField } from "../components/ui/FormField.js";
+import { useFieldErrors } from "../lib/useFieldErrors.js";
+import { requiredFieldErrors } from "../lib/forms.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
 import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 import { PrivacyLine } from "../components/auth/PrivacyLine.js";
@@ -23,6 +25,7 @@ export function SignupPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { formRef, errors: fieldErrors, report } = useFieldErrors<"name" | "email" | "password">();
   const [awaitingVerification, setAwaitingVerification] = useState(false);
   const isDemoEmail = isDemoEmailAddress(email);
 
@@ -34,6 +37,12 @@ export function SignupPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors = {
+      ...requiredFieldErrors({ name, email }),
+      ...(isDemoEmail ? { email: fr.auth.demoEmailError } : {}),
+      ...(password.length < 8 ? { password: fr.auth.passwordTooShort } : {}),
+    };
+    if (!report(errors)) return;
     setSubmitting(true);
     try {
       await signUp({ name, email, password });
@@ -93,49 +102,40 @@ export function SignupPage() {
     <AuthLayout title={fr.auth.signupTitle}>
       <div className="flex flex-col gap-3">
         <SocialSignInButtons callbackURL="/" />
-        <form className="relative flex flex-col gap-3" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-1 text-sm">
-            {fr.auth.nameLabel}
+        <form
+          ref={formRef}
+          noValidate
+          className="relative flex flex-col gap-3"
+          onSubmit={handleSubmit}
+        >
+          <FormField tone="inverse" label={fr.auth.nameLabel} error={fieldErrors.name}>
             <Input
               autoComplete="name"
               value={name}
               onChange={(event) => setName(event.target.value)}
             />
-          </label>
-          <div className="flex flex-col gap-1">
-            <label className="flex flex-col gap-1 text-sm">
-              {fr.auth.emailLabel}
-              <Input
-                type="email"
-                autoComplete="email"
-                value={email}
-                aria-invalid={isDemoEmail || undefined}
-                aria-describedby={isDemoEmail ? "signup-email-error" : undefined}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
-            {isDemoEmail && (
-              <p id="signup-email-error" className="text-sm text-auth-danger">
-                {fr.auth.demoEmailError}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="flex flex-col gap-1 text-sm">
-              {fr.auth.passwordLabel}
-              <Input
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                value={password}
-                aria-describedby="signup-password-hint"
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-            <p id="signup-password-hint" className="text-xs text-auth-text-muted">
-              {fr.auth.passwordHint}
-            </p>
-          </div>
+          </FormField>
+          <FormField
+            tone="inverse"
+            label={fr.auth.emailLabel}
+            error={fieldErrors.email ?? (isDemoEmail ? fr.auth.demoEmailError : null)}
+          >
+            <Input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </FormField>
+          <FormField tone="inverse" label={fr.auth.passwordLabel} error={fieldErrors.password}>
+            <Input
+              type="password"
+              autoComplete="new-password"
+              placeholder={fr.auth.passwordPlaceholder}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </FormField>
           <ArrivalAction>
             {error && (
               <p className="text-sm text-auth-danger" role="alert">
@@ -147,15 +147,6 @@ export function SignupPage() {
               variant="inverse"
               block
               loading={submitting}
-              disabledReason={
-                missingFieldsReason([
-                  [name, fr.auth.nameLabel],
-                  [email, fr.auth.emailLabel],
-                  [password, fr.auth.passwordLabel],
-                ]) ??
-                (isDemoEmail ? fr.auth.demoEmailReason : null) ??
-                (password.length < 8 ? fr.auth.passwordTooShort : null)
-              }
             />
           </ArrivalAction>
         </form>

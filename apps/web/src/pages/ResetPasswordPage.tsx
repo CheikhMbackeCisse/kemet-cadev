@@ -4,6 +4,8 @@ import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
 import { resetPassword } from "../lib/chat/api.js";
+import { FormField } from "../components/ui/FormField.js";
+import { useFieldErrors } from "../lib/useFieldErrors.js";
 import { fr } from "../i18n/fr.js";
 import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
@@ -17,6 +19,7 @@ export function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const { formRef, errors: fieldErrors, report } = useFieldErrors<"password">();
   const [submitting, setSubmitting] = useState(false);
 
   if (!token) {
@@ -32,6 +35,7 @@ export function ResetPasswordPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!report(password.length < 8 ? { password: fr.auth.passwordTooShort } : {})) return;
     setSubmitting(true);
     try {
       await resetPassword(password, token!);
@@ -58,18 +62,21 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout title={fr.auth.resetPasswordTitle}>
-      <form className="relative flex flex-col gap-3" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-1 text-sm text-auth-text">
-          {fr.auth.newPasswordLabel}
+      <form
+        ref={formRef}
+        noValidate
+        className="relative flex flex-col gap-3"
+        onSubmit={handleSubmit}
+      >
+        <FormField tone="inverse" label={fr.auth.newPasswordLabel} error={fieldErrors.password}>
           <Input
             type="password"
             autoComplete="new-password"
-            minLength={8}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoFocus
           />
-        </label>
+        </FormField>
         <ArrivalAction>
           {error && (
             <p className="text-sm text-auth-danger" role="alert">
@@ -80,7 +87,6 @@ export function ResetPasswordPage() {
             variant="inverse"
             label={fr.auth.resetPasswordSubmit}
             loading={submitting}
-            disabledReason={password.length < 8 ? fr.auth.passwordTooShort : null}
           />
         </ArrivalAction>
       </form>

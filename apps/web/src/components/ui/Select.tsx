@@ -15,6 +15,9 @@ export interface SelectProps {
   placeholder?: string;
   disabled?: boolean;
   "aria-label"?: string;
+  id?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
   className?: string;
 }
 
@@ -30,7 +33,10 @@ export function Select({
   return (
     <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
       <RadixSelect.Trigger
+        id={aria.id}
         aria-label={aria["aria-label"]}
+        aria-invalid={aria["aria-invalid"]}
+        aria-describedby={aria["aria-describedby"]}
         data-field=""
         className={cn(
           "flex h-control max-md:h-control-mobile w-full items-center justify-between gap-2 rounded-control border border-border-strong bg-bg px-3 text-sm max-md:text-md text-text",

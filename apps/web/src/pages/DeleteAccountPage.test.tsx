@@ -61,19 +61,18 @@ describe("DeleteAccountPage", () => {
     deleteMyAccount.mockReset();
   });
 
-  it("demande la case et le mot de passe avant d'activer la suppression", async () => {
+  it("à l'envoi, signale sous chaque champ la case et le mot de passe manquants", async () => {
     getMe.mockResolvedValue(me({ hasPassword: true }));
     renderPage();
 
     const password = await screen.findByLabelText("Ton mot de passe");
-    expect(screen.getByRole("button", SUBMIT)).toBeDisabled();
-    expect(screen.getByText("Coche la case pour confirmer.")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("checkbox"));
-    expect(screen.getByText("Saisis ton mot de passe.")).toBeInTheDocument();
-
-    fireEvent.change(password, { target: { value: "secret" } });
     expect(screen.getByRole("button", SUBMIT)).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", SUBMIT));
+
+    expect(screen.getByText("Coche la case pour confirmer.")).toBeInTheDocument();
+    expect(screen.getByText("Saisis ton mot de passe.")).toBeInTheDocument();
+    expect(password).toHaveAttribute("aria-invalid", "true");
+    expect(deleteMyAccount).not.toHaveBeenCalled();
   });
 
   it("dit clairement qu'un mot de passe est faux, sans quitter la page", async () => {

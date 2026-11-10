@@ -1,5 +1,5 @@
 import { navigate } from "../../lib/navigation/navigate.js";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { MeResponse } from "@kemet/shared";
 import { SocialProviderIcon } from "../../components/auth/SocialProviderIcon.js";
 import { SettingsSubPage } from "../../components/settings/SettingsSubPage.js";
@@ -19,7 +19,13 @@ import {
   unlinkSocialProvider,
   type SocialProvider,
 } from "../../lib/chat/api.js";
-import { missingFieldsReason } from "../../lib/forms.js";
+import {
+  focusFirstInvalidField,
+  hasFieldErrors,
+  requiredFieldErrors,
+  type FieldErrors,
+} from "../../lib/forms.js";
+import { FormField } from "../../components/ui/FormField.js";
 import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
 
@@ -202,10 +208,21 @@ function PasswordForm() {
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<"current" | "next">>({});
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors: FieldErrors<"current" | "next"> = {
+      ...requiredFieldErrors({ current: currentPassword }),
+      ...(newPassword.length < MIN_PASSWORD_LENGTH ? { next: fr.settings.passwordTooShort } : {}),
+    };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) {
+      focusFirstInvalidField(formRef.current);
+      return;
+    }
     setSubmitting(true);
     try {
       await changePassword({ currentPassword, newPassword });
@@ -220,39 +237,29 @@ function PasswordForm() {
   }
 
   return (
-    <form className="flex max-w-sm flex-col gap-3" onSubmit={handleSubmit}>
-      <label className="flex flex-col gap-1 text-base text-text-2">
-        {fr.settings.currentPasswordLabel}
+    <form ref={formRef} noValidate className="flex max-w-sm flex-col gap-3" onSubmit={handleSubmit}>
+      <FormField label={fr.settings.currentPasswordLabel} error={fieldErrors.current}>
         <Input
           type="password"
           autoComplete="current-password"
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
         />
-      </label>
-      <label className="flex flex-col gap-1 text-base text-text-2">
-        {fr.settings.newPasswordLabel}
+      </FormField>
+      <FormField label={fr.settings.newPasswordLabel} error={fieldErrors.next}>
         <Input
           type="password"
           autoComplete="new-password"
           value={newPassword}
           onChange={(event) => setNewPassword(event.target.value)}
         />
-        <span className="text-xs text-subtle">{fr.settings.newPasswordHint}</span>
-      </label>
+      </FormField>
       {error && (
         <p className="text-base text-danger" role="alert">
           {error}
         </p>
       )}
-      <SubmitButton
-        label={fr.settings.passwordSave}
-        loading={submitting}
-        disabledReason={
-          missingFieldsReason([[currentPassword, fr.settings.currentPasswordLabel]]) ??
-          (newPassword.length < MIN_PASSWORD_LENGTH ? fr.settings.passwordTooShort : null)
-        }
-      />
+      <SubmitButton label={fr.settings.passwordSave} loading={submitting} />
     </form>
   );
 }

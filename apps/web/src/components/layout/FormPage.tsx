@@ -1,15 +1,15 @@
 import { navigate } from "../../lib/navigation/navigate.js";
 import { ArrowLeft } from "lucide-react";
-import type { FormEvent, ReactNode } from "react";
+import { useRef, type FormEvent, type ReactNode } from "react";
 import { IconButton } from "../ui/IconButton.js";
 import type { ButtonVariant } from "../ui/Button.js";
 import { SubmitButton } from "../ui/SubmitButton.js";
 import { RailPage } from "./RailPage.js";
+import { focusFirstInvalidField } from "../../lib/forms.js";
 import { fr } from "../../i18n/fr.js";
 
 export interface FormPageProps {
   title: string;
-  subtitle?: string;
   /** Section de la barre d'activité à marquer comme active (voir `RAIL_NAV`). */
   activeSection?: string;
   /** Destination du bouton Annuler, et du retour quand il n'y a pas d'historique. */
@@ -18,8 +18,6 @@ export interface FormPageProps {
   submitVariant?: ButtonVariant;
   submitting?: boolean;
   submitDisabled?: boolean;
-  /** Pourquoi l'envoi est bloqué, affiché à côté du bouton tant qu'il l'est. */
-  submitDisabledReason?: string | null;
   error?: string | null;
   onSubmit: (event: FormEvent) => void;
   children: ReactNode;
@@ -31,18 +29,17 @@ export interface FormPageProps {
  */
 export function FormPage({
   title,
-  subtitle,
   activeSection,
   backHref,
   submitLabel,
   submitVariant,
   submitting,
   submitDisabled,
-  submitDisabledReason,
   error,
   onSubmit,
   children,
 }: FormPageProps) {
+  const formRef = useRef<HTMLFormElement>(null);
   return (
     <RailPage activeSection={activeSection}>
       <div className="flex items-center gap-3">
@@ -52,13 +49,18 @@ export function FormPage({
         >
           <ArrowLeft className="size-5" aria-hidden="true" />
         </IconButton>
-        <div>
-          <h1 className="text-lg font-bold text-text">{title}</h1>
-          {subtitle && <p className="text-sm text-subtle">{subtitle}</p>}
-        </div>
+        <h1 className="text-lg font-bold text-text">{title}</h1>
       </div>
 
-      <form className="flex max-w-xl flex-col gap-4" onSubmit={onSubmit}>
+      <form
+        ref={formRef}
+        noValidate
+        className="flex max-w-xl flex-col gap-4"
+        onSubmit={(event) => {
+          onSubmit(event);
+          focusFirstInvalidField(formRef.current);
+        }}
+      >
         {children}
 
         {error && (
@@ -67,21 +69,24 @@ export function FormPage({
           </p>
         )}
 
-        <SubmitButton
-          label={submitLabel}
-          variant={submitVariant}
-          loading={submitting}
-          disabled={submitDisabled}
-          disabledReason={submitDisabledReason}
-          secondary={
-            <a
-              href={backHref}
-              className="inline-flex h-control max-md:h-control-mobile items-center justify-center rounded-control px-4 text-sm font-medium text-text-2 hover:bg-surface-2 hover:text-text"
-            >
-              {fr.common.cancel}
-            </a>
-          }
-        />
+        {/* Sur téléphone, le bouton reste visible au-dessus des onglets, même
+            en haut d'un long formulaire. */}
+        <div className="max-md:sticky max-md:bottom-[calc(45px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] max-md:z-10 max-md:-mx-4 max-md:border-t max-md:border-border max-md:bg-bg max-md:px-4 max-md:py-2">
+          <SubmitButton
+            label={submitLabel}
+            variant={submitVariant}
+            loading={submitting}
+            disabled={submitDisabled}
+            secondary={
+              <a
+                href={backHref}
+                className="inline-flex h-control max-md:h-control-mobile items-center justify-center rounded-control px-4 text-sm font-medium text-text-2 hover:bg-surface-2 hover:text-text"
+              >
+                {fr.common.cancel}
+              </a>
+            }
+          />
+        </div>
       </form>
     </RailPage>
   );

@@ -40,11 +40,10 @@ import {
   type WorkMediaDraft,
 } from "../components/works/WorkMediaFields.js";
 import { useSession } from "../session/SessionProvider.js";
-import { missingFieldsReason } from "../lib/forms.js";
-import { slugify } from "../lib/slugify.js";
+import { hasFieldErrors, validateFields, type FieldErrors } from "../lib/forms.js";
+import { createWithSlugFromTitle } from "../lib/slugify.js";
+import { FormField } from "../components/ui/FormField.js";
 import { fr } from "../i18n/fr.js";
-
-const MAX_SLUG_LENGTH = 80;
 
 interface LinkDraft {
   key: number;
@@ -134,7 +133,9 @@ function WorkForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [title, setTitle] = useState(existing?.title ?? "");
-  const [slug, setSlug] = useState(existing?.slug ?? "");
+  const [fieldErrors, setFieldErrors] = useState<
+    FieldErrors<"title" | "type" | "summary" | "publishRight">
+  >({});
   const [type, setType] = useState<WorkType | "">(existing?.type ?? "");
   const [workStatus, setWorkStatus] = useState<WorkStatus>(existing?.status ?? "completed");
   const [summary, setSummary] = useState(existing?.summary ?? "");
@@ -249,8 +250,17 @@ function WorkForm({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!type) return;
     setError(null);
+    const errors: FieldErrors<"title" | "type" | "summary" | "publishRight"> = {
+      ...validateFields({
+        title: { value: title },
+        type: { value: type },
+        summary: { value: summary },
+      }),
+      ...(!isEdit && !publishRight ? { publishRight: fr.works.publishRightRequired } : {}),
+    };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors) || !type) return;
     setSubmitting(true);
     const fields = {
       title: title.trim(),
@@ -275,7 +285,9 @@ function WorkForm({
     try {
       const { work } = isEdit
         ? await updateWork(existing.slug, fields)
-        : await createWork({ ...fields, slug, publishRightConfirmed: true, coauthorHandles });
+        : await createWithSlugFromTitle(title, "travail", (slug) =>
+            createWork({ ...fields, slug, publishRightConfirmed: true, coauthorHandles }),
+          );
       navigate(`/travaux/${work.slug}`);
     } catch (err) {
       if (err instanceof ChatApiError && err.statusCode === 409) setError(fr.works.slugTaken);
@@ -288,60 +300,28 @@ function WorkForm({
     }
   }
 
-  const missing = missingFieldsReason([
-    [title, fr.works.titleLabel],
-    ...(isEdit ? [] : ([[slug, fr.works.slugLabel]] as const)),
-    [type, fr.works.typeLabel],
-    [summary, fr.works.summaryLabel],
-    ...(publishRight ? [] : ([["", fr.works.publishRightRequired]] as const)),
-  ]);
-
   return (
     <FormPage
       title={isEdit ? fr.works.editTitle : fr.works.createTitle}
-      subtitle={isEdit ? fr.works.editSubtitle : fr.works.createSubtitle}
       activeSection="travaux"
       backHref={isEdit ? `/travaux/${existing.slug}` : "/travaux"}
       submitLabel={isEdit ? fr.works.save : fr.works.publish}
       submitting={submitting}
       submitDisabled={uploading || mediaUploading}
-      submitDisabledReason={
-        uploading ? fr.works.pdfUploading : mediaUploading ? fr.works.mediaUploading : missing
-      }
       error={error}
       onSubmit={handleSubmit}
     >
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.works.titleLabel}
-        <Input
-          value={title}
-          maxLength={140}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            if (!isEdit) setSlug(slugify(event.target.value).slice(0, MAX_SLUG_LENGTH));
-          }}
-        />
-      </label>
-      {!isEdit && (
-        <label className="flex flex-col gap-1 text-sm text-text-2">
-          {fr.works.slugLabel}
-          <Input
-            value={slug}
-            onChange={(event) => setSlug(slugify(event.target.value).slice(0, MAX_SLUG_LENGTH))}
-          />
-          <span className="text-xs text-subtle">{fr.works.slugHint}</span>
-        </label>
-      )}
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.works.typeLabel}
+      <FormField label={fr.works.titleLabel} error={fieldErrors.title}>
+        <Input value={title} maxLength={140} onChange={(event) => setTitle(event.target.value)} />
+      </FormField>
+      <FormField label={fr.works.typeLabel} error={fieldErrors.type}>
         <Select
           value={type}
           onValueChange={(value) => setType(value as WorkType)}
-          aria-label={fr.works.typeLabel}
           placeholder={fr.works.typePlaceholder}
           options={WORK_TYPES.map((value) => ({ value, label: WORK_TYPE_LABELS[value] }))}
         />
-      </label>
+      </FormField>
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.works.statusLabel}
         <Select
@@ -351,19 +331,20 @@ function WorkForm({
           options={WORK_STATUSES.map((value) => ({ value, label: WORK_STATUS_LABELS[value] }))}
         />
       </label>
-      <div className="flex flex-col gap-1">
-        <CodeTextarea
-          label={fr.works.summaryLabel}
-          value={summary}
-          onValueChange={setSummary}
-          maxLength={6000}
-        />
-        <span className="text-xs text-subtle">{fr.works.summaryHint}</span>
-      </div>
+      <CodeTextarea
+        label={fr.works.summaryLabel}
+        value={summary}
+        onValueChange={setSummary}
+        maxLength={6000}
+        error={fieldErrors.summary}
+      />
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.works.tagsLabel}
-        <Input value={tags} onChange={(event) => setTags(event.target.value)} />
-        <span className="text-xs text-subtle">{fr.works.tagsHint}</span>
+        <Input
+          placeholder={fr.works.tagsPlaceholder}
+          value={tags}
+          onChange={(event) => setTags(event.target.value)}
+        />
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.works.stackLabel}
@@ -471,7 +452,6 @@ function WorkForm({
       <div className="border-t border-border pt-4">
         <fieldset className="flex flex-col gap-2">
           <legend className="text-md font-semibold text-text">{fr.works.pdfLabel}</legend>
-          <p className="text-xs text-subtle">{fr.works.pdfHint}</p>
           {attachment && (
             <div className="flex items-center gap-2 text-sm text-text">
               <FileText className="size-4 shrink-0 text-muted" aria-hidden="true" />
@@ -512,7 +492,6 @@ function WorkForm({
       <div className="border-t border-border pt-4">
         <fieldset className="flex flex-col gap-2">
           <legend className="text-md font-semibold text-text">{fr.works.coauthorsTitle}</legend>
-          <p className="text-xs text-subtle">{fr.works.coauthorsHint}</p>
           <ul className="flex flex-wrap gap-2">
             {coauthorHandles.map((handle) => (
               <li
@@ -567,12 +546,7 @@ function WorkForm({
                 }
               }}
             />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={addCoauthor}
-              disabled={!coauthorDraft.trim()}
-            >
+            <Button type="button" variant="secondary" onClick={addCoauthor}>
               {fr.works.addCoauthor}
             </Button>
           </div>
@@ -589,7 +563,6 @@ function WorkForm({
           <legend className="text-md font-semibold text-text">
             {fr.works.externalAuthorsTitle}
           </legend>
-          <p className="text-xs text-subtle">{fr.works.externalAuthorsHint}</p>
           <ul className="flex flex-wrap gap-2">
             {externalAuthors.map((name) => (
               <li
@@ -624,12 +597,7 @@ function WorkForm({
                 }
               }}
             />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={addExternalAuthor}
-              disabled={!externalDraft.trim()}
-            >
+            <Button type="button" variant="secondary" onClick={addExternalAuthor}>
               {fr.works.addExternalAuthor}
             </Button>
           </div>
@@ -637,14 +605,23 @@ function WorkForm({
       </div>
 
       {!isEdit && (
-        <label className="flex items-start gap-3 border-t border-border pt-4 text-sm text-text">
-          <Checkbox
-            checked={publishRight}
-            onCheckedChange={setPublishRight}
-            className="mt-0.5 shrink-0"
-          />
-          <span>{fr.works.publishRightLabel}</span>
-        </label>
+        <div className="flex flex-col gap-1 border-t border-border pt-4">
+          <label className="flex items-start gap-3 text-sm text-text">
+            <Checkbox
+              checked={publishRight}
+              onCheckedChange={setPublishRight}
+              aria-invalid={fieldErrors.publishRight ? true : undefined}
+              aria-describedby={fieldErrors.publishRight ? "publish-right-error" : undefined}
+              className="mt-0.5 shrink-0"
+            />
+            <span>{fr.works.publishRightLabel}</span>
+          </label>
+          {fieldErrors.publishRight && (
+            <p id="publish-right-error" className="pl-8 text-sm text-danger">
+              {fieldErrors.publishRight}
+            </p>
+          )}
+        </div>
       )}
     </FormPage>
   );

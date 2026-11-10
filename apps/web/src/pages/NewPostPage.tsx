@@ -16,7 +16,8 @@ import {
 } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { hasFieldErrors, requiredFieldErrors, type FieldErrors } from "../lib/forms.js";
+import { FormField } from "../components/ui/FormField.js";
 import { BeginnerCheckbox } from "../components/beginners/BeginnerCheckbox.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
@@ -32,6 +33,7 @@ export function NewPostPage() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<"body" | "testUrl">>({});
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -60,6 +62,12 @@ export function NewPostPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors: FieldErrors<"body" | "testUrl"> = {
+      ...(format === "a_tester" ? requiredFieldErrors({ testUrl }) : {}),
+      ...(!body.trim() && attachments.length === 0 ? { body: fr.feed.bodyOrImageRequired } : {}),
+    };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
     setSubmitting(true);
     try {
       await createPost({
@@ -77,23 +85,14 @@ export function NewPostPage() {
     }
   }
 
-  const blockedReason = isSuspended
-    ? fr.common.suspendedCannotSubmit
-    : !body.trim() && attachments.length === 0
-      ? fr.feed.bodyOrImageRequired
-      : format === "a_tester"
-        ? missingFieldsReason([[testUrl, fr.feed.testUrlLabel]])
-        : null;
-
   return (
     <FormPage
       title={fr.feed.newPostTitle}
-      subtitle={fr.feed.newPostSubtitle}
       activeSection="fil"
       backHref="/fil"
       submitLabel={fr.feed.publish}
       submitting={submitting}
-      submitDisabledReason={blockedReason}
+      submitDisabled={isSuspended}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -103,6 +102,7 @@ export function NewPostPage() {
         value={body}
         onValueChange={setBody}
         disabled={isSuspended}
+        error={fieldErrors.body}
       />
 
       <div className="flex flex-col gap-2">
@@ -147,9 +147,6 @@ export function NewPostPage() {
           <ImageIcon className="size-4" aria-hidden="true" />
           {fr.feed.attachImage}
         </Button>
-        <span className="text-xs text-subtle">
-          {fr.feed.newPostImagesHint(MAX_POST_ATTACHMENTS)}
-        </span>
       </div>
 
       <label className="flex flex-col gap-1 text-sm text-text-2">
@@ -170,14 +167,13 @@ export function NewPostPage() {
 
       {format === "a_tester" && (
         <>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.feed.testUrlLabel}
+          <FormField label={fr.feed.testUrlLabel} error={fieldErrors.testUrl}>
             <Input
               value={testUrl}
               onChange={(event) => setTestUrl(event.target.value)}
               disabled={isSuspended}
             />
-          </label>
+          </FormField>
           <label className="flex flex-col gap-1 text-sm text-text-2">
             {fr.feed.testAskLabel}
             <Input
@@ -193,7 +189,6 @@ export function NewPostPage() {
         checked={isBeginner}
         onCheckedChange={setIsBeginner}
         label={fr.beginners.postCheckbox}
-        hint={fr.beginners.postCheckboxHint}
       />
     </FormPage>
   );

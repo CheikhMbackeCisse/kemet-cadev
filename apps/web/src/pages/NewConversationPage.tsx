@@ -4,7 +4,7 @@ import { FormPage } from "../components/layout/FormPage.js";
 import { Textarea } from "../components/ui/Textarea.js";
 import { ChatApiError, openConversation } from "../lib/chat/api.js";
 import { parseHandles } from "../lib/messaging/conversationLabels.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { FormField } from "../components/ui/FormField.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
@@ -18,6 +18,7 @@ export function NewConversationPage() {
   const [handles, setHandles] = useState(readInitialHandles);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [handlesError, setHandlesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -27,8 +28,14 @@ export function NewConversationPage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!parsed.ok || parsed.handles.length === 0) return;
     setError(null);
+    const fieldError = !parsed.ok
+      ? parsed.error
+      : parsed.handles.length === 0
+        ? fr.common.requiredField
+        : null;
+    setHandlesError(fieldError);
+    if (!parsed.ok || fieldError) return;
     setSubmitting(true);
     try {
       const { conversation } = await openConversation(parsed.handles);
@@ -45,30 +52,22 @@ export function NewConversationPage() {
   return (
     <FormPage
       title={fr.messages.newTitle}
-      subtitle={fr.messages.newSubtitle}
       activeSection="messages"
       backHref="/messages"
       submitLabel={fr.messages.open}
       submitting={submitting}
-      submitDisabledReason={
-        isSuspended
-          ? fr.common.suspendedCannotSubmit
-          : !parsed.ok
-            ? parsed.error
-            : missingFieldsReason([[handles.trim(), fr.messages.handlesLabel]])
-      }
+      submitDisabled={isSuspended}
       error={error}
       onSubmit={handleSubmit}
     >
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.messages.handlesLabel}
+      <FormField label={fr.messages.handlesLabel} error={handlesError}>
         <Textarea
           variant="form"
+          placeholder={fr.messages.handlesPlaceholder}
           value={handles}
           onChange={(event) => setHandles(event.target.value)}
         />
-        <span className="text-xs text-subtle">{fr.messages.handlesHint}</span>
-      </label>
+      </FormField>
       <p className="text-xs text-subtle">{fr.messages.privacyNote}</p>
     </FormPage>
   );

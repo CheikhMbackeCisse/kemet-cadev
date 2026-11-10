@@ -6,8 +6,10 @@ import { Input } from "../components/ui/Input.js";
 import { ChatApiError, signIn } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { landingPath } from "../lib/onboarding/steps.js";
+import { FormField } from "../components/ui/FormField.js";
+import { useFieldErrors } from "../lib/useFieldErrors.js";
+import { requiredFieldErrors } from "../lib/forms.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
 import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 import { PrivacyLine } from "../components/auth/PrivacyLine.js";
@@ -17,6 +19,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { formRef, errors: fieldErrors, report } = useFieldErrors<"email" | "password">();
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ export function LoginPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!report(requiredFieldErrors({ email, password }))) return;
     setSubmitting(true);
     try {
       await signIn({ email, password });
@@ -44,25 +48,28 @@ export function LoginPage() {
     <AuthLayout title={fr.auth.loginTitle}>
       <div className="flex flex-col gap-3">
         <SocialSignInButtons callbackURL="/" />
-        <form className="relative flex flex-col gap-3" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-1 text-sm">
-            {fr.auth.emailLabel}
+        <form
+          ref={formRef}
+          noValidate
+          className="relative flex flex-col gap-3"
+          onSubmit={handleSubmit}
+        >
+          <FormField tone="inverse" label={fr.auth.emailLabel} error={fieldErrors.email}>
             <Input
               type="email"
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            {fr.auth.passwordLabel}
+          </FormField>
+          <FormField tone="inverse" label={fr.auth.passwordLabel} error={fieldErrors.password}>
             <Input
               type="password"
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-          </label>
+          </FormField>
           <a
             href="/mot-de-passe-oublie"
             className="inline-flex min-h-control-mobile items-center self-end text-sm text-auth-text-muted underline underline-offset-2 hover:text-auth-text md:min-h-control"
@@ -80,10 +87,6 @@ export function LoginPage() {
               variant="inverse"
               block
               loading={submitting}
-              disabledReason={missingFieldsReason([
-                [email, fr.auth.emailLabel],
-                [password, fr.auth.passwordLabel],
-              ])}
             />
           </ArrivalAction>
         </form>

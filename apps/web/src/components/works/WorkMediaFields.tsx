@@ -233,10 +233,8 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
 
   return (
     <fieldset className="flex flex-col gap-4">
-      <legend className="text-md font-semibold text-text">{fr.works.mediaTitle}</legend>
-      <p className="-mt-2 text-xs text-subtle">
-        {fr.works.mediaHint(MAX_WORK_GALLERY_IMAGES, MAX_WORK_VIDEOS, MAX_VIDEO_MEGABYTES)}
-      </p>
+      {/* Une légende n'est pas un élément de la grille : sa marge sépare le titre. */}
+      <legend className="mb-4 text-md font-semibold text-text">{fr.works.mediaTitle}</legend>
 
       <fieldset ref={coverSection} className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-medium text-text-2">{fr.works.coverLabel}</legend>
@@ -415,7 +413,7 @@ export function WorkMediaFields({ value, onChange, onUploadingChange }: WorkMedi
           <Button
             type="button"
             variant="secondary"
-            disabled={videosFull || !youtubeDraft.trim()}
+            disabled={videosFull}
             onClick={addYoutube}
             data-add=""
           >

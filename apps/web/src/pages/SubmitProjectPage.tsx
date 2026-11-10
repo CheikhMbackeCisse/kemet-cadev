@@ -14,7 +14,8 @@ import {
 } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { hasFieldErrors, validateFields, type FieldErrors } from "../lib/forms.js";
+import { FormField } from "../components/ui/FormField.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 /**
@@ -42,6 +43,9 @@ export function SubmitProjectPage() {
   const [demoUrl, setDemoUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<
+    FieldErrors<"projectId" | "title" | "pitch" | "repoUrl">
+  >({});
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -77,6 +81,14 @@ export function SubmitProjectPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    const errors = validateFields({
+      projectId: { value: editing ? "-" : projectId },
+      title: { value: title, min: 2 },
+      pitch: { value: pitch, min: 10 },
+      repoUrl: { value: repoUrl },
+    });
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
     setSubmitting(true);
     try {
       if (editing) {
@@ -107,24 +119,13 @@ export function SubmitProjectPage() {
   return (
     <FormPage
       title={editingId ? fr.competitions.editSubmissionTitle : fr.competitions.submitProjectTitle}
-      subtitle={fr.competitions.submitProjectSubtitle}
       activeSection="competitions"
       backHref={`/competitions/${slug}`}
       submitLabel={
         editingId ? fr.competitions.editSubmissionSubmit : fr.competitions.submitProjectSubmit
       }
       submitting={submitting}
-      submitDisabled={loading}
-      submitDisabledReason={
-        !editingId && !loading && myProjects.length === 0
-          ? fr.competitions.noOwnProjects
-          : missingFieldsReason([
-              ...(editingId ? [] : [[projectId, fr.competitions.projectLabel] as const]),
-              [title, fr.competitions.titleLabel],
-              [pitch, fr.competitions.pitchLabel],
-              [repoUrl, fr.competitions.repoUrlLabel],
-            ])
-      }
+      submitDisabled={loading || (!editingId && myProjects.length === 0)}
       error={error}
       onSubmit={handleSubmit}
     >
@@ -132,33 +133,28 @@ export function SubmitProjectPage() {
         (loading ? null : myProjects.length === 0 ? (
           <p className="text-sm text-subtle">{fr.competitions.noOwnProjects}</p>
         ) : (
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.competitions.projectLabel}
+          <FormField label={fr.competitions.projectLabel} error={fieldErrors.projectId}>
             <Select
-              aria-label={fr.competitions.projectLabel}
               value={projectId}
               onValueChange={setProjectId}
               options={myProjects.map((project) => ({ value: project.id, label: project.name }))}
             />
-          </label>
+          </FormField>
         ))}
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.titleLabel}
+      <FormField label={fr.competitions.titleLabel} error={fieldErrors.title}>
         <Input value={title} onChange={(event) => setTitle(event.target.value)} />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.pitchLabel}
+      </FormField>
+      <FormField label={fr.competitions.pitchLabel} error={fieldErrors.pitch}>
         <Input value={pitch} onChange={(event) => setPitch(event.target.value)} />
-      </label>
+      </FormField>
       <CodeTextarea
         label={fr.competitions.descriptionLabel}
         value={description}
         onValueChange={setDescription}
       />
-      <label className="flex flex-col gap-1 text-sm text-text-2">
-        {fr.competitions.repoUrlLabel}
+      <FormField label={fr.competitions.repoUrlLabel} error={fieldErrors.repoUrl}>
         <Input value={repoUrl} onChange={(event) => setRepoUrl(event.target.value)} />
-      </label>
+      </FormField>
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.competitions.demoUrlLabel}
         <Input value={demoUrl} onChange={(event) => setDemoUrl(event.target.value)} />
