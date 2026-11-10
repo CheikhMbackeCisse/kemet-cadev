@@ -172,7 +172,9 @@ partagent un même fond de marque : dégradé et halos (levés le 20/10/2026, vo
 `docs/adr/0019-fond-des-ecrans-de-compte.md`), et le continent africain
 entier, centré, en filigrane derrière la carte (remplissage à 6 %, contour
 d'un pixel à 40 %). On reconnaît la forme sans qu'elle attire l'oeil ;
-jamais un morceau coupé par le bord de l'écran. Le logo Kemet est en haut à
+jamais un morceau coupé par le bord de l'écran. Sur téléphone, les écrans
+calmes n'en montrent rien : leur carte, plus opaque, le couvrirait presque
+entièrement et seul un bout de côte dépasserait. Le logo Kemet est en haut à
 gauche, sauf sur l'accueil.
 
 La carte est au centre de l'écran, entre deux bandes de décor : au-dessus et
@@ -182,14 +184,17 @@ ne passe donc jamais sous la carte, ne touche ni elle ni le bord de l'écran
 (`decorLayout.test.ts`) ; une bande trop petite reste vide, un formulaire
 long sur un petit écran n'a aucun décor. Dix éléments au plus sur ordinateur,
 six sur téléphone : quatre logos de langages (Python, JavaScript,
-TypeScript, Kotlin), trois icônes Lucide (terminal, base de données, réseau)
-et trois bouts de code en Geist Mono.
+TypeScript, Kotlin), trois icônes Lucide (terminal, base de données, réseau,
+26 ou 30 px, trait de 1,5 px : à cette taille, il pèse autant que le trait de
+2 px des icônes de 20 px) et trois bouts de code en Geist Mono.
 
 Sur l'accueil, les logos sont dans leurs vraies couleurs (Simple Icons) sur
 une pastille blanche pleine, sans flou ni ombre, et cinq capitales (Dakar,
 Le Caire, Abuja, Nairobi, Pretoria) battent lentement, une toutes les
-1,6 s. Pas de réseau de liaisons. La carte de l'accueil est plus claire (teinte
-à 50 %) pour laisser lire le continent qu'elle couvre sur téléphone. Tout en
+1,6 s, jamais sous la carte (une capitale que la carte couvre est cachée).
+Pas de réseau de liaisons. La carte de l'accueil est plus claire (teinte à
+50 %, flou de 1 px) pour laisser lire le continent qu'elle couvre sur
+téléphone. Tout en
 bas de l'écran, "Propulsé par" en petit et en blanc atténué, puis
 "Systalink" en blanc, graisse moyenne, S majuscule, sur la même ligne : ni
 pastille, ni leur symbole, ni leur police.

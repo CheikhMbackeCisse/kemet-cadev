@@ -299,15 +299,24 @@
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background-color: var(--auth-network-core);
+  background-color: var(--auth-capital-dot);
   transform: translate(-50%, -50%);
+}
+
+/* Cachée sans perdre sa place : la mesure suivante doit encore la situer. */
+.capital-dot[data-covered] {
+  visibility: hidden;
+}
+
+.capital-dot[data-covered]::after {
+  animation: none;
 }
 
 .capital-dot::after {
   content: "";
   position: absolute;
   inset: 0;
-  border: 1px solid var(--auth-network-pulse);
+  border: 1px solid var(--auth-capital-pulse);
   border-radius: 999px;
   opacity: 0;
   animation: capital-pulse 8s ease-out var(--pulse-delay) infinite;

@@ -46,7 +46,7 @@ export function DomainGrid({ value, onChange, tone = "page" }: DomainGridProps) 
               />
               <span
                 className={cn(
-                  "flex h-full min-h-11 items-center gap-2 px-2.5 py-1.5 text-left text-[13px] leading-tight",
+                  "flex h-full min-h-11 items-center gap-2 px-2.5 py-1.5 text-left text-sm leading-snug",
                   "md:min-h-16 md:flex-col md:justify-center md:gap-1.5 md:px-2 md:py-2 md:text-center md:text-sm",
                   choiceFrameClass(tone),
                 )}

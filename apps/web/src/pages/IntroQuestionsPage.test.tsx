@@ -68,6 +68,7 @@ describe("IntroQuestionsPage", () => {
     window.history.replaceState(null, "", "/decouvrir/objectifs");
     render(<IntroQuestionsPage />);
     expect(screen.getByRole("heading", { name: fr.intro.whoTitle })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/decouvrir/qui");
   });
 
   it("garde une intention d'une version précédente quand un recruteur choisit", () => {

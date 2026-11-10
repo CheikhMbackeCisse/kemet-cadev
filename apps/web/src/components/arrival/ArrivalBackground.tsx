@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { cn } from "../../lib/cn.js";
 import {
   AFRICA_CAPITALS,
   AFRICA_OUTLINE_HEIGHT,
@@ -16,11 +17,20 @@ function percent(value: number, size: number): string {
 /**
  * Le continent entier, centré, en filigrane : remplissage très léger et
  * contour fin, d'un pixel quelle que soit sa taille. Sur l'accueil, cinq
- * capitales battent lentement, l'une après l'autre.
+ * capitales battent lentement, l'une après l'autre, jamais sous la carte
+ * (ArrivalLayout les cache).
  */
 function AfricaWatermark({ capitals }: { capitals: boolean }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center">
+    // Sur téléphone, la carte d'un écran calme, plus opaque, couvre presque
+    // tout le continent : seul un morceau de côte dépasserait. Rien plutôt
+    // qu'un fragment.
+    <div
+      className={cn(
+        "absolute inset-0 flex items-center justify-center",
+        !capitals && "max-md:hidden",
+      )}
+    >
       <div
         className="africa-watermark relative"
         style={{ aspectRatio: `${AFRICA_OUTLINE_WIDTH} / ${AFRICA_OUTLINE_HEIGHT}` }}

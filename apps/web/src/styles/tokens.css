@@ -195,8 +195,8 @@
    */
   --auth-continent-fill: rgba(147, 197, 253, 0.06);
   --auth-continent-line: rgba(147, 197, 253, 0.4);
-  --auth-network-core: #e0f2fe;
-  --auth-network-pulse: #7dd3fc;
+  --auth-capital-dot: #e0f2fe;
+  --auth-capital-pulse: #7dd3fc;
   --auth-tile-bg: #ffffff;
   --auth-decor-icon: rgba(255, 255, 255, 0.72);
   --auth-decor-code: rgba(255, 255, 255, 0.56);

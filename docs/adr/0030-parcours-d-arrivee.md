@@ -88,6 +88,12 @@ Décision.
   téléphone, elle couvre presque tout le continent, qu'on doit pouvoir lire
   à travers.
 
+- Une capitale que la carte couvre est cachée (`ArrivalLayout`, mesurée à
+  chaque changement de taille) : un anneau qui bat sous le texte se lisait
+  comme une poussière. Sur téléphone, la carte les couvre toutes.
+- Sur téléphone, les écrans calmes ne montrent pas le continent : leur carte,
+  plus opaque, n'en laissait dépasser qu'un bout de côte.
+
 Conséquences. Sur un formulaire long ou un petit écran, les bandes sont trop
 petites et le décor disparaît : c'est voulu. Le contraste du texte de la
 carte est vérifié contre le contour du continent posé sur le halo le plus

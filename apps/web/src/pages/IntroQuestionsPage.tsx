@@ -76,6 +76,14 @@ export function IntroQuestionsPage() {
   );
   const [answers, setAnswers] = useState<IntroAnswers>(() => readIntroAnswers());
 
+  // Une adresse inconnue (l'ancienne question sur les objectifs) affiche la
+  // première question : l'adresse suit, sans entrée d'historique de plus.
+  useEffect(() => {
+    if (questionFromPath(window.location.pathname) === null) {
+      window.history.replaceState(null, "", introQuestionPath("who"));
+    }
+  }, []);
+
   useEffect(() => {
     function handlePopState() {
       setQuestion(questionFromPath(window.location.pathname) ?? "who");

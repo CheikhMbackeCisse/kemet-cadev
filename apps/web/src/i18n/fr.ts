@@ -112,7 +112,7 @@ export const fr = {
     completeProfileSubmit: "Continuer",
     completeProfileError: "Ton profil n'a pas pu être enregistré.",
     handleAlreadyTakenError: "Cet identifiant est déjà pris.",
-    roleLabel: "Ton rôle",
+    roleLabel: "Ce que tu fais",
     roleNone: "Aucun",
     // Choix d'un rôle, à la première personne : jamais "Développeur/se".
     roleDeveloper: "Je code",

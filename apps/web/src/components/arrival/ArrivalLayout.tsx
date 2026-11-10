@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { cn } from "../../lib/cn.js";
 import { isSlowConnection } from "../../lib/network.js";
 import { KemetWordmark } from "../ui/KemetWordmark.js";
@@ -42,6 +49,40 @@ function usePageVisible(): boolean {
   return visible;
 }
 
+// Rayon de l'anneau d'une capitale à son plus large, plus une marge.
+const CAPITAL_CLEARANCE = 24;
+
+/**
+ * Une capitale qui battrait sous la carte se lirait comme une poussière
+ * derrière le texte : elle est cachée tant que la carte la couvre, à chaque
+ * changement de taille de l'écran ou de la carte.
+ */
+function useCapitalsClearOfCard(card: RefObject<HTMLElement>, enabled: boolean) {
+  useLayoutEffect(() => {
+    const cardElement = card.current;
+    if (!enabled || !cardElement) return;
+    function update() {
+      const box = cardElement!.getBoundingClientRect();
+      document.querySelectorAll<HTMLElement>(".capital-dot").forEach((dot) => {
+        const { left, top, width, height } = dot.getBoundingClientRect();
+        const x = left + width / 2;
+        const y = top + height / 2;
+        const covered =
+          x > box.left - CAPITAL_CLEARANCE &&
+          x < box.right + CAPITAL_CLEARANCE &&
+          y > box.top - CAPITAL_CLEARANCE &&
+          y < box.bottom + CAPITAL_CLEARANCE;
+        dot.toggleAttribute("data-covered", covered);
+      });
+    }
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(cardElement);
+    observer.observe(document.documentElement);
+    return () => observer.disconnect();
+  }, [card, enabled]);
+}
+
 /**
  * Gabarit du parcours d'arrivée : fond de marque, logo en haut, contenu sur
  * une carte en verre dépoli au centre, entre deux bandes de décor. Le texte
@@ -64,6 +105,8 @@ export function ArrivalLayout({
   const visible = usePageVisible();
   const [still] = useState(isSlowConnection);
   const hasHeader = showLogo || headerEnd !== undefined;
+  const card = useRef<HTMLDivElement>(null);
+  useCapitalsClearOfCard(card, motion === "rich" && !busy);
 
   return (
     <div
@@ -106,6 +149,7 @@ export function ArrivalLayout({
           <main className="flex min-w-0 flex-col items-center justify-center px-4 py-4 sm:py-8">
             <div className="flex w-full flex-col gap-3">
               <div
+                ref={card}
                 className={cn(
                   "arrival-glass auth-on-dark flex flex-col gap-4 rounded-panel p-5 text-auth-text sm:p-8",
                   motion === "rich" && "arrival-glass-clear",

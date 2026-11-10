@@ -1,5 +1,5 @@
 import { act, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArrivalBackground } from "./ArrivalBackground.js";
 import { ArrivalLayout } from "./ArrivalLayout.js";
 
@@ -11,10 +11,12 @@ function setVisibility(state: DocumentVisibilityState) {
 }
 
 describe("ArrivalBackground", () => {
-  it("pose le continent entier sur chaque écran du parcours", () => {
+  it("pose le continent entier sur chaque écran du parcours, rien sous la carte calme d'un téléphone", () => {
     for (const motion of ["rich", "calm"] as const) {
       const { container, unmount } = render(<ArrivalBackground motion={motion} />);
       expect(container.querySelectorAll(".africa-watermark path")).toHaveLength(1);
+      const layer = container.querySelector(".africa-watermark")!.parentElement!;
+      expect(layer.classList.contains("max-md:hidden")).toBe(motion === "calm");
       unmount();
     }
   });
@@ -36,8 +38,50 @@ describe("ArrivalBackground", () => {
   });
 });
 
+class ResizeObserverStub {
+  observe() {}
+  disconnect() {}
+}
+
+function rect(left: number, top: number, width: number, height: number): DOMRect {
+  return {
+    left,
+    top,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  };
+}
+
 describe("ArrivalLayout", () => {
-  afterEach(() => vi.restoreAllMocks());
+  beforeEach(() => vi.stubGlobal("ResizeObserver", ResizeObserverStub));
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("cache les capitales que la carte couvre, garde les autres", () => {
+    // Carte de 400 x 300 au centre d'un écran de 1440 x 900 ; Dakar loin à
+    // gauche, toutes les autres capitales sous la carte.
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: Element,
+    ) {
+      if (this.classList.contains("arrival-glass")) return rect(520, 300, 400, 300);
+      if (this.classList.contains("capital-dot")) {
+        return (this as HTMLElement).style.left === "0.13%"
+          ? rect(100, 330, 6, 6)
+          : rect(700, 450, 6, 6);
+      }
+      return rect(0, 0, 0, 0);
+    });
+    const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
+    const dots = [...container.querySelectorAll(".capital-dot")];
+    expect(dots.filter((dot) => !dot.hasAttribute("data-covered"))).toHaveLength(1);
+  });
 
   function root(container: HTMLElement) {
     return container.querySelector(".arrival-root")!;
