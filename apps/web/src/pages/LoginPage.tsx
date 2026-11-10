@@ -8,6 +8,7 @@ import { useSession } from "../session/SessionProvider.js";
 import { landingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 import { PrivacyLine } from "../components/auth/PrivacyLine.js";
 
@@ -43,7 +44,7 @@ export function LoginPage() {
     <AuthLayout title={fr.auth.loginTitle}>
       <div className="flex flex-col gap-3">
         <SocialSignInButtons callbackURL="/" />
-        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+        <form className="relative flex flex-col gap-3" onSubmit={handleSubmit}>
           <label className="flex flex-col gap-1 text-sm">
             {fr.auth.emailLabel}
             <Input
@@ -73,16 +74,18 @@ export function LoginPage() {
               {error}
             </p>
           )}
-          <SubmitButton
-            label={fr.auth.loginSubmit}
-            variant="inverse"
-            block
-            loading={submitting}
-            disabledReason={missingFieldsReason([
-              [email, fr.auth.emailLabel],
-              [password, fr.auth.passwordLabel],
-            ])}
-          />
+          <ArrivalAction>
+            <SubmitButton
+              label={fr.auth.loginSubmit}
+              variant="inverse"
+              block
+              loading={submitting}
+              disabledReason={missingFieldsReason([
+                [email, fr.auth.emailLabel],
+                [password, fr.auth.passwordLabel],
+              ])}
+            />
+          </ArrivalAction>
         </form>
         <p className="text-center text-sm text-auth-text-muted">
           {fr.auth.noAccountYet}{" "}

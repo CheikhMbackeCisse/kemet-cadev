@@ -1,7 +1,7 @@
 /**
  * Régénère apps/web/src/components/arrival/africaOutline.ts : contour du
  * continent africain (pays fusionnés, Madagascar comprise, petites îles
- * écartées) en projection de Mercator, et place des capitales du fond.
+ * écartées) en projection de Mercator, et place les capitales et les villes du réseau de l'accueil.
  * Données : Natural Earth (domaine public) par world-atlas, countries-50m (ISC).
  *
  *   pnpm exec tsx scripts/build-africa-outline.ts
@@ -86,13 +86,46 @@ const AFRICAN_IDS = new Set([
   "894",
 ]);
 
-// Cinq capitales, une par grande région, longitude puis latitude.
+// Capitales du réseau de l'accueil (liaisons dans
+// apps/web/src/components/arrival/networkLayout.ts), longitude puis latitude.
 const CAPITALS = [
+  { id: "rabat", name: "Rabat", position: [-6.85, 33.972] },
+  { id: "alger", name: "Alger", position: [3.059, 36.754] },
+  { id: "tunis", name: "Tunis", position: [10.182, 36.807] },
+  { id: "caire", name: "Le Caire", position: [31.236, 30.044] },
   { id: "dakar", name: "Dakar", position: [-17.447, 14.693] },
-  { id: "cairo", name: "Le Caire", position: [31.236, 30.044] },
+  { id: "bamako", name: "Bamako", position: [-8.003, 12.639] },
   { id: "abuja", name: "Abuja", position: [7.399, 9.076] },
-  { id: "nairobi", name: "Nairobi", position: [36.817, -1.286] },
+  { id: "khartoum", name: "Khartoum", position: [32.56, 15.501] },
+  { id: "addis", name: "Addis-Abeba", position: [38.758, 8.981] },
+  { id: "nairobi", name: "Nairobi", position: [36.822, -1.292] },
+  { id: "luanda", name: "Luanda", position: [13.289, -8.839] },
+  { id: "lusaka", name: "Lusaka", position: [28.323, -15.388] },
   { id: "pretoria", name: "Pretoria", position: [28.188, -25.746] },
+  { id: "maputo", name: "Maputo", position: [32.573, -25.969] },
+] as const;
+
+// Autres grandes villes, sans liaison : de petits points pâles.
+const CITIES = [
+  { id: "casablanca", name: "Casablanca", position: [-7.59, 33.573] },
+  { id: "tripoli", name: "Tripoli", position: [13.191, 32.887] },
+  { id: "conakry", name: "Conakry", position: [-13.578, 9.641] },
+  { id: "abidjan", name: "Abidjan", position: [-4.008, 5.36] },
+  { id: "accra", name: "Accra", position: [-0.187, 5.604] },
+  { id: "ouagadougou", name: "Ouagadougou", position: [-1.52, 12.371] },
+  { id: "lagos", name: "Lagos", position: [3.379, 6.524] },
+  { id: "kano", name: "Kano", position: [8.592, 12.002] },
+  { id: "douala", name: "Douala", position: [9.768, 4.051] },
+  { id: "ndjamena", name: "N'Djamena", position: [15.044, 12.135] },
+  { id: "kinshasa", name: "Kinshasa", position: [15.266, -4.442] },
+  { id: "kampala", name: "Kampala", position: [32.583, 0.348] },
+  { id: "dar", name: "Dar es Salaam", position: [39.208, -6.792] },
+  { id: "mogadiscio", name: "Mogadiscio", position: [45.318, 2.047] },
+  { id: "harare", name: "Harare", position: [31.053, -17.829] },
+  { id: "windhoek", name: "Windhoek", position: [17.083, -22.561] },
+  { id: "le-cap", name: "Le Cap", position: [18.424, -33.925] },
+  { id: "durban", name: "Durban", position: [31.022, -29.859] },
+  { id: "antananarivo", name: "Antananarivo", position: [47.508, -18.879] },
 ] as const;
 
 type Point = [number, number];
@@ -188,10 +221,14 @@ const rings = continent.coordinates.map((polygon) => simplify(polygon[0]!.map(pr
 const height = Math.ceil(Math.max(...rings.flat().map(([, y]) => y)));
 const path = rings.map(ringToPath).join("");
 
-const capitals = CAPITALS.map(({ id, name, position }) => {
-  const [x, y] = project(position);
-  return `  { id: "${id}", name: "${name}", x: ${x.toFixed(1)}, y: ${y.toFixed(1)} },`;
-});
+function placeList(
+  places: ReadonlyArray<{ id: string; name: string; position: readonly number[] }>,
+) {
+  return places.map(({ id, name, position }) => {
+    const [x, y] = project(position as Position);
+    return `  { id: "${id}", name: "${name}", x: ${x.toFixed(1)}, y: ${y.toFixed(1)} },`;
+  });
+}
 
 const source = `// Fichier généré par scripts/build-africa-outline.ts, ne pas modifier à la main.
 // Contour de l'Afrique tiré de Natural Earth (domaine public) par world-atlas
@@ -204,9 +241,21 @@ export const AFRICA_OUTLINE_HEIGHT = ${height};
 export const AFRICA_OUTLINE_PATH =
   "${path}";
 
-/** Capitales placées dans la même projection, en unités de la boîte. */
-export const AFRICA_CAPITALS: ReadonlyArray<{ id: string; name: string; x: number; y: number }> = [
-${capitals.join("\n")}
+export interface AfricaPlace {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+}
+
+/** Capitales du réseau, placées dans la même projection, en unités de la boîte. */
+export const AFRICA_CAPITALS: readonly AfricaPlace[] = [
+${placeList(CAPITALS).join("\n")}
+];
+
+/** Autres grandes villes, sans liaison. */
+export const AFRICA_CITIES: readonly AfricaPlace[] = [
+${placeList(CITIES).join("\n")}
 ];
 `;
 

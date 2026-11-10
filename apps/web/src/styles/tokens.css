@@ -189,14 +189,20 @@
   --auth-glass-border: rgba(255, 255, 255, 0.2);
   --auth-danger: #ffc9c2;
   /*
-   * Continent en filigrane, capitales de l'accueil, décor autour de la
-   * carte : pastille blanche pleine des logos, icônes et code en blanc
-   * atténué, tout le décor à 16 % sur les écrans calmes.
+   * Continent en filigrane, réseau de l'accueil, décor autour de la carte.
+   * Les arcs ne dépassent jamais le contour (même teinte, moins opaques) ;
+   * ce que la carte couvre tombe à 25 %. Pastille blanche pleine des logos,
+   * icônes et code en blanc atténué, tout le décor à 16 % sur les écrans
+   * calmes.
    */
   --auth-continent-fill: rgba(147, 197, 253, 0.06);
   --auth-continent-line: rgba(147, 197, 253, 0.4);
+  --auth-network-line: rgba(147, 197, 253, 0.38);
+  --auth-network-glow: #e0f2fe;
+  --auth-network-covered-opacity: 0.25;
   --auth-capital-dot: #e0f2fe;
-  --auth-capital-pulse: #7dd3fc;
+  --auth-capital-halo: rgba(125, 211, 252, 0.45);
+  --auth-city-dot: rgba(191, 219, 254, 0.55);
   --auth-tile-bg: #ffffff;
   --auth-decor-icon: rgba(255, 255, 255, 0.72);
   --auth-decor-code: rgba(255, 255, 255, 0.56);

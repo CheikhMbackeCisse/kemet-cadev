@@ -98,3 +98,44 @@ Conséquences. Sur un formulaire long ou un petit écran, les bandes sont trop
 petites et le décor disparaît : c'est voulu. Le contraste du texte de la
 carte est vérifié contre le contour du continent posé sur le halo le plus
 clair (`tokens.test.ts`), seul élément du fond qui passe encore sous elle.
+
+## Complément du 10/11/2026, suite : le réseau des capitales revient sur l'accueil
+
+Contexte. Avec cinq capitales qui battaient seules, l'accueil ne disait plus
+que l'Afrique est reliée, ce qui était le sens du réseau d'origine. Sur
+Safari d'iPhone, le bouton Continuer des questions passait sous la barre du
+navigateur dès que la carte dépassait de l'écran.
+
+Décision.
+
+- Un réseau vu comme de nuit, sur l'accueil seulement : quatorze capitales
+  reliées chacune à deux ou trois voisines (dix-sept arcs, un seul réseau,
+  `networkLayout.test.ts`), dix-neuf autres villes en points pâles sans
+  liaison. Capitales et villes placées par `scripts/build-africa-outline.ts`
+  dans la projection du contour, liaisons écrites à la main dans
+  `networkLayout.ts`, dans le sens qui courbe l'arc vers l'intérieur des
+  terres.
+- Les arcs ne sont jamais plus forts que le contour, ce que `tokens.test.ts`
+  vérifie. Le continent de l'accueil est plus grand que celui des autres
+  écrans, pour que le réseau se voie autour de la carte : toute la largeur
+  sur téléphone, presque toute la hauteur sur ordinateur, avec une carte
+  plus étroite.
+- Plutôt que cacher ce que la carte couvre, `ArrivalLayout` l'atténue à
+  25 % : les points par un attribut, les lueurs par un masque SVG dont il
+  pose le rectangle de la carte. `tokens.test.ts` vérifie le contraste du
+  texte de la carte avec une capitale ou une lueur dessous. Le même calcul
+  cache un élément du décor posé sur un point ou un arc visible.
+- Trois lueurs en CSS, décalées d'un tiers de cycle, qui passent d'un arc à
+  l'autre à chaque fin de voyage (`animationiteration`) : trois animations
+  au plus, pas de minuterie. Le réseau reste affiché, fixe, quand rien ne
+  doit bouger.
+- Le bouton principal des questions, de l'onboarding et des écrans de compte
+  est collé au bas de l'écran quand la carte dépasse (`ArrivalAction`,
+  `position: sticky`, zone sûre de l'iPhone), avec un fond de verre posé
+  seulement quand il a quitté sa place.
+
+Conséquences. Sur téléphone, la carte couvre le centre du réseau ; on lit
+le nord au-dessus d'elle, l'Afrique australe au-dessous, et les arcs du
+milieu à travers le verre. Le masque des lueurs coûte peu : mesuré en
+processeur ralenti quatre fois, l'accueil reste entre 56 et 60 images par
+seconde, avec ou sans lui.

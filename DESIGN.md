@@ -189,12 +189,21 @@ TypeScript, Kotlin), trois icônes Lucide (terminal, base de données, réseau,
 2 px des icônes de 20 px) et trois bouts de code en Geist Mono.
 
 Sur l'accueil, les logos sont dans leurs vraies couleurs (Simple Icons) sur
-une pastille blanche pleine, sans flou ni ombre, et cinq capitales (Dakar,
-Le Caire, Abuja, Nairobi, Pretoria) battent lentement, une toutes les
-1,6 s, jamais sous la carte (une capitale que la carte couvre est cachée).
-Pas de réseau de liaisons. La carte de l'accueil est plus claire (teinte à
-50 %, flou de 1 px) pour laisser lire le continent qu'elle couvre sur
-téléphone. Tout en
+une pastille blanche pleine, sans flou ni ombre, et le continent, plus
+grand, porte un réseau vu comme de nuit : quatorze capitales en points
+lumineux à petit halo, chacune reliée à deux ou trois voisines par un arc
+fin et légèrement courbe, du Maghreb au Cap et de Dakar à la Corne, et dix-neuf autres
+grandes villes en points plus petits et plus pâles, sans liaison. Les arcs
+ne sont jamais plus forts que le contour (même teinte, 38 % au lieu de
+40 %). Sur téléphone, le continent prend toute la largeur moins 8 px de
+chaque côté : Rabat, Alger, Tunis et Le Caire passent au-dessus de la
+carte, Pretoria et Maputo au-dessous ; sur ordinateur, il prend presque
+toute la hauteur et la carte, plus étroite (25 rem), laisse le réseau
+autour d'elle. Ce que la carte couvre s'atténue à 25 % (points, lueurs) ;
+les arcs restent et se devinent à travers le verre. Un élément du décor
+posé sur une capitale, une ville ou un arc visible est caché ; les places
+du décor sont choisies pour que ça n'arrive pas aux tailles courantes. La
+carte de l'accueil est plus claire (teinte à 50 %, flou de 1 px). Tout en
 bas de l'écran, "Propulsé par" en petit et en blanc atténué, puis
 "Systalink" en blanc, graisse moyenne, S majuscule, sur la même ligne : ni
 pastille, ni leur symbole, ni leur police.
@@ -214,11 +223,20 @@ variables `--auth-*` de `tokens.css`. Le fond de `html` est écrit en dur dans
 octet. Voir
 `docs/adr/0030-parcours-d-arrivee.md`.
 
-Deux intensités : sur l'accueil, décor en couleur et capitales qui battent ;
-ailleurs, décor blanc à 16 %, sans capitales. Les éléments dérivent de 6 px
-au plus, sans rotation ni fondu. Seuls `transform` et `opacity` bougent ;
-l'animation s'arrête quand l'onglet est caché, et rien ne bouge sur
-connexion lente, en économie de données ou avec `prefers-reduced-motion`.
+Deux intensités : sur l'accueil, décor en couleur et réseau ; ailleurs,
+décor blanc à 16 %, sans réseau. Les éléments dérivent de 6 px au plus,
+sans rotation ni fondu. Sur l'accueil, trois lueurs voyagent le long des
+arcs, une nouvelle toutes les 3 s, chacune 6 s environ, puis passent à un
+autre arc. Seuls `transform`, `opacity` et le tracé des lueurs
+(`stroke-dashoffset`) bougent ; l'animation s'arrête quand l'onglet est
+caché. Sur connexion lente, en économie de données ou avec
+`prefers-reduced-motion`, rien ne bouge : le réseau reste affiché, fixe,
+sans lueurs.
+
+Quand une carte dépasse de l'écran (petit téléphone, Safari et ses barres),
+son bouton principal reste collé au bas de l'écran, au-dessus de la zone
+sûre de l'iPhone, sur un fond de verre plus dense qui prend toute la largeur
+de la carte ; il retrouve sa place à la fin du défilement.
 
 Les logos de Simple Icons sont la seule exception au « jamais le logo d'un
 autre produit » du principe 6 : décor qui dit de quoi on parle, jamais

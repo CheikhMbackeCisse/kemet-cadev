@@ -7,6 +7,7 @@ import { useSession } from "../session/SessionProvider.js";
 import { landingPath, onboardingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
 import { missingFieldsReason } from "../lib/forms.js";
+import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function CompleteProfilePage() {
@@ -39,7 +40,7 @@ export function CompleteProfilePage() {
 
   return (
     <AuthLayout title={fr.auth.completeProfileTitle}>
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+      <form className="relative flex flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.displayNameLabel}
           <Input
@@ -58,15 +59,17 @@ export function CompleteProfilePage() {
             {error}
           </p>
         )}
-        <SubmitButton
-          variant="inverse"
-          label={fr.auth.completeProfileSubmit}
-          loading={submitting}
-          disabledReason={missingFieldsReason([
-            [displayName, fr.auth.displayNameLabel],
-            [handle, fr.auth.handleLabel],
-          ])}
-        />
+        <ArrivalAction>
+          <SubmitButton
+            variant="inverse"
+            label={fr.auth.completeProfileSubmit}
+            loading={submitting}
+            disabledReason={missingFieldsReason([
+              [displayName, fr.auth.displayNameLabel],
+              [handle, fr.auth.handleLabel],
+            ])}
+          />
+        </ArrivalAction>
       </form>
     </AuthLayout>
   );

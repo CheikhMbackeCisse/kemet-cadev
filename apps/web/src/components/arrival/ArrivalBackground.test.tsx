@@ -1,7 +1,14 @@
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArrivalBackground } from "./ArrivalBackground.js";
 import { ArrivalLayout } from "./ArrivalLayout.js";
+import {
+  AFRICA_CAPITALS,
+  AFRICA_CITIES,
+  AFRICA_OUTLINE_HEIGHT,
+  AFRICA_OUTLINE_WIDTH,
+} from "./africaOutline.js";
+import { NETWORK_ARCS } from "./networkLayout.js";
 
 function setVisibility(state: DocumentVisibilityState) {
   vi.spyOn(document, "visibilityState", "get").mockReturnValue(state);
@@ -14,22 +21,33 @@ describe("ArrivalBackground", () => {
   it("pose le continent entier sur chaque écran du parcours, rien sous la carte calme d'un téléphone", () => {
     for (const motion of ["rich", "calm"] as const) {
       const { container, unmount } = render(<ArrivalBackground motion={motion} />);
-      expect(container.querySelectorAll(".africa-watermark path")).toHaveLength(1);
+      expect(container.querySelectorAll(".africa-watermark svg > path")).toHaveLength(1);
       const layer = container.querySelector(".africa-watermark")!.parentElement!;
       expect(layer.classList.contains("max-md:hidden")).toBe(motion === "calm");
       unmount();
     }
   });
 
-  it("fait battre cinq capitales au plus sur l'accueil, aucune ailleurs", () => {
+  it("pose le réseau des capitales sur l'accueil, nulle part ailleurs", () => {
     const rich = render(<ArrivalBackground motion="rich" />);
-    const capitals = rich.container.querySelectorAll(".capital-dot").length;
-    expect(capitals).toBeGreaterThan(0);
-    expect(capitals).toBeLessThanOrEqual(5);
+    expect(rich.container.querySelectorAll(".capital-dot")).toHaveLength(AFRICA_CAPITALS.length);
+    expect(rich.container.querySelectorAll(".city-dot")).toHaveLength(AFRICA_CITIES.length);
+    expect(rich.container.querySelectorAll(".network-arc")).toHaveLength(NETWORK_ARCS.length);
+    expect(rich.container.querySelectorAll(".network-glow")).toHaveLength(3);
     rich.unmount();
 
     const calm = render(<ArrivalBackground motion="calm" />);
-    expect(calm.container.querySelector(".capital-dot")).toBeNull();
+    expect(calm.container.querySelector(".network-dot, .network-arc, .network-glow")).toBeNull();
+  });
+
+  it("envoie une lueur sur un autre arc à la fin de chaque voyage", () => {
+    const { container } = render(<ArrivalBackground motion="rich" />);
+    const glow = container.querySelector(".network-glow")!;
+    const before = glow.querySelector("path")!.getAttribute("d");
+    fireEvent.animationIteration(glow);
+    const paths = [...glow.querySelectorAll("path")].map((path) => path.getAttribute("d"));
+    expect(paths[0]).not.toBe(before);
+    expect(new Set(paths).size).toBe(1);
   });
 
   it("reste invisible pour un lecteur d'écran", () => {
@@ -64,23 +82,64 @@ describe("ArrivalLayout", () => {
     vi.unstubAllGlobals();
   });
 
-  it("cache les capitales que la carte couvre, garde les autres", () => {
-    // Carte de 400 x 300 au centre d'un écran de 1440 x 900 ; Dakar loin à
-    // gauche, toutes les autres capitales sous la carte.
+  // Continent à l'échelle 1 (une unité de la boîte, un pixel), carte au
+  // milieu. Un point est placé d'après son style ; le logo Python du
+  // téléphone est posé sur Dakar, tout autre élément du décor loin de tout.
+  function mockLayout() {
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
       this: Element,
     ) {
-      if (this.classList.contains("arrival-glass")) return rect(520, 300, 400, 300);
-      if (this.classList.contains("capital-dot")) {
-        return (this as HTMLElement).style.left === "0.13%"
-          ? rect(100, 330, 6, 6)
-          : rect(700, 450, 6, 6);
+      const style = (this as HTMLElement).style;
+      if (this.classList.contains("arrival-glass")) return rect(300, 400, 400, 200);
+      if (this.classList.contains("africa-watermark-network")) {
+        return rect(0, 0, AFRICA_OUTLINE_WIDTH, AFRICA_OUTLINE_HEIGHT);
+      }
+      if (this.classList.contains("network-dot")) {
+        const x = (parseFloat(style.left) / 100) * AFRICA_OUTLINE_WIDTH;
+        const y = (parseFloat(style.top) / 100) * AFRICA_OUTLINE_HEIGHT;
+        return rect(x - 3, y - 3, 6, 6);
+      }
+      if (this.classList.contains("arrival-decor-item")) {
+        return style.left === "16%" && style.top === "40%"
+          ? rect(dakar.x - 20, dakar.y - 20, 40, 40)
+          : rect(5000, 5000, 40, 40);
       }
       return rect(0, 0, 0, 0);
     });
+  }
+
+  const dakar = AFRICA_CAPITALS.find((capital) => capital.id === "dakar")!;
+
+  function dot(container: HTMLElement, id: string) {
+    const capital = AFRICA_CAPITALS.find((place) => place.id === id)!;
+    const left = `${((capital.x / AFRICA_OUTLINE_WIDTH) * 100).toFixed(2)}%`;
+    return [...container.querySelectorAll<HTMLElement>(".capital-dot")].find(
+      (element) => element.style.left === left,
+    )!;
+  }
+
+  it("atténue les capitales et les lueurs que la carte couvre, garde les autres", () => {
+    mockLayout();
     const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
-    const dots = [...container.querySelectorAll(".capital-dot")];
-    expect(dots.filter((dot) => !dot.hasAttribute("data-covered"))).toHaveLength(1);
+    expect(dot(container, "abuja").hasAttribute("data-covered")).toBe(true);
+    expect(dot(container, "dakar").hasAttribute("data-covered")).toBe(false);
+    expect(dot(container, "pretoria").hasAttribute("data-covered")).toBe(false);
+
+    const zone = container.querySelector(".network-covered-zone")!;
+    expect(["x", "y", "width", "height"].map((name) => zone.getAttribute(name))).toEqual([
+      "300",
+      "400",
+      "400",
+      "200",
+    ]);
+  });
+
+  it("cache un élément du décor posé sur le réseau", () => {
+    mockLayout();
+    const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
+    const clashing = [...container.querySelectorAll("[data-clash]")];
+    expect(clashing).toHaveLength(1);
+    expect(clashing[0]!.querySelector('svg[fill="#3776AB"]')).not.toBeNull();
   });
 
   function root(container: HTMLElement) {

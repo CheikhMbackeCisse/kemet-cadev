@@ -5,6 +5,7 @@ import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
 import { resetPassword } from "../lib/chat/api.js";
 import { fr } from "../i18n/fr.js";
+import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 function readToken(): string | null {
@@ -57,7 +58,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout title={fr.auth.resetPasswordTitle}>
-      <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+      <form className="relative flex flex-col gap-3" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm text-auth-text">
           {fr.auth.newPasswordLabel}
           <Input
@@ -74,12 +75,14 @@ export function ResetPasswordPage() {
             {error}
           </p>
         )}
-        <SubmitButton
-          variant="inverse"
-          label={fr.auth.resetPasswordSubmit}
-          loading={submitting}
-          disabledReason={password.length < 8 ? fr.auth.passwordTooShort : null}
-        />
+        <ArrivalAction>
+          <SubmitButton
+            variant="inverse"
+            label={fr.auth.resetPasswordSubmit}
+            loading={submitting}
+            disabledReason={password.length < 8 ? fr.auth.passwordTooShort : null}
+          />
+        </ArrivalAction>
       </form>
     </AuthLayout>
   );

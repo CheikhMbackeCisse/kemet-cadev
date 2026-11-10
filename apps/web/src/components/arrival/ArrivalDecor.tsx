@@ -99,7 +99,7 @@ function BandItems({
       {DECOR[screen][side].map((item, index) => (
         <span
           key={index}
-          className="absolute -translate-x-1/2 -translate-y-1/2"
+          className="arrival-decor-item absolute -translate-x-1/2 -translate-y-1/2"
           style={itemStyle(item, index)}
         >
           <span

@@ -120,6 +120,28 @@ describe("carte en verre dépoli du parcours d'arrivée", () => {
     expect(contrast(over("#ffffff", 0.72, clear), clear)).toBeGreaterThanOrEqual(4.5);
   });
 
+  function rgbaColor(name: string): string {
+    const match = new RegExp(`--${name}:\\s*rgba\\((\\d+),\\s*(\\d+),\\s*(\\d+),`).exec(root);
+    if (!match) throw new Error(`Variable introuvable : --${name}`);
+    return hex([Number(match[1]), Number(match[2]), Number(match[3])]);
+  }
+
+  it("ne trace jamais un arc du réseau plus fort que le contour du continent", () => {
+    expect(rgbaColor("auth-network-line")).toBe(rgbaColor("auth-continent-line"));
+    expect(rgbaAlpha("auth-network-line")).toBeLessThanOrEqual(rgbaAlpha("auth-continent-line"));
+  });
+
+  it("garde 4,5:1 sur la carte de l'accueil quand une capitale ou une lueur passe dessous", () => {
+    // Sous la carte, points et lueurs tombent à --auth-network-covered-opacity.
+    const covered = number("auth-network-covered-opacity");
+    for (const name of ["auth-capital-dot", "auth-network-glow"]) {
+      const under = over(token(root, name), covered, token(root, "auth-glow-a"));
+      const clear = over(token(root, "auth-glass"), number("auth-glass-clear-opacity"), under);
+      expect(contrast(token(root, "auth-text"), clear), name).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(over("#ffffff", 0.72, clear), clear), name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it("garde 3:1 pour un insigne de niveau posé sur la carte", () => {
     const onDark = block(".level-on-dark");
     for (const level of LEVELS) {

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type FormEvent, type ReactNode } from "react";
+import { ArrivalAction } from "../arrival/ArrivalAction.js";
 import { ArrivalLayout } from "../arrival/ArrivalLayout.js";
 import { Button } from "../ui/Button.js";
 import { fr } from "../../i18n/fr.js";
@@ -68,7 +69,11 @@ export function IntroStepLayout({
 
   return (
     <ArrivalLayout motion="calm" width={width}>
-      <form aria-labelledby={titleId} onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form
+        aria-labelledby={titleId}
+        onSubmit={handleSubmit}
+        className="relative flex flex-col gap-4"
+      >
         <div className="-my-2 flex items-center justify-between">
           {onBack ? (
             <button type="button" onClick={onBack} disabled={submitting} className={linkClass}>
@@ -112,24 +117,28 @@ export function IntroStepLayout({
           </p>
         )}
 
-        <Button
-          type="submit"
-          variant="inverse"
-          loading={submitting}
-          aria-disabled={Boolean(disabledReason) || undefined}
-          aria-describedby={disabledReason ? reasonId : undefined}
-          className={disabledReason ? "w-full cursor-not-allowed opacity-50" : "w-full"}
-        >
-          {submitLabel}
-        </Button>
-        {disabledReason && (
-          <p
-            id={reasonId}
-            className={showDisabledReason ? "text-center text-sm text-auth-text-muted" : "sr-only"}
+        <ArrivalAction>
+          <Button
+            type="submit"
+            variant="inverse"
+            loading={submitting}
+            aria-disabled={Boolean(disabledReason) || undefined}
+            aria-describedby={disabledReason ? reasonId : undefined}
+            className={disabledReason ? "w-full cursor-not-allowed opacity-50" : "w-full"}
           >
-            {disabledReason}
-          </p>
-        )}
+            {submitLabel}
+          </Button>
+          {disabledReason && (
+            <p
+              id={reasonId}
+              className={
+                showDisabledReason ? "text-center text-sm text-auth-text-muted" : "sr-only"
+              }
+            >
+              {disabledReason}
+            </p>
+          )}
+        </ArrivalAction>
       </form>
     </ArrivalLayout>
   );

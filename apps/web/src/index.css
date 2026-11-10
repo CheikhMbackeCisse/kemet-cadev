@@ -182,6 +182,10 @@
   grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
+.arrival-stage-sm {
+  --arrival-column: calc(25rem + 2rem);
+}
+
 .arrival-stage-md {
   --arrival-column: calc(28rem + 2rem);
 }
@@ -274,69 +278,186 @@
   background-color: var(--auth-tile-bg);
 }
 
-/*
- * Capitales sur le continent de l'accueil : un point fixe, et un anneau qui
- * s'élargit puis s'efface, une capitale toutes les 1,6 s.
- */
-@keyframes capital-pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  40%,
-  100% {
-    transform: scale(4.5);
-    opacity: 0;
-  }
-}
-
 .africa-watermark {
   height: min(78vh, calc(90vw * 1.124));
 }
 
-.capital-dot {
+/*
+ * Sur l'accueil, le continent remplit l'écran : sur téléphone, toute la
+ * largeur moins une marge, pour que les capitales du nord passent au-dessus
+ * de la carte et celles du sud au-dessous ; sur ordinateur, presque toute la
+ * hauteur, le réseau autour de la carte.
+ */
+.africa-watermark-network {
+  height: min(96vh, calc((100vw - 16px) * 1.124));
+  height: min(96dvh, calc((100vw - 16px) * 1.124));
+}
+
+/*
+ * Réseau des capitales, comme vu de nuit : points lumineux reliés par des
+ * arcs, villes en points pâles. Ce que la carte couvre s'atténue
+ * (data-covered, posé par ArrivalLayout) ; le masque des lueurs fait de même.
+ */
+.network-arc {
+  stroke: var(--auth-network-line);
+}
+
+.network-dot {
   position: absolute;
-  width: 6px;
-  height: 6px;
   border-radius: 999px;
-  background-color: var(--auth-capital-dot);
   transform: translate(-50%, -50%);
 }
 
-/* Cachée sans perdre sa place : la mesure suivante doit encore la situer. */
-.capital-dot[data-covered] {
+.capital-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--auth-capital-dot);
+  box-shadow: 0 0 6px 2px var(--auth-capital-halo);
+}
+
+.city-dot {
+  width: 3px;
+  height: 3px;
+  background-color: var(--auth-city-dot);
+}
+
+.network-dot[data-covered] {
+  opacity: var(--auth-network-covered-opacity);
+  box-shadow: none;
+}
+
+.network-covered-zone {
+  fill: black;
+  fill-opacity: calc(1 - var(--auth-network-covered-opacity));
+}
+
+/* Un élément du décor posé sur le réseau : caché, sans perdre sa place. */
+.arrival-decor-item[data-clash] {
   visibility: hidden;
 }
 
-.capital-dot[data-covered]::after {
-  animation: none;
+@media (min-width: 768px) {
+  .capital-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .city-dot {
+    width: 4px;
+    height: 4px;
+  }
 }
 
-.capital-dot::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--auth-capital-pulse);
-  border-radius: 999px;
+/*
+ * Une lueur part d'une capitale, glisse le long de l'arc puis s'efface à
+ * l'arrivée, et repart sur un autre arc (AfricaNetwork.tsx). Trois lueurs
+ * décalées d'un tiers de cycle. Épaisseurs en unités du contour : plus
+ * épaisses sur téléphone, où le continent est plus petit.
+ */
+@keyframes network-glow {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  64% {
+    opacity: 1;
+  }
+  70% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+
+.network-glow {
   opacity: 0;
-  animation: capital-pulse 8s ease-out var(--pulse-delay) infinite;
+  stroke: var(--auth-network-glow);
+  animation: network-glow 9s linear infinite;
+}
+
+.network-glow-halo {
+  stroke-opacity: 0.3;
+  stroke-width: 12;
+}
+
+.network-glow-core {
+  stroke-width: 5;
+}
+
+@media (min-width: 768px) {
+  .network-glow-halo {
+    stroke-width: 9;
+  }
+
+  .network-glow-core {
+    stroke-width: 3.5;
+  }
 }
 
 .arrival-root[data-paused] .arrival-drift,
-.arrival-root[data-paused] .capital-dot::after {
+.arrival-root[data-paused] .network-glow {
   animation-play-state: paused;
 }
 
-.arrival-root[data-still] .arrival-drift,
-.arrival-root[data-still] .capital-dot::after {
+/* Sur connexion lente et avec moins de mouvement : le réseau fixe, sans lueurs. */
+.arrival-root[data-still] .arrival-drift {
   animation: none;
 }
 
+.arrival-root[data-still] .network-glow {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .arrival-drift,
-  .capital-dot::after {
+  .arrival-drift {
     animation: none;
   }
+
+  .network-glow {
+    display: none;
+  }
+}
+
+/*
+ * Bouton principal d'une carte du parcours (ArrivalAction.tsx), collé au bas
+ * de l'écran quand la carte dépasse. Décollé de sa place (data-stuck), il
+ * prend toute la largeur de la carte (p-5, puis p-8 à partir de 640 px) et
+ * un fond de verre plus dense, au-dessus de la zone sûre de l'iPhone.
+ */
+.arrival-action {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.arrival-action[data-stuck] {
+  margin-inline: -1.25rem;
+  padding: 0.75rem 1.25rem max(0.75rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--auth-glass-border);
+  background-color: color-mix(in srgb, var(--auth-glass) 92%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+@media (min-width: 640px) {
+  .arrival-action[data-stuck] {
+    margin-inline: -2rem;
+    padding-inline: 2rem;
+  }
+}
+
+/* Un champ qui prend le focus ne passe pas sous le bouton collé. */
+:root[data-arrival] {
+  scroll-padding-bottom: 6rem;
 }
 
 /*

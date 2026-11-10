@@ -38,16 +38,18 @@ export function WelcomePage() {
   return (
     <ArrivalLayout
       motion="rich"
-      width="md"
+      width="sm"
       showLogo={false}
       pageFooter={<PoweredBy />}
       busy={status === "loading" || signedIn}
     >
-      <div className="flex flex-col items-center gap-4 text-center sm:gap-5">
+      <div className="flex flex-col items-center gap-3 text-center sm:gap-5">
         <span className="kemet-on-dark">
-          <KemetWordmark className="h-8 w-auto md:h-10" />
+          <KemetWordmark className="h-7 w-auto md:h-10" />
         </span>
-        <h1 className="text-balance text-xl font-bold leading-tight">{fr.intro.welcomeTitle}</h1>
+        <h1 className="text-balance text-lg font-bold leading-tight min-[375px]:text-xl">
+          {fr.intro.welcomeTitle}
+        </h1>
         <div className="flex w-full flex-col items-center gap-2">
           <a
             href={introQuestionPath("who")}

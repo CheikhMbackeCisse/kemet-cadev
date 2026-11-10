@@ -61,23 +61,23 @@ export const DECOR: Record<DecorScreen, Record<DecorBandSide, readonly DecorItem
   desktop: {
     start: [
       { content: python, x: 30, y: 13, duration: 19, delay: -3 },
-      { content: hello, x: 54, y: 32, duration: 23, delay: -11 },
-      { content: terminal, x: 22, y: 51, duration: 17, delay: -6 },
+      { content: hello, x: 50, y: 44, duration: 23, delay: -11 },
+      { content: terminal, x: 22, y: 56, duration: 17, delay: -6 },
       { content: javascript, x: 66, y: 68, duration: 21, delay: -14 },
       { content: npmRun, x: 38, y: 87, duration: 25, delay: -2 },
     ],
     end: [
       { content: typescript, x: 70, y: 15, duration: 20, delay: -8 },
-      { content: database, x: 30, y: 33, duration: 18, delay: -12 },
+      { content: database, x: 46, y: 33, duration: 18, delay: -12 },
       { content: gitPush, x: 62, y: 50, duration: 24, delay: -5 },
-      { content: kotlin, x: 34, y: 69, duration: 22, delay: -16 },
+      { content: kotlin, x: 48, y: 69, duration: 22, delay: -16 },
       { content: network, x: 74, y: 86, duration: 16, delay: -9 },
     ],
   },
   mobile: {
     start: [
       { content: python, x: 16, y: 40, duration: 19, delay: -3 },
-      { content: gitPush, x: 52, y: 70, duration: 24, delay: -5 },
+      { content: gitPush, x: 52, y: 28, duration: 24, delay: -5 },
       { content: typescript, x: 84, y: 36, duration: 20, delay: -8 },
     ],
     end: [
