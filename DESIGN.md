@@ -190,17 +190,22 @@ TypeScript, Kotlin), trois icônes Lucide (terminal, base de données, réseau,
 
 Sur l'accueil, les logos sont dans leurs vraies couleurs (Simple Icons) sur
 une pastille blanche pleine, sans flou ni ombre, et le continent, plus
-grand, porte un réseau vu comme de nuit : quatorze capitales en points
-lumineux à petit halo, chacune reliée à deux ou trois voisines par un arc
-fin et légèrement courbe, du Maghreb au Cap et de Dakar à la Corne, et dix-neuf autres
-grandes villes en points plus petits et plus pâles, sans liaison. Les arcs
+grand, porte un réseau vu comme de nuit : quatorze capitales du pourtour
+du continent en points lumineux à petit halo, chacune reliée à deux ou
+trois voisines par un arc fin et légèrement courbe, du Maghreb au Cap et de
+Dakar à la Corne, et dix-neuf autres grandes villes (dont Abuja, Lagos,
+Kinshasa, Luanda) en points plus petits et plus pâles, sans liaison. Le
+réseau fait le tour du centre, que la carte couvre sur ordinateur, au lieu
+de passer dessous. Les arcs
 ne sont jamais plus forts que le contour (même teinte, 38 % au lieu de
 40 %). Sur téléphone, le continent prend toute la largeur moins 8 px de
 chaque côté : Rabat, Alger, Tunis et Le Caire passent au-dessus de la
 carte, Pretoria et Maputo au-dessous ; sur ordinateur, il prend presque
 toute la hauteur et la carte, plus étroite (25 rem), laisse le réseau
-autour d'elle. Ce que la carte couvre s'atténue à 25 % (points, lueurs) ;
-les arcs restent et se devinent à travers le verre. Un élément du décor
+entier autour d'elle à partir de 1440 x 900 ; plus bas (1280 x 720), l'est
+passe sous la carte. Ce que la carte couvre s'atténue à 25 % (points,
+lueurs) ; les arcs gardent leur intensité, déjà sous celle du contour, et se
+devinent à travers le verre. Un élément du décor
 posé sur une capitale, une ville ou un arc visible est caché ; les places
 du décor sont choisies pour que ça n'arrive pas aux tailles courantes. La
 carte de l'accueil est plus claire (teinte à 50 %, flou de 1 px). Tout en
@@ -235,8 +240,9 @@ sans lueurs.
 
 Quand une carte dépasse de l'écran (petit téléphone, Safari et ses barres),
 son bouton principal reste collé au bas de l'écran, au-dessus de la zone
-sûre de l'iPhone, sur un fond de verre plus dense qui prend toute la largeur
-de la carte ; il retrouve sa place à la fin du défilement.
+sûre de l'iPhone, avec l'erreur d'envoi juste au-dessus de lui, sur un fond
+de verre plus dense qui prend toute la largeur de la carte ; il retrouve sa
+place à la fin du défilement, sans que rien d'autre ne bouge.
 
 Les logos de Simple Icons sont la seule exception au « jamais le logo d'un
 autre produit » du principe 6 : décor qui dit de quoi on parle, jamais

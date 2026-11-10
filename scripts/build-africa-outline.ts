@@ -86,7 +86,8 @@ const AFRICAN_IDS = new Set([
   "894",
 ]);
 
-// Capitales du réseau de l'accueil (liaisons dans
+// Capitales du réseau de l'accueil, toutes au bord du continent : sur
+// ordinateur, le centre est sous la carte de l'accueil (liaisons dans
 // apps/web/src/components/arrival/networkLayout.ts), longitude puis latitude.
 const CAPITALS = [
   { id: "rabat", name: "Rabat", position: [-6.85, 33.972] },
@@ -95,11 +96,11 @@ const CAPITALS = [
   { id: "caire", name: "Le Caire", position: [31.236, 30.044] },
   { id: "dakar", name: "Dakar", position: [-17.447, 14.693] },
   { id: "bamako", name: "Bamako", position: [-8.003, 12.639] },
-  { id: "abuja", name: "Abuja", position: [7.399, 9.076] },
+  { id: "tripoli", name: "Tripoli", position: [13.191, 32.887] },
   { id: "khartoum", name: "Khartoum", position: [32.56, 15.501] },
   { id: "addis", name: "Addis-Abeba", position: [38.758, 8.981] },
   { id: "nairobi", name: "Nairobi", position: [36.822, -1.292] },
-  { id: "luanda", name: "Luanda", position: [13.289, -8.839] },
+  { id: "windhoek", name: "Windhoek", position: [17.083, -22.561] },
   { id: "lusaka", name: "Lusaka", position: [28.323, -15.388] },
   { id: "pretoria", name: "Pretoria", position: [28.188, -25.746] },
   { id: "maputo", name: "Maputo", position: [32.573, -25.969] },
@@ -108,21 +109,21 @@ const CAPITALS = [
 // Autres grandes villes, sans liaison : de petits points pâles.
 const CITIES = [
   { id: "casablanca", name: "Casablanca", position: [-7.59, 33.573] },
-  { id: "tripoli", name: "Tripoli", position: [13.191, 32.887] },
   { id: "conakry", name: "Conakry", position: [-13.578, 9.641] },
   { id: "abidjan", name: "Abidjan", position: [-4.008, 5.36] },
   { id: "accra", name: "Accra", position: [-0.187, 5.604] },
   { id: "ouagadougou", name: "Ouagadougou", position: [-1.52, 12.371] },
+  { id: "abuja", name: "Abuja", position: [7.399, 9.076] },
   { id: "lagos", name: "Lagos", position: [3.379, 6.524] },
   { id: "kano", name: "Kano", position: [8.592, 12.002] },
   { id: "douala", name: "Douala", position: [9.768, 4.051] },
   { id: "ndjamena", name: "N'Djamena", position: [15.044, 12.135] },
   { id: "kinshasa", name: "Kinshasa", position: [15.266, -4.442] },
+  { id: "luanda", name: "Luanda", position: [13.289, -8.839] },
   { id: "kampala", name: "Kampala", position: [32.583, 0.348] },
   { id: "dar", name: "Dar es Salaam", position: [39.208, -6.792] },
   { id: "mogadiscio", name: "Mogadiscio", position: [45.318, 2.047] },
   { id: "harare", name: "Harare", position: [31.053, -17.829] },
-  { id: "windhoek", name: "Windhoek", position: [17.083, -22.561] },
   { id: "le-cap", name: "Le Cap", position: [18.424, -33.925] },
   { id: "durban", name: "Durban", position: [31.022, -29.859] },
   { id: "antananarivo", name: "Antananarivo", position: [47.508, -18.879] },

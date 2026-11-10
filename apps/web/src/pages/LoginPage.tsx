@@ -69,12 +69,12 @@ export function LoginPage() {
           >
             {fr.auth.forgotPasswordLink}
           </a>
-          {error && (
-            <p className="text-sm text-auth-danger" role="alert">
-              {error}
-            </p>
-          )}
           <ArrivalAction>
+            {error && (
+              <p className="text-sm text-auth-danger" role="alert">
+                {error}
+              </p>
+            )}
             <SubmitButton
               label={fr.auth.loginSubmit}
               variant="inverse"

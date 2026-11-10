@@ -136,12 +136,12 @@ export function SignupPage() {
               {fr.auth.passwordHint}
             </p>
           </div>
-          {error && (
-            <p className="text-sm text-auth-danger" role="alert">
-              {error}
-            </p>
-          )}
           <ArrivalAction>
+            {error && (
+              <p className="text-sm text-auth-danger" role="alert">
+                {error}
+              </p>
+            )}
             <SubmitButton
               label={fr.auth.signupSubmit}
               variant="inverse"

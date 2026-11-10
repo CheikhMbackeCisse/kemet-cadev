@@ -83,14 +83,14 @@ describe("ArrivalLayout", () => {
   });
 
   // Continent à l'échelle 1 (une unité de la boîte, un pixel), carte au
-  // milieu. Un point est placé d'après son style ; le logo Python du
+  // centre-est, sur Khartoum. Un point est placé d'après son style ; le logo Python du
   // téléphone est posé sur Dakar, tout autre élément du décor loin de tout.
   function mockLayout() {
     vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
       this: Element,
     ) {
       const style = (this as HTMLElement).style;
-      if (this.classList.contains("arrival-glass")) return rect(300, 400, 400, 200);
+      if (this.classList.contains("arrival-glass")) return rect(600, 300, 300, 200);
       if (this.classList.contains("africa-watermark-network")) {
         return rect(0, 0, AFRICA_OUTLINE_WIDTH, AFRICA_OUTLINE_HEIGHT);
       }
@@ -121,15 +121,15 @@ describe("ArrivalLayout", () => {
   it("atténue les capitales et les lueurs que la carte couvre, garde les autres", () => {
     mockLayout();
     const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
-    expect(dot(container, "abuja").hasAttribute("data-covered")).toBe(true);
+    expect(dot(container, "khartoum").hasAttribute("data-covered")).toBe(true);
     expect(dot(container, "dakar").hasAttribute("data-covered")).toBe(false);
     expect(dot(container, "pretoria").hasAttribute("data-covered")).toBe(false);
 
     const zone = container.querySelector(".network-covered-zone")!;
     expect(["x", "y", "width", "height"].map((name) => zone.getAttribute(name))).toEqual([
+      "600",
       "300",
-      "400",
-      "400",
+      "300",
       "200",
     ]);
   });

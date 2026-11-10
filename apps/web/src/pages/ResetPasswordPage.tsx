@@ -70,12 +70,12 @@ export function ResetPasswordPage() {
             autoFocus
           />
         </label>
-        {error && (
-          <p className="text-sm text-auth-danger" role="alert">
-            {error}
-          </p>
-        )}
         <ArrivalAction>
+          {error && (
+            <p className="text-sm text-auth-danger" role="alert">
+              {error}
+            </p>
+          )}
           <SubmitButton
             variant="inverse"
             label={fr.auth.resetPasswordSubmit}

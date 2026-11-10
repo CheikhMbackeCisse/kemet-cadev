@@ -2,27 +2,29 @@ import { AFRICA_CAPITALS, type AfricaPlace } from "./africaOutline.js";
 
 /**
  * Liaisons du réseau de l'accueil : chaque capitale à deux ou trois de ses
- * voisines, du Maghreb au Cap et de Dakar à la Corne. Chaque paire est
- * écrite dans le sens qui courbe l'arc vers l'intérieur des terres.
+ * voisines, du Maghreb au Cap et de Dakar à la Corne. Sur ordinateur, la
+ * carte couvre le centre du continent : le réseau en fait le tour plutôt que
+ * de passer dessous. Chaque paire est écrite dans le sens des aiguilles
+ * d'une montre, ce qui courbe l'arc vers l'intérieur des terres.
  */
 export const NETWORK_LINKS: ReadonlyArray<readonly [string, string]> = [
   ["rabat", "alger"],
   ["alger", "tunis"],
-  ["tunis", "caire"],
-  ["dakar", "rabat"],
-  ["bamako", "rabat"],
-  ["dakar", "bamako"],
-  ["bamako", "abuja"],
-  ["abuja", "khartoum"],
+  ["tunis", "tripoli"],
+  ["tripoli", "caire"],
   ["caire", "khartoum"],
+  ["tripoli", "khartoum"],
   ["khartoum", "addis"],
   ["addis", "nairobi"],
-  ["luanda", "abuja"],
   ["nairobi", "lusaka"],
-  ["luanda", "lusaka"],
   ["lusaka", "maputo"],
   ["maputo", "pretoria"],
-  ["pretoria", "luanda"],
+  ["pretoria", "windhoek"],
+  ["windhoek", "lusaka"],
+  ["dakar", "rabat"],
+  ["bamako", "rabat"],
+  ["alger", "bamako"],
+  ["dakar", "bamako"],
 ];
 
 // Courbure d'un arc : écart du point de contrôle, en part de la longueur.

@@ -426,38 +426,42 @@
 
 /*
  * Bouton principal d'une carte du parcours (ArrivalAction.tsx), collé au bas
- * de l'écran quand la carte dépasse. Décollé de sa place (data-stuck), il
- * prend toute la largeur de la carte (p-5, puis p-8 à partir de 640 px) et
- * un fond de verre plus dense, au-dessus de la zone sûre de l'iPhone.
+ * de l'écran quand la carte dépasse, au-dessus de la zone sûre de l'iPhone.
+ * La bande prend toute la largeur de la carte (p-5, puis p-8 à partir de
+ * 640 px) ; ses marges négatives rendent sa place à la mise en page, qui ne
+ * bouge donc pas quand elle se colle. Seul son fond de verre apparaît alors
+ * (data-stuck).
  */
 .arrival-action {
+  --arrival-action-x: 1.25rem;
+  --arrival-action-bottom: max(0.75rem, env(safe-area-inset-bottom));
   position: sticky;
   bottom: 0;
   z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin: -0.75rem calc(-1 * var(--arrival-action-x)) calc(-1 * var(--arrival-action-bottom));
+  padding: 0.75rem var(--arrival-action-x) var(--arrival-action-bottom);
+  border-top: 1px solid transparent;
+}
+
+@media (min-width: 640px) {
+  .arrival-action {
+    --arrival-action-x: 2rem;
+  }
 }
 
 .arrival-action[data-stuck] {
-  margin-inline: -1.25rem;
-  padding: 0.75rem 1.25rem max(0.75rem, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--auth-glass-border);
+  border-top-color: var(--auth-glass-border);
   background-color: color-mix(in srgb, var(--auth-glass) 92%, transparent);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
-@media (min-width: 640px) {
-  .arrival-action[data-stuck] {
-    margin-inline: -2rem;
-    padding-inline: 2rem;
-  }
-}
-
 /* Un champ qui prend le focus ne passe pas sous le bouton collé. */
 :root[data-arrival] {
-  scroll-padding-bottom: 6rem;
+  scroll-padding-bottom: 7rem;
 }
 
 /*

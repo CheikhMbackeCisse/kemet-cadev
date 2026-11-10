@@ -111,13 +111,12 @@ export function IntroStepLayout({
 
         <div className="flex flex-col gap-3">{children}</div>
 
-        {error && (
-          <p role="alert" className="text-sm font-medium text-auth-danger">
-            {error}
-          </p>
-        )}
-
         <ArrivalAction>
+          {error && (
+            <p role="alert" className="text-sm font-medium text-auth-danger">
+              {error}
+            </p>
+          )}
           <Button
             type="submit"
             variant="inverse"

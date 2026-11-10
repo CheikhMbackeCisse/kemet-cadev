@@ -135,11 +135,30 @@ function useNetworkAroundCard(
         item.toggleAttribute("data-clash", clash);
       });
     }
+    // Le fond est fixe et la carte défile (téléphone en paysage), ou la
+    // hauteur visible change avec les barres de Safari : on remesure aussi,
+    // une fois par image au plus.
+    let frame = 0;
+    function schedule() {
+      if (frame === 0) {
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          update();
+        });
+      }
+    }
     update();
     const observer = new ResizeObserver(update);
     observer.observe(cardElement);
     observer.observe(document.documentElement);
-    return () => observer.disconnect();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(frame);
+    };
   }, [root, card, enabled]);
 }
 

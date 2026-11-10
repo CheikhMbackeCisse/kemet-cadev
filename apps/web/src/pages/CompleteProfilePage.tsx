@@ -54,12 +54,12 @@ export function CompleteProfilePage() {
           <Input value={handle} onChange={(event) => setHandle(event.target.value.toLowerCase())} />
           <span className="text-xs text-auth-text-muted">{fr.auth.handleHint}</span>
         </label>
-        {error && (
-          <p className="text-sm text-auth-danger" role="alert">
-            {error}
-          </p>
-        )}
         <ArrivalAction>
+          {error && (
+            <p className="text-sm text-auth-danger" role="alert">
+              {error}
+            </p>
+          )}
           <SubmitButton
             variant="inverse"
             label={fr.auth.completeProfileSubmit}

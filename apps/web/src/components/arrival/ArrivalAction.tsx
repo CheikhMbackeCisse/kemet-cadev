@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
- * Bouton principal d'une carte du parcours d'arrivée, dernier enfant d'un
- * formulaire posé en `relative`. Quand la carte dépasse de l'écran (petit
+ * Bouton principal d'une carte du parcours d'arrivée, et l'erreur d'envoi
+ * au-dessus de lui pour qu'on la voie là où l'on a cliqué, dernier enfant
+ * d'un formulaire posé en `relative`. Quand la carte dépasse de l'écran (petit
  * téléphone, Safari et ses barres), il reste collé au bas de l'écran pendant
  * que le reste défile, sur un fond de verre qui le sépare de ce qui passe
  * dessous. Le repère, posé au bas du formulaire, marque sa place normale :

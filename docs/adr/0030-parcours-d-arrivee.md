@@ -109,9 +109,12 @@ navigateur dès que la carte dépassait de l'écran.
 Décision.
 
 - Un réseau vu comme de nuit, sur l'accueil seulement : quatorze capitales
-  reliées chacune à deux ou trois voisines (dix-sept arcs, un seul réseau,
-  `networkLayout.test.ts`), dix-neuf autres villes en points pâles sans
-  liaison. Capitales et villes placées par `scripts/build-africa-outline.ts`
+  du pourtour reliées chacune à deux ou trois voisines (dix-sept arcs, un
+  seul réseau, `networkLayout.test.ts`), dix-neuf autres villes en points
+  pâles sans liaison. Sur ordinateur, la carte couvre le centre du
+  continent : Abuja et Luanda, qui y tombaient toujours, sont devenues des
+  villes, remplacées par Tripoli et Windhoek, et le réseau fait le tour de la
+  carte au lieu de passer dessous. Capitales et villes placées par `scripts/build-africa-outline.ts`
   dans la projection du contour, liaisons écrites à la main dans
   `networkLayout.ts`, dans le sens qui courbe l'arc vers l'intérieur des
   terres.
@@ -122,7 +125,10 @@ Décision.
   plus étroite.
 - Plutôt que cacher ce que la carte couvre, `ArrivalLayout` l'atténue à
   25 % : les points par un attribut, les lueurs par un masque SVG dont il
-  pose le rectangle de la carte. `tokens.test.ts` vérifie le contraste du
+  pose le rectangle de la carte, à chaque changement de taille et au
+  défilement. Les arcs ne passent pas par ce masque : ils doivent se deviner
+  à travers le verre, et le contraste du texte est déjà vérifié contre le
+  contour, plus fort qu'eux. `tokens.test.ts` vérifie le contraste du
   texte de la carte avec une capitale ou une lueur dessous. Le même calcul
   cache un élément du décor posé sur un point ou un arc visible.
 - Trois lueurs en CSS, décalées d'un tiers de cycle, qui passent d'un arc à
@@ -131,8 +137,10 @@ Décision.
   doit bouger.
 - Le bouton principal des questions, de l'onboarding et des écrans de compte
   est collé au bas de l'écran quand la carte dépasse (`ArrivalAction`,
-  `position: sticky`, zone sûre de l'iPhone), avec un fond de verre posé
-  seulement quand il a quitté sa place.
+  `position: sticky`, zone sûre de l'iPhone), avec l'erreur d'envoi au-dessus
+  de lui et un fond de verre posé seulement quand il a quitté sa place. Sa
+  bande garde la même place dans la mise en page collée ou non : rien ne
+  saute pendant le défilement.
 
 Conséquences. Sur téléphone, la carte couvre le centre du réseau ; on lit
 le nord au-dessus d'elle, l'Afrique australe au-dessous, et les arcs du
