@@ -109,8 +109,6 @@ export function WorkDiscussion({ work, viewer }: WorkDiscussionProps) {
 
   return (
     <section className="flex flex-col gap-4" aria-label={fr.works.tabDiscussion}>
-      <p className="text-sm text-subtle">{fr.works.discussionHint}</p>
-
       {loading ? (
         <div className="flex flex-col gap-3" role="status" aria-label={fr.works.tabDiscussion}>
           <Skeleton className="h-12 w-full" />

@@ -69,9 +69,8 @@ describe("WorkMatchPanel", () => {
 
   it("invite un visiteur à se connecter sans rien appeler", () => {
     render(<WorkMatchPanel subject={{ type: "project", slug: "appli" }} signedIn={false} />);
-    const button = screen.getByRole("button", { name: "Qui a travaillé sur ce sujet ?" });
-    expect((button as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("Connecte-toi pour demander à @kemet.")).toBeTruthy();
+    const link = screen.getByRole("link", { name: "Qui a travaillé sur ce sujet ?" });
+    expect(link.getAttribute("href")).toBe("/connexion");
     expect(findWorkMatches).not.toHaveBeenCalled();
   });
 });

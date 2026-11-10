@@ -22,16 +22,10 @@ export function OpenProfilesStrip() {
 
   if (profiles.length === 0) return null;
   return (
-    <section
-      aria-labelledby={titleId}
-      className="flex flex-col gap-2 border-b border-border pb-4"
-    >
-      <div>
-        <h2 id={titleId} className="text-md font-semibold text-text">
-          {fr.talent.openProfilesTitle}
-        </h2>
-        <p className="text-sm text-text-2">{fr.talent.openProfilesHint}</p>
-      </div>
+    <section aria-labelledby={titleId} className="flex flex-col gap-2 border-b border-border pb-4">
+      <h2 id={titleId} className="text-md font-semibold text-text">
+        {fr.talent.openProfilesTitle}
+      </h2>
       <ul className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1">
         {profiles.map((profile) => (
           <li key={profile.id} className="w-40 shrink-0 snap-start">

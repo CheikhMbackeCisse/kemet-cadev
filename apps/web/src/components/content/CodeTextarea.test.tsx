@@ -18,7 +18,7 @@ const FENCE = "```";
 
 async function chooseLanguage(name: string) {
   // Radix ouvre son menu au clavier dans jsdom, qui ne simule pas les pointeurs.
-  fireEvent.keyDown(screen.getByRole("button", { name: "Insérer du code" }), { key: "Enter" });
+  fireEvent.keyDown(screen.getByRole("button", { name: "Code" }), { key: "Enter" });
   fireEvent.click(await screen.findByRole("menuitem", { name }));
   await act(() => new Promise((resolve) => requestAnimationFrame(() => resolve(null))));
 }

@@ -145,7 +145,7 @@ export function ThreadView({
         <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
           {pasteNotice}
           <div className="flex gap-2">
-            <CodeButton textareaRef={composerRef} onChange={setDraft} iconOnly />
+            <CodeButton textareaRef={composerRef} onChange={setDraft} />
             <Textarea
               ref={composerRef}
               placeholder={fr.chat.threadComposerPlaceholder}

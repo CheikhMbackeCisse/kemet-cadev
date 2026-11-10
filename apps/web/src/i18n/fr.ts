@@ -22,7 +22,6 @@ export const fr = {
     publicSpaces: "Espaces publics",
   },
   install: {
-    banner: "Installe Kemet sur ton écran d'accueil pour l'ouvrir comme une app.",
     cta: "Installer Kemet",
     dismiss: "Ne plus proposer",
     shortcutPublish: "Publier",
@@ -48,7 +47,6 @@ export const fr = {
     newTab: "(nouvel onglet)",
     table: "Tableau",
     codeButton: "Code",
-    insertCode: "Insérer du code",
     inlineCode: "Code en ligne",
     pastedAsCode: "Collé comme code",
     undoPasteAsCode: "Remettre en texte",
@@ -225,6 +223,7 @@ export const fr = {
     loadError: "Ton profil n'a pas pu être chargé.",
   },
   demo: {
+    shortLabel: "Démo",
     notice: "Données de démonstration",
     title: "Données de démonstration",
     paragraphs: [
@@ -248,7 +247,6 @@ export const fr = {
     visitorCta: "Créer un compte",
     levelsTitle: "Les cinq niveaux",
     fromPoints: (points: string) => `À partir de ${points} points`,
-    memberCount: (count: string, plural: boolean) => `${count} ${plural ? "membres" : "membre"}`,
     youAreHere: "Toi",
     helpTitle: "Entraide",
     rule: {
@@ -272,8 +270,6 @@ export const fr = {
     regularityTitle: "Régularité",
     regularity: (perDay: number, days: number, cap: string) =>
       `${perDay} points par jour actif sur les ${days} derniers jours, jusqu'à ${cap} points.`,
-    principle:
-      "Le parcours seul mène jusqu'à Scribe. Seule l'entraide fait passer Architecte puis Légende.",
     loadError: "Les niveaux n'ont pas pu être chargés.",
     points: (amount: number) => `+${amount}`,
   },
@@ -604,9 +600,6 @@ export const fr = {
   },
   skills: {
     title: "Skills",
-    principle:
-      "Un skill est une note écrite une fois. @kemet s'en sert pour répondre et cite toujours son auteur.",
-    browse: "Voir les skills",
     askKemet: "Demander à @kemet avec ce skill",
     askKemetSignIn: "Se connecter pour demander à @kemet",
     askKemetTitle: "Choisis un salon",
@@ -618,7 +611,6 @@ export const fr = {
     askKemetLoadingError: "Impossible de charger tes salons.",
     askKemetDraft: (slug: string) => `@kemet avec ${slug}, `,
     createTitle: "Publier un skill",
-    showAll: "Voir tous les skills",
     create: "Publier",
     back: "Retour aux skills",
     nameLabel: "Nom",
@@ -696,7 +688,7 @@ export const fr = {
     reply: "Répondre",
     replyAriaLabel: (count: number) =>
       count === 1 ? "Répondre, 1 réponse" : `Répondre, ${count} réponses`,
-    replyPlaceholder: "Répondre…",
+    replyPlaceholder: "Répondre, ou @kemet suivi d'une question…",
     replyCount: (count: number) => (count <= 1 ? `${count} réponse` : `${count} réponses`),
     replySendError: "La réponse n'a pas pu être envoyée.",
     replyDeleteError: "La réponse n'a pas pu être supprimée.",
@@ -704,7 +696,6 @@ export const fr = {
     noReplies: "Aucune réponse pour l'instant.",
     askKemetExplain: "Demander à @kemet d'expliquer",
     assistantPending: "@kemet rédige une réponse…",
-    replyHint: "Écris @kemet suivi d'une question pour qu'il réponde sous ce post.",
     tabProjets: "Projets",
     noProjects: "Aucun projet récent dans le fil. Publie le tien pour trouver de l'aide.",
     noProjectsVisitor: "Aucun projet récent dans le fil. Parcours tous les projets.",
@@ -957,7 +948,6 @@ export const fr = {
     matchLoading: "@kemet cherche parmi les travaux publiés…",
     matchEmpty: "Aucun travail publié ne porte encore sur ce sujet.",
     matchError: "La recherche n'a pas pu aboutir.",
-    matchSignIn: "Connecte-toi pour demander à @kemet.",
     matchWithoutAssistant: "Sans l'assistant",
     matchWithoutAssistantUnavailable:
       "L'assistant est saturé : voici le résultat de la recherche seule.",
@@ -1010,8 +1000,6 @@ export const fr = {
           ? "1 personne y a écrit"
           : `${count} personnes y ont écrit`,
     authorTag: "Auteur",
-    discussionHint:
-      "Discussion publique : les auteurs et toutes les personnes intéressées par ce travail.",
     discussionEmpty: "Aucun message pour l'instant. Pose la première question aux auteurs.",
     discussionUnavailable: "Ce travail n'a pas de discussion.",
     discussionLoadError: "Impossible de charger la discussion.",
@@ -1053,7 +1041,8 @@ export const fr = {
     reviewNoteLabel: "Motif (optionnel)",
     reviewError: "Cette décision n'a pas pu être enregistrée.",
     reviewNote: (note: string) => `Note de l'administrateur : ${note}`,
-    createdBy: (handle: string) => `proposée par ${handle}`,
+    createdByLabel: "Proposée par",
+    exampleBadge: "Exemple",
     teamsTab: "Équipes",
     submissionsTab: "Soumissions",
     resultsTab: "Résultats",
@@ -1064,8 +1053,7 @@ export const fr = {
     joinTeam: "Rejoindre",
     joinTeamError: "Impossible de rejoindre cette équipe.",
     noTeams: "Aucune équipe pour l'instant.",
-    captain: (handle: string) => `capitaine : ${handle}`,
-    members: (handles: string[]) => `membres : ${handles.join(", ")}`,
+    captainBadge: "Capitaine",
     hasSubmission: "A déjà soumis",
     submitProjectTitle: "Soumettre un projet",
     submitProjectSubmit: "Soumettre",
@@ -1317,8 +1305,6 @@ export const fr = {
       entrepreneur: "Direction d'entreprise",
     },
     proTitle: "Kemet Pro",
-    proPitch:
-      "Plus de quota IA, tes statistiques de profil, et plus de place dans tes espaces privés.",
     proCta: "Découvrir Kemet Pro",
     helpsBeginners: "Aide les débutants",
   },
@@ -1357,23 +1343,10 @@ export const fr = {
       count === 1 ? "1 demande d'aide ouverte" : `${count} demandes d'aide ouvertes`,
   },
   beginners: {
-    label: "Débutant",
-    filter: "Pour débuter",
     postCheckbox: "Marquer ce post « Débutant »",
     skillCheckbox: "Marquer ce skill « Débutant »",
-    noPosts: "Aucun post marqué Débutant pour l'instant.",
-    noPostsAction: "Poser une question",
-    noSkills: "Aucun skill marqué Débutant pour l'instant.",
-    spaceTitle: "Débuter en informatique",
-    spacePitch:
-      "Un espace pour poser toutes les questions, choisir ses études et lancer un premier projet.",
-    spaceOpen: "Ouvrir l'espace",
-    spaceJoin: "Rejoindre l'espace",
-    spaceDismiss: "Masquer cette suggestion",
-    spaceJoinError: "Impossible de rejoindre l'espace. Réessaie.",
   },
   talent: {
     openProfilesTitle: "Profils disponibles pour des opportunités",
-    openProfilesHint: "Des personnes qui cherchent un poste, une mission ou un stage.",
   },
 } as const;

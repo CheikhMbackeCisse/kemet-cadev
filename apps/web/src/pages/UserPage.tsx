@@ -388,10 +388,7 @@ export function UserPage() {
           <Card variant="plain" className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 items-start gap-3">
               <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-md font-semibold text-text">{fr.profile.proTitle}</p>
-                <p className="text-sm text-text-2">{fr.profile.proPitch}</p>
-              </div>
+              <p className="min-w-0 text-md font-semibold text-text">{fr.profile.proTitle}</p>
             </div>
             <a
               href="/pro"

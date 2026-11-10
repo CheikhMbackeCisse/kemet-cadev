@@ -60,15 +60,13 @@ export function WorkMatchPanel({ subject, signedIn, className }: WorkMatchPanelP
             {fr.works.matchButton}
           </Button>
         ) : (
-          <div className="flex flex-col gap-1">
-            <Button variant="secondary" disabled className="self-start">
-              <UsersRound className="size-4" aria-hidden="true" />
-              {fr.works.matchButton}
-            </Button>
-            <a href="/connexion" className="text-xs text-link hover:underline">
-              {fr.works.matchSignIn}
-            </a>
-          </div>
+          <a
+            href="/connexion"
+            className="inline-flex h-control items-center gap-2 self-start rounded-control border border-border-strong bg-transparent px-3 text-sm font-medium text-text hover:bg-surface-2 max-md:h-control-mobile"
+          >
+            <UsersRound className="size-4" aria-hidden="true" />
+            {fr.works.matchButton}
+          </a>
         ))}
 
       {state === "loading" && (

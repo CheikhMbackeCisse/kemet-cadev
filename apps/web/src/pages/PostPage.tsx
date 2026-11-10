@@ -311,6 +311,7 @@ export function PostPage() {
     return (
       <ReadingPage
         activeSection="fil"
+        width="feed"
         header={header}
         state={
           loading
@@ -345,6 +346,7 @@ export function PostPage() {
     <>
       <ReadingPage
         activeSection="fil"
+        width="feed"
         header={header}
         className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
       >
@@ -566,7 +568,6 @@ export function PostPage() {
                   {fr.feed.reply}
                 </Button>
               </div>
-              <p className="text-xs text-muted">{fr.feed.replyHint}</p>
             </div>
           )}
         </div>

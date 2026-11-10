@@ -1,5 +1,5 @@
 import * as RadixTabs from "@radix-ui/react-tabs";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
 
 export interface TabItem {
@@ -20,8 +20,15 @@ export interface TabsProps {
   layout?: "start" | "centered";
 }
 
+// Le panneau actif est rendu hors de RadixTabs.Content : son Presence lit
+// getComputedStyle au montage, ce qui forçait le recalcul de style de tout
+// le contenu (0,42 s pour le fil en CPU x4).
 export function Tabs({ items, value, onValueChange, className, layout = "start" }: TabsProps) {
   const centered = layout === "centered";
+  const baseId = useId();
+  const triggerId = (itemValue: string) => `${baseId}-tab-${itemValue}`;
+  const panelId = (itemValue: string) => `${baseId}-panel-${itemValue}`;
+  const active = items.find((item) => item.value === value);
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className={className}>
       <RadixTabs.List
@@ -34,6 +41,8 @@ export function Tabs({ items, value, onValueChange, className, layout = "start" 
           <RadixTabs.Trigger
             key={item.value}
             value={item.value}
+            id={triggerId(item.value)}
+            aria-controls={panelId(item.value)}
             className={cn(
               "relative -mb-px rounded-control text-muted transition-colors duration-150 hover:text-text",
               centered
@@ -47,11 +56,17 @@ export function Tabs({ items, value, onValueChange, className, layout = "start" 
           </RadixTabs.Trigger>
         ))}
       </RadixTabs.List>
-      {items.map((item) => (
-        <RadixTabs.Content key={item.value} value={item.value} className="pt-4">
-          {item.content}
-        </RadixTabs.Content>
-      ))}
+      {active && (
+        <div
+          role="tabpanel"
+          id={panelId(active.value)}
+          aria-labelledby={triggerId(active.value)}
+          tabIndex={0}
+          className="pt-4"
+        >
+          {active.content}
+        </div>
+      )}
     </RadixTabs.Root>
   );
 }

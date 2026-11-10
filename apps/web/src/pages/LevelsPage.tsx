@@ -177,10 +177,7 @@ export function LevelsPage() {
 
   return (
     <RailPage activeMobileTab="moi" className="gap-8 px-4 pt-3 lg:pt-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-bold text-text">{fr.levels.pageTitle}</h1>
-        <p className="text-base text-text-2">{fr.levels.principle}</p>
-      </div>
+      <h1 className="text-lg font-bold text-text">{fr.levels.pageTitle}</h1>
 
       {error ? (
         <ErrorState message={fr.levels.loadError} retry={{ label: fr.chat.retry, onClick: load }} />
@@ -234,9 +231,6 @@ export function LevelsPage() {
                       {fr.levels.fromPoints(exactNumber.format(entry.minPoints))}
                     </span>
                   </div>
-                  <span className="shrink-0 text-sm tabular-nums text-muted">
-                    {fr.levels.memberCount(formatCount(entry.memberCount), entry.memberCount > 1)}
-                  </span>
                 </li>
               ))}
             </ol>

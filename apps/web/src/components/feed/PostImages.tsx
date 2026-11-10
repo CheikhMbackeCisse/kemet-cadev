@@ -22,7 +22,7 @@ function image(attachment: Attachment, frame: string, fit: "contain" | "cover", 
       loading="lazy"
       decoding="async"
       className={cn(
-        "block w-full bg-surface-2",
+        "block max-h-[512px] w-full bg-surface-2",
         frame,
         fit === "contain" ? "object-contain" : "object-cover",
       )}

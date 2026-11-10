@@ -1,7 +1,7 @@
-import { FolderGit2, Plus, Rss, Sprout } from "lucide-react";
+import { FolderGit2, Plus, Rss } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { isBeginnerAudience, prefersTalentFeed, type PostSummary } from "@kemet/shared";
+import { prefersTalentFeed, type PostSummary } from "@kemet/shared";
 import {
   ChatApiError,
   createPostFeedback,
@@ -30,8 +30,6 @@ import { Dialog } from "../components/ui/Dialog.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { Tabs } from "../components/ui/Tabs.js";
-import { FilterChip } from "../components/ui/FilterChip.js";
-import { BeginnerSpaceCard } from "../components/beginners/BeginnerSpaceCard.js";
 import { OpenProfilesStrip } from "../components/talent/OpenProfilesStrip.js";
 import { useToast } from "../components/ui/Toast.js";
 import { InstallBanner } from "../components/shell/InstallBanner.js";
@@ -85,48 +83,21 @@ function PostListItem({
 
 // RH et entrepreneurs : une carte projet après chaque groupe de trois posts.
 const TALENT_POSTS_PER_PROJECT_CARD = 3;
-const BEGINNER_CARD_DISMISSED_KEY = "kemet:beginner-space-card-dismissed";
-
-function readBeginnerCardDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(BEGINNER_CARD_DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function initialBeginnerFilter(): boolean {
-  return new URLSearchParams(window.location.search).get("filtre") === "debuter";
-}
 
 export function FeedPage() {
   const toast = useToast();
-  const { status, profile, isSuspended, onboarding } = useSession();
+  const { status, profile, isSuspended } = useSession();
   const canInteract = status === "ready" && !isSuspended;
-  const [beginnerOnly, setBeginnerOnly] = useState(initialBeginnerFilter);
-  const [beginnerCardDismissed, setBeginnerCardDismissed] = useState(readBeginnerCardDismissed);
   const talentFeed = profile !== null && prefersTalentFeed(profile.role);
-  const showBeginnerSuggestion =
-    status === "ready" &&
-    profile !== null &&
-    isBeginnerAudience({
-      role: profile.role,
-      interests: onboarding?.interests ?? [],
-      intents: onboarding?.intents ?? [],
-    }) &&
-    !beginnerCardDismissed;
   // "Pour toi" par defaut pour tout le monde : un nouveau compte ne suit
   // encore personne, et ouvrait donc le fil sur une page vide.
   const [tab, setTab] = useState<FeedView>("pour-toi");
   const queryClient = useQueryClient();
-  const queryKey = feedQueryKey(tab, beginnerOnly);
+  const queryKey = feedQueryKey(tab);
   const feed = useQuery({
     queryKey,
     queryFn: async () =>
-      mergeFreshFirstPage(
-        await fetchFeed(tab, beginnerOnly),
-        queryClient.getQueryData<FeedData>(queryKey),
-      ),
+      mergeFreshFirstPage(await fetchFeed(tab), queryClient.getQueryData<FeedData>(queryKey)),
   });
   const posts = feed.data?.posts ?? [];
   const projects = feed.data?.projects ?? [];
@@ -151,30 +122,15 @@ export function FeedPage() {
     void feed.refetch();
   }
 
-  function toggleBeginner(pressed: boolean) {
-    setBeginnerOnly(pressed);
-    window.history.replaceState(window.history.state, "", pressed ? "/fil?filtre=debuter" : "/fil");
-  }
-
-  function dismissBeginnerCard() {
-    setBeginnerCardDismissed(true);
-    try {
-      window.localStorage.setItem(BEGINNER_CARD_DISMISSED_KEY, "1");
-    } catch {
-      // Stockage indisponible (navigation privée) : la carte revient au prochain chargement.
-    }
-  }
-
   useEffect(() => {
     if (status === "visitor")
       setTab((current) => (current === "abonnements" ? "pour-toi" : current));
   }, [status]);
 
   async function loadMore() {
-    const source = beginnerOnly ? "debuter" : tab;
-    if (!nextCursor || source === "projets") return;
+    if (!nextCursor || tab === "projets") return;
     try {
-      const page = await listPosts(source, nextCursor);
+      const page = await listPosts(tab, nextCursor);
       updateFeed((data) => ({
         ...data,
         posts: [...data.posts, ...page.items],
@@ -290,19 +246,7 @@ export function FeedPage() {
       retry={{ label: fr.chat.retry, onClick: () => reload() }}
     />
   ) : posts.length === 0 ? (
-    beginnerOnly ? (
-      <EmptyState
-        icon={Sprout}
-        message={fr.beginners.noPosts}
-        action={
-          canInteract
-            ? { label: fr.beginners.noPostsAction, onClick: () => navigate("/fil/nouveau") }
-            : undefined
-        }
-      />
-    ) : (
-      <EmptyState icon={Rss} message={fr.feed.noPosts} />
-    )
+    <EmptyState icon={Rss} message={fr.feed.noPosts} />
   ) : (
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col divide-y divide-border">
@@ -344,12 +288,6 @@ export function FeedPage() {
     <div className="flex items-center justify-between">
       <h1 className="text-lg font-bold text-text">{fr.feed.title}</h1>
       <div className="flex items-center gap-2">
-        <FilterChip
-          pressed={beginnerOnly}
-          onPressedChange={toggleBeginner}
-          label={fr.beginners.filter}
-          icon={Sprout}
-        />
         {canInteract && (
           <HeaderActionLink href="/fil/nouveau" icon={Plus}>
             {fr.feed.newPostLink}
@@ -363,67 +301,47 @@ export function FeedPage() {
     <>
       <ReadingPage
         activeSection="fil"
+        width="feed"
         header={header}
         className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
       >
-        {status === "visitor" && (
-          <>
-            <VisitorBanner />
-            {/* Ce qui distingue Kemet, dit en une ligne à qui arrive sans compte. */}
-            <p className="text-sm text-text-2">
-              {fr.skills.principle}{" "}
-              <a href="/skills" className="text-link hover:underline">
-                {fr.skills.browse}
-              </a>
-            </p>
-          </>
-        )}
+        {status === "visitor" && <VisitorBanner />}
         {status === "ready" && <InstallBanner />}
         {isSuspended && <SuspendedBanner />}
 
-        {beginnerOnly ? (
-          <div className="flex flex-col gap-4">
-            <BeginnerSpaceCard canJoin={canInteract} />
-            {feedContent}
-          </div>
-        ) : (
-          /* Un visiteur n'a pas d'abonnements : seulement "Pour toi" et "Projets". */
-          <Tabs
-            layout="centered"
-            value={tab}
-            onValueChange={(value) => setTab(value as FeedView)}
-            items={[
-              {
-                value: "pour-toi",
-                label: fr.feed.tabPourToi,
-                content:
-                  tab === "pour-toi" ? (
-                    <div className="flex flex-col gap-4">
-                      {showBeginnerSuggestion && (
-                        <BeginnerSpaceCard canJoin={canInteract} onDismiss={dismissBeginnerCard} />
-                      )}
-                      {talentFeed && <OpenProfilesStrip />}
-                      {feedContent}
-                    </div>
-                  ) : null,
-              },
-              ...(status === "visitor"
-                ? []
-                : [
-                    {
-                      value: "abonnements",
-                      label: fr.feed.tabAbonnements,
-                      content: tab === "abonnements" ? feedContent : null,
-                    },
-                  ]),
-              {
-                value: "projets",
-                label: fr.feed.tabProjets,
-                content: tab === "projets" ? projectsContent : null,
-              },
-            ]}
-          />
-        )}
+        {/* Un visiteur n'a pas d'abonnements : seulement "Pour toi" et "Projets". */}
+        <Tabs
+          layout="centered"
+          value={tab}
+          onValueChange={(value) => setTab(value as FeedView)}
+          items={[
+            {
+              value: "pour-toi",
+              label: fr.feed.tabPourToi,
+              content:
+                tab === "pour-toi" ? (
+                  <div className="flex flex-col gap-4">
+                    {talentFeed && <OpenProfilesStrip />}
+                    {feedContent}
+                  </div>
+                ) : null,
+            },
+            ...(status === "visitor"
+              ? []
+              : [
+                  {
+                    value: "abonnements",
+                    label: fr.feed.tabAbonnements,
+                    content: tab === "abonnements" ? feedContent : null,
+                  },
+                ]),
+            {
+              value: "projets",
+              label: fr.feed.tabProjets,
+              content: tab === "projets" ? projectsContent : null,
+            },
+          ]}
+        />
 
         <Dialog
           open={feedbackPostId !== null}

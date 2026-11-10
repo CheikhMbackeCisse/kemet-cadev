@@ -5,7 +5,7 @@ import { Tooltip } from "../ui/Tooltip.js";
 
 export const DEMO_DATA_PATH = "/donnees-de-demo";
 
-/** Pied de la barre d'activité : une icône discrète, son sens au survol. */
+/** Pied de la barre d'activité : une icône et un mot, la phrase entière au survol. */
 export function ActivityBarDemoNotice() {
   const config = useSiteConfig();
   if (!config?.demoContentNotice) return null;
@@ -14,9 +14,10 @@ export function ActivityBarDemoNotice() {
       <a
         href={DEMO_DATA_PATH}
         aria-label={fr.demo.notice}
-        className="mt-2 inline-flex size-control items-center justify-center rounded-control text-subtle hover:bg-surface-2 hover:text-text"
+        className="mt-2 inline-flex w-12 flex-col items-center gap-0.5 rounded-control py-1 text-xs text-subtle hover:bg-surface-2 hover:text-text"
       >
         <FlaskConical className="size-4" aria-hidden="true" />
+        <span aria-hidden="true">{fr.demo.shortLabel}</span>
       </a>
     </Tooltip>
   );

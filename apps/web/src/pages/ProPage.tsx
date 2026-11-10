@@ -37,7 +37,6 @@ export function ProPage() {
               <h1 className="text-lg font-bold text-text">{fr.pro.title}</h1>
               <Badge>{fr.pro.previewBadge}</Badge>
             </div>
-            <p className="text-sm text-subtle">{fr.pro.subtitle}</p>
           </div>
         </div>
       </div>

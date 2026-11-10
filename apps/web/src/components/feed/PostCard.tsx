@@ -1,16 +1,15 @@
 import { navigate } from "../../lib/navigation/navigate.js";
-import type { MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { Bookmark, CheckCircle2, Heart, MessageSquare, Share2 } from "lucide-react";
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
-import { BeginnerBadge } from "../beginners/BeginnerBadge.js";
 import { Button } from "../ui/Button.js";
 import { IconButton } from "../ui/IconButton.js";
 import { MoreActionsMenu } from "../ui/MoreActionsMenu.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
-import { ReportMenu } from "../moderation/ReportMenu.js";
+import { ReportDialog } from "../moderation/ReportMenu.js";
 import { PostImages } from "./PostImages.js";
 import { AskKemetChip } from "./AskKemetChip.js";
 import { RichText } from "../content/RichText.js";
@@ -83,6 +82,10 @@ function WorkPreview({ work }: { work: PostSummary["work"] }) {
 // se suivent séparés par un filet (posé par la liste), le fond ne change
 // qu'au survol, sur bureau, quand la ligne mène au post.
 const POST_ROW_CLASS = "-mx-4 px-4 py-4 lg:-mx-3 lg:px-3";
+// Le navigateur saute style, mise en page et peinture des posts hors de
+// l'écran ; "auto" garde la dernière hauteur mesurée, pour que la position
+// de lecture rendue au retour reste exacte.
+const OFFSCREEN_SKIP_CLASS = "[content-visibility:auto] [contain-intrinsic-size:auto_220px]";
 
 export interface PostCardProps {
   post: PostSummary;
@@ -134,6 +137,7 @@ export function PostCard({
     navigate(bodyHref);
   }
   const toast = useToast();
+  const [reportOpen, setReportOpen] = useState(false);
   async function share() {
     const outcome = await shareLink(
       `${window.location.origin}/fil/${post.id}`,
@@ -153,6 +157,7 @@ export function PostCard({
     <Tag
       className={cn(
         POST_ROW_CLASS,
+        bodyHref && OFFSCREEN_SKIP_CLASS,
         bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2",
       )}
     >
@@ -175,8 +180,31 @@ export function PostCard({
               handle={post.authorHandle}
               level={authorLevel(post.authorHandle, post.authorLevel)}
             />
+            <span aria-hidden="true" className="text-xs text-subtle">
+              ·
+            </span>
+            {bodyHref ? (
+              <a
+                href={bodyHref}
+                aria-label={fr.feed.openPost(
+                  post.authorDisplayName,
+                  formatFullDate(post.createdAt),
+                )}
+                title={formatFullDate(post.createdAt)}
+                className="text-xs text-subtle hover:underline"
+              >
+                <time dateTime={post.createdAt}>{relativeTime}</time>
+              </a>
+            ) : (
+              <time
+                dateTime={post.createdAt}
+                title={formatFullDate(post.createdAt)}
+                className="text-xs text-subtle"
+              >
+                {relativeTime}
+              </time>
+            )}
             {post.format && <Badge>{FORMAT_LABELS[post.format]}</Badge>}
-            {post.isBeginner && !post.deletedAt && <BeginnerBadge />}
             {post.work && !post.deletedAt && (
               <span className="text-xs text-subtle">{fr.works.feedAnnouncement}</span>
             )}
@@ -272,58 +300,41 @@ export function PostCard({
               </IconButton>
             )}
             {canFeedback && (
-              // Icône seule sur téléphone : la rangée d'actions tient alors sur une ligne.
               <Button
                 variant="ghost"
                 className="whitespace-nowrap px-2 text-xs"
                 onClick={onFeedback}
-                aria-label={fr.feed.iTested}
               >
                 <CheckCircle2 className="size-4" aria-hidden="true" />
-                <span className="max-md:sr-only">{fr.feed.iTested}</span>
+                {fr.feed.iTested}
               </Button>
             )}
-            {isOwnPost ? (
+            {(isOwnPost || canReport) && (
               <div className="ml-auto">
                 <MoreActionsMenu
                   label={fr.feed.moreActions}
-                  items={[{ value: "delete", label: fr.feed.delete, danger: true }]}
-                  onSelect={onDelete}
+                  items={
+                    isOwnPost
+                      ? [{ value: "delete", label: fr.feed.delete, danger: true }]
+                      : [{ value: "report", label: fr.moderation.reportAction }]
+                  }
+                  onSelect={(value) => (value === "delete" ? onDelete() : setReportOpen(true))}
                 />
               </div>
-            ) : (
-              canReport && (
-                <div className="ml-auto">
-                  <ReportMenu
-                    contentType="post"
-                    contentId={post.id}
-                    authorId={post.authorId}
-                    authorHandle={post.authorHandle}
-                  />
-                </div>
-              )
             )}
           </div>
-          {bodyHref ? (
-            <a
-              href={bodyHref}
-              aria-label={fr.feed.openPost(post.authorDisplayName, formatFullDate(post.createdAt))}
-              title={formatFullDate(post.createdAt)}
-              className="mt-1 inline-block px-2 text-xs text-subtle hover:underline"
-            >
-              <time dateTime={post.createdAt}>{relativeTime}</time>
-            </a>
-          ) : (
-            <time
-              dateTime={post.createdAt}
-              title={formatFullDate(post.createdAt)}
-              className="mt-1 inline-block px-2 text-xs text-subtle"
-            >
-              {relativeTime}
-            </time>
-          )}
         </div>
       </div>
+      {canReport && !isOwnPost && (
+        <ReportDialog
+          contentType="post"
+          contentId={post.id}
+          authorId={post.authorId}
+          authorHandle={post.authorHandle}
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
     </Tag>
   );
 }

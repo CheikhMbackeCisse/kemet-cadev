@@ -24,19 +24,11 @@ export interface CodeButtonProps {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   onChange: (value: string) => void;
   disabled?: boolean;
-  /** Icône seule à toutes les tailles, pour une colonne étroite (panneau d'un fil). */
-  iconOnly?: boolean;
   className?: string;
 }
 
 /** Menu des langages qui insère un bloc de code dans le champ relié. */
-export function CodeButton({
-  textareaRef,
-  onChange,
-  disabled,
-  iconOnly,
-  className,
-}: CodeButtonProps) {
+export function CodeButton({ textareaRef, onChange, disabled, className }: CodeButtonProps) {
   const pendingSelection = useRef<TextEdit | null>(null);
 
   function handleSelect(language: string) {
@@ -78,17 +70,15 @@ export function CodeButton({
         <button
           type="button"
           disabled={disabled}
-          aria-label={fr.content.insertCode}
           className={cn(
             "inline-flex h-control items-center justify-center gap-2 rounded-control px-2 text-sm font-medium text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text",
-            "max-md:size-control-mobile max-md:px-0",
-            iconOnly && "w-control px-0",
+            "max-md:h-control-mobile",
             "disabled:cursor-not-allowed disabled:opacity-50",
             className,
           )}
         >
           <Braces className="size-4" aria-hidden="true" />
-          {!iconOnly && <span className="max-md:hidden">{fr.content.codeButton}</span>}
+          {fr.content.codeButton}
         </button>
       }
     />

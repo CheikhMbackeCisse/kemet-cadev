@@ -41,7 +41,7 @@ export function ProjectFeedCard({ project, variant, viewerProfileId }: ProjectFe
   const extraRoles = project.openRoles.length - MAX_ROLES;
 
   return (
-    <li className="py-4">
+    <li className="py-4 [content-visibility:auto] [contain-intrinsic-size:auto_260px]">
       <article
         aria-labelledby={nameId}
         className={cn(

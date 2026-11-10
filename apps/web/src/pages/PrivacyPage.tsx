@@ -50,9 +50,7 @@ export function PrivacyPage() {
     >
       <div>
         <h1 className="text-lg font-bold text-text">{fr.privacy.title}</h1>
-        <p className="text-base text-subtle">
-          {fr.privacy.subtitle} {fr.privacy.updatedAt}
-        </p>
+        <p className="text-base text-subtle">{fr.privacy.updatedAt}</p>
       </div>
 
       <Section title={fr.privacy.keptTitle}>
