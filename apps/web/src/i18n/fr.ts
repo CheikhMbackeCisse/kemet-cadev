@@ -27,6 +27,10 @@ export const fr = {
     shortcutPublish: "Publier",
     shortcutSpaces: "Salons",
   },
+  update: {
+    available: "Nouvelle version",
+    apply: "Mettre à jour",
+  },
   notFound: {
     title: "Page introuvable",
     body: "Cette adresse ne mène à aucune page de Kemet.",

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { Router } from "./components/navigation/Router.js";
+import { UpdateBanner } from "./components/shell/UpdateBanner.js";
 import { navigate } from "./lib/navigation/navigate.js";
 import { PAGE_LOADERS, pageFor, type PageKey } from "./lib/navigation/pages.js";
 import { Skeleton } from "./components/ui/Skeleton.js";
@@ -29,28 +30,12 @@ const ShellPreviewPage = import.meta.env.DEV
   ? lazy(() => import("./pages/ShellPreviewPage.js").then((m) => ({ default: m.ShellPreviewPage })))
   : null;
 
-const CHUNK_RELOAD_KEY = "kemet:chunk-reload";
-
-// Après un déploiement, l'ancien index peut réclamer un fichier qui n'existe
-// plus : un seul rechargement complet récupère la nouvelle version.
-function reloadOnce(error: unknown): Promise<never> {
-  const path = window.location.pathname + window.location.search;
-  let alreadyTried = false;
-  try {
-    alreadyTried = window.sessionStorage.getItem(CHUNK_RELOAD_KEY) === path;
-    window.sessionStorage.setItem(CHUNK_RELOAD_KEY, path);
-  } catch {
-    alreadyTried = true;
-  }
-  if (alreadyTried) return Promise.reject(error);
-  window.location.reload();
-  return new Promise<never>(() => undefined);
-}
-
 const PAGES = Object.fromEntries(
   (Object.keys(PAGE_LOADERS) as PageKey[]).map((key) => [
     key,
-    lazy(() => PAGE_LOADERS[key]().catch(reloadOnce)),
+    // Un échec (fichiers d'une version remplacée) tombe dans PageErrorBoundary,
+    // qui propose de recharger : jamais de rechargement sans clic.
+    lazy(PAGE_LOADERS[key]),
   ]),
 ) as Record<PageKey, LazyExoticComponent<ComponentType>>;
 
@@ -161,6 +146,7 @@ export function App() {
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
               <Router fallback={<PageFallback />} render={renderPage} />
+              <UpdateBanner />
             </SessionProvider>
           </QueryClientProvider>
         </TooltipProvider>
