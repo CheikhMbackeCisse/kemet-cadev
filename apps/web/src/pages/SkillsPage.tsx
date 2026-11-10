@@ -1,7 +1,7 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { Plus, Search, Sprout, Star } from "lucide-react";
-import { useCallback, useEffect, useId, useState } from "react";
-import type { SkillSummary } from "@kemet/shared";
+import { useEffect, useId, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { SkillCard } from "../components/skills/SkillCard.js";
@@ -24,36 +24,19 @@ export function SkillsPage() {
   const [beginnerOnly, setBeginnerOnly] = useState(
     () => new URLSearchParams(window.location.search).get("filtre") === "debuter",
   );
-  const [skills, setSkills] = useState<SkillSummary[]>([]);
-  // Squelettes au premier chargement seulement : pendant une recherche, les
-  // résultats précédents restent affichés.
-  const [loading, setLoading] = useState(true);
-  const [loadedOnce, setLoadedOnce] = useState(false);
-  const [error, setError] = useState(false);
+  // Pendant une recherche, les résultats précédents restent affichés.
+  const skillsQuery = useQuery({
+    queryKey: ["skills", appliedQuery, beginnerOnly],
+    queryFn: () => listSkills(appliedQuery, { beginner: beginnerOnly }).then((page) => page.items),
+    placeholderData: keepPreviousData,
+  });
+  const skills = skillsQuery.data ?? [];
+  const error = skillsQuery.isError && !skillsQuery.data;
 
   useEffect(() => {
     const timer = window.setTimeout(() => setAppliedQuery(query.trim()), SEARCH_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [query]);
-
-  const load = useCallback((search: string, beginner: boolean) => {
-    let current = true;
-    setLoading(true);
-    setError(false);
-    listSkills(search, { beginner })
-      .then((page) => current && setSkills(page.items))
-      .catch(() => current && setError(true))
-      .finally(() => {
-        if (!current) return;
-        setLoading(false);
-        setLoadedOnce(true);
-      });
-    return () => {
-      current = false;
-    };
-  }, []);
-
-  useEffect(() => load(appliedQuery, beginnerOnly), [appliedQuery, beginnerOnly, load]);
 
   function toggleBeginner(pressed: boolean) {
     setBeginnerOnly(pressed);
@@ -102,7 +85,7 @@ export function SkillsPage() {
         </div>
       </div>
 
-      {loading && !loadedOnce ? (
+      {skillsQuery.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[0, 1, 2].map((index) => (
             <Skeleton key={index} className="h-56 w-full rounded-card" />
@@ -111,7 +94,7 @@ export function SkillsPage() {
       ) : error ? (
         <ErrorState
           message={fr.skills.loadingError}
-          retry={{ label: fr.chat.retry, onClick: () => load(appliedQuery, beginnerOnly) }}
+          retry={{ label: fr.chat.retry, onClick: () => void skillsQuery.refetch() }}
         />
       ) : skills.length === 0 ? (
         beginnerOnly && !appliedQuery ? (

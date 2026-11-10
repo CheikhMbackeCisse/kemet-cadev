@@ -134,7 +134,7 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 
 Chaque écran et chaque liste a quatre états dessinés :
 
-- **Chargement :** squelettes à la forme du contenu, pas de spinner plein écran.
+- **Chargement :** squelettes à la forme du contenu, pas de spinner plein écran. Un squelette ne se montre qu'après 300 ms d'attente (sa place est réservée dès le début, rien ne saute). Une page déjà visitée s'affiche depuis le cache, sans squelette, puis se met à jour sans rien effacer ; au retour, la position de lecture revient.
 - **Vide :** une phrase qui dit quoi faire et un bouton pour le faire ("Aucun salon pour l'instant. Créer le premier salon").
 - **Erreur :** ce qui s'est passé et comment réparer, sans excuse ni flou ("Le message n'est pas parti : connexion perdue. Réessayer").
 - **Rempli.**

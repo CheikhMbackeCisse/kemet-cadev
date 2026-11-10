@@ -187,6 +187,7 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
     expect(image.headers["content-type"]).toBe("image/png");
     expect(image.headers["x-content-type-options"]).toBe("nosniff");
     expect(image.headers["content-security-policy"]).toBe("default-src 'none'");
+    expect(image.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
     expect(image.rawPayload.equals(PNG_BYTES)).toBe(true);
   });
 
@@ -219,6 +220,7 @@ describe.skipIf(!databaseUrl)("Médias des travaux (base Postgres réelle)", () 
       headers: { range: `bytes=${WEBM_BYTES.length}-` },
     });
     expect(outside.statusCode).toBe(416);
+    expect(outside.headers["cache-control"]).toBe("no-store");
     expect(outside.headers["content-range"]).toBe(`bytes */${WEBM_BYTES.length}`);
   });
 

@@ -5,6 +5,7 @@ import { VOICE_MAX_BYTES, voiceDurationSchema } from "@kemet/shared";
 import { sumTotalUserStorageBytes } from "../repositories/storage-usage.js";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
+import { PRIVATE_FILE_CACHE } from "../../storage/cache-control.js";
 import { detectAttachment } from "../../storage/detect-attachment.js";
 import { detectVoice } from "../../storage/detect-voice.js";
 import { parseByteRange } from "../../storage/byte-range.js";
@@ -191,6 +192,7 @@ export function registerAttachmentRoutes(app: FastifyInstance, deps: ChatAppDeps
     reply
       .header("X-Content-Type-Options", "nosniff")
       .header("Content-Security-Policy", "default-src 'none'")
+      .header("Cache-Control", PRIVATE_FILE_CACHE)
       .header("Content-Disposition", contentDisposition(disposition, attachment.originalName))
       .type(attachment.mimeType);
     if (attachment.kind !== "voice") {
@@ -202,7 +204,7 @@ export function registerAttachmentRoutes(app: FastifyInstance, deps: ChatAppDeps
     reply.header("Accept-Ranges", "bytes");
     const range = parseByteRange(request.headers.range, attachment.byteSize);
     if (range === "unsatisfiable") {
-      return reply.code(416).header("Content-Range", `bytes */${attachment.byteSize}`).send();
+      return reply.code(416).header("Cache-Control", "no-store").header("Content-Range", `bytes */${attachment.byteSize}`).send();
     }
     if (range) {
       return reply

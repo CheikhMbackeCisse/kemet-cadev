@@ -8,8 +8,8 @@ import {
   MessagesSquare,
   type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import type { PublicProfileResponse } from "@kemet/shared";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { RailPage } from "../components/layout/RailPage.js";
 import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
 import { MOI_ITEMS } from "../components/shell/mobileTabs.js";
@@ -45,22 +45,19 @@ const ROW_CLASS =
 export function MoiPage() {
   const { status, profile, points, isPlatformAdmin, signOut } = useSession();
   const toast = useToast();
-  const [publicProfile, setPublicProfile] = useState<PublicProfileResponse | null>(null);
-  const [profileError, setProfileError] = useState(false);
+  const countsQuery = useQuery({
+    queryKey: ["user", profile?.handle],
+    queryFn: () => getUserProfile(profile?.handle ?? ""),
+    enabled: profile !== null,
+  });
+  const publicProfile = countsQuery.data ?? null;
+  const profileError = countsQuery.isError && !countsQuery.data;
 
   useEffect(() => {
     if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
-  const loadCounts = useCallback(() => {
-    if (!profile) return;
-    setProfileError(false);
-    getUserProfile(profile.handle)
-      .then(setPublicProfile)
-      .catch(() => setProfileError(true));
-  }, [profile]);
-
-  useEffect(loadCounts, [loadCounts]);
+  const loadCounts = () => void countsQuery.refetch();
 
   function handleSignOut() {
     signOut()

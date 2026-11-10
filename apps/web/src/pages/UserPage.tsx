@@ -83,7 +83,9 @@ const PROFILE_SKELETON = (
 
 export function UserPage() {
   const toast = useToast();
-  const handle = readHandle(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [handle] = useState(() => readHandle(window.location.pathname));
   const { profile: viewerProfile, isSuspended } = useSession();
   // `null` tant que le statut n'est pas connu : "Écrire" attend de le savoir.
   const [blocked, setBlocked] = useState<boolean | null>(null);

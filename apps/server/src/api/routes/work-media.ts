@@ -12,6 +12,7 @@ import {
 import type { Db, DbOrTx } from "@kemet/db";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
+import { PUBLIC_FILE_CACHE } from "../../storage/cache-control.js";
 import { parseByteRange } from "../../storage/byte-range.js";
 import { contentDisposition } from "../../storage/content-disposition.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
@@ -196,13 +197,14 @@ export function registerWorkMediaRoutes(
     reply
       .header("X-Content-Type-Options", "nosniff")
       .header("Content-Security-Policy", "default-src 'none'")
+      .header("Cache-Control", PUBLIC_FILE_CACHE)
       .header("Accept-Ranges", "bytes")
       .header("Content-Disposition", contentDisposition("inline", media.originalName ?? "media"))
       .type(media.mimeType);
 
     const range = parseByteRange(request.headers.range, media.byteSize);
     if (range === "unsatisfiable") {
-      return reply.code(416).header("Content-Range", `bytes */${media.byteSize}`).send();
+      return reply.code(416).header("Cache-Control", "no-store").header("Content-Range", `bytes */${media.byteSize}`).send();
     }
     if (range) {
       return reply

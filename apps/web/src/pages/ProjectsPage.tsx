@@ -1,7 +1,6 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { FolderGit2, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import type { ProjectSummary } from "@kemet/shared";
+import { useQuery } from "@tanstack/react-query";
 import { listProjects } from "../lib/chat/api.js";
 import { Badge } from "../components/ui/Badge.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
@@ -17,20 +16,14 @@ import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 export function ProjectsPage() {
   const { status } = useSession();
   const isVisitor = status === "visitor";
-  const [projects, setProjects] = useState<ProjectSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    listProjects()
-      .then((page) => setProjects(page.items))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => load(), [load]);
+  const projectsQuery = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => listProjects().then((page) => page.items),
+  });
+  const projects = projectsQuery.data ?? [];
+  const loading = projectsQuery.isPending;
+  const error = projectsQuery.isError && !projectsQuery.data;
+  const load = () => void projectsQuery.refetch();
 
   return (
     <RailPage activeSection="projets" className="gap-6 px-4 pt-3 lg:pt-6">

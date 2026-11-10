@@ -27,7 +27,9 @@ export default defineConfig({
     react(),
     preloadFonts(),
     VitePWA({
-      registerType: "autoUpdate",
+      // Une nouvelle version attend la fermeture de toutes les fenêtres de
+      // Kemet : elle ne prend jamais la main sur un écran en cours de lecture.
+      registerType: "prompt",
       workbox: {
         navigateFallbackDenylist: SERVER_NAVIGATION_DENYLIST,
         manifestTransforms: [

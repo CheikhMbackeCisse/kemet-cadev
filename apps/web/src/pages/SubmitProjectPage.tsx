@@ -26,7 +26,9 @@ import { CodeTextarea } from "../components/content/CodeTextarea.js";
 export function SubmitProjectPage() {
   const { status } = useSession();
   // /competitions/:slug/soumettre
-  const slug = window.location.pathname.split("/")[2] ?? "";
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [slug] = useState(() => window.location.pathname.split("/")[2] ?? "");
   const editingId = new URLSearchParams(window.location.search).get("modifier");
 
   const [myProjects, setMyProjects] = useState<ProjectSummary[]>([]);

@@ -103,6 +103,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   app.setErrorHandler((error, _request, reply) => {
+    // Une route de fichier pose son Cache-Control avant de lire le disque :
+    // une erreur survenue ensuite ne doit pas rester en cache un an.
+    reply.header("Cache-Control", "no-store");
     if (error instanceof AppError) {
       reply.status(error.statusCode).send({ error: { code: error.code, message: error.message } });
       return;

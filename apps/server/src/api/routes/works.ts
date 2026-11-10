@@ -15,6 +15,7 @@ import {
 import type { Db, DbOrTx } from "@kemet/db";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
+import { PUBLIC_FILE_CACHE } from "../../storage/cache-control.js";
 import { detectAttachment } from "../../storage/detect-attachment.js";
 import { contentDisposition } from "../../storage/content-disposition.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
@@ -469,6 +470,7 @@ export function registerWorkRoutes(
       reply
         .header("X-Content-Type-Options", "nosniff")
         .header("Content-Security-Policy", "default-src 'none'")
+        .header("Cache-Control", PUBLIC_FILE_CACHE)
         .header("Content-Length", attachment.byteSize)
         .header("Content-Disposition", contentDisposition("attachment", attachment.originalName))
         .type("application/pdf");

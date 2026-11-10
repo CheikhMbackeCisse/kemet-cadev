@@ -1,17 +1,11 @@
 import { FolderGit2, Plus, Rss, Sprout } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import {
-  isBeginnerAudience,
-  prefersTalentFeed,
-  type FeedProject,
-  type FeedTab,
-  type PostSummary,
-} from "@kemet/shared";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isBeginnerAudience, prefersTalentFeed, type PostSummary } from "@kemet/shared";
 import {
   ChatApiError,
   createPostFeedback,
   deletePost,
-  listFeedProjects,
   listPosts,
   setPostBookmark,
   togglePostReaction,
@@ -20,6 +14,14 @@ import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
 import { ProjectFeedCard, ProjectFeedCardSkeleton } from "../components/feed/ProjectFeedCard.js";
 import { navigate } from "../lib/navigation/navigate.js";
 import { interleaveProjects } from "../lib/feed/interleave.js";
+import {
+  feedQueryKey,
+  fetchFeed,
+  forgetPost,
+  mergeFreshFirstPage,
+  type FeedData,
+  type FeedView,
+} from "../lib/feed/feedQuery.js";
 import { ASK_KEMET_PARAM, isTechnicalPost } from "../lib/feed/technicalPost.js";
 import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
@@ -81,10 +83,6 @@ function PostListItem({
   );
 }
 
-// Onglet "Projets" : seulement les cartes projet, sans les posts. "debuter"
-// n'est pas un onglet : c'est le filtre "Pour débuter", qui remplace les onglets.
-type FeedView = Exclude<FeedTab, "debuter"> | "projets";
-
 // RH et entrepreneurs : une carte projet après chaque groupe de trois posts.
 const TALENT_POSTS_PER_PROJECT_CARD = 3;
 const BEGINNER_CARD_DISMISSED_KEY = "kemet:beginner-space-card-dismissed";
@@ -100,10 +98,6 @@ function readBeginnerCardDismissed(): boolean {
 function initialBeginnerFilter(): boolean {
   return new URLSearchParams(window.location.search).get("filtre") === "debuter";
 }
-
-// Assez de cartes pour une carte tous les cinq posts sur une page de vingt.
-const PROJECTS_PER_POST_PAGE = 6;
-const PROJECTS_TAB_SIZE = 20;
 
 export function FeedPage() {
   const toast = useToast();
@@ -124,57 +118,38 @@ export function FeedPage() {
   // "Pour toi" par defaut pour tout le monde : un nouveau compte ne suit
   // encore personne, et ouvrait donc le fil sur une page vide.
   const [tab, setTab] = useState<FeedView>("pour-toi");
-  const [posts, setPosts] = useState<PostSummary[]>([]);
-  const [projects, setProjects] = useState<FeedProject[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const queryClient = useQueryClient();
+  const queryKey = feedQueryKey(tab, beginnerOnly);
+  const feed = useQuery({
+    queryKey,
+    queryFn: async () =>
+      mergeFreshFirstPage(
+        await fetchFeed(tab, beginnerOnly),
+        queryClient.getQueryData<FeedData>(queryKey),
+      ),
+  });
+  const posts = feed.data?.posts ?? [];
+  const projects = feed.data?.projects ?? [];
+  const nextCursor = feed.data?.nextCursor ?? null;
+  const loading = feed.isPending;
+  const error = feed.isError && !feed.data;
 
   const [feedbackPostId, setFeedbackPostId] = useState<string | null>(null);
   const [feedbackBody, setFeedbackBody] = useState("");
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
-  const load = useCallback((currentTab: FeedView, beginner: boolean) => {
-    setLoading(true);
-    setError(false);
-    if (beginner) {
-      listPosts("debuter")
-        .then((page) => {
-          setPosts(page.items);
-          setNextCursor(page.nextCursor);
-          setProjects([]);
-        })
-        .catch(() => setError(true))
-        .finally(() => setLoading(false));
-      return;
-    }
-    if (currentTab === "projets") {
-      listFeedProjects("pour-toi", PROJECTS_TAB_SIZE)
-        .then((result) => {
-          setProjects(result.items);
-          setPosts([]);
-          setNextCursor(null);
-        })
-        .catch(() => setError(true))
-        .finally(() => setLoading(false));
-      return;
-    }
-    // Les cartes projet accompagnent le fil : sans elles, il reste lisible.
-    Promise.all([
-      listPosts(currentTab),
-      listFeedProjects(currentTab, PROJECTS_PER_POST_PAGE).catch(() => ({ items: [] })),
-    ])
-      .then(([page, projectResult]) => {
-        setPosts(page.items);
-        setNextCursor(page.nextCursor);
-        setProjects(projectResult.items);
-      })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
+  function updateFeed(update: (data: FeedData) => FeedData) {
+    queryClient.setQueryData<FeedData>(queryKey, (data) => (data ? update(data) : data));
+  }
 
-  useEffect(() => load(tab, beginnerOnly), [tab, beginnerOnly, load]);
+  function setPosts(update: (current: PostSummary[]) => PostSummary[]) {
+    updateFeed((data) => ({ ...data, posts: update(data.posts) }));
+  }
+
+  function reload() {
+    void feed.refetch();
+  }
 
   function toggleBeginner(pressed: boolean) {
     setBeginnerOnly(pressed);
@@ -200,8 +175,11 @@ export function FeedPage() {
     if (!nextCursor || source === "projets") return;
     try {
       const page = await listPosts(source, nextCursor);
-      setPosts((current) => [...current, ...page.items]);
-      setNextCursor(page.nextCursor);
+      updateFeed((data) => ({
+        ...data,
+        posts: [...data.posts, ...page.items],
+        nextCursor: page.nextCursor,
+      }));
     } catch {
       toast.show(fr.feed.loadingError, "danger");
     }
@@ -246,7 +224,7 @@ export function FeedPage() {
       setFeedbackPostId(null);
       setFeedbackBody("");
       toast.show(fr.feed.feedbackSent, "success");
-      load(tab, beginnerOnly);
+      reload();
     } catch (err) {
       setFeedbackError(
         err instanceof ChatApiError && err.statusCode === 409
@@ -262,7 +240,7 @@ export function FeedPage() {
     setPostToDelete(null);
     try {
       await deletePost(postId);
-      setPosts((current) => current.filter((post) => post.id !== postId));
+      forgetPost(queryClient, postId);
     } catch {
       toast.show(fr.feed.postDeleteError, "danger");
     }
@@ -276,7 +254,7 @@ export function FeedPage() {
   ) : error ? (
     <ErrorState
       message={fr.feed.projectsLoadingError}
-      retry={{ label: fr.chat.retry, onClick: () => load(tab, beginnerOnly) }}
+      retry={{ label: fr.chat.retry, onClick: () => reload() }}
     />
   ) : projects.length === 0 ? (
     <EmptyState
@@ -309,7 +287,7 @@ export function FeedPage() {
   ) : error ? (
     <ErrorState
       message={fr.feed.loadingError}
-      retry={{ label: fr.chat.retry, onClick: () => load(tab, beginnerOnly) }}
+      retry={{ label: fr.chat.retry, onClick: () => reload() }}
     />
   ) : posts.length === 0 ? (
     beginnerOnly ? (

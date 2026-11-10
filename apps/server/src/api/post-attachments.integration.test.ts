@@ -116,6 +116,7 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
     const served = await app.inject({ method: "GET", url: `/api/post-attachments/${attachmentId}/content` });
     expect(served.statusCode).toBe(200);
     expect(served.headers["content-disposition"]).toContain("inline");
+    expect(served.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
     expect(served.rawPayload.equals(PNG_BYTES)).toBe(true);
   });
 

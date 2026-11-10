@@ -77,7 +77,9 @@ const STATUS_LABELS = {
 };
 
 export function WorkFormPage() {
-  const editedSlug = readEditedSlug(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [editedSlug] = useState(() => readEditedSlug(window.location.pathname));
   const { status, profile } = useSession();
   const [existing, setExisting] = useState<WorkDetail | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error" | "forbidden">(

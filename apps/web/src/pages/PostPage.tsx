@@ -1,6 +1,14 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type SetStateAction } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  forgetPost,
+  postFeedbackQueryKey,
+  postFromFeedCache,
+  postQueryKey,
+  postRepliesQueryKey,
+} from "../lib/feed/feedQuery.js";
 import {
   isDeletedAccountHandle,
   KEMET_HANDLE,
@@ -70,34 +78,85 @@ function readPostId(pathname: string): string {
 
 export function PostPage() {
   const toast = useToast();
-  const postId = readPostId(window.location.pathname);
+  // Lu une seule fois : pendant le retour vers une autre page, celle-ci reste
+  // affichée alors que l'adresse a déjà changé.
+  const [postId] = useState(() => readPostId(window.location.pathname));
   const { status, profile, isSuspended } = useSession();
   const canInteract = status === "ready" && !isSuspended;
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [post, setPost] = useState<PostSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [notFound, setNotFound] = useState(false);
+  const queryClient = useQueryClient();
 
-  const [replies, setReplies] = useState<PostReply[]>([]);
+  // Ouvert depuis le fil, le post s'affiche tout de suite avec ce que le fil
+  // en sait, puis se met à jour.
+  const postQuery = useQuery({
+    queryKey: postQueryKey(postId),
+    queryFn: () => getPost(postId).then((result) => result.post),
+    initialData: () => postFromFeedCache(queryClient, postId),
+    initialDataUpdatedAt: 0,
+  });
+  // Un 404 l'emporte sur ce que le fil savait : le post a été supprimé ou
+  // masqué depuis.
+  const notFound = postQuery.error instanceof ChatApiError && postQuery.error.statusCode === 404;
+  const post = notFound ? null : (postQuery.data ?? null);
+  const loading = postQuery.isPending;
+  const error = !post && postQuery.isError && !notFound;
+  useEffect(() => {
+    if (notFound) forgetPost(queryClient, postId);
+  }, [notFound, queryClient, postId]);
+  const setPost = useCallback(
+    (update: SetStateAction<PostSummary | null>) =>
+      queryClient.setQueryData<PostSummary | null>(postQueryKey(postId), (current) =>
+        typeof update === "function" ? update(current ?? null) : update,
+      ),
+    [queryClient, postId],
+  );
+
+  const repliesQuery = useQuery({
+    queryKey: postRepliesQueryKey(postId),
+    queryFn: () => listPostReplies(postId).then((page) => page.items),
+  });
+  const replies = repliesQuery.data ?? [];
+  const setReplies = useCallback(
+    (update: (current: PostReply[]) => PostReply[]) =>
+      queryClient.setQueryData<PostReply[]>(postRepliesQueryKey(postId), (current) =>
+        update(current ?? []),
+      ),
+    [queryClient, postId],
+  );
+
   const [replyDraft, setReplyDraft] = useState("");
   const replyPaste = usePasteAsCode(replyTextareaRef, setReplyDraft, "-mb-2");
   const [replyToDelete, setReplyToDelete] = useState<string | null>(null);
 
-  const [feedback, setFeedback] = useState<PostFeedbackEntry[]>([]);
+  const feedbackQuery = useQuery({
+    queryKey: postFeedbackQueryKey(postId),
+    queryFn: () => listPostFeedback(postId).then((result) => result.items),
+    enabled: post?.format === "a_tester",
+  });
+  const feedback = feedbackQuery.data ?? [];
+  function setFeedback(update: (current: PostFeedbackEntry[]) => PostFeedbackEntry[]) {
+    queryClient.setQueryData<PostFeedbackEntry[]>(postFeedbackQueryKey(postId), (current) =>
+      update(current ?? []),
+    );
+  }
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackBody, setFeedbackBody] = useState("");
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const appendReply = useCallback((reply: PostReply) => {
-    setReplies((current) =>
-      current.some((item) => item.id === reply.id) ? current : [...current, reply],
-    );
-    setPost((current) => (current ? { ...current, replyCount: current.replyCount + 1 } : current));
-  }, []);
+  const appendReply = useCallback(
+    (reply: PostReply) => {
+      setReplies((current) =>
+        current.some((item) => item.id === reply.id) ? current : [...current, reply],
+      );
+      setPost((current) =>
+        current ? { ...current, replyCount: current.replyCount + 1 } : current,
+      );
+    },
+    [setReplies, setPost],
+  );
   const assistant = usePostAssistant(appendReply);
 
   function prepareKemetQuestion() {
@@ -127,33 +186,9 @@ export function PostPage() {
     prepareKemetQuestion();
   }, [canInteract, post]);
 
-  const loadPost = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    setNotFound(false);
-    getPost(postId)
-      .then((result) => setPost(result.post))
-      .catch((err) => {
-        if (err instanceof ChatApiError && err.statusCode === 404) setNotFound(true);
-        else setError(true);
-      })
-      .finally(() => setLoading(false));
-  }, [postId]);
-
-  useEffect(() => loadPost(), [loadPost]);
-
-  useEffect(() => {
-    listPostReplies(postId)
-      .then((page) => setReplies(page.items))
-      .catch(() => {});
-  }, [postId]);
-
-  useEffect(() => {
-    if (post?.format !== "a_tester") return;
-    listPostFeedback(postId)
-      .then((result) => setFeedback(result.items))
-      .catch(() => {});
-  }, [postId, post?.format]);
+  function loadPost() {
+    void postQuery.refetch();
+  }
 
   async function handleReact() {
     if (!post) return;
@@ -181,6 +216,7 @@ export function PostPage() {
     setDeleteOpen(false);
     try {
       await deletePost(post.id);
+      forgetPost(queryClient, post.id);
       navigate("/fil");
     } catch {
       toast.show(fr.feed.postDeleteError, "danger");

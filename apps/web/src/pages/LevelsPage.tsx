@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { LEVELS, levelForPoints, type Level, type LevelsResponse } from "@kemet/shared";
 import { RailPage } from "../components/layout/RailPage.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
@@ -182,17 +183,10 @@ function LevelsSkeleton() {
 /** Les cinq niveaux, ce qu'il faut pour chacun, et où en est la personne connectée. */
 export function LevelsPage() {
   const { status, profile, points } = useSession();
-  const [data, setData] = useState<LevelsResponse | null>(null);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(() => {
-    setError(false);
-    getLevels()
-      .then(setData)
-      .catch(() => setError(true));
-  }, []);
-
-  useEffect(load, [load]);
+  const levelsQuery = useQuery({ queryKey: ["levels"], queryFn: getLevels });
+  const data = levelsQuery.data ?? null;
+  const error = levelsQuery.isError && !levelsQuery.data;
+  const load = () => void levelsQuery.refetch();
 
   const myLevel = status === "ready" && profile ? levelForPoints(points) : null;
 

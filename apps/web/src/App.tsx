@@ -13,7 +13,9 @@ import { navigate } from "./lib/navigation/navigate.js";
 import { PAGE_LOADERS, pageFor, type PageKey } from "./lib/navigation/pages.js";
 import { Skeleton } from "./components/ui/Skeleton.js";
 import { checkService, SERVICE_CHECKS, type ServiceStatus } from "./serviceStatus.js";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider, useSession } from "./session/SessionProvider.js";
+import { createQueryClient } from "./lib/query/queryClient.js";
 import { landingPath, onboardingPath } from "./lib/onboarding/steps.js";
 import { ThemeProvider } from "./theme/theme-context.js";
 import { ToastProvider } from "./components/ui/Toast.js";
@@ -24,9 +26,7 @@ const DevUiPage = import.meta.env.DEV
   ? lazy(() => import("./pages/DevUiPage.js").then((m) => ({ default: m.DevUiPage })))
   : null;
 const ShellPreviewPage = import.meta.env.DEV
-  ? lazy(() =>
-      import("./pages/ShellPreviewPage.js").then((m) => ({ default: m.ShellPreviewPage })),
-    )
+  ? lazy(() => import("./pages/ShellPreviewPage.js").then((m) => ({ default: m.ShellPreviewPage })))
   : null;
 
 const CHUNK_RELOAD_KEY = "kemet:chunk-reload";
@@ -55,6 +55,8 @@ const PAGES = Object.fromEntries(
 ) as Record<PageKey, LazyExoticComponent<ComponentType>>;
 
 const FeedPage = PAGES.feed;
+
+const queryClient = createQueryClient();
 
 const STATUS_LABELS: Record<ServiceStatus, string> = {
   verification: "vérification…",
@@ -156,9 +158,11 @@ export function App() {
     <ThemeProvider>
       <ToastProvider>
         <TooltipProvider>
-          <SessionProvider>
-            <Router fallback={<PageFallback />} render={renderPage} />
-          </SessionProvider>
+          <QueryClientProvider client={queryClient}>
+            <SessionProvider>
+              <Router fallback={<PageFallback />} render={renderPage} />
+            </SessionProvider>
+          </QueryClientProvider>
         </TooltipProvider>
       </ToastProvider>
     </ThemeProvider>

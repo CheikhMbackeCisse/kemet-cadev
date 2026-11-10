@@ -293,6 +293,7 @@ describe.skipIf(!databaseUrl)("Fichiers et images dans les messages (base Postgr
     expect(whole.headers["content-disposition"]).toContain("inline");
     expect(whole.headers["x-content-type-options"]).toBe("nosniff");
     expect(whole.headers["content-security-policy"]).toBe("default-src 'none'");
+    expect(whole.headers["cache-control"]).toBe("private, max-age=604800");
     expect(whole.rawPayload.equals(VOICE_WEBM)).toBe(true);
 
     const part = await app.inject({
@@ -310,6 +311,7 @@ describe.skipIf(!databaseUrl)("Fichiers et images dans les messages (base Postgr
       headers: { cookie: owner, range: `bytes=${VOICE_WEBM.length}-` },
     });
     expect(outside.statusCode).toBe(416);
+    expect(outside.headers["cache-control"]).toBe("no-store");
   });
 
   it("refuse un message vocal sans durée valide ou de plus de deux minutes", async () => {

@@ -45,7 +45,9 @@ export function CompetitionPage() {
   const { status } = useSession();
   const isVisitor = status === "visitor";
   const toast = useToast();
-  const slug = readSlug(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [slug] = useState(() => readSlug(window.location.pathname));
 
   const [competition, setCompetition] = useState<CompetitionDetail | null>(null);
   const [loading, setLoading] = useState(true);

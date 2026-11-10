@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
+import { PUBLIC_FILE_CACHE } from "../../storage/cache-control.js";
 import { detectAttachment } from "../../storage/detect-attachment.js";
 import { contentDisposition } from "../../storage/content-disposition.js";
 import { lockUserStorageQuota } from "../repositories/attachments.js";
@@ -104,6 +105,7 @@ export function registerPostAttachmentRoutes(
     reply
       .header("X-Content-Type-Options", "nosniff")
       .header("Content-Security-Policy", "default-src 'none'")
+      .header("Cache-Control", PUBLIC_FILE_CACHE)
       .header("Content-Length", attachment.byteSize)
       .header("Content-Disposition", contentDisposition("inline", attachment.originalName))
       .type(attachment.mimeType);

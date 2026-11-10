@@ -20,7 +20,9 @@ const STATUS_MESSAGE: Record<InvitePreview["status"], (spaceName: string | null)
 };
 
 export function InvitePage() {
-  const code = readCode(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [code] = useState(() => readCode(window.location.pathname));
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [joinError, setJoinError] = useState(false);

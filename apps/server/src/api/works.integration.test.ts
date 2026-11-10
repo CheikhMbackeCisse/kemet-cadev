@@ -794,6 +794,7 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     expect(download.headers["content-type"]).toBe("application/pdf");
     expect(download.headers["content-disposition"]).toMatch(/^attachment;/);
     expect(download.headers["x-content-type-options"]).toBe("nosniff");
+    expect(download.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
 
     const pending = await uploadPdf(author.cookie);
     const unattached = await app.inject({

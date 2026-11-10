@@ -1,7 +1,8 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { BookOpen, Plus, Search, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import type { WorkSort, WorkSummary, WorkType } from "@kemet/shared";
+import { useEffect, useState, type FormEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { WorkSort, WorkType } from "@kemet/shared";
 import { listWorks } from "../lib/chat/api.js";
 import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
@@ -68,49 +69,37 @@ export function WorksPage() {
   const [sort, setSort] = useState<WorkSort>(initial.sort);
   const [tag, setTag] = useState(initial.tag);
   const [tagDraft, setTagDraft] = useState(initial.tag);
-  const [works, setWorks] = useState<WorkSummary[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Une réponse lente ne doit pas écraser celle de filtres choisis après elle.
-  const latestRequest = useRef(0);
+  useEffect(() => writeFilters({ q, type, sort, tag }), [q, type, sort, tag]);
 
-  const load = useCallback(() => {
-    const request = ++latestRequest.current;
-    setLoading(true);
-    setError(false);
-    const filters = { q, type, sort, tag };
-    writeFilters(filters);
-    listWorks(toQuery(filters))
-      .then((page) => {
-        if (request !== latestRequest.current) return;
-        setWorks(page.items);
-        setNextCursor(page.nextCursor);
-      })
-      .catch(() => {
-        if (request === latestRequest.current) setError(true);
-      })
-      .finally(() => {
-        if (request === latestRequest.current) setLoading(false);
-      });
-  }, [q, type, sort, tag]);
-
-  useEffect(() => load(), [load]);
+  // La clé porte les filtres : une réponse lente n'écrase jamais celle de
+  // filtres choisis après elle.
+  const worksKey = ["works", q, type, sort, tag] as const;
+  const worksQuery = useQuery({
+    queryKey: worksKey,
+    queryFn: () => listWorks(toQuery({ q, type, sort, tag })),
+  });
+  const works = worksQuery.data?.items ?? [];
+  const nextCursor = worksQuery.data?.nextCursor ?? null;
+  const loading = worksQuery.isPending;
+  const error = worksQuery.isError && !worksQuery.data;
+  const load = () => void worksQuery.refetch();
 
   async function loadMore() {
     if (!nextCursor) return;
-    const request = latestRequest.current;
     setLoadingMore(true);
     try {
       const page = await listWorks({
         ...toQuery({ q, type, sort, tag }),
         cursor: nextCursor,
       });
-      if (request !== latestRequest.current) return;
-      setWorks((current) => [...current, ...page.items]);
-      setNextCursor(page.nextCursor);
+      queryClient.setQueryData<typeof page>(worksKey, (current) =>
+        current
+          ? { items: [...current.items, ...page.items], nextCursor: page.nextCursor }
+          : current,
+      );
     } catch {
       toast.show(fr.works.loadMoreError, "danger");
     } finally {

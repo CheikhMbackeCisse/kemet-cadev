@@ -364,3 +364,29 @@
 .voice-progress {
   accent-color: var(--primary);
 }
+
+/*
+ * Squelette de chargement (components/ui/Skeleton.tsx) : invisible pendant
+ * les 300 premières millisecondes. Une réponse rapide ou un cache n'en montre
+ * jamais ; sa place est réservée, rien ne saute à son apparition.
+ */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeleton {
+  opacity: 0;
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 300ms infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: navigation-appear 1ms linear 300ms forwards;
+  }
+}

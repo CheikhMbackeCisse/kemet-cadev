@@ -20,7 +20,9 @@ function parseStack(value: string): string[] {
 export function NewHelpRequestPage() {
   const { status } = useSession();
   // /projets/:slug/demandes/nouvelle
-  const slug = window.location.pathname.split("/")[2] ?? "";
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [slug] = useState(() => window.location.pathname.split("/")[2] ?? "");
   const [kind, setKind] = useState<HelpRequestKind>("help");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

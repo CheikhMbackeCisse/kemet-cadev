@@ -1,7 +1,8 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { Plus, Trophy } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { CompetitionDetail, CompetitionSummary } from "@kemet/shared";
+import { useQuery } from "@tanstack/react-query";
+import type { CompetitionDetail } from "@kemet/shared";
 import {
   getMe,
   listCompetitions,
@@ -34,9 +35,13 @@ export function CompetitionsPage() {
   const { status } = useSession();
   const isVisitor = status === "visitor";
   const toast = useToast();
-  const [competitions, setCompetitions] = useState<CompetitionSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const competitionsQuery = useQuery({
+    queryKey: ["competitions"],
+    queryFn: () => listCompetitions().then((page) => page.items),
+  });
+  const competitions = competitionsQuery.data ?? [];
+  const loading = competitionsQuery.isPending;
+  const error = competitionsQuery.isError && !competitionsQuery.data;
   const [isAdmin, setIsAdmin] = useState(false);
   const [pending, setPending] = useState<CompetitionDetail[]>([]);
   const [pendingLoading, setPendingLoading] = useState(false);
@@ -45,14 +50,8 @@ export function CompetitionsPage() {
   const [rejectTarget, setRejectTarget] = useState<CompetitionDetail | null>(null);
   const [rejectNote, setRejectNote] = useState("");
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    listCompetitions()
-      .then((page) => setCompetitions(page.items))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
+  const refetchCompetitions = competitionsQuery.refetch;
+  const load = useCallback(() => void refetchCompetitions(), [refetchCompetitions]);
 
   const loadPending = useCallback(() => {
     setPendingLoading(true);

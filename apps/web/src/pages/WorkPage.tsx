@@ -107,7 +107,9 @@ const WORK_SKELETON = (
 
 export function WorkPage() {
   const toast = useToast();
-  const slug = readSlug(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [slug] = useState(() => readSlug(window.location.pathname));
   const { status, profile, isSuspended } = useSession();
 
   const [work, setWork] = useState<WorkDetail | null>(null);
