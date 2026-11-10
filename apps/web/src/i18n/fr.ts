@@ -641,7 +641,18 @@ export const fr = {
       count === 0
         ? "Pas encore utilisé par @kemet"
         : `${formatted} ${count === 1 ? "utilisation" : "utilisations"} par @kemet`,
-    view: "Voir",
+    reviewCountShort: (count: string) => `${count} avis`,
+    usageCountShort: (formatted: string, count: number) =>
+      `${formatted} ${count > 1 ? "utilisations" : "utilisation"}`,
+    domainNames: {
+      payments: "Paiement",
+      ai: "IA",
+      data: "Données",
+      infra: "Infrastructure",
+      front: "Interface",
+      back: "Serveur",
+      other: "Développement",
+    },
     searchLabel: "Chercher un skill",
     searchPlaceholder: "Wave, Postgres, Docker…",
     searchNoResult: (query: string) => `Aucun skill ne correspond à « ${query} ».`,

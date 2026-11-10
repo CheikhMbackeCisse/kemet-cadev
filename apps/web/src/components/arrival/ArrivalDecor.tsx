@@ -11,7 +11,7 @@ import {
   type DecorItem,
   type DecorScreen,
 } from "./decorLayout.js";
-import { TECH_LOGOS } from "./techLogos.js";
+import { TECH_LOGOS } from "../ui/techLogos.js";
 import type { ArrivalMotion } from "./ArrivalBackground.js";
 
 const ICONS: Record<DecorIcon, LucideIcon> = {

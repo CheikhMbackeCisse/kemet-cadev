@@ -27,5 +27,5 @@ Aucun paquet ne les apporte : liste tenue dans `scripts/vendored-assets.ts`.
 
 | Ressource | Licence | Source | Fichier |
 | --- | --- | --- | --- |
-| Simple Icons 16.37.0 (Python, JavaScript, TypeScript, Kotlin) | CC0-1.0 | https://simpleicons.org | `apps/web/src/components/arrival/techLogos.ts` |
+| Simple Icons 16.37.0 (34 logos de technologies), généré par scripts/build-tech-logos.ts | CC0-1.0 | https://simpleicons.org | `apps/web/src/components/ui/techLogos.ts` |
 | Contour de l'Afrique, Natural Earth via world-atlas 2.0.2 (countries-50m), généré par scripts/build-africa-outline.ts | Domaine public (Natural Earth), ISC (world-atlas) | https://www.naturalearthdata.com, https://github.com/topojson/world-atlas | `apps/web/src/components/arrival/africaOutline.ts` |

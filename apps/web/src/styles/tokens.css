@@ -138,25 +138,17 @@
 }
 
 /**
- * Bannières des skills : un dégradé par domaine, autre exception à l'interdit
- * des dégradés (DESIGN.md, "Skill"). Aucun texte n'y est posé : les mêmes
- * teintes servent dans les deux thèmes.
+ * Couverture d'un skill : une petite fenêtre d'éditeur sombre dans les deux
+ * thèmes. Valeurs reprises du thème sombre (--bg, --surface, --text-2,
+ * --link, --level-apprenti, --subtle), sans dégradé.
  */
 :root {
-  --skill-payments-from: #0f766e;
-  --skill-payments-to: #1265dd;
-  --skill-ai-from: #0e7490;
-  --skill-ai-to: #7c3aed;
-  --skill-data-from: #7c3aed;
-  --skill-data-to: #1265dd;
-  --skill-infra-from: #a14f00;
-  --skill-infra-to: #c4320a;
-  --skill-front-from: #be185d;
-  --skill-front-to: #7c3aed;
-  --skill-back-from: #1265dd;
-  --skill-back-to: #0e7490;
-  --skill-other-from: #364153;
-  --skill-other-to: #1265dd;
+  --code-cover-bg: #0d1320;
+  --code-cover-bar: #141b2a;
+  --code-cover-text: #c3cbda;
+  --code-cover-keyword: #7fb0f7;
+  --code-cover-string: #5cc46b;
+  --code-cover-comment: #8792a8;
 }
 
 /**

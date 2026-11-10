@@ -149,3 +149,17 @@ describe("carte en verre dépoli du parcours d'arrivée", () => {
     }
   });
 });
+
+describe("couverture de code d'un skill", () => {
+  const start = css.indexOf("--code-cover-bg");
+  const root = css.slice(start, css.indexOf("}", start));
+
+  it("garde 4,5:1 pour chaque couleur du code sur le fond de l'éditeur", () => {
+    const background = token(root, "code-cover-bg");
+    for (const name of ["text", "keyword", "string", "comment"]) {
+      expect(contrast(token(root, `code-cover-${name}`), background), name).toBeGreaterThanOrEqual(
+        4.5,
+      );
+    }
+  });
+});

@@ -47,6 +47,12 @@ export const skillSummarySchema = z.object({
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
+  /** Début du premier bloc de code, en texte brut : couverture de la carte. */
+  codeExcerpt: z.object({
+    language: z.string().max(20).nullable(),
+    lines: z.array(z.string().max(80)).max(6),
+  }),
   averageStars: z.number().min(0).max(5).nullable(),
   ratingCount: z.number().int().nonnegative(),
   /** Réponses de @kemet qui ont retenu ce skill. */

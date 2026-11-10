@@ -112,7 +112,7 @@ Pas plus de trois tailles sur un même écran d'application. Les chiffres align�
 - **Échec de l'assistant :** jamais dans le fil du salon, où il se lirait comme une réponse. Notice au-dessus du composeur, vue seulement par la personne qui a posé la question : fond `--danger-soft`, icône en `--danger`, texte en `--text` de taille normale, bouton "Reposer la question" (masqué pour un quota atteint) et croix pour la masquer. Le focus revient au composeur après l'un ou l'autre.
 - **Post du fil :** ton détendu, texte court, images et mèmes, code. Étiquette de format seulement si l'auteur en a choisi un (Astuce, À tester, Question). Actions, sous le texte : répondre, cœur, enregistrer, partager, et "J'ai testé" sur les posts À tester ; la date en temps relatif ("il y a 3 h", date complète au survol) sur la ligne du dessous. Un post n'est pas une carte : c'est une ligne de la colonne de lecture, séparée de la suivante par un filet `--border`, fond `--surface-2` au survol sur bureau seulement. Même composant (`PostCard`) dans le fil et sur la page du post. Sur un post, "Utile" se marque d'un cœur (`--danger`, rempli une fois donné) : même sens et mêmes points qu'avant, "Utile" en `title` et dans l'`aria-label`. Les réponses de `@kemet` gardent le pouce levé. Enregistrer (signet, rempli une fois fait) range le post dans "Enregistrés", sous Moi. Partager ouvre la feuille de partage du téléphone, sinon copie le lien ; il n'y a pas de republication. Les étincelles restent l'icône de Kemet Pro.
 - **Mention "Données de démonstration" :** tant que `DEMO_CONTENT_NOTICE` vaut `true`, une icône `FlaskConical` en `--subtle` au pied de la barre d'activité sur bureau, une ligne en 12 px au bas de la page Moi sur mobile, toutes deux liées à `/donnees-de-demo`.
-- **Skill :** carte, sur le modèle des Quêtes de Discord, en grille (une colonne sur mobile, deux puis trois sur bureau) : bannière de 80 px, icône du domaine posée à cheval, nom, auteur, deux lignes de description, étoiles (moyenne et nombre d'avis, "Pas encore noté" seulement sans aucune note), nombre de réponses de @kemet qui l'ont retenu en format court (869, 11,2k), bouton "Voir". La carte entière est un lien, bordure `--border`, `--border-strong` au survol, sans ombre. La bannière est un dégradé propre au domaine du skill (paiements, IA, données, infra, front, back, autre, déduit de ses tags et de son texte) avec un motif de caractères de code en blanc à 20 % : deuxième exception à l'interdit des dégradés après les écrans de compte, demandée pour ces seules bannières, sans aucun texte posé dessus. La page d'un skill reprend la même bannière en tête. Une barre de recherche au-dessus de la grille. Les étoiles n'existent que sur les skills.
+- **Skill :** carte en grille sur le modèle de Travail (une colonne sur mobile, deux puis trois sur bureau), même bordure, même survol, sans ombre ni bouton "Voir" : le nom porte le lien étiré sur la carte. Couverture 16:9 dessinée en HTML, une petite fenêtre d'éditeur sombre (variables `--code-cover-*`, identiques dans les deux thèmes) avec une barre au nom du fichier (`slug.md`), les six premières lignes du premier bloc de code du skill en Geist Mono avec trois couleurs (mots-clés, chaînes, commentaires), et le logo Simple Icons de la technologie principale sur une pastille blanche dans un coin. Pas de Shiki dans une liste. Dessous : domaine en petit, nom, avatar de l'auteur en 24 px et "par X", deux lignes de description, puis "4,8 · 2,3k avis · 11,2k utilisations". La page d'un skill reprend la même couverture en tête. Une barre de recherche au-dessus de la grille. Les étoiles n'existent que sur les skills.
 - **Onglets :** un seul composant (`Tabs`) partout. L'onglet actif est souligné de 2 px `--primary`, texte `--text` ; les autres sont en `--muted`. Pas de conteneur gris ni de fond plein sous l'onglet actif. Variante `centered` pour les deux onglets du fil ("Pour toi", "Abonnements") : centrés, 48 px de haut, texte de 14 px en graisse 600, soulignement de 3 px.
 - **En-tête de page :** pas de grand espace au-dessus du titre (12 px sur mobile, 24 px sur bureau). Le bouton d'action de l'en-tête (Publier, Créer un skill…) est un bouton de taille normale (`HeaderActionLink`, hauteur de contrôle, texte de 13 px). Pas d'avatar du compte en haut à droite du fil ni d'un salon : le compte vit au pied de la barre d'activité sur bureau et dans l'onglet Moi sur mobile.
 - **Message vocal :** un micro à la place du bouton d'envoi tant que le message est vide, dans un salon comme dans un message privé. Sur écran tactile, on le maintient pour enregistrer et on relâche pour envoyer ; glisser vers la gauche annule. Un appui bref (moins de 0,3 s, double appui d'un lecteur d'écran) démarre l'enregistrement comme un clic. À la souris ou au clavier, un clic démarre, puis "Envoyer" ou la corbeille (ou Échap). Pendant l'enregistrement, une barre recouvre le composeur : point `--danger` qui clignote (fixe avec `prefers-reduced-motion`), durée en Geist Mono. Deux minutes au plus, arrêt et envoi automatiques. Un micro refusé s'explique en une ligne sous le composeur. Le lecteur : bouton rond `--primary` lecture et pause, barre de progression qui permet d'avancer, durée ; rien n'est téléchargé avant l'appui, jamais de lecture automatique, un seul message vocal joue à la fois.
@@ -151,7 +151,7 @@ Chaque écran et chaque liste a quatre états dessinés :
 
 Ces choix font "interface générée par une IA" :
 
-- dégradés décoratifs, effet verre dépoli, halos lumineux (deux exceptions, le parcours d'arrivée et les bannières de skill, voir ci-dessous) ;
+- dégradés décoratifs, effet verre dépoli, halos lumineux (une exception, le parcours d'arrivée, voir ci-dessous) ;
 - emojis utilisés comme icônes ;
 - cartes toutes identiques avec la même ombre grise ;
 - bordure colorée à gauche des cartes ;
@@ -249,15 +249,6 @@ autre produit » du principe 6 : décor qui dit de quoi on parle, jamais
 cliquable, en blanc sur les écrans calmes et dans leurs vraies couleurs sur
 l'accueil seulement (demandé le 08/11/2026). Aucun autre écran
 n'hérite de ces exceptions.
-
-#### Bannières de skill
-
-La bannière en tête d'une carte de skill et de la page d'un skill est un
-dégradé propre au domaine du skill, avec un motif de caractères de code,
-demandé explicitement le 08/11/2026. Voir
-`docs/adr/0028-bannieres-de-skill.md`. Le dégradé reste dans la bannière :
-aucun texte n'y est posé, le reste de la carte est ordinaire, et aucun autre
-élément du produit n'en bénéficie.
 
 ## Mouvement
 

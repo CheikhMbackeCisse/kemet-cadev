@@ -41,6 +41,8 @@ function skillBy(authorId: string): SkillDetail {
     authorId,
     authorHandle: "fatima-benali",
     authorDisplayName: "Fatima Benali",
+  authorAvatarUrl: null,
+  codeExcerpt: { language: null, lines: [] },
     averageStars: null,
     ratingCount: 0,
     usageCount: 0,

@@ -1,5 +1,5 @@
 import type { skills, profiles } from "@kemet/db";
-import type { SkillDetail, SkillSummary } from "@kemet/shared";
+import { skillCodeExcerpt, type SkillDetail, type SkillSummary } from "@kemet/shared";
 
 type SkillRow = typeof skills.$inferSelect;
 type ProfileRow = typeof profiles.$inferSelect;
@@ -18,6 +18,8 @@ export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings
     authorId: row.authorId,
     authorHandle: author.handle,
     authorDisplayName: author.displayName,
+    authorAvatarUrl: author.avatarUrl,
+    codeExcerpt: skillCodeExcerpt(row.content),
     averageStars: ratings.average,
     ratingCount: ratings.count,
     usageCount: ratings.uses,

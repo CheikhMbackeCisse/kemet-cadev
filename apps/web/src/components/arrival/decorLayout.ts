@@ -1,4 +1,4 @@
-import type { TechLogoName } from "./techLogos.js";
+import type { TechLogoName } from "../ui/techLogos.js";
 
 export type DecorIcon = "terminal" | "database" | "network";
 

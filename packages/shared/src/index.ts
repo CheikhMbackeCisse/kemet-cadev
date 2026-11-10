@@ -27,3 +27,4 @@ export * from "./data/onboarding-values.js";
 export * from "./data/audience.js";
 export * from "./demo-email.js";
 export * from "./schemas/onboarding.js";
+export * from "./skill-code-excerpt.js";

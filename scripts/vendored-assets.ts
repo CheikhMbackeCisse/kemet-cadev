@@ -12,10 +12,10 @@ export interface VendoredAsset {
 
 export const VENDORED_ASSETS: readonly VendoredAsset[] = [
   {
-    name: "Simple Icons 16.37.0 (Python, JavaScript, TypeScript, Kotlin)",
+    name: "Simple Icons 16.37.0 (34 logos de technologies), généré par scripts/build-tech-logos.ts",
     source: "https://simpleicons.org",
     license: "CC0-1.0",
-    usedIn: "apps/web/src/components/arrival/techLogos.ts",
+    usedIn: "apps/web/src/components/ui/techLogos.ts",
   },
   {
     name: "Contour de l'Afrique, Natural Earth via world-atlas 2.0.2 (countries-50m), généré par scripts/build-africa-outline.ts",

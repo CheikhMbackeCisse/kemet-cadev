@@ -15,7 +15,7 @@ import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { RichText } from "../components/content/RichText.js";
 import { AskKemetDialog } from "../components/skills/AskKemetDialog.js";
-import { SkillBanner, SkillDomainIcon } from "../components/skills/SkillBanner.js";
+import { SkillCodeCover } from "../components/skills/SkillCodeCover.js";
 import { SkillRating } from "../components/skills/SkillRating.js";
 import { formatCount } from "../lib/formatCount.js";
 import { skillDomain } from "../lib/skills/skillDomain.js";
@@ -117,10 +117,10 @@ export function SkillPage() {
       </div>
 
       <div className="overflow-hidden rounded-card border border-border">
-        <SkillBanner domain={skillDomain(skill)} seed={skill.slug} className="h-20" />
-        <div className="px-4 pb-4">
-          <SkillDomainIcon domain={skillDomain(skill)} className="-mt-6" />
-          <div className="mt-2 flex items-start justify-between gap-2">
+        <SkillCodeCover skill={skill} className="border-b border-border" />
+        <div className="p-4">
+          <p className="text-xs text-subtle">{fr.skills.domainNames[skillDomain(skill)]}</p>
+          <div className="mt-1 flex items-start justify-between gap-2">
             <h1 className="break-words text-lg font-bold text-text">{skill.name}</h1>
             {canWrite && profile?.id === skill.authorId && (
               <MoreActionsMenu

@@ -7,7 +7,7 @@ import { fr } from "../../i18n/fr.js";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
-import { SkillDomainIcon } from "../skills/SkillBanner.js";
+import { SkillDomainIcon } from "../skills/SkillDomainIcon.js";
 
 const MAX_STACK_BADGES = 4;
 const MAX_ROLES = 2;
