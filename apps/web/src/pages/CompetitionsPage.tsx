@@ -121,7 +121,7 @@ export function CompetitionsPage() {
                   <p className="text-sm font-medium text-text">{competition.name}</p>
                   <p className="text-sm text-text-2">{competition.pitch}</p>
                   <p className="mt-1 text-xs text-subtle">
-                    {fr.competitions.createdBy(competition.createdByHandle)}
+                    {fr.competitions.createdByLabel} {competition.createdBy.displayName}
                   </p>
                   <div className="mt-2 flex gap-2">
                     <Button

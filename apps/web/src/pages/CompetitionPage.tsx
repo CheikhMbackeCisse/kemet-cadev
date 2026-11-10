@@ -1,7 +1,13 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { CompetitionDetail, Submission, SubmissionResult, Team } from "@kemet/shared";
+import type {
+  CompetitionDetail,
+  CompetitionPerson,
+  Submission,
+  SubmissionResult,
+  Team,
+} from "@kemet/shared";
 import {
   ChatApiError,
   createTeam,
@@ -29,6 +35,26 @@ import { RailPage } from "../components/layout/RailPage.js";
 import { useSession } from "../session/SessionProvider.js";
 import { goToSignUp } from "../session/signUpInvite.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
+import { Avatar } from "../components/ui/Avatar.js";
+import { ProfileLink } from "../components/ui/ProfileLink.js";
+import { splitExampleNote } from "../lib/competitions/exampleNote.js";
+
+function PersonChip({ person }: { person: CompetitionPerson }) {
+  return (
+    <ProfileLink
+      handle={person.handle}
+      className="inline-flex items-center gap-1.5 text-sm text-text hover:underline"
+    >
+      <Avatar
+        name={person.displayName}
+        src={person.avatarUrl ?? undefined}
+        countryCode={person.country}
+        size={24}
+      />
+      {person.displayName}
+    </ProfileLink>
+  );
+}
 
 const PHASE_LABELS = {
   registration: fr.competitions.phaseRegistration,
@@ -194,6 +220,8 @@ export function CompetitionPage() {
     );
   }
 
+  const example = splitExampleNote(competition.description);
+
   return (
     <RailPage activeSection="competitions" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex items-center justify-between">
@@ -209,7 +237,10 @@ export function CompetitionPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h1 className="text-xl font-bold text-text">{competition.name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold text-text">{competition.name}</h1>
+              {example.isExample && <Badge>{fr.competitions.exampleBadge}</Badge>}
+            </div>
             <p className="mt-1 text-sm text-text-2">{competition.pitch}</p>
           </div>
           {competition.status === "published" ? (
@@ -224,11 +255,10 @@ export function CompetitionPage() {
             </Badge>
           )}
         </div>
-        {competition.description && (
-          <RichText source={competition.description} className="text-sm text-text" />
-        )}
-        <p className="text-xs text-subtle">
-          {fr.competitions.createdBy(competition.createdByHandle)}
+        {example.body && <RichText source={example.body} className="text-sm text-text" />}
+        <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
+          {fr.competitions.createdByLabel}
+          <PersonChip person={competition.createdBy} />
         </p>
         {competition.reviewNote && (
           <p className="text-xs text-subtle">
@@ -265,12 +295,16 @@ export function CompetitionPage() {
                             <Badge tone="success">{fr.competitions.yourTeam}</Badge>
                           )}
                         </div>
-                        <p className="mt-1 text-xs text-subtle">
-                          {fr.competitions.captain(team.captainHandle)}
-                        </p>
-                        <p className="text-xs text-subtle">
-                          {fr.competitions.members(team.memberHandles)}
-                        </p>
+                        <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                          {team.members.map((member) => (
+                            <li key={member.handle} className="flex items-center gap-1.5">
+                              <PersonChip person={member} />
+                              {member.handle === team.captain.handle && (
+                                <Badge>{fr.competitions.captainBadge}</Badge>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
                         <div className="mt-2 flex items-center gap-2">
                           {team.hasSubmission && <Badge>{fr.competitions.hasSubmission}</Badge>}
                           {!team.viewerIsMember &&

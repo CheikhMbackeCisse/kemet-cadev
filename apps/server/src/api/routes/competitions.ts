@@ -31,7 +31,7 @@ import {
   listPendingCompetitionRequests,
   listPublishedCompetitions,
   listSubmissionsForCompetition,
-  listTeamMemberHandles,
+  listTeamMembers,
   listTeamMemberIds,
   listTeamsForCompetition,
   reviewCompetition,
@@ -113,7 +113,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
       if (existing) throw conflict("Une compétition avec cet identifiant existe déjà.");
       const competition = await createCompetitionRequest(db, profile.id, input);
       return {
-        competition: serializeCompetitionDetail(competition, 0, 0, profile.handle, {
+        competition: serializeCompetitionDetail(competition, 0, 0, profile, {
           isCreator: true,
           isAdmin: profile.isPlatformAdmin,
           isJuror: false,
@@ -148,7 +148,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
     const items = await Promise.all(
       rows.map(async (row) => {
         const creator = await findProfileById(db, row.createdBy);
-        return serializeCompetitionDetail(row, 0, 0, creator!.handle, {
+        return serializeCompetitionDetail(row, 0, 0, creator!, {
           isCreator: false,
           isAdmin: true,
           isJuror: false,
@@ -173,7 +173,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
       if (!reviewed) throw notFound("Cette compétition n'existe pas.");
       const creator = await findProfileById(db, reviewed.createdBy);
       return {
-        competition: serializeCompetitionDetail(reviewed, 0, 0, creator!.handle, {
+        competition: serializeCompetitionDetail(reviewed, 0, 0, creator!, {
           isCreator: false,
           isAdmin: true,
           isJuror: false,
@@ -200,7 +200,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
           competition,
           await countTeams(db, competition.id),
           await countSubmissions(db, competition.id),
-          creator!.handle,
+          creator!,
           { isCreator, isAdmin, isJuror: JUROR_LEVELS.has(level) },
         ),
       };
@@ -224,7 +224,7 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
           throw conflict("Vous faites déjà partie d'une équipe de cette compétition.");
         throw conflict("Ce nom d'équipe est déjà pris pour cette compétition.");
       }
-      return { team: serializeTeam(result.team, profile.handle, [profile.handle], false, true) };
+      return { team: serializeTeam(result.team, profile, [profile], false, true) };
     },
   );
 
@@ -241,11 +241,11 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
         throw badRequest("Les inscriptions sont fermées pour cette compétition.");
       const member = await joinTeam(db, team.id, team.competitionId, profile.id);
       if (!member) throw conflict("Vous faites déjà partie d'une équipe de cette compétition.");
-      const [captain, memberHandles] = await Promise.all([
+      const [captain, members] = await Promise.all([
         findProfileById(db, team.captainId),
-        listTeamMemberHandles(db, team.id),
+        listTeamMembers(db, team.id),
       ]);
-      return { team: serializeTeam(team, captain!.handle, memberHandles, false, true) };
+      return { team: serializeTeam(team, captain!, members, false, true) };
     },
   );
 
@@ -258,19 +258,13 @@ export function registerCompetitionRoutes(app: FastifyInstance, { db, auth }: Ch
       const rows = await listTeamsForCompetition(db, competition.id);
       const items = await Promise.all(
         rows.map(async (team) => {
-          const [captain, memberHandles, submission] = await Promise.all([
+          const [captain, members, submission] = await Promise.all([
             findProfileById(db, team.captainId),
-            listTeamMemberHandles(db, team.id),
+            listTeamMembers(db, team.id),
             findSubmissionByTeamId(db, team.id),
           ]);
           const viewerIsMember = profile ? await isTeamMember(db, team.id, profile.id) : false;
-          return serializeTeam(
-            team,
-            captain!.handle,
-            memberHandles,
-            submission !== null,
-            viewerIsMember,
-          );
+          return serializeTeam(team, captain!, members, submission !== null, viewerIsMember);
         }),
       );
       return { items };

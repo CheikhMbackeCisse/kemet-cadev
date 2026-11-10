@@ -1,12 +1,23 @@
 import type { competitions, submissions, teams } from "@kemet/db";
-import type { CompetitionDetail, CompetitionSummary, Submission, SubmissionResult, Team } from "@kemet/shared";
+import type {
+  CompetitionDetail,
+  CompetitionPerson,
+  CompetitionSummary,
+  Submission,
+  SubmissionResult,
+  Team,
+} from "@kemet/shared";
 import { computeCompetitionPhase, type SubmissionStanding } from "./repositories/competitions.js";
 
 type CompetitionRow = typeof competitions.$inferSelect;
 type TeamRow = typeof teams.$inferSelect;
 type SubmissionRow = typeof submissions.$inferSelect;
 
-export function serializeCompetitionSummary(row: CompetitionRow, teamCount: number, submissionCount: number): CompetitionSummary {
+export function serializeCompetitionSummary(
+  row: CompetitionRow,
+  teamCount: number,
+  submissionCount: number,
+): CompetitionSummary {
   return {
     id: row.id,
     slug: row.slug,
@@ -27,26 +38,44 @@ export function serializeCompetitionDetail(
   row: CompetitionRow,
   teamCount: number,
   submissionCount: number,
-  creatorHandle: string,
+  creator: CompetitionPerson,
   viewer: { isCreator: boolean; isAdmin: boolean; isJuror: boolean },
 ): CompetitionDetail {
   return {
     ...serializeCompetitionSummary(row, teamCount, submissionCount),
     description: row.description,
-    createdByHandle: creatorHandle,
+    createdByHandle: creator.handle,
+    createdBy: toCompetitionPerson(creator),
     reviewNote: viewer.isCreator || viewer.isAdmin ? row.reviewNote : null,
     viewerIsCreator: viewer.isCreator,
     viewerIsJuror: viewer.isJuror,
   };
 }
 
-export function serializeTeam(row: TeamRow, captainHandle: string, memberHandles: string[], hasSubmission: boolean, viewerIsMember: boolean): Team {
+export function toCompetitionPerson(person: CompetitionPerson): CompetitionPerson {
+  return {
+    handle: person.handle,
+    displayName: person.displayName,
+    avatarUrl: person.avatarUrl,
+    country: person.country,
+  };
+}
+
+export function serializeTeam(
+  row: TeamRow,
+  captain: CompetitionPerson,
+  members: CompetitionPerson[],
+  hasSubmission: boolean,
+  viewerIsMember: boolean,
+): Team {
   return {
     id: row.id,
     competitionId: row.competitionId,
     name: row.name,
-    captainHandle,
-    memberHandles,
+    captainHandle: captain.handle,
+    memberHandles: members.map((member) => member.handle),
+    captain: toCompetitionPerson(captain),
+    members: members.map(toCompetitionPerson),
     hasSubmission,
     viewerIsMember,
     createdAt: row.createdAt.toISOString(),
@@ -85,7 +114,10 @@ export function serializeSubmission(
   };
 }
 
-export function serializeSubmissionResult(standing: SubmissionStanding, rank: number): SubmissionResult {
+export function serializeSubmissionResult(
+  standing: SubmissionStanding,
+  rank: number,
+): SubmissionResult {
   return {
     submissionId: standing.submissionId,
     teamName: standing.teamName,
