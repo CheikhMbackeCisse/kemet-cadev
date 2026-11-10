@@ -218,13 +218,8 @@ export const fr = {
   moi: {
     title: "Moi",
     myProfile: "Mon profil",
-    editProfile: "Modifier le profil",
-    counts: (points: string, followers: string, following: string) =>
-      `${points} points, ${followers} abonnés, ${following} abonnements`,
     myWorks: "Mes travaux",
     saved: "Enregistrés",
-    visitorText:
-      "Avec un compte, tu retrouves ici ton profil, tes enregistrements et tes messages.",
     loadError: "Ton profil n'a pas pu être chargé.",
   },
   demo: {
@@ -1312,10 +1307,20 @@ export const fr = {
     loadingError: "Impossible de charger ce profil.",
     follow: "Suivre",
     unfollow: "Ne plus suivre",
-    followersCount: (count: string) => `${count} abonnés`,
-    followingCount: (count: string) => `${count} abonnements`,
     followersTitle: "Abonnés",
     followingTitle: "Abonnements",
+    statsLabel: "Chiffres du profil",
+    statPoints: "Points",
+    statWorks: "Travaux",
+    statFollowers: "Abonnés",
+    statFollowing: "Abonnements",
+    editProfile: "Modifier le profil",
+    share: "Partager le profil",
+    shareTitle: (name: string) => `${name} sur Kemet`,
+    linkCopied: "Lien du profil copié.",
+    shareFailed: "Le lien n'a pas pu être copié. Copie l'adresse de la page.",
+    levelProgress: (points: string, remaining: string, level: string) =>
+      `${points} points · encore ${remaining} pour ${level}`,
     emptyFollowers: "Personne pour l'instant.",
     hiddenFollows: (count: string, afterNames: boolean) =>
       afterNames ? `Et ${count} autres.` : `${count} personnes.`,
@@ -1341,7 +1346,6 @@ export const fr = {
       project_manager: "Gestion de projet",
       entrepreneur: "Direction d'entreprise",
     },
-    settingsLink: "Paramètres",
     proTitle: "Kemet Pro",
     proPitch:
       "Plus de quota IA, tes statistiques de profil, et plus de place dans tes espaces privés.",

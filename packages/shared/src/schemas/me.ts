@@ -45,6 +45,8 @@ export const publicProfileResponseSchema = z.object({
   credentials: z.array(credentialSchema),
   followerCount: z.number().int().nonnegative(),
   followingCount: z.number().int().nonnegative(),
+  /** Travaux publiés et travaux co-signés acceptés, comme l'onglet Bibliothèque. */
+  workCount: z.number().int().nonnegative(),
   isFollowedByViewer: z.boolean().nullable(),
 });
 

@@ -562,6 +562,9 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     expect(
       (await app.inject({ method: "GET", url: "/api/users/invite/works" })).json().items,
     ).toEqual([]);
+    expect((await app.inject({ method: "GET", url: "/api/users/invite" })).json().workCount).toBe(
+      0,
+    );
 
     const invitations = await app.inject({
       method: "GET",
@@ -599,6 +602,12 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     expect(profileWorks.json().items).toEqual([
       expect.objectContaining({ slug: "memoire-test", relation: "coauthored" }),
     ]);
+    expect((await app.inject({ method: "GET", url: "/api/users/invite" })).json().workCount).toBe(
+      1,
+    );
+    expect((await app.inject({ method: "GET", url: "/api/users/autrice" })).json().workCount).toBe(
+      1,
+    );
   });
 
   it("un refus garde le coauteur hors du travail", async () => {

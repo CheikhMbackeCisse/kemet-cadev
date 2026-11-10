@@ -2,6 +2,7 @@ import type { Level } from "@kemet/shared";
 import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
 import { LevelInsignia } from "./LevelInsignia.js";
+import { LEVEL_TEXT_CLASSES } from "./levelColors.js";
 
 export type { Level } from "@kemet/shared";
 
@@ -11,15 +12,6 @@ export const LEVEL_LABELS: Record<Level, string> = {
   scribe: "Scribe",
   architecte: "Architecte",
   legende: "Légende",
-};
-
-// Classes écrites en entier : Tailwind ne voit pas une classe composée.
-const LEVEL_COLORS: Record<Level, string> = {
-  apprenti: "text-level-apprenti",
-  artisan: "text-level-artisan",
-  scribe: "text-level-scribe",
-  architecte: "text-level-architecte",
-  legende: "text-level-legende",
 };
 
 export const LEVELS_PATH = "/niveaux";
@@ -50,7 +42,7 @@ export function LevelBadge({
   const classes = cn(
     "inline-flex shrink-0 items-center",
     tone === "onDark" && "level-on-dark",
-    LEVEL_COLORS[level],
+    LEVEL_TEXT_CLASSES[level],
     className,
   );
   const content = showLabel ? (

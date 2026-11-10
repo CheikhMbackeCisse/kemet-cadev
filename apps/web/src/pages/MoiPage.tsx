@@ -6,20 +6,28 @@ import {
   Flag as FlagIcon,
   LogOut,
   MessagesSquare,
+  Share2,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { RailPage } from "../components/layout/RailPage.js";
+import { LevelProgressBar } from "../components/profile/LevelProgressBar.js";
+import { ProfileHeader } from "../components/profile/ProfileHeader.js";
+import {
+  PROFILE_ACTION_CLASS,
+  PROFILE_ACTIONS_ROW_CLASS,
+} from "../components/profile/profileActionClass.js";
 import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
 import { MOI_ITEMS } from "../components/shell/mobileTabs.js";
-import { Avatar } from "../components/ui/Avatar.js";
+import { Card } from "../components/ui/Card.js";
+import { KemetSymbol } from "../components/ui/KemetSymbol.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { useToast } from "../components/ui/Toast.js";
-import { LevelBadge } from "../components/ui/LevelBadge.js";
 import { getUserProfile } from "../lib/chat/api.js";
-import { formatCount } from "../lib/formatCount.js";
+import { shareLink } from "../lib/shareLink.js";
 import { useSession } from "../session/SessionProvider.js";
+import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import { fr } from "../i18n/fr.js";
 
 interface MoiRow {
@@ -57,12 +65,20 @@ export function MoiPage() {
     if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
-  const loadCounts = () => void countsQuery.refetch();
-
   function handleSignOut() {
     signOut()
       .then(() => (window.location.href = "/fil"))
       .catch(() => toast.show(fr.auth.signOutError, "danger"));
+  }
+
+  async function handleShare() {
+    if (!profile) return;
+    const outcome = await shareLink(
+      `${window.location.origin}/u/${profile.handle}`,
+      fr.profile.shareTitle(profile.displayName),
+    );
+    if (outcome === "copied") toast.show(fr.profile.linkCopied, "success");
+    if (outcome === "failed") toast.show(fr.profile.shareFailed, "danger");
   }
 
   if (status === "incomplete") return null;
@@ -70,58 +86,55 @@ export function MoiPage() {
 
   return (
     <RailPage activeSection="moi" className="gap-6 px-0 pt-3 lg:px-4 lg:pt-6">
-      {status === "loading" ? (
-        <MoiHeaderSkeleton />
-      ) : profile ? (
-        <header className="flex flex-col gap-3 px-4 lg:px-0">
-          <Avatar
-            name={profile.displayName}
-            src={profile.avatarUrl ?? undefined}
-            size={40}
-            countryCode={profile.country || undefined}
+      <div className="px-4 lg:px-0">
+        {status === "loading" ? (
+          <MoiHeaderSkeleton />
+        ) : profile ? (
+          <ProfileHeader
+            profile={profile}
+            stats={[
+              { label: fr.profile.statPoints, value: points, exact: true },
+              { label: fr.profile.statWorks, value: publicProfile?.workCount ?? null },
+              { label: fr.profile.statFollowers, value: publicProfile?.followerCount ?? null },
+            ]}
+            belowStats={
+              <>
+                <LevelProgressBar points={points} />
+                {profileError && (
+                  <p className="flex flex-wrap items-center gap-2 text-sm text-text-2" role="alert">
+                    {fr.moi.loadError}
+                    <button
+                      type="button"
+                      onClick={() => void countsQuery.refetch()}
+                      className="font-medium text-link hover:underline"
+                    >
+                      {fr.chat.retry}
+                    </button>
+                  </p>
+                )}
+              </>
+            }
+            clampBio
+            actions={
+              <div className={PROFILE_ACTIONS_ROW_CLASS}>
+                <a href="/parametres/profil" className={PROFILE_ACTION_CLASS}>
+                  {fr.profile.editProfile}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void handleShare()}
+                  className={PROFILE_ACTION_CLASS}
+                >
+                  <Share2 className="size-4 shrink-0" aria-hidden="true" />
+                  {fr.profile.share}
+                </button>
+              </div>
+            }
           />
-          <div className="flex flex-col gap-1">
-            <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-lg font-bold text-text">{profile.displayName}</h1>
-              <LevelBadge level={profile.level} link />
-            </div>
-            <p className="text-base text-text-2">@{profile.handle}</p>
-          </div>
-          {profileError ? (
-            <p className="flex flex-wrap items-center gap-2 text-base text-text-2" role="alert">
-              {fr.moi.loadError}
-              <button
-                type="button"
-                onClick={loadCounts}
-                className="font-medium text-link hover:underline"
-              >
-                {fr.chat.retry}
-              </button>
-            </p>
-          ) : publicProfile ? (
-            <p className="text-base text-text-2">
-              {fr.moi.counts(
-                formatCount(points),
-                formatCount(publicProfile.followerCount),
-                formatCount(publicProfile.followingCount),
-              )}
-            </p>
-          ) : (
-            <Skeleton className="h-4 w-48" />
-          )}
-          <a
-            href="/parametres/profil"
-            className="inline-flex h-control-mobile items-center justify-center rounded-control border border-border-strong px-4 text-base font-medium text-text hover:bg-surface-2 md:h-control md:w-fit"
-          >
-            {fr.moi.editProfile}
-          </a>
-        </header>
-      ) : (
-        <header className="flex flex-col gap-1 px-4 lg:px-0">
-          <h1 className="text-lg font-bold text-text">{fr.moi.title}</h1>
-          <p className="text-base text-text-2">{fr.moi.visitorText}</p>
-        </header>
-      )}
+        ) : (
+          <VisitorCard />
+        )}
+      </div>
 
       <nav aria-label={fr.moi.title}>
         <ul className="flex flex-col divide-y divide-border border-y border-border">
@@ -153,13 +166,40 @@ export function MoiPage() {
   );
 }
 
+function VisitorCard() {
+  return (
+    <Card variant="plain" className="flex flex-col items-center gap-4 py-6">
+      <h1 className="sr-only">{fr.moi.title}</h1>
+      <KemetSymbol className="size-12" />
+      <div className="grid w-full max-w-sm grid-cols-2 gap-2">
+        <a
+          href={SIGN_UP_PATH}
+          className="inline-flex h-control max-md:h-control-mobile items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+        >
+          {fr.auth.visitorBarSignup}
+        </a>
+        <a href="/connexion" className={PROFILE_ACTION_CLASS}>
+          {fr.auth.loginLink}
+        </a>
+      </div>
+    </Card>
+  );
+}
+
 function MoiHeaderSkeleton() {
   return (
-    <div className="flex flex-col gap-3 px-4 lg:px-0" aria-hidden="true">
-      <Skeleton className="size-10 rounded-full" />
-      <Skeleton className="h-5 w-40" />
-      <Skeleton className="h-4 w-24" />
+    <div className="flex flex-col gap-3" aria-hidden="true">
+      <Skeleton className="h-24 w-full rounded-card" />
+      <div className="-mt-11 flex items-end gap-3 pl-3">
+        <Skeleton className="size-[96px] rounded-full ring-4 ring-bg" />
+      </div>
+      <Skeleton className="h-1 w-full" />
+      <Skeleton className="h-6 w-40" />
       <Skeleton className="h-4 w-48" />
+      <div className="grid grid-cols-2 gap-2">
+        <Skeleton className="h-control" />
+        <Skeleton className="h-control" />
+      </div>
     </div>
   );
 }

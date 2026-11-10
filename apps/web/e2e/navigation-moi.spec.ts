@@ -35,6 +35,8 @@ test("la page Moi montre le compte et mène aux paramètres", async ({ page, req
 
   await page.goto("/moi");
   await expect(page.getByText(`@${handle}`)).toBeVisible();
+  await expect(page.getByText("0 points · encore 300 pour Artisan")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Partager le profil" })).toBeVisible();
   await page.getByRole("link", { name: "Paramètres" }).filter({ visible: true }).last().click();
   await expect(page).toHaveURL(/\/parametres$/);
 

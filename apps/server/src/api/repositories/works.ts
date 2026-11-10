@@ -306,6 +306,24 @@ export async function listProfileWorks(
   return toPage(rows, limit);
 }
 
+/** Même périmètre que `listProfileWorks`, compté. */
+export async function countProfileWorks(db: Db, profileId: string): Promise<number> {
+  const coauthored = db
+    .select({ id: workAuthors.workId })
+    .from(workAuthors)
+    .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "accepted")));
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(works)
+    .where(
+      and(
+        isNull(works.deletedAt),
+        or(eq(works.publisherId, profileId), inArray(works.id, coauthored)),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
 export interface WorkPeople {
   publisher: ProfileRow;
   coauthors: ProfileRow[];

@@ -17,6 +17,7 @@ import {
   listOpenToOpportunityCandidates,
 } from "../repositories/profiles.js";
 import { computeProfilePoints, computeProfilesPoints } from "../repositories/points.js";
+import { countProfileWorks } from "../repositories/works.js";
 import { serializeCredential, serializeProfile, serializeProfileSummary } from "../serializers.js";
 import type { AppDeps } from "../app.js";
 
@@ -53,6 +54,7 @@ export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps):
       credentials: credentials.map(serializeCredential),
       followerCount: await countFollowers(db, profile.id),
       followingCount: await countFollowing(db, profile.id),
+      workCount: await countProfileWorks(db, profile.id),
       isFollowedByViewer: viewerProfile ? await isFollowing(db, viewerProfile.id, profile.id) : null,
     };
   });

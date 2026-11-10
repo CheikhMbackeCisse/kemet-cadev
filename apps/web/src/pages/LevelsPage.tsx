@@ -1,10 +1,11 @@
 import { type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LEVELS, levelForPoints, type Level, type LevelsResponse } from "@kemet/shared";
+import { LEVELS, levelForPoints, type LevelsResponse } from "@kemet/shared";
 import { RailPage } from "../components/layout/RailPage.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { LEVEL_LABELS } from "../components/ui/LevelBadge.js";
 import { LevelInsignia } from "../components/ui/LevelInsignia.js";
+import { LEVEL_FILL_CLASSES, LEVEL_TEXT_CLASSES } from "../components/ui/levelColors.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { getLevels } from "../lib/chat/api.js";
 import { cn } from "../lib/cn.js";
@@ -15,22 +16,6 @@ const exactNumber = new Intl.NumberFormat("fr-FR");
 import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
-
-const LEVEL_TEXT: Record<Level, string> = {
-  apprenti: "text-level-apprenti",
-  artisan: "text-level-artisan",
-  scribe: "text-level-scribe",
-  architecte: "text-level-architecte",
-  legende: "text-level-legende",
-};
-
-const LEVEL_FILL: Record<Level, string> = {
-  apprenti: "bg-level-apprenti",
-  artisan: "bg-level-artisan",
-  scribe: "bg-level-scribe",
-  architecte: "bg-level-architecte",
-  legende: "bg-level-legende",
-};
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -50,7 +35,7 @@ function YourPosition({ points, levels }: { points: number; levels: LevelsRespon
 
   return (
     <div className="flex items-center gap-4 rounded-card bg-surface p-4">
-      <LevelInsignia level={level} className={cn("size-12 shrink-0", LEVEL_TEXT[level])} />
+      <LevelInsignia level={level} className={cn("size-12 shrink-0", LEVEL_TEXT_CLASSES[level])} />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <p className="text-base font-semibold text-text">
           {fr.levels.yourLevel(LEVEL_LABELS[level])}
@@ -70,7 +55,7 @@ function YourPosition({ points, levels }: { points: number; levels: LevelsRespon
               className="h-2 overflow-hidden rounded-full bg-surface-2"
             >
               <div
-                className={cn("h-full rounded-full", LEVEL_FILL[level])}
+                className={cn("h-full rounded-full", LEVEL_FILL_CLASSES[level])}
                 style={{ width: `${Math.max(2, Math.round(progress * 100))}%` }}
               />
             </div>
@@ -234,7 +219,7 @@ export function LevelsPage() {
                 >
                   <LevelInsignia
                     level={entry.level}
-                    className={cn("size-10 shrink-0", LEVEL_TEXT[entry.level])}
+                    className={cn("size-10 shrink-0", LEVEL_TEXT_CLASSES[entry.level])}
                   />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="flex items-center gap-2 font-display text-md font-semibold text-text">

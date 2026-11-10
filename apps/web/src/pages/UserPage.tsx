@@ -1,5 +1,5 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { ArrowLeft, HeartHandshake, Settings, Sparkles } from "lucide-react";
+import { ArrowLeft, HeartHandshake, Share2, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   isLevelAtLeast,
@@ -22,12 +22,10 @@ import {
   unfollowUser,
 } from "../lib/chat/api.js";
 import { Avatar } from "../components/ui/Avatar.js";
-import { ProfileBanner } from "../components/ui/ProfileBanner.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Card } from "../components/ui/Card.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
-import { LevelBadge } from "../components/ui/LevelBadge.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
@@ -37,7 +35,12 @@ import { WorkInvitations } from "../components/works/ProfileWorks.js";
 import { ProfileLibrary } from "../components/library/ProfileLibrary.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { useSession } from "../session/SessionProvider.js";
-import { formatCount } from "../lib/formatCount.js";
+import { shareLink } from "../lib/shareLink.js";
+import { ProfileHeader } from "../components/profile/ProfileHeader.js";
+import {
+  PROFILE_ACTION_CLASS,
+  PROFILE_ACTIONS_ROW_CLASS,
+} from "../components/profile/profileActionClass.js";
 import { fr } from "../i18n/fr.js";
 
 // "Autre" ne dit rien sur un profil : la spécialité suffit.
@@ -152,6 +155,15 @@ export function UserPage() {
       );
       setMessageBusy(false);
     }
+  }
+
+  async function handleShare() {
+    const outcome = await shareLink(
+      `${window.location.origin}/u/${handle}`,
+      fr.profile.shareTitle(data?.profile.displayName ?? handle),
+    );
+    if (outcome === "copied") toast.show(fr.profile.linkCopied, "success");
+    if (outcome === "failed") toast.show(fr.profile.shareFailed, "danger");
   }
 
   async function handleToggleBlock() {
@@ -290,64 +302,82 @@ export function UserPage() {
   return (
     <ReadingPage header={header} activeMobileTab="moi">
       <div className="flex flex-col gap-3">
-        <ProfileBanner src={profile.bannerUrl} />
-        <div className="flex flex-wrap items-start gap-3">
-          <Avatar
-            name={profile.displayName}
-            src={profile.avatarUrl ?? undefined}
-            size={40}
-            countryCode={profile.country}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold text-text">{profile.displayName}</h1>
-              <LevelBadge level={profile.level} showLabel link />
-            </div>
-            <p className="text-sm text-subtle">
-              {[profile.role ? ROLE_LABELS[profile.role] : null, profile.title]
-                .filter(Boolean)
-                .join(" · ") || `@${profile.handle}`}
-            </p>
-          </div>
-          {isOwnProfile ? (
-            <a
-              href="/parametres"
-              className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text hover:bg-surface-2"
-            >
-              <Settings className="size-4" aria-hidden="true" />
-              {fr.profile.settingsLink}
-            </a>
-          ) : (
-            viewerProfile && (
-              // Sur téléphone, trois boutons à côté du nom le coupaient sur deux lignes.
-              <div className="flex shrink-0 items-center gap-2 max-sm:w-full">
-                <Button
-                  variant={isFollowedByViewer ? "secondary" : "primary"}
-                  onClick={handleToggleFollow}
-                  disabled={followBusy}
+        <ProfileHeader
+          profile={profile}
+          subtitle={
+            [profile.role ? ROLE_LABELS[profile.role] : null, profile.title]
+              .filter(Boolean)
+              .join(" · ") || null
+          }
+          stats={[
+            { label: fr.profile.statWorks, value: data.workCount },
+            {
+              label: fr.profile.statFollowers,
+              value: followerCount,
+              onClick: () => openFollowList("followers"),
+            },
+            {
+              label: fr.profile.statFollowing,
+              value: followingCount,
+              onClick: () => openFollowList("following"),
+            },
+          ]}
+          actions={
+            isOwnProfile ? (
+              <div className={PROFILE_ACTIONS_ROW_CLASS}>
+                <a href="/parametres/profil" className={PROFILE_ACTION_CLASS}>
+                  {fr.profile.editProfile}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void handleShare()}
+                  className={PROFILE_ACTION_CLASS}
                 >
-                  {isFollowedByViewer ? fr.profile.unfollow : fr.profile.follow}
-                </Button>
-                {blocked === false && !isSuspended && (
-                  <Button variant="secondary" onClick={handleWrite} loading={messageBusy}>
-                    {fr.messages.write}
-                  </Button>
-                )}
-                <MoreActionsMenu
-                  label={fr.messages.profileActions(profile.displayName)}
-                  items={[
-                    blocked
-                      ? { value: "unblock", label: fr.messages.unblock(profile.handle) }
-                      : { value: "block", label: fr.messages.block(profile.handle), danger: true },
-                  ]}
-                  onSelect={(value) =>
-                    value === "unblock" ? void handleToggleBlock() : setBlockConfirmOpen(true)
-                  }
-                />
+                  <Share2 className="size-4 shrink-0" aria-hidden="true" />
+                  {fr.profile.share}
+                </button>
               </div>
+            ) : (
+              viewerProfile && (
+                <div className="flex items-center gap-2 md:w-[26rem]">
+                  <Button
+                    variant={isFollowedByViewer ? "secondary" : "primary"}
+                    onClick={handleToggleFollow}
+                    disabled={followBusy}
+                    className="flex-1"
+                  >
+                    {isFollowedByViewer ? fr.profile.unfollow : fr.profile.follow}
+                  </Button>
+                  {blocked === false && !isSuspended && (
+                    <Button
+                      variant="secondary"
+                      onClick={handleWrite}
+                      loading={messageBusy}
+                      className="flex-1"
+                    >
+                      {fr.messages.write}
+                    </Button>
+                  )}
+                  <MoreActionsMenu
+                    label={fr.messages.profileActions(profile.displayName)}
+                    items={[
+                      blocked
+                        ? { value: "unblock", label: fr.messages.unblock(profile.handle) }
+                        : {
+                            value: "block",
+                            label: fr.messages.block(profile.handle),
+                            danger: true,
+                          },
+                    ]}
+                    onSelect={(value) =>
+                      value === "unblock" ? void handleToggleBlock() : setBlockConfirmOpen(true)
+                    }
+                  />
+                </div>
+              )
             )
-          )}
-        </div>
+          }
+        />
 
         {blocked && (
           <p className="text-sm text-text-2">{fr.messages.blockedNote(profile.handle)}</p>
@@ -371,25 +401,6 @@ export function UserPage() {
             </a>
           </Card>
         )}
-
-        {profile.bio && <p className="whitespace-pre-wrap text-sm text-text">{profile.bio}</p>}
-
-        <div className="flex items-center gap-4 text-sm">
-          <button
-            type="button"
-            onClick={() => openFollowList("followers")}
-            className="rounded-control py-2 hover:underline max-md:min-h-control-mobile"
-          >
-            {fr.profile.followersCount(formatCount(followerCount))}
-          </button>
-          <button
-            type="button"
-            onClick={() => openFollowList("following")}
-            className="rounded-control py-2 hover:underline max-md:min-h-control-mobile"
-          >
-            {fr.profile.followingCount(formatCount(followingCount))}
-          </button>
-        </div>
 
         {profile.stack.length > 0 && (
           <div className="flex flex-col gap-1.5">

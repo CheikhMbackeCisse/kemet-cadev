@@ -8,16 +8,16 @@ import type { Level } from "@kemet/shared";
 
 const MOTIF = "var(--bg)";
 
+// Une feuille plutôt qu'un cercle : un rond vert à côté d'un nom se lisait
+// comme une coche "compte vérifié".
 function Apprenti() {
   return (
     <>
-      <circle cx="12" cy="12" r="11" />
-      {/* Une graine qui germe : deux feuilles sur une tige. */}
-      <g fill={MOTIF}>
-        <ellipse cx="12" cy="17.6" rx="3.6" ry="1.7" />
-        <rect x="11.2" y="10.5" width="1.6" height="7" rx="0.8" />
-        <path d="M11.6 12.4C8.4 12.6 6.7 10.7 6.4 7.8c3 0 5 1.6 5.2 4.6Z" />
-        <path d="M12.4 11c.2-3.4 2.3-5.4 5.4-5.4-.1 3.2-2.1 5.2-5.4 5.4Z" />
+      <path d="M3.4 20.6C2.6 11.4 8.6 3.4 21.4 2.6c.8 12.8-7.2 18.8-18 18Z" />
+      {/* La nervure et deux veines, en creux. */}
+      <g fill="none" stroke={MOTIF} strokeWidth="1.6" strokeLinecap="round">
+        <path d="M5.6 18.4 17.4 6.6" />
+        <path d="M9.6 14.4h4.4M12.6 11.4V7.4" />
       </g>
     </>
   );
