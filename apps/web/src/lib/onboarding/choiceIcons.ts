@@ -1,6 +1,5 @@
 import {
   Blocks,
-  BookOpen,
   BrainCircuit,
   Briefcase,
   Cloud,
@@ -8,11 +7,9 @@ import {
   Cpu,
   Database,
   FlaskConical,
-  FolderOpen,
   Gamepad2,
   Globe,
   GraduationCap,
-  HandHelping,
   Handshake,
   Network,
   Palette,
@@ -28,6 +25,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Intent, Interest } from "@kemet/shared";
+
+/** Ce qu'un compte RH ou entrepreneur cherche, demandé avant l'inscription. */
+export const SEEKING_INTENTS = [
+  "recruit",
+  "find_partner",
+  "follow_community",
+] as const satisfies readonly Intent[];
+
+export type SeekingIntent = (typeof SEEKING_INTENTS)[number];
 
 export const INTEREST_ICONS: Record<Interest, LucideIcon> = {
   web: Globe,
@@ -48,10 +54,7 @@ export const INTEREST_ICONS: Record<Interest, LucideIcon> = {
   other: Plus,
 };
 
-export const INTENT_ICONS: Record<Intent, LucideIcon> = {
-  learn: BookOpen,
-  help_others: HandHelping,
-  showcase_work: FolderOpen,
+export const SEEKING_ICONS: Record<SeekingIntent, LucideIcon> = {
   recruit: Briefcase,
   find_partner: Handshake,
   follow_community: Users,

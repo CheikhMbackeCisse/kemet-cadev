@@ -40,15 +40,8 @@ import { useSession } from "../session/SessionProvider.js";
 import { formatCount } from "../lib/formatCount.js";
 import { fr } from "../i18n/fr.js";
 
-const ROLE_LABELS: Record<string, string> = {
-  developer: fr.auth.roleDeveloper,
-  designer: fr.auth.roleDesigner,
-  hr: fr.auth.roleHr,
-  student: fr.auth.roleStudent,
-  project_manager: fr.auth.roleProjectManager,
-  entrepreneur: fr.auth.roleEntrepreneur,
-  other: fr.auth.roleOther,
-};
+// "Autre" ne dit rien sur un profil : la spécialité suffit.
+const ROLE_LABELS: Record<string, string | undefined> = fr.profile.roleNames;
 
 const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
   job: fr.profile.credentialTypeJob,

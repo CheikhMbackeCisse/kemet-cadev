@@ -6,7 +6,12 @@ import { CountryList } from "../components/onboarding/CountryList.js";
 import { DomainGrid } from "../components/onboarding/DomainGrid.js";
 import { OtherAnswerField } from "../components/onboarding/OtherAnswerField.js";
 import { CheckList, RadioList, type ChoiceOption } from "../components/onboarding/RadioList.js";
-import { INTENT_ICONS, WHO_ICONS } from "../lib/onboarding/choiceIcons.js";
+import {
+  SEEKING_ICONS,
+  SEEKING_INTENTS,
+  WHO_ICONS,
+  type SeekingIntent,
+} from "../lib/onboarding/choiceIcons.js";
 import {
   asksForDomains,
   INTRO_BASE_PATH,
@@ -25,36 +30,29 @@ import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import { fr } from "../i18n/fr.js";
 
 const WHO_OPTIONS = [
-  { value: "developer", label: fr.intro.whoDeveloper, icon: WHO_ICONS.developer },
-  { value: "student", label: fr.intro.whoStudent, icon: WHO_ICONS.student },
-  { value: "hr", label: fr.intro.whoHr, icon: WHO_ICONS.hr },
-  { value: "entrepreneur", label: fr.intro.whoEntrepreneur, icon: WHO_ICONS.entrepreneur },
-  { value: "other", label: fr.intro.whoOther, icon: WHO_ICONS.other },
+  { value: "developer", label: fr.auth.roleDeveloper, icon: WHO_ICONS.developer },
+  { value: "student", label: fr.auth.roleStudent, icon: WHO_ICONS.student },
+  { value: "hr", label: fr.auth.roleHr, icon: WHO_ICONS.hr },
+  { value: "entrepreneur", label: fr.auth.roleEntrepreneur, icon: WHO_ICONS.entrepreneur },
+  { value: "other", label: fr.auth.roleOther, icon: WHO_ICONS.other },
 ] satisfies (ChoiceOption & { value: ProfileRole })[];
 
-const SEEKING_OPTIONS = [
-  "recruit",
-  "find_partner",
-  "follow_community",
-] as const satisfies readonly Intent[];
-const GOAL_OPTIONS = [
-  "learn",
-  "help_others",
-  "showcase_work",
-  "recruit",
-] as const satisfies readonly Intent[];
+const SEEKING_OPTIONS = SEEKING_INTENTS.map((intent) => ({
+  value: intent,
+  label: fr.intro.seeking[intent],
+  icon: SEEKING_ICONS[intent],
+}));
 
-function intentOptions(intents: readonly Intent[]) {
-  return intents.map((intent) => ({
-    value: intent,
-    label: fr.intro.intents[intent],
-    icon: INTENT_ICONS[intent],
-  }));
+function isSeeking(intent: Intent): intent is SeekingIntent {
+  return (SEEKING_INTENTS as readonly Intent[]).includes(intent);
 }
 
-/** Remplace, dans la liste des intentions, celles qu'un écran propose, sans toucher aux autres. */
-function replaceIntents(current: Intent[], offered: readonly Intent[], chosen: Intent[]): Intent[] {
-  return [...new Set([...current.filter((intent) => !offered.includes(intent)), ...chosen])];
+/**
+ * Remplace les intentions de l'écran "Que cherches-tu ?" sans toucher aux
+ * autres : une valeur gardée d'une version précédente reste en base.
+ */
+function replaceSeeking(current: Intent[], chosen: Intent[]): Intent[] {
+  return [...new Set([...current.filter((intent) => !isSeeking(intent)), ...chosen])];
 }
 
 /** Une précision "Autre" n'a plus de sens une fois "Autre" décoché. */
@@ -68,7 +66,7 @@ function withoutStaleOther(answers: IntroAnswers): IntroAnswers {
 }
 
 /**
- * Quatre questions posées à un visiteur avant l'inscription. Les réponses
+ * Trois questions posées à un visiteur avant l'inscription. Les réponses
  * restent dans le navigateur ; elles rejoignent le profil une fois le compte
  * créé (OnboardingPage).
  */
@@ -170,21 +168,13 @@ export function IntroQuestionsPage() {
         <IntroStepLayout
           {...common}
           title={fr.intro.seekingTitle}
-          disabledReason={
-            intents.some((intent) => (SEEKING_OPTIONS as readonly Intent[]).includes(intent))
-              ? null
-              : fr.intro.choiceRequired
-          }
+          disabledReason={intents.some(isSeeking) ? null : fr.intro.choiceRequired}
         >
           <CheckList
             label={fr.intro.seekingLabel}
-            options={intentOptions(SEEKING_OPTIONS)}
-            value={intents.filter((intent) =>
-              (SEEKING_OPTIONS as readonly Intent[]).includes(intent),
-            )}
-            onChange={(value) =>
-              update({ intents: replaceIntents(intents, SEEKING_OPTIONS, value) })
-            }
+            options={SEEKING_OPTIONS}
+            value={intents.filter(isSeeking)}
+            onChange={(value) => update({ intents: replaceSeeking(intents, value) })}
             tone="glass"
           />
         </IntroStepLayout>
@@ -199,26 +189,6 @@ export function IntroQuestionsPage() {
           <CountryList
             value={answers.country ?? ""}
             onChange={(country) => update({ country })}
-            tone="glass"
-          />
-        </IntroStepLayout>
-      );
-    case "intents":
-      return (
-        <IntroStepLayout
-          {...common}
-          title={fr.intro.intentsTitle}
-          disabledReason={
-            intents.some((intent) => (GOAL_OPTIONS as readonly Intent[]).includes(intent))
-              ? null
-              : fr.intro.choiceRequired
-          }
-        >
-          <CheckList
-            label={fr.intro.intentsLabel}
-            options={intentOptions(GOAL_OPTIONS)}
-            value={intents.filter((intent) => (GOAL_OPTIONS as readonly Intent[]).includes(intent))}
-            onChange={(value) => update({ intents: replaceIntents(intents, GOAL_OPTIONS, value) })}
             tone="glass"
           />
         </IntroStepLayout>

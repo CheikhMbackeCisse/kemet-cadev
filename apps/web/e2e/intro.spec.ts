@@ -12,12 +12,12 @@ test("une première visite ouvre l'accueil, Explorer sans compte mène au fil", 
   await expect(page.getByRole("heading", { name: "Fil" })).toBeVisible();
 });
 
-test("les quatre questions mènent à l'inscription, Passer compris", async ({ page }) => {
+test("les trois questions mènent à l'inscription, Passer compris", async ({ page }) => {
   await page.goto("/decouvrir");
   await page.getByRole("link", { name: "Commencer" }).click();
 
-  await expect(page.getByRole("progressbar", { name: "Étape 1 sur 4" })).toBeVisible();
-  await page.getByText("Développeur/se", { exact: true }).click();
+  await expect(page.getByRole("progressbar", { name: "Étape 1 sur 3" })).toBeVisible();
+  await page.getByText("Je code", { exact: true }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expect(page.getByRole("heading", { name: "Tes domaines" })).toBeVisible();
@@ -32,13 +32,10 @@ test("les quatre questions mènent à l'inscription, Passer compris", async ({ p
   await expect(page.getByText("France", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Passer" }).click();
 
-  await expect(page.getByRole("heading", { name: "Que viens-tu faire sur Kemet ?" })).toBeVisible();
-  await page.getByText("Aider les autres", { exact: true }).click();
-  await page.getByRole("button", { name: "Créer mon compte" }).click();
-
   await expect(page).toHaveURL(/\/inscription$/);
   const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("kemet.intro") ?? "{}"));
-  expect(stored).toMatchObject({ seen: true, answers: { role: "developer", interests: ["payments"], intents: ["help_others"] } });
+  expect(stored).toMatchObject({ seen: true, answers: { role: "developer", interests: ["payments"] } });
+  expect(stored.answers.intents ?? []).toEqual([]);
 });
 
 test("Autre ouvre un champ libre, gardé avec les réponses", async ({ page }) => {

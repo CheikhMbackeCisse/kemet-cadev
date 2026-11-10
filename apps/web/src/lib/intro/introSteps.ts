@@ -1,7 +1,7 @@
 import type { IntroAnswers } from "./introStorage.js";
 
-/** Les quatre questions posées avant l'inscription. */
-export const INTRO_QUESTIONS = ["who", "domains", "country", "intents"] as const;
+/** Les trois questions posées avant l'inscription. */
+export const INTRO_QUESTIONS = ["who", "domains", "country"] as const;
 
 export type IntroQuestion = (typeof INTRO_QUESTIONS)[number];
 
@@ -9,7 +9,6 @@ const SLUGS: Record<IntroQuestion, string> = {
   who: "qui",
   domains: "domaines",
   country: "pays",
-  intents: "objectifs",
 };
 
 export const INTRO_BASE_PATH = "/decouvrir";

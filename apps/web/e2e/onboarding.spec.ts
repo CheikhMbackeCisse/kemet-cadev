@@ -32,7 +32,7 @@ test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ pag
 
   await expectStep(page, 2, "Que fais-tu ?");
   await expect(page).toHaveURL(/\/bienvenue\/role$/);
-  await page.getByText("Développeur/se", { exact: true }).click();
+  await page.getByText("Je code", { exact: true }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expectStep(page, 3, "Quelle est ta spécialité ?");

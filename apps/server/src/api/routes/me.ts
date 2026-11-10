@@ -80,7 +80,7 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       if (patch.openToOpportunities) {
         const level = existing ? (await computeProfilePoints(db, existing.id)).level : "apprenti";
         if (!isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL)) {
-          throw forbidden("« Ouvert aux opportunités » se débloque au niveau Artisan.");
+          throw forbidden("« Disponible pour des opportunités » se débloque au niveau Artisan.");
         }
       }
 
