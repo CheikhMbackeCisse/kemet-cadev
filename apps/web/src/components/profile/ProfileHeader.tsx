@@ -48,7 +48,7 @@ function StatValue({ stat }: { stat: ProfileStat }) {
           {stat.exact ? exactNumber.format(stat.value) : formatCount(stat.value)}
         </span>
       )}{" "}
-      <span className="truncate text-xs text-text-2">{stat.label}</span>
+      <span className="max-w-full truncate text-xs text-text-2">{stat.label}</span>
     </>
   );
 }
@@ -56,6 +56,8 @@ function StatValue({ stat }: { stat: ProfileStat }) {
 /**
  * En-tête commun à Moi et au profil public : bannière (ou bande de couleur),
  * photo de 88 px qui chevauche son bord, chiffres à côté, puis l'identité.
+ * Seule la photo remonte sur la bannière : des chiffres alignés sur son bas
+ * passaient en partie sur une bannière sombre.
  */
 export function ProfileHeader({
   profile,
@@ -80,16 +82,16 @@ export function ProfileHeader({
         ) : (
           <div aria-hidden="true" className="h-24 rounded-card bg-accent-soft" />
         )}
-        <div className="-mt-11 flex items-end gap-3 pl-3">
-          <span className="shrink-0 rounded-full bg-bg p-1">
+        <div className="flex items-start gap-3 pl-3">
+          <span className="-mt-11 shrink-0 rounded-full bg-bg p-1">
             <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={88} />
           </span>
           <ul
             aria-label={fr.profile.statsLabel}
-            className="grid min-w-0 flex-1 grid-cols-3 gap-1 pb-1 md:flex md:gap-8 md:pl-4"
+            className="flex min-w-0 flex-1 justify-between gap-1 pt-1 md:justify-start md:gap-8 md:pl-4"
           >
             {stats.map((stat) => (
-              <li key={stat.label} className="flex justify-center">
+              <li key={stat.label} className="flex min-w-0 justify-center">
                 {stat.onClick ? (
                   <button
                     type="button"
