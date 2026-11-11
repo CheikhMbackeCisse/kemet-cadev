@@ -21,7 +21,7 @@ function statsLine(skill: SkillSummary): string {
  */
 export function SkillCard({ skill }: { skill: SkillSummary }) {
   return (
-    <div className="relative flex h-full flex-col overflow-hidden rounded-card border border-border bg-bg transition-colors duration-150 hover:border-border-strong has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-primary">
+    <div className="relative flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-border bg-bg transition-colors duration-150 hover:border-border-strong has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-primary">
       <SkillCodeCover skill={skill} className="border-b border-border" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <span className="text-xs text-subtle">{fr.skills.domainNames[skillDomain(skill)]}</span>

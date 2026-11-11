@@ -17,6 +17,9 @@ type CoverSkill = Pick<SkillSummary, "slug" | "name" | "tags" | "codeExcerpt">;
  * Couverture 16:9 d'un skill : une petite fenêtre d'éditeur sombre avec le
  * début de son premier bloc de code, dessinée en HTML. Décorative : le nom du
  * skill est juste en dessous.
+ *
+ * `contain: inline-size` : sans lui, la ligne de code la plus longue fixait
+ * la largeur minimale de la carte et élargissait la page sur téléphone.
  */
 export function SkillCodeCover({ skill, className }: { skill: CoverSkill; className?: string }) {
   const logo = techLogoFor([...skill.tags, skill.codeExcerpt.language, skill.name]);
@@ -24,7 +27,7 @@ export function SkillCodeCover({ skill, className }: { skill: CoverSkill; classN
     <div
       aria-hidden="true"
       className={cn(
-        "relative flex aspect-[16/9] w-full flex-col overflow-hidden bg-[var(--code-cover-bg)] font-mono text-[var(--code-cover-text)]",
+        "relative flex aspect-[16/9] w-full min-w-0 flex-col overflow-hidden [contain:inline-size] bg-[var(--code-cover-bg)] font-mono text-[var(--code-cover-text)]",
         className,
       )}
     >
@@ -33,7 +36,7 @@ export function SkillCodeCover({ skill, className }: { skill: CoverSkill; classN
       </div>
       <pre className="min-h-0 flex-1 overflow-hidden px-3 py-2 text-xs leading-5">
         {skill.codeExcerpt.lines.map((line, index) => (
-          <div key={index} className="truncate">
+          <div key={index} className="overflow-hidden text-ellipsis whitespace-pre">
             {line === ""
               ? " "
               : highlightLine(line).map((token, tokenIndex) => (

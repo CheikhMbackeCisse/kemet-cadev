@@ -198,9 +198,9 @@ export function ProfileLibrary({ profile, isOwnProfile, worksReloadKey }: Profil
             <p className="text-sm text-subtle">{fr.library.noSkills}</p>
           )
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2">
+          <ul className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
             {data.skills.map((skill) => (
-              <li key={skill.id}>
+              <li key={skill.id} className="min-w-0">
                 <SkillCard skill={skill} />
               </li>
             ))}

@@ -94,9 +94,9 @@ export function SkillsPage() {
           />
         )
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {skills.map((skill) => (
-            <li key={skill.id}>
+            <li key={skill.id} className="min-w-0">
               <SkillCard skill={skill} />
             </li>
           ))}
