@@ -8,6 +8,7 @@ import { storeChannelDraft } from "../../lib/chat/useChannelDraft.js";
 import { Dialog } from "../ui/Dialog.js";
 import { ErrorState } from "../ui/ErrorState.js";
 import { Skeleton } from "../ui/Skeleton.js";
+import { SpaceIcon } from "../ui/SpaceIcon.js";
 
 interface SpaceWithChannels {
   space: Space;
@@ -92,7 +93,16 @@ export function AskKemetDialog({ skillSlug, open, onOpenChange }: AskKemetDialog
         <div className="flex max-h-80 flex-col gap-4 overflow-y-auto">
           {groups.map(({ space, channels }) => (
             <section key={space.id} aria-labelledby={`ask-kemet-space-${space.id}`}>
-              <h3 id={`ask-kemet-space-${space.id}`} className="text-sm font-semibold text-text">
+              <h3
+                id={`ask-kemet-space-${space.id}`}
+                className="flex items-center gap-2 text-sm font-semibold text-text"
+              >
+                <SpaceIcon
+                  id={space.id}
+                  name={space.name}
+                  className="size-6 rounded-[6px]"
+                  glyphClassName="size-3.5"
+                />
                 {space.name}
               </h3>
               <ul className="mt-1 flex flex-col">

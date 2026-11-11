@@ -33,9 +33,9 @@ describe("navigation mobile", () => {
     ).toEqual(["messages"]);
   });
 
-  it("allume Moi pour une section rangée dans sa page", () => {
-    expect(mobileTabFor("competitions")).toBe("moi");
-    expect(mobileTabFor("projets")).toBe("moi");
+  it("n'allume aucun onglet sur Projets et Compétitions, Moi sur ses propres pages", () => {
+    expect(mobileTabFor("competitions")).toBe("");
+    expect(mobileTabFor("projets")).toBe("");
     expect(mobileTabFor("travaux")).toBe("travaux");
     expect(mobileTabFor("confidentialite")).toBe("moi");
     expect(mobileTabFor("skills")).toBe("skills");

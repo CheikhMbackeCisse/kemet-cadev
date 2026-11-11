@@ -24,10 +24,13 @@ export const MOI_ITEMS: RailNavItem[] = [
   RAIL_FOOTER_NAV,
 ];
 
-/** Onglet actif d'une section : celles rangées dans "Moi" allument "Moi". */
+/**
+ * Onglet actif d'une section. Projets et Compétitions, rangés dans "Moi",
+ * n'allument aucun onglet : ce ne sont pas des pages de la personne.
+ */
 export function mobileTabFor(sectionId: string): string {
   const section = NAV_SECTIONS.find((candidate) => candidate.id === sectionId);
-  if (section?.mobile === "moi") return MOI_TAB_ID;
+  if (section?.mobile === "moi") return "";
   if (section?.mobile === "salons") return "salons";
   if (sectionId === SETTINGS_NAV.id || sectionId === RAIL_FOOTER_NAV.id) return MOI_TAB_ID;
   return sectionId;

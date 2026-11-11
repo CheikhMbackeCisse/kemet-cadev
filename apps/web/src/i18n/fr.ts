@@ -259,7 +259,7 @@ export const fr = {
       competitionPodium: (first: number, second: number, third: number) =>
         `Podium d'une compétition : ${first}, ${second} puis ${third} points`,
     },
-    credentialsTitle: (cap: string) => `Parcours vérifié (jusqu'à ${cap} points)`,
+    credentialsTitle: (cap: string) => `Parcours déclaré (jusqu'à ${cap} points)`,
     credential: {
       degree: "Diplôme obtenu",
       experienceYear: "Année d'expérience",
