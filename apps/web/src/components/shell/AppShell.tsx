@@ -1,10 +1,11 @@
-import { ArrowLeft, PanelRight, Plus } from "lucide-react";
+import { ArrowLeft, PanelRight, Plus, Users } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMobileChatView } from "../../lib/chat/useMobileChatView.js";
 import { useEdgeSwipe } from "../../lib/useEdgeSwipe.js";
 import { MobileSpaceNavigator } from "./MobileSpaceNavigator.js";
 import { fr } from "../../i18n/fr.js";
 import { AppFrame } from "../layout/AppFrame.js";
+import { Button } from "../ui/Button.js";
 import { IconButton } from "../ui/IconButton.js";
 import { Sheet } from "../ui/Sheet.js";
 import type { ChannelListProps } from "./ChannelList.js";
@@ -33,7 +34,8 @@ export interface AppShellProps {
   spaces: AppShellSpaces;
   channelList: ChannelListProps;
   activeMobileTabId: string;
-  rightPanel?: { title: string; content: ReactNode };
+  /** `openLabel` : mot du bouton qui ouvre le panneau sur téléphone, à la place d'une icône seule. */
+  rightPanel?: { title: string; content: ReactNode; openLabel?: string };
   topBarExtra?: ReactNode;
   children: ReactNode;
 }
@@ -175,14 +177,25 @@ export function AppShell({
                 d'entree que ce bouton. Au-dessus il est affiche en colonne et
                 se ferme par sa propre croix : un bouton de bascule de plus
                 encombrait la barre du haut. */}
-              {rightPanel && (
-                <IconButton
-                  aria-label={fr.shell.openDetailsPanel}
-                  className="lg:hidden"
+              {rightPanel?.openLabel ? (
+                <Button
+                  variant="ghost"
+                  className="gap-1.5 px-2 lg:hidden"
                   onClick={() => setRightSheetOpen(true)}
                 >
-                  <PanelRight className="size-5" aria-hidden="true" />
-                </IconButton>
+                  <Users className="size-4" aria-hidden="true" />
+                  {rightPanel.openLabel}
+                </Button>
+              ) : (
+                rightPanel && (
+                  <IconButton
+                    aria-label={fr.shell.openDetailsPanel}
+                    className="lg:hidden"
+                    onClick={() => setRightSheetOpen(true)}
+                  >
+                    <PanelRight className="size-5" aria-hidden="true" />
+                  </IconButton>
+                )
               )}
             </div>
           </header>

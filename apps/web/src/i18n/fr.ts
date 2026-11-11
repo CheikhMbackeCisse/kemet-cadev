@@ -943,7 +943,7 @@ export const fr = {
     andOthers: (count: number) => (count === 1 ? "et 1 autre" : `et ${count} autres`),
     hasPdf: "PDF",
     feedAnnouncement: "a publié un travail",
-    matchButton: "Qui a travaillé sur ce sujet ?",
+    matchButton: "Trouver qui a travaillé sur ce sujet",
     matchTitle: "Qui a travaillé sur ce sujet ?",
     matchLoading: "@kemet cherche parmi les travaux publiés…",
     matchEmpty: "Aucun travail publié ne porte encore sur ce sujet.",

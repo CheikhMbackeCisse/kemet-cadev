@@ -16,6 +16,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     <button
       ref={ref}
       type="button"
+      // Une icône seule se nomme au survol : son nom n'est pas réservé aux lecteurs d'écran.
+      title={props["aria-label"]}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(

@@ -1,4 +1,4 @@
-import { User } from "lucide-react";
+import { Award, User } from "lucide-react";
 import {
   MOBILE_TAB_ORDER,
   NAV_SECTIONS,
@@ -7,6 +7,7 @@ import {
   type RailNavItem,
 } from "./railNav.js";
 import type { MobileTabItem } from "./types.js";
+import { fr } from "../../i18n/fr.js";
 
 export const MOI_TAB_ID = "moi";
 
@@ -18,6 +19,7 @@ export const MOBILE_TABS: MobileTabItem[] = [
 /** Sections sans onglet, atteintes depuis la page "Moi". */
 export const MOI_ITEMS: RailNavItem[] = [
   ...NAV_SECTIONS.filter((section) => section.mobile === "moi"),
+  { id: "niveaux", label: fr.levels.pageTitle, href: "/niveaux", icon: Award },
   SETTINGS_NAV,
   RAIL_FOOTER_NAV,
 ];

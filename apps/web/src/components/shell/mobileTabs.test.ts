@@ -13,7 +13,7 @@ describe("navigation mobile", () => {
 
   it("range Projets, Compétitions, Paramètres et Confidentialité dans la page Moi, jamais Kemet Pro", () => {
     const ids = MOI_ITEMS.map((item) => item.id);
-    expect(ids).toEqual(["projets", "competitions", "parametres", "confidentialite"]);
+    expect(ids).toEqual(["projets", "competitions", "niveaux", "parametres", "confidentialite"]);
     expect(MOI_ITEMS.some((item) => item.href === "/pro")).toBe(false);
   });
 

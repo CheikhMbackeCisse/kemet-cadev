@@ -499,6 +499,7 @@ export function SpacePage() {
                 title: activeSpace
                   ? fr.spaces.membersWithCount(formatCount(activeSpace.memberCount))
                   : fr.spaces.members,
+                openLabel: fr.spaces.members,
                 content: (
                   <div className="flex flex-col gap-4 text-sm">
                     <div className="flex flex-col gap-1">

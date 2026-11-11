@@ -40,7 +40,7 @@ describe("WorkMatchPanel", () => {
     render(<WorkMatchPanel subject={{ type: "work", slug: "memoire" }} signedIn />);
     expect(findWorkMatches).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Qui a travaillé sur ce sujet ?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Trouver qui a travaillé sur ce sujet" }));
     expect(await screen.findByText("Même file d'attente locale.")).toBeTruthy();
     expect(findWorkMatches).toHaveBeenCalledWith({ type: "work", slug: "memoire" });
     expect(screen.getByText("Travail : Stock hors ligne").getAttribute("href")).toBe(
@@ -62,14 +62,14 @@ describe("WorkMatchPanel", () => {
         signedIn
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Qui a travaillé sur ce sujet ?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Trouver qui a travaillé sur ce sujet" }));
     expect(await screen.findByText("Sans l'assistant")).toBeTruthy();
     expect(screen.getByText(/L'assistant est saturé/)).toBeTruthy();
   });
 
   it("invite un visiteur à se connecter sans rien appeler", () => {
     render(<WorkMatchPanel subject={{ type: "project", slug: "appli" }} signedIn={false} />);
-    const link = screen.getByRole("link", { name: "Qui a travaillé sur ce sujet ?" });
+    const link = screen.getByRole("link", { name: "Trouver qui a travaillé sur ce sujet" });
     expect(link.getAttribute("href")).toBe("/connexion");
     expect(findWorkMatches).not.toHaveBeenCalled();
   });

@@ -179,8 +179,28 @@ export function PostCard({
             countryCode={post.authorCountry}
           />
         </ProfileLink>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2">
+        <div className="relative min-w-0 flex-1">
+          {/* En haut à droite, hors de la rangée d'actions : sur téléphone,
+            cette rangée débordait et « … » passait seul à la ligne. */}
+          {(isOwnPost || canReport) && (
+            <div className="absolute -top-2 right-0">
+              <MoreActionsMenu
+                label={fr.feed.moreActions}
+                items={
+                  isOwnPost
+                    ? [{ value: "delete", label: fr.feed.delete, danger: true }]
+                    : [{ value: "report", label: fr.moderation.reportAction }]
+                }
+                onSelect={(value) => (value === "delete" ? onDelete() : setReportOpen(true))}
+              />
+            </div>
+          )}
+          <div
+            className={cn(
+              "flex flex-wrap items-baseline gap-x-2",
+              (isOwnPost || canReport) && "pr-11",
+            )}
+          >
             <UserName
               name={post.authorDisplayName}
               handle={post.authorHandle}
@@ -314,19 +334,6 @@ export function PostCard({
                 <CheckCircle2 className="size-4" aria-hidden="true" />
                 {fr.feed.iTested}
               </Button>
-            )}
-            {(isOwnPost || canReport) && (
-              <div className="ml-auto">
-                <MoreActionsMenu
-                  label={fr.feed.moreActions}
-                  items={
-                    isOwnPost
-                      ? [{ value: "delete", label: fr.feed.delete, danger: true }]
-                      : [{ value: "report", label: fr.moderation.reportAction }]
-                  }
-                  onSelect={(value) => (value === "delete" ? onDelete() : setReportOpen(true))}
-                />
-              </div>
             )}
           </div>
         </div>
