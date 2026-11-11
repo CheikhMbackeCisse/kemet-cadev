@@ -47,6 +47,7 @@ import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 const postHeightKey = (postId: string) => `post:${postId}`;
@@ -328,6 +329,7 @@ export function FeedPage() {
           {fr.feed.loadMore}
         </Button>
       )}
+      <DemoNoticeLine className="lg:hidden" />
     </div>
   );
 

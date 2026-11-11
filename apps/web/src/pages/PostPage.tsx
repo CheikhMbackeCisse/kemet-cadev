@@ -400,7 +400,9 @@ export function PostPage() {
         )}
 
         <div className="flex flex-col gap-3">
-          <p className="text-md font-semibold text-text">{fr.feed.replyCount(post.replyCount)}</p>
+          {post.replyCount > 0 && (
+            <p className="text-md font-semibold text-text">{fr.feed.replyCount(post.replyCount)}</p>
+          )}
           {replies.length === 0 ? (
             <EmptyState message={fr.feed.noReplies} />
           ) : (

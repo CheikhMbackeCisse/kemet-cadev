@@ -76,6 +76,8 @@ describe("starsForAverage", () => {
     [2_310, 4.8],
     [64, 4.3],
     [51, 4.4],
+    [38, 4.1],
+    [12, 3.9],
   ])("donne %i notes de moyenne %d à un centième près", (total, average) => {
     const stars = starsForAverage(total, average);
     expect(stars).toHaveLength(total);

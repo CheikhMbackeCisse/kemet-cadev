@@ -247,7 +247,9 @@ export const DEMO_WORK_MEDIA: DemoWorkMediaPlan[] = [
 
 /**
  * Utilisations par @kemet et avis visés pour chaque skill de démonstration.
- * Le seed complète jusqu'à ces nombres, il ne retire jamais rien.
+ * Deux skills seulement passent le millier : des compteurs tous énormes ne
+ * seraient pas crédibles. Le seed amène chaque skill à ces nombres, en
+ * ajoutant ou en retirant des lignes de figurants, jamais celles d'un compte.
  */
 export const DEMO_SKILL_TARGETS: {
   slug: string;
@@ -257,14 +259,14 @@ export const DEMO_SKILL_TARGETS: {
 }[] = [
   { slug: "wave-paiements", uses: 11_240, ratings: 2_310, averageStars: 4.8 },
   { slug: "paiement-mobile-idempotence", uses: 7_920, ratings: 1_488, averageStars: 4.9 },
-  { slug: "flutter-sync-hors-ligne", uses: 4_310, ratings: 905, averageStars: 4.7 },
-  { slug: "ux-reseau-instable", uses: 3_660, ratings: 742, averageStars: 4.8 },
-  { slug: "design-system-theme-sombre", uses: 2_780, ratings: 611, averageStars: 4.5 },
-  { slug: "frame-pacing-android-bas-de-gamme", uses: 1_530, ratings: 286, averageStars: 4.7 },
+  { slug: "flutter-sync-hors-ligne", uses: 640, ratings: 143, averageStars: 4.7 },
+  { slug: "ux-reseau-instable", uses: 512, ratings: 97, averageStars: 4.8 },
+  { slug: "design-system-theme-sombre", uses: 388, ratings: 74, averageStars: 4.5 },
+  { slug: "frame-pacing-android-bas-de-gamme", uses: 214, ratings: 51, averageStars: 4.7 },
   { slug: "ci-docker-fiable", uses: 869, ratings: 142, averageStars: 4.6 },
-  { slug: "firmware-autonomie-batterie", uses: 640, ratings: 97, averageStars: 4.6 },
-  { slug: "airflow-workers-oom", uses: 412, ratings: 64, averageStars: 4.3 },
-  { slug: "nlp-bas-ressource-arabe", uses: 356, ratings: 51, averageStars: 4.4 },
+  { slug: "firmware-autonomie-batterie", uses: 160, ratings: 38, averageStars: 4.1 },
+  { slug: "airflow-workers-oom", uses: 97, ratings: 12, averageStars: 3.9 },
+  { slug: "nlp-bas-ressource-arabe", uses: 75, ratings: 21, averageStars: 4.4 },
 ];
 
 /**

@@ -99,9 +99,12 @@ export function MoiPage() {
               ...(profileError
                 ? []
                 : [
-                    { label: fr.profile.statWorks, value: publicProfile?.workCount ?? null },
                     {
-                      label: fr.profile.statFollowers,
+                      label: fr.profile.statWorks(publicProfile?.workCount ?? null),
+                      value: publicProfile?.workCount ?? null,
+                    },
+                    {
+                      label: fr.profile.statFollowers(publicProfile?.followerCount ?? null),
                       value: publicProfile?.followerCount ?? null,
                     },
                   ]),

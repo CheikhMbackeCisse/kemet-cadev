@@ -310,14 +310,14 @@ export function UserPage() {
               .join(" · ") || null
           }
           stats={[
-            { label: fr.profile.statWorks, value: data.workCount },
+            { label: fr.profile.statWorks(data.workCount), value: data.workCount },
             {
-              label: fr.profile.statFollowers,
+              label: fr.profile.statFollowers(followerCount),
               value: followerCount,
               onClick: () => openFollowList("followers"),
             },
             {
-              label: fr.profile.statFollowing,
+              label: fr.profile.statFollowing(followingCount),
               value: followingCount,
               onClick: () => openFollowList("following"),
             },

@@ -181,7 +181,8 @@ export function CompetitionsPage() {
                 </div>
                 <p className="mt-1 text-sm text-text-2">{competition.pitch}</p>
                 <p className="mt-2 text-xs text-subtle">
-                  {competition.teamCount} équipes · {competition.submissionCount} soumissions
+                  {fr.competitions.teamCount(competition.teamCount)} ·{" "}
+                  {fr.competitions.submissionCount(competition.submissionCount)}
                 </p>
               </a>
             </li>

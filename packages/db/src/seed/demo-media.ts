@@ -288,7 +288,11 @@ async function topUpSkillUses(db: DbOrTx, fillers: string[]): Promise<number> {
         ),
       )) as [{ total: number }];
     const missing = target.uses - total;
-    if (missing <= 0) continue;
+    if (missing < 0) {
+      await removeFillerSkillUses(db, skill.id, -missing);
+      continue;
+    }
+    if (missing === 0) continue;
 
     const rows = Array.from({ length: missing }, (_, index) => {
       // Étalées sur six mois, jamais aujourd'hui : le quota du jour d'un profil n'en voit aucune.
@@ -310,8 +314,43 @@ async function topUpSkillUses(db: DbOrTx, fillers: string[]): Promise<number> {
   return added;
 }
 
-/** Notes de 3 à 5 étoiles dont la moyenne tombe sur `average` (entre 4 et 5). */
+// Seulement des utilisations ajoutées par le seed : posées par un figurant,
+// sans réponse publiée. Une vraie utilisation n'est jamais retirée.
+async function removeFillerSkillUses(db: DbOrTx, skillId: string, excess: number): Promise<void> {
+  const rows = await db
+    .select({ id: assistantInvocations.id })
+    .from(assistantInvocations)
+    .innerJoin(profiles, eq(profiles.id, assistantInvocations.requestedBy))
+    .where(
+      and(
+        sql`${assistantInvocations.skillIds} @> array[${skillId}]::uuid[]`,
+        eq(profiles.isFiller, true),
+        isNull(assistantInvocations.responseMessageId),
+        isNull(assistantInvocations.responseReplyId),
+      ),
+    )
+    .limit(excess);
+  for (const batch of chunk(rows, INSERT_BATCH))
+    await db.delete(assistantInvocations).where(
+      inArray(
+        assistantInvocations.id,
+        batch.map((row) => row.id),
+      ),
+    );
+}
+
+/** Notes de 3 à 5 étoiles dont la moyenne tombe sur `average`. */
 export function starsForAverage(total: number, average: number): number[] {
+  if (average < 4) {
+    // Sous 4 : autant de 5 que d'un quart des notes, compensés par des 3.
+    const fives = Math.round(total * 0.25);
+    const threes = Math.min(total - fives, fives + Math.round(4 * total - average * total));
+    return [
+      ...Array<number>(fives).fill(5),
+      ...Array<number>(total - fives - threes).fill(4),
+      ...Array<number>(threes).fill(3),
+    ];
+  }
   const threes = Math.round(total * 0.03);
   const rest = total - threes;
   const fives = Math.min(rest, Math.max(0, Math.round(average * total - 3 * threes - 4 * rest)));
@@ -330,10 +369,31 @@ async function topUpSkillRatings(db: DbOrTx, fillers: string[]): Promise<number>
       .from(skills)
       .where(and(eq(skills.slug, target.slug), eq(skills.isDemo, true)));
     if (!skill) continue;
-    const existing = await db
-      .select({ raterId: skillRatings.raterId })
+    let existing = await db
+      .select({ raterId: skillRatings.raterId, stars: skillRatings.stars })
       .from(skillRatings)
       .where(eq(skillRatings.skillId, skill.id));
+    const average =
+      existing.reduce((sum, row) => sum + row.stars, 0) / Math.max(1, existing.length);
+    const onTarget =
+      existing.length === target.ratings && Math.abs(average - target.averageStars) < 0.05;
+    if (onTarget) continue;
+    if (existing.length >= target.ratings) {
+      // Cible changée : les notes des figurants sont reposées, celles des comptes gardées.
+      const fillerRaters = db
+        .select({ id: profiles.id })
+        .from(profiles)
+        .where(eq(profiles.isFiller, true));
+      await db
+        .delete(skillRatings)
+        .where(
+          and(eq(skillRatings.skillId, skill.id), inArray(skillRatings.raterId, fillerRaters)),
+        );
+      existing = await db
+        .select({ raterId: skillRatings.raterId, stars: skillRatings.stars })
+        .from(skillRatings)
+        .where(eq(skillRatings.skillId, skill.id));
+    }
     const missing = target.ratings - existing.length;
     if (missing <= 0) continue;
 
