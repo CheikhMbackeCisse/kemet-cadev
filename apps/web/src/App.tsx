@@ -101,6 +101,17 @@ function Redirect({ to }: { to: string }) {
 }
 
 /**
+ * Ancienne adresse de l'écran Rôle : un compte qui a fini l'onboarding va
+ * directement au fil, sans passer par l'écran qui le renverrait au fil.
+ */
+function RoleRedirect() {
+  const { status, onboarding } = useSession();
+  if (status === "loading") return <PageFallback />;
+  const finished = status === "ready" && onboarding?.completed === true;
+  return <Redirect to={finished ? "/fil" : onboardingPath("role")} />;
+}
+
+/**
  * L'adresse racine, où arrivent aussi les connexions GitHub, Google et
  * LinkedIn : un compte qui n'a pas fini l'onboarding le reprend, les autres
  * voient le fil.
@@ -124,7 +135,7 @@ function renderPage(pathname: string): ReactNode {
     case "root":
       return <RootPage />;
     case "roleRedirect":
-      return <Redirect to={onboardingPath("role")} />;
+      return <RoleRedirect />;
     case "status":
       return <StatusPage />;
     case "devShell":

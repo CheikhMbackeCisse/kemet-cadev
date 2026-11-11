@@ -70,12 +70,16 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
   // dans onboarding.spec.ts.
   await expect(page).toHaveURL(/\/bienvenue\/pays/);
   for (let screen = 1; screen <= 6; screen += 1) {
-    await expect(page.getByText(`Étape ${screen} sur 6`)).toBeVisible();
+    await expect(page.getByRole("progressbar", { name: `Étape ${screen} sur 6` })).toBeAttached();
     await page.getByRole("button", { name: "Passer" }).click();
   }
 
   await expect(page).toHaveURL(/\/fil/);
-  await expect(page.getByRole("button", { name: name, exact: false })).toBeVisible();
+  // Le menu du compte n'existe que sur ordinateur (onglet Moi sur téléphone) :
+  // la session est lue directement.
+  await expect(page.getByRole("heading", { name: "Fil", exact: true })).toBeVisible();
+  const me = await (await page.request.get("/api/me")).json();
+  expect(me.profile).toMatchObject({ handle, displayName: name });
 });
 
 test("un visiteur sans session parcourt un espace public et le fil sans composeur", async ({
