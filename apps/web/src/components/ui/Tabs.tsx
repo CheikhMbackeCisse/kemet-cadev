@@ -18,12 +18,21 @@ export interface TabsProps {
    * principale (le fil), centrés, plus grands, à largeur égale.
    */
   layout?: "start" | "centered";
+  /** Onglets plus larges que l'écran : la rangée défile au doigt. */
+  scrollable?: boolean;
 }
 
 // Le panneau actif est rendu hors de RadixTabs.Content : son Presence lit
 // getComputedStyle au montage, ce qui forçait le recalcul de style de tout
 // le contenu (0,42 s pour le fil en CPU x4).
-export function Tabs({ items, value, onValueChange, className, layout = "start" }: TabsProps) {
+export function Tabs({
+  items,
+  value,
+  onValueChange,
+  className,
+  layout = "start",
+  scrollable = false,
+}: TabsProps) {
   const centered = layout === "centered";
   const baseId = useId();
   const triggerId = (itemValue: string) => `${baseId}-tab-${itemValue}`;
@@ -35,6 +44,10 @@ export function Tabs({ items, value, onValueChange, className, layout = "start" 
         className={cn(
           "flex items-end border-b border-border",
           centered ? "justify-center gap-2 [&>*]:after:h-[3px]" : "gap-5",
+          // Une rangée qui défile coupe ce qui déborde de sa boîte : le filet est
+          // dessiné à l'intérieur et le soulignement de l'onglet actif se pose dessus.
+          scrollable &&
+            "scrollbar-none overflow-x-auto border-b-0 shadow-[inset_0_-1px_0_0_var(--border)] [&>*]:shrink-0 [&>*]:whitespace-nowrap",
         )}
       >
         {items.map((item) => (
@@ -44,7 +57,8 @@ export function Tabs({ items, value, onValueChange, className, layout = "start" 
             id={triggerId(item.value)}
             aria-controls={item.value === value ? panelId(item.value) : undefined}
             className={cn(
-              "relative -mb-px rounded-control text-muted transition-colors duration-150 hover:text-text",
+              "relative rounded-control text-muted transition-colors duration-150 hover:text-text",
+              !scrollable && "-mb-px",
               centered
                 ? "h-12 min-w-0 max-w-48 flex-1 px-3 text-base font-semibold"
                 : "h-control px-1 text-sm font-medium max-md:h-control-mobile",

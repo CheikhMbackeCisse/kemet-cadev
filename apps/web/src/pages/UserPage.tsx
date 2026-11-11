@@ -1,11 +1,9 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { ArrowLeft, HeartHandshake, Share2, Sparkles } from "lucide-react";
+import { ArrowLeft, HeartHandshake, Share2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   isLevelAtLeast,
   OPEN_TO_OPPORTUNITIES_MIN_LEVEL,
-  type Credential,
-  type CredentialType,
   type ProfileSummary,
   type PublicProfileResponse,
 } from "@kemet/shared";
@@ -23,16 +21,14 @@ import {
 } from "../lib/chat/api.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Badge } from "../components/ui/Badge.js";
-import { Card } from "../components/ui/Card.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
-import { Tabs } from "../components/ui/Tabs.js";
 import { WorkInvitations } from "../components/works/ProfileWorks.js";
-import { ProfileLibrary } from "../components/library/ProfileLibrary.js";
+import { ProfileTabs } from "../components/profile/ProfileTabs.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { useSession } from "../session/SessionProvider.js";
 import { shareLink } from "../lib/shareLink.js";
@@ -46,23 +42,8 @@ import { fr } from "../i18n/fr.js";
 // "Autre" ne dit rien sur un profil : la spécialité suffit.
 const ROLE_LABELS: Record<string, string | undefined> = fr.profile.roleNames;
 
-const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
-  job: fr.profile.credentialTypeJob,
-  education: fr.profile.credentialTypeEducation,
-  internship: fr.profile.credentialTypeInternship,
-};
-
 function readHandle(pathname: string): string {
   return pathname.replace(/^\/u\//, "");
-}
-
-function formatCredentialDate(date: string): string {
-  return new Date(date).toLocaleDateString("fr-FR", { year: "numeric", month: "short" });
-}
-
-function formatCredentialRange(startDate: string, endDate: string | null): string {
-  const start = formatCredentialDate(startDate);
-  return endDate ? `De ${start} à ${formatCredentialDate(endDate)}` : `Depuis ${start}`;
 }
 
 type FollowListKind = "followers" | "following";
@@ -94,22 +75,6 @@ export function UserPage() {
   const [error, setError] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
-  // L'onglet vit dans l'adresse : "Parcours" se partage par un lien.
-  const [tab, setTab] = useState(() =>
-    new URLSearchParams(window.location.search).get("onglet") === "parcours"
-      ? "parcours"
-      : "bibliotheque",
-  );
-
-  function selectTab(value: string) {
-    setTab(value);
-    const url =
-      value === "parcours"
-        ? `${window.location.pathname}?onglet=parcours`
-        : window.location.pathname;
-    window.history.replaceState(null, "", url);
-  }
-
   const [worksReloadKey, setWorksReloadKey] = useState(0);
 
   const [followList, setFollowList] = useState<FollowListKind | null>(null);
@@ -271,36 +236,8 @@ export function UserPage() {
   const { profile, credentials, followerCount, followingCount, isFollowedByViewer } = data;
   const isOwnProfile = viewerProfile?.handle === profile.handle;
 
-  const credentialsContent = (
-    <div className="flex flex-col gap-3">
-      {credentials.length === 0 ? (
-        <p className="text-sm text-subtle">{fr.profile.noCredentials}</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-border">
-          {credentials.map((credential: Credential) => (
-            <li key={credential.id} className="py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge>{CREDENTIAL_TYPE_LABELS[credential.type]}</Badge>
-                <span className="text-sm font-medium text-text">{credential.title}</span>
-                <Badge tone={credential.status === "verified" ? "success" : "neutral"}>
-                  {credential.status === "verified"
-                    ? fr.profile.credentialVerified
-                    : fr.profile.credentialDeclared}
-                </Badge>
-              </div>
-              <p className="mt-1 text-sm text-text-2">{credential.organization}</p>
-              <p className="mt-0.5 text-xs text-subtle">
-                {formatCredentialRange(credential.startDate, credential.endDate)}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-
   return (
-    <ReadingPage header={header} activeMobileTab="moi">
+    <ReadingPage header={header} activeMobileTab={isOwnProfile ? "moi" : ""}>
       <div className="flex flex-col gap-3">
         <ProfileHeader
           profile={profile}
@@ -383,22 +320,6 @@ export function UserPage() {
           <p className="text-sm text-text-2">{fr.messages.blockedNote(profile.handle)}</p>
         )}
 
-        {/* Kemet Pro ne vit que sur son propre profil, nulle part ailleurs. */}
-        {isOwnProfile && (
-          <Card variant="plain" className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-              <p className="min-w-0 text-md font-semibold text-text">{fr.profile.proTitle}</p>
-            </div>
-            <a
-              href="/pro"
-              className="inline-flex h-control max-md:h-control-mobile items-center justify-center rounded-control border border-border-strong px-4 text-sm font-medium text-text hover:bg-surface-2"
-            >
-              {fr.profile.proCta}
-            </a>
-          </Card>
-        )}
-
         {profile.stack.length > 0 && (
           <div className="flex flex-col gap-1.5">
             <p className="text-md font-semibold text-text">{fr.profile.stackTitle}</p>
@@ -430,23 +351,12 @@ export function UserPage() {
 
       {isOwnProfile && <WorkInvitations onDecided={() => setWorksReloadKey((key) => key + 1)} />}
 
-      <Tabs
-        value={tab}
-        onValueChange={selectTab}
-        items={[
-          {
-            value: "bibliotheque",
-            label: fr.library.tab,
-            content: (
-              <ProfileLibrary
-                profile={profile}
-                isOwnProfile={isOwnProfile}
-                worksReloadKey={worksReloadKey}
-              />
-            ),
-          },
-          { value: "parcours", label: fr.works.profileCredentialsTab, content: credentialsContent },
-        ]}
+      <ProfileTabs
+        profile={profile}
+        workCount={data.workCount}
+        credentials={credentials}
+        isOwnProfile={isOwnProfile}
+        worksReloadKey={worksReloadKey}
       />
 
       <Dialog

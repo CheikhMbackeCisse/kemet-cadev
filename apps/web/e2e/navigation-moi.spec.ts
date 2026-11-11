@@ -27,7 +27,10 @@ test("sur mobile, l'onglet Salons liste les espaces et leurs salons, un salon s'
   await expect(page.getByRole("button", { name: "général" }).first()).toBeVisible();
 });
 
-test("la page Moi montre le compte et mène aux paramètres", async ({ page, request }, testInfo) => {
+test("la page Moi montre le profil, ce qui manque, et mène aux paramètres par son menu", async ({
+  page,
+  request,
+}, testInfo) => {
   const handle = uniqueHandle("e2emoi", testInfo.project.name);
   const email = `${handle}@test.kemet`;
   await signUpVerifyAndSignIn(request, email, handle);
@@ -37,7 +40,10 @@ test("la page Moi montre le compte et mène aux paramètres", async ({ page, req
   await expect(page.getByText(`@${handle}`)).toBeVisible();
   await expect(page.getByText("0 points · encore 300 pour Artisan")).toBeVisible();
   await expect(page.getByRole("button", { name: "Partager le profil" })).toBeVisible();
-  await page.getByRole("link", { name: "Paramètres" }).filter({ visible: true }).last().click();
+  await expect(page.getByRole("heading", { name: "Complète ton profil" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Enregistrés" })).toBeVisible();
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("dialog").getByRole("link", { name: "Paramètres" }).click();
   await expect(page).toHaveURL(/\/parametres$/);
 
   await page.getByLabel("Chercher un réglage").fill("thème");

@@ -126,6 +126,16 @@
 }
 
 @layer utilities {
+  /* Rangée qui défile au doigt (onglets, filtres) : sa barre de défilement
+     couperait le soulignement de l'onglet actif. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* 100vh compte la barre d'adresse mobile comme visible : la page dépassait
      de l'écran et défilait en entier. 100dvh suit la hauteur réellement
      visible, clavier compris ; 100vh reste le repli des navigateurs qui ne

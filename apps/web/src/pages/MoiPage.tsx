@@ -1,75 +1,49 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import {
-  BookOpen,
-  Bookmark,
-  ChevronRight,
-  Flag as FlagIcon,
-  LogOut,
-  MessagesSquare,
-  Share2,
-  type LucideIcon,
-} from "lucide-react";
-import { useEffect } from "react";
+import { Menu, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { RailPage } from "../components/layout/RailPage.js";
 import { LevelProgressBar } from "../components/profile/LevelProgressBar.js";
+import { MoiMenu } from "../components/profile/MoiMenu.js";
 import { ProfileHeader } from "../components/profile/ProfileHeader.js";
+import { ProfileTabs } from "../components/profile/ProfileTabs.js";
 import {
   PROFILE_ACTION_CLASS,
   PROFILE_ACTIONS_ROW_CLASS,
 } from "../components/profile/profileActionClass.js";
-import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
-import { MOI_ITEMS } from "../components/shell/mobileTabs.js";
 import { Card } from "../components/ui/Card.js";
+import { IconButton } from "../components/ui/IconButton.js";
 import { KemetSymbol } from "../components/ui/KemetSymbol.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { useToast } from "../components/ui/Toast.js";
+import { WorkInvitations } from "../components/works/ProfileWorks.js";
 import { getUserProfile } from "../lib/chat/api.js";
 import { shareLink } from "../lib/shareLink.js";
 import { useSession } from "../session/SessionProvider.js";
 import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import { fr } from "../i18n/fr.js";
 
-interface MoiRow {
-  label: string;
-  href: string;
-  icon: LucideIcon;
-}
-
-function rowsFor(handle: string, isAdmin: boolean): MoiRow[] {
-  return [
-    { label: fr.moi.myWorks, href: `/u/${handle}`, icon: BookOpen },
-    { label: fr.moi.saved, href: "/enregistres", icon: Bookmark },
-    { label: fr.messages.segmentMessages, href: "/messages", icon: MessagesSquare },
-    ...MOI_ITEMS,
-    ...(isAdmin ? [{ label: fr.moderation.navLink, href: "/moderation", icon: FlagIcon }] : []),
-  ];
-}
-
-const ROW_CLASS =
-  "flex min-h-control-mobile w-full items-center gap-3 px-4 py-3 text-base lg:hover:bg-surface-2";
-
-/** Onglet "Moi" : le compte en haut, puis tout ce qui n'a pas de place dans la barre du bas. */
+/**
+ * Onglet "Moi" : son propre profil, comme le voient les autres, avec ses
+ * onglets. Tout ce qui n'a pas de place dans la barre du bas vit dans le
+ * menu ouvert par l'icône en haut à droite.
+ */
 export function MoiPage() {
-  const { status, profile, points, isPlatformAdmin, signOut } = useSession();
+  const { status, profile, points } = useSession();
   const toast = useToast();
-  const countsQuery = useQuery({
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [worksReloadKey, setWorksReloadKey] = useState(0);
+  const publicQuery = useQuery({
     queryKey: ["user", profile?.handle],
     queryFn: () => getUserProfile(profile?.handle ?? ""),
     enabled: profile !== null,
   });
-  const publicProfile = countsQuery.data ?? null;
-  const profileError = countsQuery.isError && !countsQuery.data;
+  const publicProfile = publicQuery.data ?? null;
+  const profileError = publicQuery.isError && !publicQuery.data;
 
   useEffect(() => {
     if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
-
-  function handleSignOut() {
-    signOut()
-      .then(() => (window.location.href = "/fil"))
-      .catch(() => toast.show(fr.auth.signOutError, "danger"));
-  }
 
   async function handleShare() {
     if (!profile) return;
@@ -82,14 +56,19 @@ export function MoiPage() {
   }
 
   if (status === "incomplete") return null;
-  const rows = profile ? rowsFor(profile.handle, isPlatformAdmin) : MOI_ITEMS;
 
   return (
-    <RailPage activeSection="moi" className="gap-6 px-0 pt-3 lg:px-4 lg:pt-6">
-      <div className="px-4 lg:px-0">
-        {status === "loading" ? (
-          <MoiHeaderSkeleton />
-        ) : profile ? (
+    <RailPage activeSection="moi" className="gap-4 pt-1 lg:pt-6">
+      <div className="-mb-2 flex justify-end lg:mb-0">
+        <IconButton aria-label={fr.moi.menu} onClick={() => setMenuOpen(true)} className="-mr-2">
+          <Menu className="size-6" strokeWidth={1.75} aria-hidden="true" />
+        </IconButton>
+      </div>
+
+      {status === "loading" ? (
+        <MoiHeaderSkeleton />
+      ) : profile ? (
+        <>
           <ProfileHeader
             profile={profile}
             // Après un échec, les deux chiffres lus sur le profil public
@@ -109,23 +88,7 @@ export function MoiPage() {
                     },
                   ]),
             ]}
-            belowStats={
-              <>
-                <LevelProgressBar points={points} />
-                {profileError && (
-                  <p className="flex flex-wrap items-center gap-2 text-sm text-text-2" role="alert">
-                    {fr.moi.loadError}
-                    <button
-                      type="button"
-                      onClick={() => void countsQuery.refetch()}
-                      className="inline-flex h-control items-center font-medium text-link hover:underline max-md:h-control-mobile"
-                    >
-                      {fr.chat.retry}
-                    </button>
-                  </p>
-                )}
-              </>
-            }
+            belowStats={<LevelProgressBar points={points} />}
             clampBio
             actions={
               <div className={PROFILE_ACTIONS_ROW_CLASS}>
@@ -143,37 +106,36 @@ export function MoiPage() {
               </div>
             }
           />
-        ) : (
-          <VisitorCard />
-        )}
-      </div>
-
-      <nav aria-label={fr.moi.title}>
-        <ul className="flex flex-col divide-y divide-border border-y border-border">
-          {rows.map((row) => (
-            <li key={row.href}>
-              <a href={row.href} className={ROW_CLASS}>
-                <row.icon className="size-5 shrink-0 text-muted" aria-hidden="true" />
-                <span className="flex-1 text-text">{row.label}</span>
-                <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden="true" />
-              </a>
-            </li>
-          ))}
-          {profile && (
-            <li>
+          <WorkInvitations onDecided={() => setWorksReloadKey((key) => key + 1)} />
+          {profileError ? (
+            <p className="flex flex-wrap items-center gap-2 text-sm text-text-2" role="alert">
+              {fr.moi.loadError}
               <button
                 type="button"
-                onClick={handleSignOut}
-                className={`${ROW_CLASS} font-medium text-danger`}
+                onClick={() => void publicQuery.refetch()}
+                className="inline-flex h-control items-center font-medium text-link hover:underline max-md:h-control-mobile"
               >
-                <LogOut className="size-5 shrink-0" aria-hidden="true" />
-                {fr.auth.signOut}
+                {fr.chat.retry}
               </button>
-            </li>
+            </p>
+          ) : !publicProfile ? (
+            <Skeleton className="h-40 w-full" />
+          ) : (
+            <ProfileTabs
+              profile={publicProfile.profile}
+              workCount={publicProfile.workCount}
+              credentials={publicProfile.credentials}
+              isOwnProfile
+              includeSaved
+              worksReloadKey={worksReloadKey}
+            />
           )}
-        </ul>
-      </nav>
-      <DemoNoticeLine className="px-4 lg:hidden" />
+        </>
+      ) : (
+        <VisitorCard />
+      )}
+
+      <MoiMenu open={menuOpen} onOpenChange={setMenuOpen} />
     </RailPage>
   );
 }
