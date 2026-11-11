@@ -21,6 +21,7 @@ import {
 } from "../../lib/navigation/navigate.js";
 import { isPageLoaded, MAIN_SECTION_PATHS, pageFor, preloadPage } from "../../lib/navigation/pages.js";
 import { whenIdle } from "../../lib/idle.js";
+import { hasWaitingUpdate, loadWithNewVersion } from "../../pwa/updatePrompt.js";
 import { isSlowConnection } from "../../lib/network.js";
 
 interface RenderedLocation {
@@ -189,6 +190,10 @@ export function Router({
       // Une entrée ajoutée par la page elle-même (question suivante, vue d'un
       // salon sur mobile) se gère dans la page.
       if (samePage && !isRouterEntry(event.state)) return;
+      if (hasWaitingUpdate()) {
+        loadWithNewVersion(window.location.href, true);
+        return;
+      }
       const showPrevious = () => setLocation(readLocation(shown.id + 1, "pop"));
       // Page déjà visitée : un seul rendu, d'un bloc. Une transition découpe
       // le travail en tranches qui, sur un téléphone lent, multiplient le

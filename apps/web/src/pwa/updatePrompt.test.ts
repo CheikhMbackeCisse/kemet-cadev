@@ -1,5 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { hasWaitingWorkerForTests, resetUpdatePromptForTests, trackWaitingWorker } from "./updatePrompt.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  hasWaitingWorkerForTests,
+  recoverFromMissingCode,
+  resetUpdatePromptForTests,
+  trackWaitingWorker,
+} from "./updatePrompt.js";
 
 class FakeWorker extends EventTarget {
   state: ServiceWorkerState = "installing";
@@ -47,5 +52,52 @@ describe("trackWaitingWorker", () => {
     track(registration, false);
     registration.startInstall().install();
     expect(hasWaitingWorkerForTests()).toBe(false);
+  });
+});
+
+describe("trackWaitingWorker, installation déjà commencée", () => {
+  afterEach(resetUpdatePromptForTests);
+
+  it("suit une installation commencée avant l'appel", () => {
+    const registration = new FakeRegistration();
+    registration.installing = new FakeWorker();
+    track(registration, true);
+    expect(hasWaitingWorkerForTests()).toBe(false);
+    registration.installing.install();
+    expect(hasWaitingWorkerForTests()).toBe(true);
+  });
+});
+
+describe("recoverFromMissingCode", () => {
+  const error = new Error("Failed to fetch dynamically imported module");
+
+  beforeEach(() => {
+    vi.stubEnv("DEV", false);
+    window.sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
+  });
+
+  it("tente un seul rechargement, puis laisse passer l'erreur", async () => {
+    const pending = recoverFromMissingCode(error);
+    let settled = false;
+    void pending.catch(() => (settled = true));
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(window.sessionStorage.getItem("kemet.versionReload")).not.toBeNull();
+
+    await expect(recoverFromMissingCode(error)).rejects.toBe(error);
+  });
+
+  it("retente après une minute", async () => {
+    window.sessionStorage.setItem("kemet.versionReload", String(Date.now() - 61_000));
+    const pending = recoverFromMissingCode(error);
+    let settled = false;
+    void pending.catch(() => (settled = true));
+    await Promise.resolve();
+    expect(settled).toBe(false);
   });
 });

@@ -225,10 +225,16 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter @kemet/web exec playwright install chromium
 
+      # Version construite servie par e2e/new-version.spec.ts, qui simule un
+      # déploiement sous un service worker déjà installé.
+      - name: Copier la version construite du conteneur web
+        run: docker compose -f infra/docker-compose.yml --env-file .env cp web:/app/dist "$RUNNER_TEMP/web-dist"
+
       - name: Lancer les parcours Playwright (bureau et mobile)
         env:
           PLAYWRIGHT_BASE_URL: http://localhost
           MAILPIT_URL: http://localhost:8025
+          KEMET_WEB_DIST: ${{ runner.temp }}/web-dist
         run: pnpm --filter @kemet/web test:e2e
 
       - name: Déposer le rapport Playwright en cas d'échec

@@ -4,6 +4,7 @@
  * précédent reste affiché jusqu'à ce qu'elle soit prête.
  */
 
+import { hasWaitingUpdate, loadWithNewVersion } from "../../pwa/updatePrompt.js";
 import { rememberHeights } from "./rememberedHeights.js";
 
 export const NAVIGATE_EVENT = "kemet:navigate";
@@ -46,6 +47,12 @@ export function navigate(href: string, options: { replace?: boolean } = {}) {
     return;
   }
   const replace = options.replace ?? false;
+  // Une nouvelle version attend : changer de page la charge en entier, plutôt
+  // que de demander à l'ancienne des morceaux qui n'existent plus.
+  if (hasWaitingUpdate()) {
+    loadWithNewVersion(path, replace);
+    return;
+  }
   if (replace) {
     window.history.replaceState({ [ROUTER_STATE_KEY]: true }, "", path);
   } else {

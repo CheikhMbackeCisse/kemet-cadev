@@ -10,6 +10,7 @@ import {
 } from "react";
 import { Router } from "./components/navigation/Router.js";
 import { UpdateBanner } from "./components/shell/UpdateBanner.js";
+import { recoverFromMissingCode } from "./pwa/updatePrompt.js";
 import { navigate } from "./lib/navigation/navigate.js";
 import { PAGE_LOADERS, pageFor, type PageKey } from "./lib/navigation/pages.js";
 import { Skeleton } from "./components/ui/Skeleton.js";
@@ -33,9 +34,9 @@ const ShellPreviewPage = import.meta.env.DEV
 const PAGES = Object.fromEntries(
   (Object.keys(PAGE_LOADERS) as PageKey[]).map((key) => [
     key,
-    // Un échec (fichiers d'une version remplacée) tombe dans PageErrorBoundary,
-    // qui propose de recharger : jamais de rechargement sans clic.
-    lazy(PAGE_LOADERS[key]),
+    // Fichiers d'une version remplacée : un seul rechargement automatique,
+    // puis PageErrorBoundary. Le préchargement, lui, ne recharge jamais.
+    lazy(() => PAGE_LOADERS[key]().catch(recoverFromMissingCode)),
   ]),
 ) as Record<PageKey, LazyExoticComponent<ComponentType>>;
 
