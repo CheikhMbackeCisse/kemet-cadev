@@ -8,7 +8,7 @@ import { storeChannelDraft } from "../../lib/chat/useChannelDraft.js";
 import { Dialog } from "../ui/Dialog.js";
 import { ErrorState } from "../ui/ErrorState.js";
 import { Skeleton } from "../ui/Skeleton.js";
-import { SpaceIcon } from "../ui/SpaceIcon.js";
+import { SpaceIcon, spaceTints } from "../ui/SpaceIcon.js";
 
 interface SpaceWithChannels {
   space: Space;
@@ -63,6 +63,8 @@ export function AskKemetDialog({ skillSlug, open, onOpenChange }: AskKemetDialog
     navigate(`/salons?space=${space.id}&channel=${channel.id}`);
   }
 
+  const tints = spaceTints(groups?.map(({ space }) => space) ?? []);
+
   return (
     <Dialog
       open={open}
@@ -100,6 +102,7 @@ export function AskKemetDialog({ skillSlug, open, onOpenChange }: AskKemetDialog
                 <SpaceIcon
                   id={space.id}
                   name={space.name}
+                  tint={tints.get(space.id)}
                   className="size-6 rounded-[6px]"
                   glyphClassName="size-3.5"
                 />

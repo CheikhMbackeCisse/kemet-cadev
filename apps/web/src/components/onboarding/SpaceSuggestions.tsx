@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { SpaceIcon } from "../ui/SpaceIcon.js";
+import { SpaceIcon, spaceTints } from "../ui/SpaceIcon.js";
 import type { Space } from "@kemet/shared";
 import { Button } from "../ui/Button.js";
 import { GlassState } from "./GlassState.js";
@@ -66,6 +66,7 @@ export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) 
     );
   }
   if (spaces.length === 0) return <GlassState message={fr.onboarding.spacesEmpty} />;
+  const tints = spaceTints(spaces);
 
   return (
     <ul className="flex flex-col divide-y divide-auth-divider">
@@ -77,6 +78,7 @@ export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) 
             <SpaceIcon
               id={space.id}
               name={space.name}
+              tint={tints.get(space.id)}
               className="size-10 rounded-control"
               glyphClassName="size-5"
             />

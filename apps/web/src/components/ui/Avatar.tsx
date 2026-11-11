@@ -21,15 +21,10 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-// Couleurs de Kemet déjà testées en contraste contre --bg dans les deux thèmes
-// (tokens.test.ts) : les initiales prennent --bg, comme le motif des insignes.
-const GENERATED_BACKGROUNDS = [
-  "var(--level-architecte)",
-  "var(--level-scribe)",
-  "var(--level-apprenti)",
-  "var(--level-artisan)",
-  "var(--level-legende)",
-];
+// Teintes des espaces, testées en contraste contre le blanc (tokens.test.ts).
+// Pas les couleurs des niveaux : un avatar couleur Légende à côté d'un
+// insigne Apprenti laissait croire à un niveau.
+const GENERATED_BACKGROUNDS = [1, 2, 3, 4, 5, 6].map((tint) => `var(--space-tint-${tint})`);
 
 /** Couleur stable pour un même nom, d'un écran à l'autre. */
 export function generatedAvatarColor(name: string): string {
@@ -90,7 +85,7 @@ export function Avatar({
       aria-hidden="true"
       style={{ backgroundColor: generatedAvatarColor(name) }}
       className={cn(
-        "inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-bg",
+        "inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-white",
         SIZE_CLASSES[size],
         className,
       )}

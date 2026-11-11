@@ -1,7 +1,7 @@
 import { Hash } from "lucide-react";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
-import { SpaceIcon } from "../ui/SpaceIcon.js";
+import { SpaceIcon, spaceTints } from "../ui/SpaceIcon.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import type { ChannelItem, SpaceItem } from "./types.js";
 
@@ -39,6 +39,7 @@ export function SpaceTree({
   activeChannelId,
   onSelectChannel,
 }: SpaceTreeProps) {
+  const tints = spaceTints(spaces);
   return (
     <nav aria-label={title} className="px-2 py-3" aria-busy={status === "loading" || undefined}>
       <p className="px-2 pb-2 text-xs font-medium text-muted">{title}</p>
@@ -75,7 +76,7 @@ export function SpaceTree({
                       : "text-text-2 hover:bg-surface-2 hover:text-text",
                   )}
                 >
-                  <SpaceAvatar space={space} />
+                  <SpaceAvatar space={space} tint={tints.get(space.id)} />
                   <span className="flex-1 truncate text-left">{space.name}</span>
                   {space.hasUnread && !open && (
                     <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-primary" />
@@ -160,12 +161,13 @@ function RowSkeletons({ count }: { count: number }) {
 
 // 6 px : rayon concentrique minimal de DESIGN.md, pour une pastille de 24 px
 // posée dans une ligne arrondie à 8 px.
-function SpaceAvatar({ space }: { space: SpaceItem }) {
+function SpaceAvatar({ space, tint }: { space: SpaceItem; tint: number | undefined }) {
   return (
     <SpaceIcon
       id={space.id}
       name={space.name}
       imageUrl={space.imageUrl}
+      tint={tint}
       className="size-6 rounded-[6px]"
       glyphClassName="size-3.5"
     />

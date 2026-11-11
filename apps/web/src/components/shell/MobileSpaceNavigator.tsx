@@ -1,7 +1,7 @@
 import { Hash, Plus } from "lucide-react";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
-import { SpaceIcon } from "../ui/SpaceIcon.js";
+import { SpaceIcon, spaceTints } from "../ui/SpaceIcon.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import type { SpaceTreeStatus } from "./SpaceTree.js";
 import type { ChannelItem, SpaceItem } from "./types.js";
@@ -45,6 +45,7 @@ export function MobileSpaceNavigator({
   canCreateSpace,
 }: MobileSpaceNavigatorProps) {
   const activeSpace = spaces.find((space) => space.id === activeSpaceId);
+  const tints = spaceTints(spaces);
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -86,6 +87,7 @@ export function MobileSpaceNavigator({
                       id={space.id}
                       name={space.name}
                       imageUrl={space.imageUrl}
+                      tint={tints.get(space.id)}
                       className="size-12 rounded-card"
                       glyphClassName="size-6"
                     />

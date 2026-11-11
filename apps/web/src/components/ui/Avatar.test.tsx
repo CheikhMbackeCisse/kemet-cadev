@@ -19,7 +19,7 @@ describe("Avatar", () => {
 
   it("donne toujours la même couleur au même nom", () => {
     expect(generatedAvatarColor("Amina Diallo")).toBe(generatedAvatarColor("Amina Diallo"));
-    expect(generatedAvatarColor("Amina Diallo")).toMatch(/^var\(--level-/);
+    expect(generatedAvatarColor("Amina Diallo")).toMatch(/^var\(--space-tint-/);
   });
 
   it("n'ajoute pas de drapeau à 88 px, où le pays est écrit à côté", () => {

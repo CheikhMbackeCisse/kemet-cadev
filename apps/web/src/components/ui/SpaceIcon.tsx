@@ -47,10 +47,31 @@ export function spaceThemeIcon(name: string): LucideIcon {
   return THEME_ICONS.find(([pattern]) => pattern.test(name))?.[1] ?? MessagesSquare;
 }
 
+const ICON_ORDER: LucideIcon[] = [...THEME_ICONS.map(([, icon]) => icon), MessagesSquare];
+
+/**
+ * Teinte de chaque espace d'une liste, d'après son icône et son rang : deux
+ * espaces de même icône ont des teintes différentes (jusqu'à six), alors
+ * qu'une teinte tirée de l'identifiant les faisait parfois se confondre.
+ */
+export function spaceTints(spaces: readonly { id: string; name: string }[]): Map<string, number> {
+  const seen = new Map<LucideIcon, number>();
+  const tints = new Map<string, number>();
+  for (const space of spaces) {
+    const icon = spaceThemeIcon(space.name);
+    const rank = seen.get(icon) ?? 0;
+    seen.set(icon, rank + 1);
+    tints.set(space.id, ((ICON_ORDER.indexOf(icon) + rank) % TINT_COUNT) + 1);
+  }
+  return tints;
+}
+
 export interface SpaceIconProps {
   id: string;
   name: string;
   imageUrl?: string | null;
+  /** Teinte donnée par `spaceTints` dans une liste ; sinon tirée de l'identifiant. */
+  tint?: number;
   /** Taille de la pastille, en classes Tailwind (size-6, size-12...). */
   className?: string;
   /** Taille du logo ou de l'icône à l'intérieur. */
@@ -66,6 +87,7 @@ export function SpaceIcon({
   id,
   name,
   imageUrl,
+  tint,
   className,
   glyphClassName = "size-4",
 }: SpaceIconProps) {
@@ -103,7 +125,7 @@ export function SpaceIcon({
     <span
       aria-hidden="true"
       className={frame}
-      style={{ backgroundColor: `var(--space-tint-${tintOf(id)})` }}
+      style={{ backgroundColor: `var(--space-tint-${tint ?? tintOf(id)})` }}
     >
       <Icon className={cn("text-white", glyphClassName)} />
     </span>
