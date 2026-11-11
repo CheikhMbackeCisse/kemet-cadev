@@ -24,6 +24,7 @@ import {
   posts,
   profileBlocks,
   profiles,
+  opportunities,
   projects,
   readStates,
   reports,
@@ -234,6 +235,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     coauthorshipRows,
     workMatchRows,
     cvRows,
+    opportunityRows,
   ] = await Promise.all([
     workIds.length === 0
       ? []
@@ -249,6 +251,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     db.select().from(workAuthors).where(eq(workAuthors.profileId, profileId)),
     db.select().from(workMatchRequests).where(eq(workMatchRequests.requestedBy, profileId)),
     db.select(cvColumns).from(profileCvs).where(eq(profileCvs.profileId, profileId)),
+    db.select().from(opportunities).where(eq(opportunities.authorId, profileId)),
   ]);
 
   return {
@@ -274,6 +277,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     assistantInvocations: invocationRows,
     mcpServers: mcpServerRows,
     projects: projectRows,
+    opportunities: opportunityRows,
     helpRequests: helpRequestRows,
     applications: applicationRows,
     competitions: competitionRows,

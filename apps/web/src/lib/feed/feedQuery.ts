@@ -2,9 +2,10 @@ import type { FeedProject, FeedTab, PostSummary } from "@kemet/shared";
 import type { QueryClient } from "@tanstack/react-query";
 import { listFeedProjects, listPosts } from "../chat/api.js";
 
-// Onglet "Projets" : seulement les cartes projet, sans les posts. "debuter"
-// reste une source de l'API, plus montrée dans l'interface.
-export type FeedView = Exclude<FeedTab, "debuter"> | "projets";
+// Onglet "Opportunités" : offres et projets, chargés par OpportunitiesFeed.
+// "debuter" reste une source de l'API, plus montrée dans l'interface.
+export type FeedView = Exclude<FeedTab, "debuter"> | "opportunites";
+export type PostFeedView = Exclude<FeedView, "opportunites">;
 
 export interface FeedData {
   posts: PostSummary[];
@@ -14,17 +15,12 @@ export interface FeedData {
 
 // Assez de cartes pour une carte tous les cinq posts sur une page de vingt.
 const PROJECTS_PER_POST_PAGE = 6;
-const PROJECTS_TAB_SIZE = 20;
 
 export function feedQueryKey(view: FeedView) {
   return ["feed", view] as const;
 }
 
-export async function fetchFeed(view: FeedView): Promise<FeedData> {
-  if (view === "projets") {
-    const result = await listFeedProjects("pour-toi", PROJECTS_TAB_SIZE);
-    return { posts: [], projects: result.items, nextCursor: null };
-  }
+export async function fetchFeed(view: PostFeedView): Promise<FeedData> {
   // Les cartes projet accompagnent le fil : sans elles, il reste lisible.
   const [page, projectResult] = await Promise.all([
     listPosts(view),

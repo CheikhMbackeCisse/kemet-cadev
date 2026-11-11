@@ -8,6 +8,7 @@ import {
   mcpServers,
   messageAttachments,
   messages,
+  opportunities,
   postAttachments,
   postBookmarks,
   postReplies,
@@ -185,6 +186,8 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .update(projects)
     .set({ name: "", pitch: "", description: "", repoUrl: "", demoUrl: null, stack: [] })
     .where(and(eq(projects.ownerId, profileId), isNotNull(projects.deletedAt)));
+  // Une offre appelle à écrire à son auteur : sans compte, elle n'a plus de sens.
+  await tx.delete(opportunities).where(eq(opportunities.authorId, profileId));
 
   const messageFiles = await tx
     .select({ storageKey: messageAttachments.storageKey })

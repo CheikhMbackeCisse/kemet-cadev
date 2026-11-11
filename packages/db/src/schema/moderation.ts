@@ -2,7 +2,14 @@ import { relations } from "drizzle-orm";
 import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
 
-export const reportTargetEnum = pgEnum("report_target", ["message", "post", "profile", "work", "conversation"]);
+export const reportTargetEnum = pgEnum("report_target", [
+  "message",
+  "post",
+  "profile",
+  "work",
+  "conversation",
+  "opportunity",
+]);
 export const reportStatusEnum = pgEnum("report_status", ["pending", "resolved", "dismissed"]);
 export const moderationActionEnum = pgEnum("moderation_action", [
   "content_hidden",

@@ -232,6 +232,20 @@
       "when": 1794424840813,
       "tag": "0032_post_reposts",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794436161136,
+      "tag": "0033_opportunities",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794440342945,
+      "tag": "0034_opportunity_reports",
+      "breakpoints": true
     }
   ]
 }

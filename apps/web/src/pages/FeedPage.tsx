@@ -1,11 +1,17 @@
-import { FolderGit2, Plus, Rss } from "lucide-react";
+import { Plus, Rss } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { prefersTalentFeed, type PostSummary } from "@kemet/shared";
+import {
+  prefersTalentFeed,
+  type FeedProject,
+  type OpportunitySummary,
+  type PostSummary,
+} from "@kemet/shared";
 import {
   ChatApiError,
   createPostFeedback,
   deletePost,
+  listOpportunities,
   listPosts,
   setPostBookmark,
   togglePostReaction,
@@ -18,9 +24,7 @@ import {
 import {
   PROJECT_CARD_ESTIMATED_HEIGHT_PX,
   ProjectFeedCard,
-  ProjectFeedCardSkeleton,
 } from "../components/feed/ProjectFeedCard.js";
-import { navigate } from "../lib/navigation/navigate.js";
 import { rememberedHeight } from "../lib/navigation/rememberedHeights.js";
 import { interleaveProjects } from "../lib/feed/interleave.js";
 import { useVisibleFirst } from "../lib/feed/useVisibleFirst.js";
@@ -31,7 +35,13 @@ import {
   mergeFreshFirstPage,
   type FeedData,
   type FeedView,
+  type PostFeedView,
 } from "../lib/feed/feedQuery.js";
+import { OpportunitiesFeed } from "../components/opportunities/OpportunitiesFeed.js";
+import {
+  OPPORTUNITY_ROW_ESTIMATED_HEIGHT_PX,
+  OpportunityRow,
+} from "../components/opportunities/OpportunityRow.js";
 import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { Button } from "../components/ui/Button.js";
@@ -51,6 +61,31 @@ import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 const postHeightKey = (postId: string) => `post:${postId}`;
 const projectHeightKey = (projectId: string) => `project:${projectId}`;
+const offerHeightKey = (offerId: string) => `offer:${offerId}`;
+
+// Cartes glissées entre les posts : des projets, et des offres pour les RH et
+// les entrepreneurs.
+type SideCard =
+  | { type: "project"; project: FeedProject }
+  | { type: "offer"; offer: OpportunitySummary };
+
+/** Une offre, puis un projet, puis une offre... tant qu'il en reste. */
+function alternateSideCards(offers: OpportunitySummary[], projects: FeedProject[]): SideCard[] {
+  const cards: SideCard[] = [];
+  for (let index = 0; index < Math.max(offers.length, projects.length); index += 1) {
+    const offer = offers[index];
+    const project = projects[index];
+    if (offer) cards.push({ type: "offer", offer });
+    if (project) cards.push({ type: "project", project });
+  }
+  return cards;
+}
+
+function initialFeedView(): FeedView {
+  return new URLSearchParams(window.location.search).get("onglet") === "opportunites"
+    ? "opportunites"
+    : "pour-toi";
+}
 
 function RowPlaceholder({
   heightKey,
@@ -109,8 +144,9 @@ function PostListItem({
   );
 }
 
-// RH et entrepreneurs : une carte projet après chaque groupe de trois posts.
+// RH et entrepreneurs : une carte offre ou projet après chaque groupe de trois posts.
 const TALENT_POSTS_PER_PROJECT_CARD = 3;
+const TALENT_OFFERS = 4;
 
 export function FeedPage() {
   const toast = useToast();
@@ -119,13 +155,21 @@ export function FeedPage() {
   const talentFeed = profile !== null && prefersTalentFeed(profile.role);
   // "Pour toi" par defaut pour tout le monde : un nouveau compte ne suit
   // encore personne, et ouvrait donc le fil sur une page vide.
-  const [tab, setTab] = useState<FeedView>("pour-toi");
+  const [tab, setTab] = useState<FeedView>(initialFeedView);
+  const postView: PostFeedView = tab === "opportunites" ? "pour-toi" : tab;
   const queryClient = useQueryClient();
-  const queryKey = feedQueryKey(tab);
+  const queryKey = feedQueryKey(postView);
   const feed = useQuery({
     queryKey,
     queryFn: async () =>
-      mergeFreshFirstPage(await fetchFeed(tab), queryClient.getQueryData<FeedData>(queryKey)),
+      mergeFreshFirstPage(await fetchFeed(postView), queryClient.getQueryData<FeedData>(queryKey)),
+    enabled: tab !== "opportunites",
+  });
+  const talentPourToi = talentFeed && tab === "pour-toi";
+  const talentOffers = useQuery({
+    queryKey: ["opportunities", "talent-feed"],
+    queryFn: () => listOpportunities({}, null, TALENT_OFFERS),
+    enabled: talentPourToi,
   });
   const posts = feed.data?.posts ?? [];
   const projects = feed.data?.projects ?? [];
@@ -133,13 +177,20 @@ export function FeedPage() {
   const loading = feed.isPending;
   const error = feed.isError && !feed.data;
 
+  const sideCards: SideCard[] = talentPourToi
+    ? alternateSideCards(talentOffers.data?.items ?? [], projects)
+    : projects.map((project) => ({ type: "project", project }));
   const entries = interleaveProjects(
     posts,
-    projects,
-    talentFeed && tab === "pour-toi" ? TALENT_POSTS_PER_PROJECT_CARD : undefined,
+    sideCards,
+    talentPourToi ? TALENT_POSTS_PER_PROJECT_CARD : undefined,
   );
   const entryKeys = entries.map((entry) =>
-    entry.kind === "project" ? projectHeightKey(entry.item.id) : postHeightKey(entry.item.id),
+    entry.kind === "post"
+      ? postHeightKey(entry.item.id)
+      : entry.item.type === "offer"
+        ? offerHeightKey(entry.item.offer.id)
+        : projectHeightKey(entry.item.project.id),
   );
   const isBuilt = useVisibleFirst(entryKeys, POST_ESTIMATED_HEIGHT_PX);
 
@@ -166,7 +217,7 @@ export function FeedPage() {
   }, [status]);
 
   async function loadMore() {
-    if (!nextCursor || tab === "projets") return;
+    if (!nextCursor || tab === "opportunites") return;
     try {
       const page = await listPosts(tab, nextCursor);
       updateFeed((data) => ({
@@ -252,39 +303,6 @@ export function FeedPage() {
     }
   }
 
-  const projectsContent = loading ? (
-    <div className="flex flex-col divide-y divide-border">
-      <ProjectFeedCardSkeleton />
-      <ProjectFeedCardSkeleton />
-    </div>
-  ) : error ? (
-    <ErrorState
-      message={fr.feed.projectsLoadingError}
-      retry={{ label: fr.chat.retry, onClick: () => reload() }}
-    />
-  ) : projects.length === 0 ? (
-    <EmptyState
-      icon={FolderGit2}
-      message={status === "visitor" ? fr.feed.noProjectsVisitor : fr.feed.noProjects}
-      action={
-        status === "visitor"
-          ? { label: fr.feed.browseProjects, onClick: () => navigate("/projets") }
-          : { label: fr.feed.publishProject, onClick: () => navigate("/projets/nouveau") }
-      }
-    />
-  ) : (
-    <ul className="flex flex-col divide-y divide-border">
-      {projects.map((project) => (
-        <ProjectFeedCard
-          key={project.id}
-          project={project}
-          variant="row"
-          viewerProfileId={profile?.id ?? null}
-        />
-      ))}
-    </ul>
-  );
-
   const feedContent = loading ? (
     <div className="flex flex-col divide-y divide-border">
       <PostCardSkeleton />
@@ -306,19 +324,30 @@ export function FeedPage() {
               key={entryKeys[index]}
               heightKey={entryKeys[index] ?? ""}
               estimatedHeight={
-                entry.kind === "project"
-                  ? PROJECT_CARD_ESTIMATED_HEIGHT_PX
-                  : POST_ESTIMATED_HEIGHT_PX
+                entry.kind === "post"
+                  ? POST_ESTIMATED_HEIGHT_PX
+                  : entry.item.type === "offer"
+                    ? OPPORTUNITY_ROW_ESTIMATED_HEIGHT_PX
+                    : PROJECT_CARD_ESTIMATED_HEIGHT_PX
               }
             />
           ) : entry.kind === "project" ? (
-            <ProjectFeedCard
-              key={entryKeys[index]}
-              heightKey={entryKeys[index]}
-              project={entry.item}
-              variant="card"
-              viewerProfileId={profile?.id ?? null}
-            />
+            entry.item.type === "offer" ? (
+              <OpportunityRow
+                key={entryKeys[index]}
+                heightKey={entryKeys[index]}
+                opportunity={entry.item.offer}
+                variant="card"
+              />
+            ) : (
+              <ProjectFeedCard
+                key={entryKeys[index]}
+                heightKey={entryKeys[index]}
+                project={entry.item.project}
+                variant="card"
+                viewerProfileId={profile?.id ?? null}
+              />
+            )
           ) : (
             <PostListItem
               key={entryKeys[index]}
@@ -347,11 +376,16 @@ export function FeedPage() {
     <div className="flex items-center justify-between">
       <h1 className="text-lg font-bold text-text">{fr.feed.title}</h1>
       <div className="flex items-center gap-2">
-        {canInteract && (
-          <HeaderActionLink href="/fil/nouveau" icon={Plus}>
-            {fr.feed.newPostLink}
-          </HeaderActionLink>
-        )}
+        {canInteract &&
+          (tab === "opportunites" ? (
+            <HeaderActionLink href="/opportunites/nouvelle" icon={Plus}>
+              {fr.opportunities.publish}
+            </HeaderActionLink>
+          ) : (
+            <HeaderActionLink href="/fil/nouveau" icon={Plus}>
+              {fr.feed.newPostLink}
+            </HeaderActionLink>
+          ))}
       </div>
     </div>
   );
@@ -368,7 +402,7 @@ export function FeedPage() {
         {status === "ready" && <InstallBanner />}
         {isSuspended && <SuspendedBanner />}
 
-        {/* Un visiteur n'a pas d'abonnements : seulement "Pour toi" et "Projets". */}
+        {/* Un visiteur n'a pas d'abonnements : seulement "Pour toi" et "Opportunités". */}
         <Tabs
           layout="centered"
           value={tab}
@@ -395,9 +429,12 @@ export function FeedPage() {
                   },
                 ]),
             {
-              value: "projets",
-              label: fr.feed.tabProjets,
-              content: tab === "projets" ? projectsContent : null,
+              value: "opportunites",
+              label: fr.opportunities.tab,
+              content:
+                tab === "opportunites" ? (
+                  <OpportunitiesFeed viewerProfileId={profile?.id ?? null} />
+                ) : null,
             },
           ]}
         />

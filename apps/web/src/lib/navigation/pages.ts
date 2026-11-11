@@ -75,6 +75,8 @@ export const PAGE_LOADERS = {
   workForm: page(() => import("../../pages/WorkFormPage.js"), "WorkFormPage"),
   workFilters: page(() => import("../../pages/WorkFiltersPage.js"), "WorkFiltersPage"),
   user: page(() => import("../../pages/UserPage.js"), "UserPage"),
+  opportunity: page(() => import("../../pages/OpportunityPage.js"), "OpportunityPage"),
+  opportunityForm: page(() => import("../../pages/OpportunityFormPage.js"), "OpportunityFormPage"),
 } as const;
 
 export type PageKey = keyof typeof PAGE_LOADERS;
@@ -130,6 +132,9 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
   if (pathname === "/competitions/nouvelle") return "newCompetition";
   if (/^\/competitions\/[^/]+\/soumettre$/.test(pathname)) return "submitProject";
   if (pathname.startsWith("/competitions/")) return "competition";
+  if (pathname === "/opportunites/nouvelle" || /^\/opportunites\/[^/]+\/modifier\/?$/.test(pathname))
+    return "opportunityForm";
+  if (/^\/opportunites\/[^/]+\/?$/.test(pathname)) return "opportunity";
   if (pathname.startsWith("/u/")) return "user";
   if (pathname === "/pro") return "pro";
   if (pathname === "/moderation") return "moderation";

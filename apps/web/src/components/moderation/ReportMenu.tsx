@@ -10,7 +10,7 @@ import { useToast } from "../ui/Toast.js";
 import { fr } from "../../i18n/fr.js";
 
 export interface ReportMenuProps {
-  contentType: "message" | "post" | "work" | "conversation";
+  contentType: "message" | "post" | "work" | "conversation" | "opportunity";
   contentId: string;
   authorId: string;
   authorHandle: string;
@@ -22,6 +22,7 @@ const CONTENT_LABELS: Record<ReportMenuProps["contentType"], string> = {
   message: fr.moderation.reportThisMessage,
   post: fr.moderation.reportThisPost,
   work: fr.moderation.reportThisWork,
+  opportunity: fr.moderation.reportThisOpportunity,
   conversation: fr.moderation.reportThisConversation,
 };
 

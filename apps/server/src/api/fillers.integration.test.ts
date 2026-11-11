@@ -4,6 +4,7 @@ import {
   channels,
   createDb,
   follows,
+  opportunities,
   postReposts,
   posts,
   profiles,
@@ -163,6 +164,19 @@ describe.skipIf(!databaseUrl)("Figurants invisibles (base Postgres réelle)", ()
       .insert(posts)
       .values({ authorId: fillerId, body: FILLER_POST })
       .returning({ id: posts.id });
+    await db.insert(opportunities).values({
+      authorId: fillerId,
+      slug: "offre-du-figurant",
+      kind: "job",
+      title: "Offre publiée par le figurant",
+      organization: "Organisation du figurant",
+      remote: true,
+      domains: ["web"],
+      description: "Une offre que personne ne doit voir.",
+      contractType: "cdi",
+      startDate: "2030-01-01",
+      criteria: [],
+    });
     const [general] = await db
       .select()
       .from(channels)
@@ -246,6 +260,10 @@ describe.skipIf(!databaseUrl)("Figurants invisibles (base Postgres réelle)", ()
     await call("export", "GET", "/api/me/export", viewer.cookie);
     await call("conversations", "GET", "/api/conversations", viewer.cookie);
     await call("travaux", "GET", `/api/works?q=${encodeURIComponent("Figurant")}`);
+    await call("offres", "GET", "/api/opportunities");
+    await call("offres du figurant", "GET", `/api/opportunities?author=${FILLER_HANDLE}`);
+    const fillerOffer = await call("offre du figurant", "GET", "/api/opportunities/offre-du-figurant");
+    expect(fillerOffer.statusCode).toBe(404);
 
     const levels = await call("niveaux", "GET", "/api/levels");
     const apprentis = levels

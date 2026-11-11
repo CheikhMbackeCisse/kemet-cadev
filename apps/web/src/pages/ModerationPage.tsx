@@ -18,6 +18,7 @@ const TARGET_LABELS = {
   post: fr.moderation.targetPost,
   profile: fr.moderation.targetProfile,
   work: fr.moderation.targetWork,
+  opportunity: fr.moderation.targetOpportunity,
   conversation: fr.moderation.targetConversation,
 };
 

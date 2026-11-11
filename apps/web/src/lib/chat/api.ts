@@ -78,6 +78,10 @@ import type {
   CvVisibility,
   Profile,
   ProfileLibrary,
+  CreateOpportunityInput,
+  OpportunityDetail,
+  OpportunityInput,
+  OpportunitySummary,
 } from "@kemet/shared";
 
 class ChatApiError extends Error {
@@ -1084,4 +1088,45 @@ export function deleteCv() {
 
 export function listOpenProfiles() {
   return request<{ items: Profile[] }>("/api/feed/open-profiles");
+}
+
+export interface OpportunityFilters {
+  kind?: string;
+  country?: string;
+  domain?: string;
+  includeClosed?: boolean;
+  author?: string;
+}
+
+export function listOpportunities(filters: OpportunityFilters, cursor?: string | null, limit = 20) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (filters.kind) params.set("kind", filters.kind);
+  if (filters.country) params.set("country", filters.country);
+  if (filters.domain) params.set("domain", filters.domain);
+  if (filters.author) params.set("author", filters.author);
+  if (filters.includeClosed) params.set("includeClosed", "true");
+  if (cursor) params.set("cursor", cursor);
+  return request<{ items: OpportunitySummary[]; nextCursor: string | null }>(`/api/opportunities?${params}`);
+}
+
+export function getOpportunity(slug: string) {
+  return request<{ opportunity: OpportunityDetail }>(`/api/opportunities/${encodeURIComponent(slug)}`);
+}
+
+export function createOpportunity(input: CreateOpportunityInput) {
+  return request<{ opportunity: OpportunityDetail }>("/api/opportunities", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateOpportunity(slug: string, input: OpportunityInput) {
+  return request<{ opportunity: OpportunityDetail }>(`/api/opportunities/${encodeURIComponent(slug)}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteOpportunity(slug: string) {
+  return request<{ deleted: boolean }>(`/api/opportunities/${encodeURIComponent(slug)}`, { method: "DELETE" });
 }

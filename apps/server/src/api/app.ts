@@ -34,6 +34,7 @@ import { registerAssistantRoutes } from "./routes/assistant.js";
 import { registerPostRoutes } from "./routes/posts.js";
 import { registerPostAttachmentRoutes } from "./routes/post-attachments.js";
 import { registerProjectRoutes } from "./routes/projects.js";
+import { registerOpportunityRoutes } from "./routes/opportunities.js";
 import { registerCompetitionRoutes } from "./routes/competitions.js";
 import { registerModerationRoutes } from "./routes/moderation.js";
 import { registerCredentialRoutes } from "./routes/credentials.js";
@@ -203,6 +204,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerPostRoutes(app, chatDeps);
     registerPostAttachmentRoutes(app, chatDeps);
     registerProjectRoutes(app, chatDeps);
+    registerOpportunityRoutes(app, chatDeps);
     registerCompetitionRoutes(app, chatDeps);
     registerModerationRoutes(app, chatDeps);
     registerCredentialRoutes(app, chatDeps);

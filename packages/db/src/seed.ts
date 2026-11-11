@@ -4,6 +4,7 @@ import { hash } from "@node-rs/argon2";
 import { seedDemoMedia } from "./seed/demo-media.js";
 import { seedNewcomers } from "./seed/newcomers.js";
 import { seedShowcase } from "./seed/showcase.js";
+import { seedOpportunities } from "./seed/opportunities.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -42,6 +43,12 @@ async function main(): Promise<void> {
       `Débutants et recruteurs : ${newcomers.accounts} comptes, ${newcomers.cvs} CV, ${newcomers.posts} posts ` +
         `et ${newcomers.spaceMessages} messages ajoutés.`,
     );
+  const offers = await seedOpportunities(db);
+  console.log(
+    offers.status === "done"
+      ? `Opportunités : ${offers.created} offres ajoutées.`
+      : `Opportunités sautées : ${offers.reason}.`,
+  );
   const showcase = await seedShowcase(db);
   console.log(
     showcase.status === "done"
