@@ -4,6 +4,7 @@ import {
   channels,
   createDb,
   follows,
+  postReposts,
   posts,
   profiles,
   spaceMembers,
@@ -281,5 +282,27 @@ describe.skipIf(!databaseUrl)("Figurants invisibles (base Postgres réelle)", ()
       expect(body.includes(fillerId)).toBe(false);
       expect(body.includes(FILLER_NAME)).toBe(false);
     }
+  });
+
+  it("ne fait pas remonter un post par la republication d'un figurant", async () => {
+    const author = await createMember("autrice");
+    const viewer = await createMember("lecteur");
+    const fillerId = await createFiller();
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { cookie: author.cookie },
+      payload: { body: "Republié par un figurant." },
+    });
+    const postId = created.json().post.id as string;
+    // Personne ne peut suivre un figurant par l'API : posé en base, comme le seed.
+    await db.insert(follows).values({ followerId: viewer.profileId, followeeId: fillerId });
+    await db.insert(postReposts).values({ postId, profileId: fillerId });
+
+    const abonnements = await app.inject({ method: "GET", url: "/api/posts?tab=abonnements", headers: { cookie: viewer.cookie } });
+    expect(abonnements.payload.includes(postId)).toBe(false);
+    const pourToi = await app.inject({ method: "GET", url: "/api/posts?tab=pour-toi", headers: { cookie: viewer.cookie } });
+    expect(pourToi.payload.includes(FILLER_NAME)).toBe(false);
+    expect(pourToi.payload.includes(fillerId)).toBe(false);
   });
 });

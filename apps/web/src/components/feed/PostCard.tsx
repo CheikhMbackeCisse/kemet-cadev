@@ -1,12 +1,11 @@
 import { navigate } from "../../lib/navigation/navigate.js";
 import { heightKeyProps } from "../../lib/navigation/rememberedHeights.js";
-import { useState, type MouseEvent } from "react";
-import { Bookmark, CheckCircle2, Heart, MessageSquare, Share2 } from "lucide-react";
+import { useEffect, useState, type MouseEvent } from "react";
+import { Bookmark, CheckCircle2, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { Button } from "../ui/Button.js";
-import { IconButton } from "../ui/IconButton.js";
 import { MoreActionsMenu } from "../ui/MoreActionsMenu.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
@@ -21,6 +20,8 @@ import { formatCount } from "../../lib/formatCount.js";
 import { formatFullDate, formatRelativeTime } from "../../lib/relativeTime.js";
 import { shareLink } from "../../lib/shareLink.js";
 import { useToast } from "../ui/Toast.js";
+import { followUser, setPostRepost, unfollowUser } from "../../lib/chat/api.js";
+import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
 import { authorLevel, ProfileLink } from "../ui/ProfileLink.js";
 
@@ -105,10 +106,24 @@ export interface PostCardProps {
   onFeedback: () => void;
   onDelete: () => void;
   onReply?: () => void;
+  /** Republication ou abonnement réglés depuis la carte, pour que la liste suive. */
+  onChange?: (change: Partial<PostSummary>) => void;
   /** Pastille "Demander à @kemet d'expliquer", sous un post technique seulement. */
   askKemet?: { href?: string; onClick?: () => void };
   /** Dans le fil : clé de la hauteur gardée d'un aller-retour à l'autre. */
   heightKey?: string;
+}
+
+// Barre d'actions : cinq places régulières, icône grise et compteur, couleur
+// seulement quand l'action est active.
+const ACTION_CLASS =
+  "inline-flex h-control max-md:h-control-mobile min-w-11 items-center gap-1 rounded-control px-2 text-xs tabular-nums text-muted transition-colors hover:bg-surface-2 hover:text-text";
+const STATIC_ACTION_CLASS =
+  "inline-flex h-control max-md:h-control-mobile min-w-11 items-center gap-1 px-2 text-xs tabular-nums text-muted";
+const ACTION_ICON_CLASS = "size-5 shrink-0";
+
+function ActionCount({ value }: { value: number }) {
+  return <span aria-hidden="true">{value > 0 ? formatCount(value) : ""}</span>;
 }
 
 export function PostCard({
@@ -125,6 +140,7 @@ export function PostCard({
   onFeedback,
   onDelete,
   onReply,
+  onChange,
   askKemet,
   heightKey,
 }: PostCardProps) {
@@ -142,20 +158,91 @@ export function PostCard({
     navigate(bodyHref);
   }
   const toast = useToast();
+  const { profile } = useSession();
   const [reportOpen, setReportOpen] = useState(false);
+  // Republication et abonnement se règlent ici, sans détour par la liste :
+  // l'état local suit la valeur reçue tant que la liste ne la change pas.
+  const [repost, setRepost] = useState({ count: post.repostCount, mine: post.repostedByMe });
+  const [following, setFollowing] = useState(post.authorFollowedByMe);
+  const [repostPending, setRepostPending] = useState(false);
+  useEffect(
+    () => setRepost({ count: post.repostCount, mine: post.repostedByMe }),
+    [post.repostCount, post.repostedByMe],
+  );
+  useEffect(() => setFollowing(post.authorFollowedByMe), [post.authorFollowedByMe]);
+
+  const postUrl = `${window.location.origin}/fil/${post.id}`;
+  const deletedAuthor = isDeletedAccountHandle(post.authorHandle);
+
   async function share() {
-    const outcome = await shareLink(
-      `${window.location.origin}/fil/${post.id}`,
-      fr.feed.shareTitle(post.authorDisplayName),
-    );
+    const outcome = await shareLink(postUrl, fr.feed.shareTitle(post.authorDisplayName));
     if (outcome === "copied") toast.show(fr.feed.linkCopied, "success");
     if (outcome === "failed") toast.show(fr.feed.shareFailed, "danger");
   }
 
-  const replyLabel = fr.feed.replyAriaLabel(post.replyCount);
-  const actionClassName =
-    "inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted hover:bg-surface-2 hover:text-text";
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      toast.show(fr.feed.linkCopied, "success");
+    } catch {
+      toast.show(fr.feed.shareFailed, "danger");
+    }
+  }
+
+  async function toggleRepost() {
+    if (repostPending) return;
+    setRepostPending(true);
+    try {
+      const result = await setPostRepost(post.id, !repost.mine);
+      setRepost({ count: result.repostCount, mine: result.repostedByMe });
+      onChange?.(result);
+      toast.show(result.repostedByMe ? fr.feed.repostedToast : fr.feed.unrepostedToast, "success");
+    } catch {
+      toast.show(fr.feed.repostError, "danger");
+    } finally {
+      setRepostPending(false);
+    }
+  }
+
+  async function toggleFollow() {
+    try {
+      const result = following
+        ? await unfollowUser(post.authorHandle)
+        : await followUser(post.authorHandle);
+      setFollowing(result.following);
+      onChange?.({ authorFollowedByMe: result.following });
+      toast.show(
+        result.following
+          ? fr.feed.followedToast(post.authorDisplayName)
+          : fr.feed.unfollowedToast(post.authorDisplayName),
+        "success",
+      );
+    } catch {
+      toast.show(fr.onboarding.followError, "danger");
+    }
+  }
+
+  const menuItems = [
+    ...(canInteract && !isOwnPost && !deletedAuthor
+      ? [{ value: "follow", label: following ? fr.feed.menuUnfollow : fr.feed.menuFollow }]
+      : []),
+    ...(deletedAuthor ? [] : [{ value: "profile", label: fr.feed.menuViewProfile }]),
+    ...(post.deletedAt ? [] : [{ value: "copy", label: fr.feed.menuCopyLink }]),
+    ...(canReport && !isOwnPost ? [{ value: "report", label: fr.moderation.reportAction }] : []),
+    ...(isOwnPost ? [{ value: "delete", label: fr.feed.delete, danger: true }] : []),
+  ];
+
+  function handleMenu(value: string) {
+    if (value === "follow") void toggleFollow();
+    if (value === "profile") navigate(`/u/${post.authorHandle}`);
+    if (value === "copy") void copyLink();
+    if (value === "report") setReportOpen(true);
+    if (value === "delete") onDelete();
+  }
+
   const relativeTime = formatRelativeTime(post.createdAt);
+  const canRepost = canInteract && !isOwnPost && !post.deletedAt;
+  const reposter = post.repostedBy ?? null;
 
   const Tag = as;
   return (
@@ -168,13 +255,27 @@ export function PostCard({
         bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2",
       )}
     >
+      {reposter && (
+        <p className="mb-1 flex items-center gap-3 text-xs font-medium text-muted">
+          <span className="flex w-8 shrink-0 justify-end">
+            <Repeat2 className="size-4" aria-hidden="true" />
+          </span>
+          {reposter.profileId === profile?.id ? (
+            fr.feed.repostedByMe
+          ) : (
+            <a href={`/u/${reposter.handle}`} className="hover:underline">
+              {fr.feed.repostedBy(reposter.displayName)}
+            </a>
+          )}
+        </p>
+      )}
       <div className="flex gap-3">
         <ProfileLink
           handle={post.authorHandle}
           aria-label={fr.profile.viewProfile(post.authorDisplayName)}
         >
           <Avatar
-            deleted={isDeletedAccountHandle(post.authorHandle)}
+            deleted={deletedAuthor}
             name={post.authorDisplayName}
             src={post.authorAvatarUrl ?? undefined}
             countryCode={post.authorCountry}
@@ -182,25 +283,19 @@ export function PostCard({
         </ProfileLink>
         <div className="relative min-w-0 flex-1">
           {/* En haut à droite, hors de la rangée d'actions : sur téléphone,
-            cette rangée débordait et « … » passait seul à la ligne. */}
-          {(isOwnPost || canReport) && (
+            cette rangée débordait et le menu passait seul à la ligne. */}
+          {menuItems.length > 0 && (
             <div className="absolute -top-2 right-0">
               <MoreActionsMenu
                 label={fr.feed.moreActions}
-                items={
-                  isOwnPost
-                    ? [{ value: "delete", label: fr.feed.delete, danger: true }]
-                    : [{ value: "report", label: fr.moderation.reportAction }]
-                }
-                onSelect={(value) => (value === "delete" ? onDelete() : setReportOpen(true))}
+                orientation="vertical"
+                items={menuItems}
+                onSelect={handleMenu}
               />
             </div>
           )}
           <div
-            className={cn(
-              "flex flex-wrap items-baseline gap-x-2",
-              (isOwnPost || canReport) && "pr-11",
-            )}
+            className={cn("flex flex-wrap items-baseline gap-x-2", menuItems.length > 0 && "pr-11")}
           >
             <UserName
               name={post.authorDisplayName}
@@ -259,28 +354,61 @@ export function PostCard({
             </a>
           )}
           {post.testAsk && <p className="mt-1 text-sm text-subtle">{post.testAsk}</p>}
+          {canFeedback && (
+            <Button variant="secondary" className="mt-2 whitespace-nowrap" onClick={onFeedback}>
+              <CheckCircle2 className="size-5" aria-hidden="true" />
+              {fr.feed.iTested}
+            </Button>
+          )}
           {askKemet && !post.deletedAt && !post.kemetAnswer && (
             <div className="mt-2">
               <AskKemetChip href={askKemet.href} onClick={askKemet.onClick} />
             </div>
           )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-1 gap-y-1">
+          <div className="-ml-2 mt-2 flex max-w-md items-center justify-between">
             {replyHref ? (
-              <a href={replyHref} aria-label={replyLabel} className={actionClassName}>
-                <MessageSquare className="size-4" aria-hidden="true" />
-                {formatCount(post.replyCount)}
+              <a
+                href={replyHref}
+                aria-label={fr.feed.replyAriaLabel(post.replyCount)}
+                className={ACTION_CLASS}
+              >
+                <MessageCircle className={ACTION_ICON_CLASS} aria-hidden="true" />
+                <ActionCount value={post.replyCount} />
               </a>
             ) : (
               <button
                 type="button"
                 onClick={onReply}
-                aria-label={replyLabel}
-                className={actionClassName}
+                aria-label={fr.feed.replyAriaLabel(post.replyCount)}
+                className={ACTION_CLASS}
               >
-                <MessageSquare className="size-4" aria-hidden="true" />
-                {formatCount(post.replyCount)}
+                <MessageCircle className={ACTION_ICON_CLASS} aria-hidden="true" />
+                <ActionCount value={post.replyCount} />
               </button>
+            )}
+            {canRepost ? (
+              <button
+                type="button"
+                onClick={() => void toggleRepost()}
+                aria-pressed={repost.mine}
+                aria-label={fr.feed.repostAriaLabel(repost.count)}
+                title={repost.mine ? fr.feed.unrepost : fr.feed.repost}
+                className={cn(ACTION_CLASS, repost.mine && "text-success hover:text-success")}
+              >
+                <Repeat2
+                  className={ACTION_ICON_CLASS}
+                  strokeWidth={repost.mine ? 2.25 : undefined}
+                  aria-hidden="true"
+                />
+                <ActionCount value={repost.count} />
+              </button>
+            ) : (
+              <span title={fr.feed.repost} className={STATIC_ACTION_CLASS}>
+                <Repeat2 className={ACTION_ICON_CLASS} aria-hidden="true" />
+                <span className="sr-only">{fr.feed.repostCount(repost.count)}</span>
+                <ActionCount value={repost.count} />
+              </span>
             )}
             {/* Le cœur garde le sens et les points de "Utile". */}
             {canInteract ? (
@@ -290,51 +418,44 @@ export function PostCard({
                 aria-pressed={post.reactedByMe}
                 aria-label={fr.feed.utileAriaLabel(post.utileCount)}
                 title={fr.feed.utile}
-                className={cn(actionClassName, post.reactedByMe && "text-danger hover:text-danger")}
+                className={cn(ACTION_CLASS, post.reactedByMe && "text-danger hover:text-danger")}
               >
                 <Heart
-                  className={cn("size-4", post.reactedByMe && "fill-current")}
+                  className={cn(ACTION_ICON_CLASS, post.reactedByMe && "fill-current")}
                   aria-hidden="true"
                 />
-                {formatCount(post.utileCount)}
+                <ActionCount value={post.utileCount} />
               </button>
             ) : (
-              <span
-                title={fr.feed.utile}
-                className="inline-flex h-control max-md:h-control-mobile items-center gap-1.5 rounded-control px-2 text-xs text-muted"
-              >
-                <Heart className="size-4" aria-hidden="true" />
+              <span title={fr.feed.utile} className={STATIC_ACTION_CLASS}>
+                <Heart className={ACTION_ICON_CLASS} aria-hidden="true" />
                 <span className="sr-only">{fr.feed.utileCount(post.utileCount)}</span>
-                <span aria-hidden="true">{formatCount(post.utileCount)}</span>
+                <ActionCount value={post.utileCount} />
               </span>
             )}
             {canInteract && !post.deletedAt && (
-              <IconButton
+              <button
+                type="button"
                 aria-label={fr.feed.save}
                 aria-pressed={post.savedByMe}
                 onClick={onSave}
-                className={cn(post.savedByMe && "text-text")}
+                className={cn(ACTION_CLASS, post.savedByMe && "text-primary hover:text-primary")}
               >
                 <Bookmark
-                  className={cn("size-4", post.savedByMe && "fill-current")}
+                  className={cn(ACTION_ICON_CLASS, post.savedByMe && "fill-current")}
                   aria-hidden="true"
                 />
-              </IconButton>
+              </button>
             )}
             {!post.deletedAt && (
-              <IconButton aria-label={fr.feed.share} onClick={() => void share()}>
-                <Share2 className="size-4" aria-hidden="true" />
-              </IconButton>
-            )}
-            {canFeedback && (
-              <Button
-                variant="ghost"
-                className="whitespace-nowrap px-2 text-xs"
-                onClick={onFeedback}
+              <button
+                type="button"
+                aria-label={fr.feed.share}
+                onClick={() => void share()}
+                className={ACTION_CLASS}
               >
-                <CheckCircle2 className="size-4" aria-hidden="true" />
-                {fr.feed.iTested}
-              </Button>
+                <Share2 className={ACTION_ICON_CLASS} aria-hidden="true" />
+              </button>
             )}
           </div>
           {post.kemetAnswer && !post.deletedAt && (

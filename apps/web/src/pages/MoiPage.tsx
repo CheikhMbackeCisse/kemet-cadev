@@ -61,7 +61,7 @@ export function MoiPage() {
     <RailPage activeSection="moi" className="gap-4 pt-1 lg:pt-6">
       <div className="-mb-2 flex justify-end lg:mb-0">
         <IconButton aria-label={fr.moi.menu} onClick={() => setMenuOpen(true)} className="-mr-2">
-          <Menu className="size-6" strokeWidth={1.75} aria-hidden="true" />
+          <Menu className="size-6" aria-hidden="true" />
         </IconButton>
       </div>
 

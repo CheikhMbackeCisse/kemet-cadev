@@ -39,6 +39,7 @@ import type {
   PostReplyAssistantStart,
   PostFeedbackEntry,
   PostBookmarkResult,
+  PostRepostResult,
   PostReactionResult,
   PostReply,
   PostSummary,
@@ -581,6 +582,13 @@ export function setPostBookmark(postId: string, saved: boolean) {
   return request<PostBookmarkResult>(`/api/posts/${postId}/bookmark`, {
     method: "PUT",
     body: JSON.stringify({ saved }),
+  });
+}
+
+export function setPostRepost(postId: string, reposted: boolean) {
+  return request<PostRepostResult>(`/api/posts/${postId}/repost`, {
+    method: "PUT",
+    body: JSON.stringify({ reposted }),
   });
 }
 

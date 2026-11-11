@@ -107,6 +107,14 @@ export const postWorkPreviewSchema = z.object({
 
 export type PostWorkPreview = z.infer<typeof postWorkPreviewSchema>;
 
+export const postRepostedBySchema = z.object({
+  profileId: z.string().uuid(),
+  handle: z.string(),
+  displayName: z.string(),
+});
+
+export type PostRepostedBy = z.infer<typeof postRepostedBySchema>;
+
 export const postSummarySchema = z.object({
   id: z.string().uuid(),
   authorId: z.string().uuid(),
@@ -128,6 +136,12 @@ export const postSummarySchema = z.object({
   savedByMe: z.boolean(),
   replyCount: z.number().int().nonnegative(),
   feedbackCount: z.number().int().nonnegative(),
+  repostCount: z.number().int().nonnegative(),
+  repostedByMe: z.boolean(),
+  /** Faux pour un visiteur et sur ses propres posts. */
+  authorFollowedByMe: z.boolean(),
+  /** Fil seulement : personne suivie (ou soi) qui a republié ce post, la plus récente. */
+  repostedBy: postRepostedBySchema.nullable().optional(),
   /** Fil seulement : première réponse terminée de @kemet, affichée dépliée sous le post. */
   kemetAnswer: z.lazy(() => postReplySchema.nullable()).optional(),
   createdAt: z.string().datetime(),
@@ -149,6 +163,15 @@ export const postBookmarkInputSchema = z.object({ saved: z.boolean() });
 export const postBookmarkResultSchema = z.object({ savedByMe: z.boolean() });
 
 export type PostBookmarkResult = z.infer<typeof postBookmarkResultSchema>;
+
+export const postRepostInputSchema = z.object({ reposted: z.boolean() });
+
+export const postRepostResultSchema = z.object({
+  repostCount: z.number().int().nonnegative(),
+  repostedByMe: z.boolean(),
+});
+
+export type PostRepostResult = z.infer<typeof postRepostResultSchema>;
 
 export const postReplySchema = z.object({
   id: z.string().uuid(),

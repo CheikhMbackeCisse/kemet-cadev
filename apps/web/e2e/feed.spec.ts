@@ -124,3 +124,35 @@ test("enregistre un post, le retrouve dans Enregistrés et copie son lien", asyn
   await page.getByRole("button", { name: "Partager" }).first().click();
   await expect(page.getByText(/Lien copié|Le lien n'a pas pu être copié/).first()).toBeVisible();
 });
+
+test("republie le post d'une autre personne et la suit depuis le menu du post", async ({ page, request }) => {
+  const project = test.info().project.name;
+  const stamp = Date.now();
+  const authorHandle = `e2erpa${project}${stamp}`;
+  const readerHandle = `e2erpr${project}${stamp}`;
+  const body = `Post à republier ${stamp}`;
+
+  await signUpVerifyAndSignIn(request, `e2e-rpa-${project}-${stamp}@test.kemet`, authorHandle);
+  const created = await request.post("/api/posts", { data: { body } });
+  const postId = (await created.json()).post.id as string;
+  await signUpVerifyAndSignIn(page.request, `e2e-rpr-${project}-${stamp}@test.kemet`, readerHandle);
+
+  await page.goto(`/fil/${postId}`);
+  await page.getByRole("button", { name: /^Republier/ }).click();
+  await expect(page.getByRole("button", { name: /Republier, 1 republication/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await page.getByRole("button", { name: "Actions sur ce post" }).click();
+  await expect(page.getByRole("menuitem", { name: "Copier le lien" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Signaler" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Supprimer" })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "S'abonner" }).click();
+  await expect(page.getByText(`Tu suis ${authorHandle}.`, { exact: true })).toBeVisible();
+
+  await page.goto("/fil");
+  await page.getByRole("tab", { name: "Abonnements" }).click();
+  const row = page.locator("li").filter({ hasText: body });
+  await expect(row.getByText("Tu as republié")).toBeVisible();
+});

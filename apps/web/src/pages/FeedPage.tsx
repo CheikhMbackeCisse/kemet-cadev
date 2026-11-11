@@ -77,6 +77,7 @@ function PostListItem({
   onSave,
   onFeedback,
   onDeleteRequest,
+  onChange,
 }: {
   post: PostSummary;
   canInteract: boolean;
@@ -85,6 +86,7 @@ function PostListItem({
   onSave: (postId: string) => void;
   onFeedback: (postId: string) => void;
   onDeleteRequest: (postId: string) => void;
+  onChange: (post: PostSummary, change: Partial<PostSummary>) => void;
 }) {
   const isOwnPost =
     viewerProfileId !== null && viewerProfileId === post.authorId && !post.deletedAt;
@@ -103,6 +105,7 @@ function PostListItem({
       onSave={() => onSave(post.id)}
       onFeedback={() => onFeedback(post.id)}
       onDelete={() => onDeleteRequest(post.id)}
+      onChange={(change) => onChange(post, change)}
       askKemet={
         canInteract && !post.deletedAt && isTechnicalPost(post.body)
           ? { href: `/fil/${post.id}?${ASK_KEMET_PARAM}=kemet` }
@@ -195,6 +198,18 @@ export function FeedPage() {
     } catch {
       toast.show(fr.feed.reactError, "danger");
     }
+  }
+
+  // Suivre l'auteur depuis un post vaut pour tous ses posts de la liste.
+  function handlePostChange(target: PostSummary, change: Partial<PostSummary>) {
+    setPosts((current) =>
+      current.map((post) => {
+        if (post.id === target.id) return { ...post, ...change };
+        if (change.authorFollowedByMe !== undefined && post.authorId === target.authorId)
+          return { ...post, authorFollowedByMe: change.authorFollowedByMe };
+        return post;
+      }),
+    );
   }
 
   async function handleSave(postId: string) {
@@ -320,6 +335,7 @@ export function FeedPage() {
               onSave={handleSave}
               onFeedback={setFeedbackPostId}
               onDeleteRequest={setPostToDelete}
+              onChange={handlePostChange}
             />
           ),
         )}

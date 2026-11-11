@@ -3,7 +3,7 @@ import {
   Flag as FlagIcon,
   FlaskConical,
   LogOut,
-  MessagesSquare,
+  Send,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -39,9 +39,7 @@ export function MoiMenu({
   const desktop = useMediaQuery("(min-width: 1024px)");
 
   const rows: MenuRow[] = [
-    ...(profile
-      ? [{ label: fr.messages.segmentMessages, href: "/messages", icon: MessagesSquare }]
-      : []),
+    ...(profile ? [{ label: fr.messages.segmentMessages, href: "/messages", icon: Send }] : []),
     ...MOI_ITEMS,
     { label: fr.moi.pro, href: "/pro", icon: Sparkles },
     ...(isPlatformAdmin
@@ -71,11 +69,7 @@ export function MoiMenu({
           {rows.map((row) => (
             <li key={row.href}>
               <a href={row.href} className={ROW_CLASS} onClick={() => onOpenChange(false)}>
-                <row.icon
-                  className="size-5 shrink-0 text-muted"
-                  strokeWidth={1.75}
-                  aria-hidden="true"
-                />
+                <row.icon className="size-5 shrink-0 text-muted" aria-hidden="true" />
                 <span className="flex-1">{row.label}</span>
                 <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden="true" />
               </a>
@@ -88,7 +82,7 @@ export function MoiMenu({
                 onClick={handleSignOut}
                 className={`${ROW_CLASS} font-medium text-danger`}
               >
-                <LogOut className="size-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <LogOut className="size-5 shrink-0" aria-hidden="true" />
                 {fr.auth.signOut}
               </button>
             </li>

@@ -135,6 +135,7 @@ export function SavedPostsList() {
             // Le retour structuré se donne depuis la page du post.
             onFeedback={() => navigate(`/fil/${post.id}`)}
             onDelete={() => setPostToDelete(post.id)}
+            onChange={(change) => update(post.id, change)}
           />
         ))}
       </ul>

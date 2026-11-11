@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { LucideProvider } from "lucide-react";
 import { App } from "./App.js";
 import "./index.css";
 import { listenForInstallPrompt } from "./pwa/installPrompt.js";
@@ -13,6 +14,9 @@ watchForUpdate();
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    {/* Un seul trait pour toutes les icônes (DESIGN.md). */}
+    <LucideProvider strokeWidth={1.75}>
+      <App />
+    </LucideProvider>
   </StrictMode>,
 );

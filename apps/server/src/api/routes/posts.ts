@@ -8,6 +8,7 @@ import {
   markPostReplySolutionSchema,
   paginationQuerySchema,
   postBookmarkInputSchema,
+  postRepostInputSchema,
   sharePostSchema,
   isBeginnerAudience,
   prefersTalentFeed,
@@ -25,6 +26,7 @@ import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   editPost,
+  findLatestRepostersAmongSources,
   findPostById,
   findPostReplyById,
   hasProfileGivenFeedback,
@@ -41,6 +43,7 @@ import {
   listPourToiFeed,
   setPostBookmark,
   setPostReplySolution,
+  setPostRepost,
   softDeletePost,
   softDeletePostReply,
   togglePostReaction,
@@ -105,6 +108,9 @@ async function toSerializedPosts(
         savedByMe: hydrated.savedByMe,
         replyCount: hydrated.replyCount,
         feedbackCount: hydrated.feedbackCount,
+        repostCount: hydrated.repostCount,
+        repostedByMe: hydrated.repostedByMe,
+        authorFollowedByMe: hydrated.authorFollowedByMe,
       },
       hydrated.attachments,
       hydrated.sharedPost
@@ -156,6 +162,7 @@ async function toSerializedReplies(
 }
 
 const invocationIdParamsSchema = z.object({ id: z.string().uuid() });
+const postIdParamsSchema = z.object({ id: z.string().uuid() });
 
 export function registerPostRoutes(
   app: FastifyInstance,
@@ -179,16 +186,25 @@ export function registerPostRoutes(
               })
             : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
       const viewerProfileId = profile?.id ?? null;
-      const [items, kemetAnswers] = await Promise.all([
+      const postIds = page.items.map((post) => post.id);
+      const [items, kemetAnswers, reposters] = await Promise.all([
         toSerializedPosts(db, page.items, viewerProfileId),
         listFirstAssistantRepliesByPostIds(
           db,
           page.items.map((post) => post.id),
         ).then((replies) => toSerializedReplies(db, replies, viewerProfileId)),
+        // "Pour débuter" reste une liste par étiquette, sans republications.
+        viewerProfileId && query.tab !== "debuter"
+          ? findLatestRepostersAmongSources(db, viewerProfileId, postIds)
+          : Promise.resolve(new Map()),
       ]);
       const answerByPostId = new Map(kemetAnswers.map((answer) => [answer.postId, answer]));
       return {
-        items: items.map((item) => ({ ...item, kemetAnswer: answerByPostId.get(item.id) ?? null })),
+        items: items.map((item) => ({
+          ...item,
+          kemetAnswer: answerByPostId.get(item.id) ?? null,
+          repostedBy: reposters.get(item.id) ?? null,
+        })),
         nextCursor: page.nextCursor,
       };
     },
@@ -326,6 +342,30 @@ export function registerPostRoutes(
       const post = await findPostById(db, request.params.id);
       if (!post || (post.deletedAt && input.saved)) throw notFound("Ce post n'existe pas.");
       return setPostBookmark(db, post.id, profile.id, input.saved);
+    },
+  );
+
+  // Republier son propre post n'apporte rien à ses abonnés, qui le voient déjà.
+  app.put<{ Params: { id: string } }>(
+    "/api/posts/:id/repost",
+    {
+      config: {
+        rateLimit: {
+          max: antiSpamMax(db, auth, antiSpamConfig, MAX_SHARES_PER_MINUTE),
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const profile = await requireOwnProfile(db, userId);
+      const { id } = postIdParamsSchema.parse(request.params);
+      const input = postRepostInputSchema.parse(request.body);
+      const post = await findPostById(db, id);
+      if (!post || (post.deletedAt && input.reposted)) throw notFound("Ce post n'existe pas.");
+      if (post.authorId === profile.id)
+        throw badRequest("Impossible de republier son propre post.");
+      return setPostRepost(db, post.id, profile.id, input.reposted);
     },
   );
 

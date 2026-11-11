@@ -11,6 +11,7 @@ import {
   postAttachments,
   postBookmarks,
   postReplies,
+  postReposts,
   posts,
   profiles,
   projects,
@@ -145,6 +146,8 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
   await tx.delete(spaceMembers).where(eq(spaceMembers.profileId, profileId));
   await tx.delete(readStates).where(eq(readStates.profileId, profileId));
   await tx.delete(postBookmarks).where(eq(postBookmarks.profileId, profileId));
+  // Une republication sans personne derrière gonflerait le compteur et le fil.
+  await tx.delete(postReposts).where(eq(postReposts.profileId, profileId));
   await tx.delete(skillRatings).where(eq(skillRatings.raterId, profileId));
   await tx.delete(mcpServers).where(eq(mcpServers.addedBy, profileId));
   // Le vote d'une compétition close reste : le retirer changerait un

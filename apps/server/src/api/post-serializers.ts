@@ -49,7 +49,9 @@ export function serializeSharedPostPreview(
     format: deleted ? null : row.format,
     attachments: deleted
       ? []
-      : attachments.map((attachment) => serializePostAttachment(attachment, author.deletedAt !== null)),
+      : attachments.map((attachment) =>
+          serializePostAttachment(attachment, author.deletedAt !== null),
+        ),
     deletedAt: row.deletedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
@@ -59,9 +61,23 @@ export function serializePostSummary(
   row: PostRow,
   author: ProfileRow,
   authorLevel: Level,
-  counts: { utileCount: number; reactedByMe: boolean; savedByMe: boolean; replyCount: number; feedbackCount: number },
+  counts: {
+    utileCount: number;
+    reactedByMe: boolean;
+    savedByMe: boolean;
+    replyCount: number;
+    feedbackCount: number;
+    repostCount: number;
+    repostedByMe: boolean;
+    authorFollowedByMe: boolean;
+  },
   attachments: PostAttachmentRow[],
-  sharedPost: { row: PostRow; author: ProfileRow; authorLevel: Level; attachments: PostAttachmentRow[] } | null,
+  sharedPost: {
+    row: PostRow;
+    author: ProfileRow;
+    authorLevel: Level;
+    attachments: PostAttachmentRow[];
+  } | null,
   work: typeof works.$inferSelect | null = null,
 ): PostSummary {
   const deleted = row.deletedAt !== null;
@@ -80,9 +96,16 @@ export function serializePostSummary(
     isBeginner: row.isBeginner,
     attachments: deleted
       ? []
-      : attachments.map((attachment) => serializePostAttachment(attachment, author.deletedAt !== null)),
+      : attachments.map((attachment) =>
+          serializePostAttachment(attachment, author.deletedAt !== null),
+        ),
     sharedPost: sharedPost
-      ? serializeSharedPostPreview(sharedPost.row, sharedPost.author, sharedPost.authorLevel, sharedPost.attachments)
+      ? serializeSharedPostPreview(
+          sharedPost.row,
+          sharedPost.author,
+          sharedPost.authorLevel,
+          sharedPost.attachments,
+        )
       : null,
     work: work && !deleted ? serializePostWorkPreview(work) : null,
     utileCount: counts.utileCount,
@@ -90,6 +113,9 @@ export function serializePostSummary(
     savedByMe: counts.savedByMe,
     replyCount: counts.replyCount,
     feedbackCount: counts.feedbackCount,
+    repostCount: counts.repostCount,
+    repostedByMe: counts.repostedByMe,
+    authorFollowedByMe: counts.authorFollowedByMe,
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
     deletedAt: row.deletedAt?.toISOString() ?? null,
@@ -121,7 +147,11 @@ export function serializePostReply(
   };
 }
 
-export function serializePostFeedbackEntry(row: PostFeedbackRow, author: ProfileRow, authorLevel: Level): PostFeedbackEntry {
+export function serializePostFeedbackEntry(
+  row: PostFeedbackRow,
+  author: ProfileRow,
+  authorLevel: Level,
+): PostFeedbackEntry {
   return {
     id: row.id,
     postId: row.postId,

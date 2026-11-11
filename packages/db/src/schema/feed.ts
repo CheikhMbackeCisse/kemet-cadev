@@ -131,6 +131,26 @@ export const postBookmarks = pgTable(
   ],
 );
 
+// Republication sans citation : une par personne et par post, annulable. Le
+// post republié remonte dans le fil de qui suit la personne qui l'a republié.
+export const postReposts = pgTable(
+  "post_reposts",
+  {
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("post_reposts_profile_post_idx").on(table.profileId, table.postId),
+    index("post_reposts_profile_created_idx").on(table.profileId, table.createdAt),
+    index("post_reposts_post_idx").on(table.postId),
+  ],
+);
+
 export const postFeedback = pgTable(
   "post_feedback",
   {

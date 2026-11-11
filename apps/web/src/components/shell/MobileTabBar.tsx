@@ -59,17 +59,21 @@ export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarPro
             const isActive = tab.id === activeTabId;
             const className = cn(
               "flex h-control-mobile flex-1 flex-col items-center justify-center gap-0.5 text-xs",
-              isActive ? "text-primary" : "text-muted",
+              isActive ? "font-semibold text-text" : "text-muted",
             );
             const unread = tab.id === "salons" ? privateUnread : 0;
             const content = (
               <>
                 <span className="relative">
-                  <tab.icon className="size-5" aria-hidden="true" />
+                  {/* Onglet actif : icône pleine ; les autres en contour. */}
+                  <tab.icon
+                    className={cn("size-6", isActive && "fill-current")}
+                    aria-hidden="true"
+                  />
                   {unread > 0 && (
                     <span
                       aria-hidden="true"
-                      className="absolute -right-2.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-medium leading-none text-white tabular-nums"
+                      className="absolute -right-2.5 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-medium leading-none text-white tabular-nums"
                     >
                       {unread > 9 ? "9+" : unread}
                     </span>

@@ -1,6 +1,7 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
-import { beforeEach, describe, expect, it } from "vitest";
+import { createDb, profiles, type Db } from "@kemet/db";
+import { eq } from "drizzle-orm";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
 import { buildApp } from "./app.js";
@@ -10,10 +11,15 @@ const databaseUrl = getTestDatabaseUrl();
 describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
+  let db: Db;
+
+  afterEach(async () => {
+    await db.$client.end();
+  });
 
   beforeEach(async () => {
     await resetTestDatabase(databaseUrl!);
-    const db = createDb(databaseUrl!);
+    db = createDb(databaseUrl!);
     emailSender = new InMemoryEmailSender();
     const auth = createAuth({
       db,
@@ -369,5 +375,152 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
       payload: { saved: true },
     });
     expect(missing.statusCode).toBe(404);
+  });
+
+  async function repost(cookie: string | undefined, postId: string, reposted: boolean) {
+    return app.inject({
+      method: "PUT",
+      url: `/api/posts/${postId}/repost`,
+      ...(cookie ? { headers: { cookie } } : {}),
+      payload: { reposted },
+    });
+  }
+
+  type FeedItem = { id: string; body: string; repostedBy: { handle: string } | null; repostCount: number };
+
+  async function readFeed(cookie: string | undefined, query: string) {
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/posts?${query}`,
+      ...(cookie ? { headers: { cookie } } : {}),
+    });
+    return response.json() as { items: FeedItem[]; nextCursor: string | null };
+  }
+
+  it("republie et annule une republication, une seule fois par personne", async () => {
+    const author = await createMember("repost-author@test.kemet", "repostauthor");
+    const reader = await createMember("repost-reader@test.kemet", "repostreader");
+    const postId = (await createPost(author.cookie)).json().post.id as string;
+
+    const first = await repost(reader.cookie, postId, true);
+    expect(first.statusCode).toBe(200);
+    expect(first.json()).toEqual({ repostCount: 1, repostedByMe: true });
+    expect((await repost(reader.cookie, postId, true)).json()).toEqual({ repostCount: 1, repostedByMe: true });
+
+    const post = await app.inject({ method: "GET", url: `/api/posts/${postId}`, headers: { cookie: reader.cookie } });
+    expect(post.json().post).toMatchObject({ repostCount: 1, repostedByMe: true });
+
+    expect((await repost(reader.cookie, postId, false)).json()).toEqual({ repostCount: 0, repostedByMe: false });
+  });
+
+  it("refuse la republication à un visiteur, sur son propre post et sur un post supprimé", async () => {
+    const author = await createMember("repost-own@test.kemet", "repostown");
+    const reader = await createMember("repost-other@test.kemet", "repostother");
+    const postId = (await createPost(author.cookie)).json().post.id as string;
+
+    expect((await repost(undefined, postId, true)).statusCode).toBe(401);
+    expect((await repost(author.cookie, postId, true)).statusCode).toBe(400);
+    expect((await repost(reader.cookie, "00000000-0000-4000-8000-000000000000", true)).statusCode).toBe(404);
+
+    await repost(reader.cookie, postId, true);
+    await app.inject({ method: "DELETE", url: `/api/posts/${postId}`, headers: { cookie: author.cookie } });
+    expect((await repost(reader.cookie, postId, true)).statusCode).toBe(404);
+    // Annuler reste possible après la suppression.
+    expect((await repost(reader.cookie, postId, false)).statusCode).toBe(200);
+  });
+
+  it("fait remonter dans Abonnements un post republié par une personne suivie, une seule fois", async () => {
+    const viewer = await createMember("repost-viewer@test.kemet", "repostviewer");
+    const followee = await createMember("repost-followee@test.kemet", "repostfollowee");
+    const second = await createMember("repost-second@test.kemet", "repostsecond");
+    const stranger = await createMember("repost-stranger@test.kemet", "repoststranger");
+    await app.inject({ method: "POST", url: "/api/users/repostfollowee/follow", headers: { cookie: viewer.cookie } });
+    await app.inject({ method: "POST", url: "/api/users/repostsecond/follow", headers: { cookie: viewer.cookie } });
+
+    const strangerPost = (await createPost(stranger.cookie, { body: "Post d'une inconnue." })).json().post.id as string;
+    await createPost(followee.cookie, { body: "Post de la personne suivie." });
+
+    expect((await readFeed(viewer.cookie, "tab=abonnements")).items.map((item) => item.id)).not.toContain(strangerPost);
+
+    await repost(second.cookie, strangerPost, true);
+    await repost(followee.cookie, strangerPost, true);
+
+    const feed = await readFeed(viewer.cookie, "tab=abonnements");
+    expect(feed.items.filter((item) => item.id === strangerPost)).toHaveLength(1);
+    expect(feed.items[0]).toMatchObject({ id: strangerPost, repostCount: 2, repostedBy: { handle: "repostfollowee" } });
+    const own = feed.items.find((item) => item.body === "Post de la personne suivie.");
+    expect(own?.repostedBy).toBeNull();
+
+    // Page par page, chaque post n'arrive qu'une fois.
+    const firstPage = await readFeed(viewer.cookie, "tab=abonnements&limit=1");
+    const secondPage = await readFeed(viewer.cookie, `tab=abonnements&limit=1&cursor=${encodeURIComponent(firstPage.nextCursor!)}`);
+    expect(firstPage.items.map((item) => item.id)).toEqual([strangerPost]);
+    expect(secondPage.items.map((item) => item.body)).toEqual(["Post de la personne suivie."]);
+
+    await repost(followee.cookie, strangerPost, false);
+    await repost(second.cookie, strangerPost, false);
+    expect((await readFeed(viewer.cookie, "tab=abonnements")).items.map((item) => item.id)).not.toContain(strangerPost);
+  });
+
+  it("annonce dans Pour toi la personne suivie qui a republié, jamais pour un visiteur", async () => {
+    const viewer = await createMember("pt-viewer@test.kemet", "ptviewer");
+    const followee = await createMember("pt-followee@test.kemet", "ptfollowee");
+    const author = await createMember("pt-author@test.kemet", "ptauthor");
+    await app.inject({ method: "POST", url: "/api/users/ptfollowee/follow", headers: { cookie: viewer.cookie } });
+    const postId = (await createPost(author.cookie)).json().post.id as string;
+    await repost(followee.cookie, postId, true);
+
+    const signedIn = await readFeed(viewer.cookie, "tab=pour-toi");
+    expect(signedIn.items.find((item) => item.id === postId)?.repostedBy).toMatchObject({ handle: "ptfollowee" });
+    const visitor = await readFeed(undefined, "tab=pour-toi");
+    expect(visitor.items.find((item) => item.id === postId)?.repostedBy).toBeNull();
+  });
+
+  it("indique si l'auteur du post est suivi", async () => {
+    const viewer = await createMember("fol-viewer@test.kemet", "folviewer");
+    const author = await createMember("fol-author@test.kemet", "folauthor");
+    const postId = (await createPost(author.cookie)).json().post.id as string;
+    const read = async () =>
+      (await app.inject({ method: "GET", url: `/api/posts/${postId}`, headers: { cookie: viewer.cookie } })).json().post
+        .authorFollowedByMe as boolean;
+    expect(await read()).toBe(false);
+    await app.inject({ method: "POST", url: "/api/users/folauthor/follow", headers: { cookie: viewer.cookie } });
+    expect(await read()).toBe(true);
+  });
+
+  it("refuse la republication à un compte suspendu, sans corps valide ou sur un identifiant invalide", async () => {
+    const author = await createMember("rp-susp-author@test.kemet", "rpsuspauthor");
+    const reader = await createMember("rp-susp-reader@test.kemet", "rpsuspreader");
+    const postId = (await createPost(author.cookie)).json().post.id as string;
+
+    const noBody = await app.inject({ method: "PUT", url: `/api/posts/${postId}/repost`, headers: { cookie: reader.cookie }, payload: {} });
+    expect(noBody.statusCode).toBe(400);
+    const badId = await app.inject({ method: "PUT", url: "/api/posts/pas-un-uuid/repost", headers: { cookie: reader.cookie }, payload: { reposted: true } });
+    expect(badId.statusCode).toBe(400);
+
+    await db.update(profiles).set({ suspendedAt: new Date() }).where(eq(profiles.id, reader.profileId));
+    expect((await repost(reader.cookie, postId, true)).statusCode).toBe(403);
+  });
+
+  it("efface les republications d'un compte supprimé et ne l'annonce plus dans le fil", async () => {
+    const viewer = await createMember("rp-del-viewer@test.kemet", "rpdelviewer");
+    const reposter = await createMember("rp-del-reposter@test.kemet", "rpdelreposter");
+    const author = await createMember("rp-del-author@test.kemet", "rpdelauthor");
+    await app.inject({ method: "POST", url: "/api/users/rpdelreposter/follow", headers: { cookie: viewer.cookie } });
+    const postId = (await createPost(author.cookie)).json().post.id as string;
+    await repost(reposter.cookie, postId, true);
+
+    const deletion = await app.inject({
+      method: "DELETE",
+      url: "/api/me",
+      headers: { cookie: reposter.cookie },
+      payload: { password: "une-passphrase-solide" },
+    });
+    expect(deletion.statusCode).toBe(204);
+
+    const post = await app.inject({ method: "GET", url: `/api/posts/${postId}`, headers: { cookie: viewer.cookie } });
+    expect(post.json().post.repostCount).toBe(0);
+    const feed = await readFeed(viewer.cookie, "tab=pour-toi");
+    expect(feed.items.find((item) => item.id === postId)?.repostedBy ?? null).toBeNull();
   });
 });

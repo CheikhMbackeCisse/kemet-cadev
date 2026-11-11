@@ -5,6 +5,7 @@ import {
   postFeedback,
   postReactions,
   postReplies,
+  postReposts,
   posts,
   profiles,
   works,
@@ -98,27 +99,109 @@ export async function listFolloweeIds(db: Db, profileId: string) {
   return rows.map((row) => row.id);
 }
 
+// Sous-requête plutôt qu'une liste d'identifiants : un paramètre par
+// abonnement finirait par dépasser la limite de Postgres.
+function followedOrSelf(viewerProfileId: string) {
+  return sql`select ${follows.followeeId} from ${follows} where ${follows.followerId} = ${viewerProfileId}
+    union all select ${viewerProfileId}::uuid`;
+}
+
+/**
+ * Posts écrits ou republiés par soi et par les personnes suivies, rangés par
+ * la date de la dernière activité (publication ou republication), qui sert
+ * aussi de curseur. Un post republié par plusieurs personnes n'apparaît qu'une fois.
+ */
 export async function listAbonnementsFeed(
   db: Db,
   viewerProfileId: string,
   cursor: string | undefined,
   limit: number,
 ) {
-  const followeeIds = await listFolloweeIds(db, viewerProfileId);
-  const authorIds = [viewerProfileId, ...followeeIds];
-  const visible = and(
-    isNull(posts.deletedAt),
-    inArray(posts.authorId, authorIds),
-    notWrittenByFiller(posts.authorId),
+  const sourceList = followedOrSelf(viewerProfileId);
+  const before = cursor ? parseCursorDate(cursor) : null;
+  const activity = sql`(
+    select "activity"."post_id", max("activity"."activity_at") as "activity_at"
+    from (
+      select ${posts.id} as "post_id", ${posts.createdAt} as "activity_at"
+      from ${posts} where ${posts.authorId} in (${sourceList})
+      union all
+      select ${postReposts.postId}, ${postReposts.createdAt}
+      from ${postReposts}
+      where ${postReposts.profileId} in (${sourceList})
+        and ${notWrittenByFiller(postReposts.profileId)}
+    ) as "activity"
+    group by "activity"."post_id"
+  )`;
+  const result = await db.execute<{ post_id: string; activity_ms: number | string }>(sql`
+    select "feed"."post_id",
+      (extract(epoch from "feed"."activity_at") * 1000)::float8 as "activity_ms"
+    from ${activity} as "feed"
+    join ${posts} on ${posts.id} = "feed"."post_id"
+    where ${posts.deletedAt} is null
+      and ${notWrittenByFiller(posts.authorId)}
+      ${before ? sql`and "feed"."activity_at" < ${before.toISOString()}::timestamp` : sql``}
+    order by "feed"."activity_at" desc, "feed"."post_id" desc
+    limit ${limit + 1}
+  `);
+  const ordered = [...result].map((row) => ({
+    postId: row.post_id,
+    // Lu en millisecondes : un horodatage sans fuseau rendu en texte serait
+    // relu dans le fuseau local par new Date.
+    createdAt: new Date(Math.floor(Number(row.activity_ms))),
+  }));
+  const page = toPage(ordered, limit);
+  const rows = await findPostsByIdsInOrder(
+    db,
+    page.items.map((item) => item.postId),
   );
-  const condition = cursor ? and(visible, lt(posts.createdAt, new Date(cursor))) : visible;
+  return { items: rows, nextCursor: page.nextCursor };
+}
+
+async function findPostsByIdsInOrder(db: Db, postIds: string[]) {
+  if (postIds.length === 0) return [];
+  const rows = await db.select().from(posts).where(inArray(posts.id, postIds));
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  return postIds.flatMap((id) => {
+    const row = byId.get(id);
+    return row ? [row] : [];
+  });
+}
+
+/**
+ * Pour chaque post, la personne suivie (ou soi) qui l'a republié le plus
+ * récemment : la ligne "a republié" au-dessus du post dans le fil.
+ */
+export async function findLatestRepostersAmongSources(
+  db: Db,
+  viewerProfileId: string,
+  postIds: string[],
+) {
+  if (postIds.length === 0)
+    return new Map<string, { profileId: string; handle: string; displayName: string }>();
   const rows = await db
-    .select()
-    .from(posts)
-    .where(condition)
-    .orderBy(desc(posts.createdAt))
-    .limit(limit + 1);
-  return toPage(rows, limit);
+    .selectDistinctOn([postReposts.postId], {
+      postId: postReposts.postId,
+      profileId: profiles.id,
+      handle: profiles.handle,
+      displayName: profiles.displayName,
+    })
+    .from(postReposts)
+    .innerJoin(profiles, eq(profiles.id, postReposts.profileId))
+    .where(
+      and(
+        inArray(postReposts.postId, postIds),
+        sql`${postReposts.profileId} in (${followedOrSelf(viewerProfileId)})`,
+        isNull(profiles.deletedAt),
+        eq(profiles.isFiller, false),
+      ),
+    )
+    .orderBy(postReposts.postId, desc(postReposts.createdAt));
+  return new Map(
+    rows.map((row) => [
+      row.postId,
+      { profileId: row.profileId, handle: row.handle, displayName: row.displayName },
+    ]),
+  );
 }
 
 /** Posts marqués "Débutant", du plus récent au plus ancien : filtre "Pour débuter". */
@@ -160,7 +243,8 @@ export async function listPourToiFeed(
     : sql``;
   const score = sql<number>`(
     (select count(*) from ${postReactions} where ${postReactions.postId} = ${posts.id}) * 2 +
-    (select count(*) from ${postFeedback} where ${postFeedback.postId} = ${posts.id}) * 3
+    (select count(*) from ${postFeedback} where ${postFeedback.postId} = ${posts.id}) * 3 +
+    (select count(*) from ${postReposts} where ${postReposts.postId} = ${posts.id}) * 2
     ${talentBonus}
     ${beginnerBonus}
   )`;
@@ -245,6 +329,42 @@ export async function setPostBookmark(db: Db, postId: string, profileId: string,
   return { savedByMe: saved };
 }
 
+export async function countPostReposts(db: DbOrTx, postId: string) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(postReposts)
+    .where(eq(postReposts.postId, postId));
+  return row?.count ?? 0;
+}
+
+export async function isPostRepostedByProfile(db: DbOrTx, postId: string, profileId: string) {
+  const [row] = await db
+    .select({ postId: postReposts.postId })
+    .from(postReposts)
+    .where(and(eq(postReposts.postId, postId), eq(postReposts.profileId, profileId)));
+  return row != null;
+}
+
+/** Un état posé plutôt qu'une bascule, comme l'enregistrement. */
+export async function setPostRepost(db: Db, postId: string, profileId: string, reposted: boolean) {
+  if (reposted) {
+    await db.insert(postReposts).values({ postId, profileId }).onConflictDoNothing();
+  } else {
+    await db
+      .delete(postReposts)
+      .where(and(eq(postReposts.postId, postId), eq(postReposts.profileId, profileId)));
+  }
+  return { repostCount: await countPostReposts(db, postId), repostedByMe: reposted };
+}
+
+async function isFollowing(db: DbOrTx, followerId: string, followeeId: string) {
+  const [row] = await db
+    .select({ id: follows.followeeId })
+    .from(follows)
+    .where(and(eq(follows.followerId, followerId), eq(follows.followeeId, followeeId)));
+  return row != null;
+}
+
 // Un curseur illisible vaut une demande invalide, pas une erreur serveur.
 function parseCursorDate(cursor: string): Date {
   const date = new Date(cursor);
@@ -292,6 +412,9 @@ export async function hydratePost(
     savedByMe,
     replyCount,
     feedbackCount,
+    repostCount,
+    repostedByMe,
+    authorFollowedByMe,
     sharedPost,
     attachments,
     work,
@@ -304,6 +427,11 @@ export async function hydratePost(
       : Promise.resolve(false),
     countPostReplies(db, row.id),
     countPostFeedback(db, row.id),
+    countPostReposts(db, row.id),
+    viewerProfileId ? isPostRepostedByProfile(db, row.id, viewerProfileId) : Promise.resolve(false),
+    viewerProfileId && viewerProfileId !== row.authorId
+      ? isFollowing(db, viewerProfileId, row.authorId)
+      : Promise.resolve(false),
     row.sharedPostId ? findPostById(db, row.sharedPostId) : Promise.resolve(null),
     listAttachmentsForPosts(db, [row.id]),
     row.workId ? findLinkedWork(db, row.workId) : Promise.resolve(null),
@@ -318,6 +446,9 @@ export async function hydratePost(
     savedByMe,
     replyCount,
     feedbackCount,
+    repostCount,
+    repostedByMe,
+    authorFollowedByMe,
     attachments,
     sharedPost,
     sharedAuthor,

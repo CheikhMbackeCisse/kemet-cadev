@@ -364,6 +364,9 @@ export function PostPage() {
           onFeedback={() => setFeedbackOpen(true)}
           onDelete={() => setDeleteOpen(true)}
           onReply={() => replyTextareaRef.current?.focus()}
+          onChange={(change) =>
+            setPost((current) => (current ? { ...current, ...change } : current))
+          }
           askKemet={
             canInteract && isTechnicalPost(post.body)
               ? { onClick: prepareKemetQuestion }

@@ -1,9 +1,9 @@
 import {
   BookOpen,
   FolderGit2,
-  Hash,
-  MessagesSquare,
-  Rss,
+  House,
+  MessageSquare,
+  Send,
   Settings,
   ShieldCheck,
   Trophy,
@@ -33,10 +33,10 @@ export interface NavSection extends RailNavItem {
  * (mobile), jamais dans la barre du haut d'une page. Ordre du bureau.
  */
 export const NAV_SECTIONS: NavSection[] = [
-  { id: "fil", label: "Fil", href: "/fil", icon: Rss, mobile: "tab" },
+  { id: "fil", label: "Fil", href: "/fil", icon: House, mobile: "tab" },
   { id: "travaux", label: "Travaux", href: "/travaux", icon: BookOpen, mobile: "tab" },
-  { id: "salons", label: "Salons", href: "/salons", icon: Hash, mobile: "tab" },
-  { id: "messages", label: "Messages", href: "/messages", icon: MessagesSquare, mobile: "salons" },
+  { id: "salons", label: "Salons", href: "/salons", icon: MessageSquare, mobile: "tab" },
+  { id: "messages", label: "Messages", href: "/messages", icon: Send, mobile: "salons" },
   { id: "skills", label: "Skills", href: "/skills", icon: Wrench, mobile: "tab" },
   { id: "projets", label: "Projets", href: "/projets", icon: FolderGit2, mobile: "moi" },
   { id: "competitions", label: "Compétitions", href: "/competitions", icon: Trophy, mobile: "moi" },
