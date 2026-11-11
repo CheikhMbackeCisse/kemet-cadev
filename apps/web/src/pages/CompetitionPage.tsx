@@ -43,7 +43,7 @@ function PersonChip({ person }: { person: CompetitionPerson }) {
   return (
     <ProfileLink
       handle={person.handle}
-      className="inline-flex items-center gap-1.5 text-sm text-text hover:underline"
+      className="inline-flex items-center gap-1.5 text-sm text-text hover:underline max-md:min-h-control-mobile"
     >
       <Avatar
         name={person.displayName}

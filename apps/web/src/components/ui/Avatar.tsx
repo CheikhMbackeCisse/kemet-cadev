@@ -82,9 +82,10 @@ export function Avatar({
       className={cn("rounded-full object-cover", SIZE_CLASSES[size], className)}
     />
   ) : (
+    // Décoratif comme la photo : le nom est toujours écrit à côté ou porté
+    // par le lien qui l'entoure, sinon il était lu deux fois.
     <span
-      role="img"
-      aria-label={name}
+      aria-hidden="true"
       style={{ backgroundColor: generatedAvatarColor(name) }}
       className={cn(
         "inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-bg",

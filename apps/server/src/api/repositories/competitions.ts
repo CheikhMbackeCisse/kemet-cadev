@@ -232,7 +232,7 @@ export async function listTeamMembers(db: DbOrTx, teamId: string) {
     })
     .from(teamMembers)
     .innerJoin(profiles, eq(profiles.id, teamMembers.profileId))
-    .where(eq(teamMembers.teamId, teamId));
+    .where(and(eq(teamMembers.teamId, teamId), eq(profiles.isFiller, false)));
 }
 
 export async function isTeamMember(db: DbOrTx, teamId: string, profileId: string) {

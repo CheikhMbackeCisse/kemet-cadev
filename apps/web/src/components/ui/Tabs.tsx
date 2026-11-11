@@ -42,7 +42,7 @@ export function Tabs({ items, value, onValueChange, className, layout = "start" 
             key={item.value}
             value={item.value}
             id={triggerId(item.value)}
-            aria-controls={panelId(item.value)}
+            aria-controls={item.value === value ? panelId(item.value) : undefined}
             className={cn(
               "relative -mb-px rounded-control text-muted transition-colors duration-150 hover:text-text",
               centered

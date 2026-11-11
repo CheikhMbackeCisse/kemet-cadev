@@ -92,10 +92,19 @@ export function MoiPage() {
         ) : profile ? (
           <ProfileHeader
             profile={profile}
+            // Après un échec, les deux chiffres lus sur le profil public
+            // disparaissent au lieu de rester en squelette à côté de l'erreur.
             stats={[
               { label: fr.profile.statPoints, value: points, exact: true },
-              { label: fr.profile.statWorks, value: publicProfile?.workCount ?? null },
-              { label: fr.profile.statFollowers, value: publicProfile?.followerCount ?? null },
+              ...(profileError
+                ? []
+                : [
+                    { label: fr.profile.statWorks, value: publicProfile?.workCount ?? null },
+                    {
+                      label: fr.profile.statFollowers,
+                      value: publicProfile?.followerCount ?? null,
+                    },
+                  ]),
             ]}
             belowStats={
               <>
@@ -106,7 +115,7 @@ export function MoiPage() {
                     <button
                       type="button"
                       onClick={() => void countsQuery.refetch()}
-                      className="font-medium text-link hover:underline"
+                      className="inline-flex h-control items-center font-medium text-link hover:underline max-md:h-control-mobile"
                     >
                       {fr.chat.retry}
                     </button>

@@ -96,10 +96,14 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
 
   // Public : un visiteur arrive sur l'espace public qui a le plus de messages
   // sur les sept derniers jours.
-  app.get("/api/spaces/most-active", async () => {
-    const since = new Date(Date.now() - MOST_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    return { spaceId: await findMostActivePublicSpaceId(db, since) };
-  });
+  app.get(
+    "/api/spaces/most-active",
+    { config: { rateLimit: { max: 120, timeWindow: "1 minute" } } },
+    async () => {
+      const since = new Date(Date.now() - MOST_ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+      return { spaceId: await findMostActivePublicSpaceId(db, since) };
+    },
+  );
 
   app.get<{ Params: { id: string } }>("/api/spaces/:id", async (request) => {
     const userId = await getSessionUserId(auth, request);

@@ -8,12 +8,12 @@ export function InstallBanner() {
   if (!canInstall) return null;
 
   return (
-    <div className="flex items-center gap-2 border-b border-border pb-1 text-sm">
+    <div className="flex items-center gap-2 border-b border-border text-sm">
       <Download className="size-4 shrink-0 text-muted" aria-hidden="true" />
       <button
         type="button"
         onClick={() => void install()}
-        className="min-w-0 flex-1 truncate text-left text-link hover:underline"
+        className="inline-flex h-control min-w-0 flex-1 items-center truncate text-left text-link hover:underline max-md:h-control-mobile"
       >
         {fr.install.cta}
       </button>

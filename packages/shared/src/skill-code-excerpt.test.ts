@@ -22,6 +22,11 @@ describe("skillCodeExcerpt", () => {
     expect(excerpt.language).toBeNull();
   });
 
+  it("retire les marques de sens d'écriture et les espaces de largeur nulle", () => {
+    const excerpt = skillCodeExcerpt("```\nif (admin‮) {⁦ x​ }⁩\n```");
+    expect(excerpt.lines).toEqual(["if (admin) { x }"]);
+  });
+
   it("sans bloc de code, garde les premières lignes non vides", () => {
     expect(skillCodeExcerpt("Un\n\nDeux\nTrois").lines).toEqual(["Un", "Deux", "Trois"]);
   });

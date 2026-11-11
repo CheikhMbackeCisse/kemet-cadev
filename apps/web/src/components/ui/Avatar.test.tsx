@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { Avatar, generatedAvatarColor } from "./Avatar.js";
 
 describe("Avatar", () => {
-  it("montre les initiales d'une personne", () => {
-    render(<Avatar name="Amina Diallo" />);
-    expect(screen.getByRole("img", { name: "Amina Diallo" })).toHaveTextContent("AD");
+  it("montre les initiales d'une personne, sans les faire lire une seconde fois", () => {
+    const { container } = render(<Avatar name="Amina Diallo" />);
+    expect(container.firstElementChild).toHaveTextContent("AD");
+    expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
 
   it("montre une icône neutre, sans initiales ni drapeau, pour un compte supprimé", () => {
@@ -22,7 +23,7 @@ describe("Avatar", () => {
   });
 
   it("n'ajoute pas de drapeau à 88 px, où le pays est écrit à côté", () => {
-    render(<Avatar name="Amina Diallo" size={88} countryCode="SN" />);
-    expect(screen.getAllByRole("img")).toHaveLength(1);
+    const { container } = render(<Avatar name="Amina Diallo" size={88} countryCode="SN" />);
+    expect(container.querySelector("img")).toBeNull();
   });
 });

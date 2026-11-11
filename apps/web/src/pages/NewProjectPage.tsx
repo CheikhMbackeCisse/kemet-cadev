@@ -87,7 +87,7 @@ export function NewProjectPage() {
       <FormField label={fr.projects.repoUrlLabel} error={fieldErrors.repoUrl}>
         <Input
           type="url"
-          placeholder="https://github.com/..."
+          placeholder="https://github.com/…"
           value={repoUrl}
           onChange={(event) => setRepoUrl(event.target.value)}
         />

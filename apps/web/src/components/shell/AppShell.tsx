@@ -180,6 +180,8 @@ export function AppShell({
               {rightPanel?.openLabel ? (
                 <Button
                   variant="ghost"
+                  aria-haspopup="dialog"
+                  aria-expanded={rightSheetOpen}
                   className="gap-1.5 px-2 lg:hidden"
                   onClick={() => setRightSheetOpen(true)}
                 >

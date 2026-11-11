@@ -9,8 +9,10 @@ export const SKILL_EXCERPT_MAX_LINES = 6;
 export const SKILL_EXCERPT_MAX_LINE_LENGTH = 72;
 
 // Caractères de contrôle retirés : l'extrait est affiché tel quel, en texte.
+// Les marques de sens d'écriture et les espaces de largeur nulle en font
+// partie : elles feraient lire une ligne dans un autre ordre que le code.
 const CONTROL_CHARACTERS = new RegExp(
-  `[${String.fromCharCode(0)}-${String.fromCharCode(8)}${String.fromCharCode(11)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
+  `[${String.fromCharCode(0)}-${String.fromCharCode(8)}${String.fromCharCode(11)}-${String.fromCharCode(31)}${String.fromCharCode(127)}\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069]`,
   "g",
 );
 
