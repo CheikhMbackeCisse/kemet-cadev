@@ -1,8 +1,8 @@
 # Dossier de conception
 
-Six schémas Mermaid, écrits le 06/11/2026 à partir du code. Chaque nom de
-table, de route et de service qu'ils citent existe dans le dépôt. GitHub
-affiche les schémas directement.
+Six schémas Mermaid, écrits le 06/11/2026 à partir du code et revérifiés le
+11/11. Chaque nom de table, de route et de service qu'ils citent existe dans
+le dépôt. GitHub affiche les schémas directement.
 
 ## [Cas d'utilisation](cas-d-utilisation.md)
 
@@ -16,11 +16,11 @@ Les tables principales du schéma Drizzle et leurs relations. Aucun total
 n'est stocké : points, niveaux, phases et non-lus se calculent à la lecture.
 Les tables secondaires sont listées en tête de page.
 
-## [Appel à @kemet](sequence-assistant.md)
+## [Appel à Kocc](sequence-assistant.md)
 
-Du message qui mentionne `@kemet` à la réponse diffusée par Socket.IO.
-Montre le quota, le choix du skill, le cache, la chaîne Gemini, Groq,
-OpenRouter et la réponse enregistrée de secours.
+Du message qui mentionne `@kocc` à la réponse diffusée par Socket.IO.
+Montre le quota, la file d'attente, le choix du skill, le cache, la chaîne
+Gemini, Groq, OpenRouter et la réponse enregistrée de secours.
 
 ## [Messagerie privée](sequence-messagerie.md)
 
@@ -30,9 +30,9 @@ limite d'un message avant acceptation et les deux variantes : groupe et
 
 ## [Mise en relation des Travaux](sequence-travaux.md)
 
-"Qui a travaillé sur ce sujet ?" : présélection plein texte, appel à la
-chaîne avec réponse JSON validée, repli sur le plein texte. Montre pourquoi
-une suggestion hors présélection est toujours rejetée.
+"Qui a travaillé sur ce sujet ?" : résultat par tags communs pour un
+visiteur, sinon présélection plein texte et réponse JSON validée de la
+chaîne. Montre pourquoi une suggestion hors présélection est rejetée.
 
 ## [Déploiement](deploiement.md)
 

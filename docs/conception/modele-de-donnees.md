@@ -4,7 +4,8 @@ Tiré du schéma Drizzle (`packages/db/src/schema/`). Seules les tables
 principales et leurs clés figurent ici ; les tables de Better Auth (`user`,
 `session`, `account`, `verification`), `skill_files`, `skill_ratings`,
 `mcp_servers`, `space_invites`, `message_mentions`, `post_attachments`,
-`work_external_authors`, `work_links`, `work_attachments`, `credentials`,
+`work_external_authors`, `work_links`, `work_attachments`, `work_media`,
+`credentials`, `profile_cvs`,
 `reports` et `moderation_actions` sont omises pour garder le schéma lisible.
 
 Aucun total n'est stocké : points, niveau, phase d'une compétition, classement
@@ -27,12 +28,16 @@ erDiagram
   channels ||--o{ read_states : "lu jusqu'à"
   profiles ||--o{ messages : "écrit"
   profiles ||--o{ skills : "rédige"
-  channels ||--o{ assistant_invocations : "appel à @kemet"
+  channels ||--o{ assistant_invocations : "appel dans un salon"
   messages ||--o| assistant_invocations : "déclenche"
+  posts ||--o{ assistant_invocations : "appel sous un post"
+  post_replies ||--o| assistant_invocations : "déclenche"
   profiles ||--o{ posts : "publie"
   posts ||--o{ post_replies : "reçoit"
   posts ||--o{ post_reactions : "Utile"
   posts ||--o{ post_feedback : "retour structuré"
+  posts ||--o{ post_reposts : "republié"
+  posts ||--o{ post_bookmarks : "enregistré"
   profiles ||--o{ works : "publie"
   works ||--o{ work_authors : "coauteurs"
   works |o--o| channels : "discussion publique"
@@ -95,7 +100,10 @@ erDiagram
   }
   assistant_invocations {
     uuid id PK
+    uuid channel_id FK "salon, ou bien"
+    uuid post_id FK "post"
     uuid trigger_message_id FK
+    uuid trigger_reply_id FK
     uuid response_message_id FK
     uuid_array skill_ids
     llm_provider_name provider "gemini, groq, openrouter"
@@ -117,6 +125,11 @@ erDiagram
     uuid shared_post_id FK
     post_format format
     uuid work_id FK
+  }
+  post_reposts {
+    uuid post_id FK
+    uuid profile_id FK
+    timestamp created_at "date de l'activité dans Abonnements"
   }
   works {
     uuid id PK
@@ -161,6 +174,10 @@ Contraintes à connaître :
   (`docs/adr/0026-messagerie-privee.md`).
 - `points_ledger` : index unique sur `(source, source_id, profile_id)`, qui
   rend chaque attribution idempotente (`docs/adr/0011-points-et-niveaux.md`).
+- `assistant_invocations` : `CHECK` qui impose une seule cible, un salon et
+  son message, ou un post et sa réponse (`docs/adr/0033-kemet-sous-les-posts.md`).
+- `post_reposts` et `post_bookmarks` : une ligne au plus par personne et par
+  post ; le nombre de republications se compte à la lecture.
 - `reports` et `moderation_actions` visent un message, un post ou un profil
   sans clé étrangère (`target_type`, `target_id`) : une cible supprimée ne
   fait pas disparaître le journal de modération.

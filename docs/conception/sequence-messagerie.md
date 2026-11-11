@@ -73,4 +73,4 @@ Variantes :
 - **Équipe d'un travail** (`POST /api/conversations/team`) : chaque auteur
   reçoit une demande, même s'il connaît la personne, et un blocage entre
   deux auteurs n'est jamais opposé à la personne qui écrit.
-- @kemet n'est jamais appelé dans une conversation privée.
+- Kocc n'est jamais appelé dans une conversation privée.

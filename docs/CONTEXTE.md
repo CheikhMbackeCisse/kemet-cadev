@@ -4,7 +4,7 @@ Ce fichier est la source de vérité du projet. Toute IA ou tout membre qui rejo
 
 ## En une phrase
 
-Kemet est la plateforme d'échange des développeurs africains : des salons de discussion hébergés sur un serveur Datacloud, un fil de posts détendu et utile, un assistant IA nourri par les skills que les seniors créent à partir de leurs notes, des projets à rejoindre et des compétitions.
+Kemet est la plateforme d'échange des développeurs africains : des salons de discussion hébergés sur Datacloud, un fil de posts détendu et utile, un assistant IA nourri par les skills que les seniors créent à partir de leurs notes, des projets à rejoindre et des compétitions.
 
 ## Le nom
 
@@ -21,9 +21,10 @@ Dans l'écriture hiéroglyphique du mot, un signe représente la ville : un cerc
 - **Thème :** "Construire la plateforme d'échange africaine, pour les devs, par les devs. Livrez un projet utilisable et hébergé en ligne."
 - **Livrables :** dépôt git et démo en ligne.
 - **Équipe :** Kemet Labs, quatre membres.
-- **Clôture des soumissions :** repoussée au 12 novembre 2026 (confirmé le 29/10). Gel des fonctionnalités le 9 novembre. L'ancienne date était le 25 octobre.
-- **Vote des pairs :** dates à confirmer. Chaque membre reçoit jusqu'à 10 projets de son pays et vote pour un seul. Les 3 premiers de chaque pays passent devant le jury. **Chaque membre de l'équipe doit voter, sinon le projet est exclu.**
-- **Jury :** dates à confirmer.
+- **Clôture des soumissions :** 15 novembre 2026 à 17 h GMT. Gel des fonctionnalités le 12 novembre. L'ancienne date était le 25 octobre.
+- **Vote des pairs :** 15 et 16 novembre 2026. Chaque membre reçoit jusqu'à 10 projets de son pays et vote pour un seul. Les 3 premiers de chaque pays passent devant le jury. **Chaque membre de l'équipe doit voter, sinon le projet est exclu.**
+- **Vote public :** du 17 au 20 novembre 2026.
+- **Jury :** 21 et 22 novembre 2026, résultats le 23 novembre.
 
 **Grille du jury :**
 
@@ -46,7 +47,11 @@ Dans l'écriture hiéroglyphique du mot, un signe représente la ville : un cerc
 
 ## Budget : tout gratuit, sauf un produit
 
-Un seul produit payant : un serveur Datacloud (2 vCPU, 4 Go de RAM, 80 Go de SSD), acheté avec le code promo, qui héberge toute l'application. Le reste est gratuit : sous-domaine fourni ou adresse sslip.io pour le HTTPS, emails par une offre gratuite (Brevo ou Resend), modèles d'IA en offre gratuite. Email Pro seul est écarté : l'application tournerait hors de Datacloud.
+- **Un seul produit payant : un serveur Datacloud** (VPS Ubuntu 24.04, 4 Go de RAM). Il héberge toute l'application, en production sur `kemetlabs.dev` depuis le 07/11/2026.
+- **Pas d'Email Pro seul :** l'application tournerait hors de Datacloud, ce qui contredit le règlement et l'argument "hébergé sur Datacloud".
+- **Pas de nom de domaine payant :** on utilise le sous-domaine fourni avec le serveur s'il existe. Sinon, une adresse gratuite de type sslip.io, qui permet quand même le HTTPS (obligatoire pour la web app installable, les notifications et les appels).
+- **Emails :** un service d'envoi avec offre gratuite (Brevo ou Resend).
+- **IA :** offres gratuites uniquement (voir la section sur l'assistant et les skills).
 
 ## Les fonctionnalités et leurs priorités
 
@@ -58,7 +63,7 @@ P0 = indispensable, terminé, testé et déployé le 19 octobre. P1 = visé. P2 
 | Salons | Espaces publics et privés, salons texte, fils, mentions, réactions (emojis du système), non-lus, code coloré, deux salons par défaut à la création d'un espace ("général", "mèmes") | Messages privés, stickers maison | Messages épinglés |
 | Fichiers et images dans les messages | Images (PNG, JPEG, WebP, GIF) affichées dans le salon et les fils ; PDF, texte, code, zip proposés en téléchargement ; type vérifié par le contenu, jamais par l'extension | | |
 | Fil de posts | Posts courts, réponses, partages, mèmes, onglets "Abonnements" et "Pour toi", formats optionnels (Astuce, À tester, Question) | Recherche dans le fil, retours structurés sur les posts "À tester" | |
-| Assistant et skills | Assistant @kemet, création de skills, appel explicite ou automatique, réponse en streaming qui cite le skill et son auteur, page publique du skill, étoiles, bouton "Utile" | Fiches de connaissance, outils MCP | Modèle hébergé chez Systalink |
+| Assistant et skills | Assistant Kocc, création de skills, appel explicite seulement, réponse en streaming qui cite le skill et son auteur, page publique du skill, étoiles, bouton "Utile" | Fiches de connaissance, outils MCP | Modèle hébergé chez Systalink |
 | Projets | Page projet, demandes d'aide et de collaboration, candidatures | Recherche par stack et par pays | |
 | Travaux | Projets de classe, stages, mémoires, applications et articles publiés avec leurs auteurs (coauteurs qui acceptent, auteurs sans compte), liens, un PDF ; "Qui a travaillé sur ce sujet ?" sur un travail, un projet ou un post Question | | |
 | Compétitions | Compétitions de projets : inscription, soumission, vote, jury, résultats sur le profil | Défis de code sans exécution | Défis avec correction automatique |
@@ -110,23 +115,30 @@ Le parcours seul permet d'atteindre Scribe. Seule l'entraide fait passer Archite
 - Plafond de points qu'une même personne peut te donner par jour. Impossible de se noter soi-même ou de noter son propre skill.
 - Chaque gain de points est une ligne dans un registre où l'on ne fait qu'ajouter : on peut toujours expliquer un total et annuler les points d'un tricheur.
 
-## L'assistant @kemet et les skills
+## L'assistant Kocc et les skills
 
-Il n'y a qu'un seul assistant sur la plateforme : **@kemet**. Ce sont les seniors qui le rendent utile, en créant des **skills** à partir de leurs notes. L'IA est un outil parmi d'autres dans Kemet, pas le centre du produit.
+Il n'y a qu'un seul assistant sur la plateforme : **Kocc**, appelé par `@kocc` (l'ancien `@kemet` reste reconnu). Ce sont les seniors qui le rendent utile, en créant des **skills** à partir de leurs notes. L'IA est un outil parmi d'autres dans Kemet, pas le centre du produit.
 
 **Ce qu'est un skill :** un nom, une description d'une phrase (quand l'utiliser), des instructions, des notes, des exemples de code. Par exemple "wave-paiements", créé par une dev qui a fait quinze intégrations Wave.
 
 **Comment l'assistant s'en sert :**
 
 1. La recherche plein texte de PostgreSQL présélectionne jusqu'à 20 skills candidats à partir du nom, de la description et des tags, parmi ceux que l'utilisateur a le droit d'utiliser. Ça ne coûte presque rien.
-2. Quand une question arrive, le modèle choisit le ou les skills utiles parmi ces candidats à partir de leurs descriptions : soit l'utilisateur l'a demandé ("@kemet avec wave-paiements, comment…"), soit l'assistant reconnaît qu'un skill correspond.
+2. Quand une question arrive, le modèle choisit le ou les skills utiles parmi ces candidats à partir de leurs descriptions : soit l'utilisateur l'a demandé ("@kocc avec wave-paiements, comment…"), soit l'assistant reconnaît qu'un skill correspond.
 3. Il charge alors le contenu complet de ce skill retenu (voir `docs/adr/0007-recherche-skills.md`).
 4. Il répond en streaming, et la réponse affiche "basé sur le skill wave-paiements d'Awa Ndiaye".
 5. Les lecteurs peuvent marquer la réponse "Utile", ce qui rapporte des points à l'auteur du skill. Les skills reçoivent aussi des étoiles, données seulement par ceux qui les ont utilisés.
 
 **Sécurité :** l'assistant ne lit que le salon où il est appelé et les skills choisis. Le contenu des messages et des skills est traité comme des données, jamais comme des ordres. Tout outil MCP demande l'accord de l'utilisateur.
 
-@kemet passe par Google Gemini (famille Flash, offre gratuite), avec bascule automatique sur des modèles gratuits d'OpenRouter en cas de quota dépassé ou de panne, et un message clair si les deux sont saturés. Les deux passent par l'interface `LlmProvider`. Contrepartie de l'offre gratuite : Google peut utiliser les données envoyées, ce que dit la page de confidentialité. Le quota est protégé par un cache des réponses et une limite quotidienne par niveau. Après la compétition, l'assistant pourrait tourner sur des modèles ouverts hébergés par Systalink.
+**Fournisseurs d'IA, gratuits :**
+
+- **D'abord Google Gemini, famille Flash (puis Flash Lite, qui a son propre quota), offre gratuite, via `@ai-sdk/google`.** Changement par rapport à Mistral : son offre gratuite "Experiment" n'est plus accessible sans carte bancaire. Contrepartie de l'offre gratuite Gemini : les données envoyées peuvent servir à améliorer les modèles de Google (à écrire dans la politique de confidentialité, et on n'envoie que le strict nécessaire), débit limité.
+- **Puis Groq (modèles gpt-oss), puis OpenRouter (modèles gratuits)**, par des appels HTTP au format OpenAI derrière la même interface `LlmProvider`. Passage au suivant sur un quota dépassé (429), une panne, un délai dépassé ou un prompt trop long ; message clair à l'utilisateur si toute la chaîne est saturée (`docs/adr/0027-chaine-de-secours-ia.md`).
+- **Présélection des skills :** recherche plein texte PostgreSQL (`tsvector`, configurations french et english), pas de modèle d'embeddings en P0. Voir `docs/adr/0007-recherche-skills.md`.
+- **Protection du quota :** chargement des skills à la demande, cache des réponses, quota par utilisateur selon le niveau.
+
+**Vision après la compétition :** l'assistant tourne sur des modèles ouverts (Apache 2.0) hébergés sur les serveurs GPU de Systalink.
 
 ## Business model
 
@@ -192,11 +204,12 @@ Le calendrier à partir du 29 octobre :
 | --- | --- |
 | 6 au 22 octobre | Développement des P0, audit de sécurité, données de démo (fait) |
 | 29 octobre au 8 novembre | Déploiement sur Datacloud, puis finitions par ordre d'impact |
-| 9 novembre | Gel des fonctionnalités |
-| 9 au 11 novembre | Finitions, vidéo, README, déclarations |
-| 12 novembre | Soumission |
-| À confirmer | Vote des pairs (vote obligatoire) |
-| À confirmer | Jury et résultats |
+| 12 novembre | Gel des fonctionnalités |
+| 12 au 15 novembre | Vidéo, README, déclarations |
+| 15 novembre, 17 h GMT | Soumission |
+| 15 et 16 novembre | Vote des pairs (vote obligatoire) |
+| 17 au 20 novembre | Vote public |
+| 21 et 22 novembre | Jury, résultats le 23 |
 
 ## Vérifications à faire tout de suite
 
@@ -215,7 +228,7 @@ Le calendrier à partir du 29 octobre :
 - Pas de mot "réputation" : points et niveaux, jusqu'à Légende.
 - Un seul produit Datacloud : le serveur cloud.
 - IA gratuite uniquement.
-- Un seul assistant, @kemet, nourri par les skills des seniors.
+- Un seul assistant, Kocc (nom affiché ; `kemet` dans le code), nourri par les skills des seniors.
 - Fil détendu façon X ; l'apparence suit `docs/adr/0018-permission-de-copie-visuelle.md`.
 - Business model : récompenser l'utilité, pas les vues. Kemet Pro, crédits Datacloud, recrutement, compétitions sponsorisées.
 - Logo redessiné en vectoriel, fichiers dans `brand/`.

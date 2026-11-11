@@ -16,7 +16,7 @@ points, `docs/adr/0011-points-et-niveaux.md`), les skills utiles, les
 travaux publiés et les compétitions.
 
 Ce qui reste gratuit, pour toujours : lire, écrire, poser ses questions à
-@kemet dans le quota de son niveau, publier, et la vérification du parcours.
+Kocc dans le quota de son niveau, publier, et la vérification du parcours.
 Un compte vérifié ne s'achète pas.
 
 ## Les quatre sources de revenus
@@ -27,7 +27,7 @@ Abonnement à petit prix en FCFA, payé par Wave ou Orange Money.
 
 | Avantage | Ce qui existe déjà dans le code |
 | --- | --- |
-| Plus de quota pour @kemet | Quota par niveau, compté à la lecture (`apps/server/src/ai/quota.ts` : 30, 60 ou 150 questions par jour) |
+| Plus de quota pour Kocc | Quota par niveau (`apps/server/src/ai/quota.ts` : 30, 60 ou 150 questions par jour) |
 | Statistiques de profil | Registre de points et réponses jugées utiles, déjà stockés |
 | Mise en avant dans l'annuaire | "Ouvert aux opportunités", réservé à partir du niveau Artisan |
 | Espaces privés plus grands | Espaces privés et invitations |
@@ -94,16 +94,16 @@ outils d'administration qui n'existent pas encore.
 
 | Poste | Aujourd'hui | Quand Kemet grandit |
 | --- | --- | --- |
-| Hébergement | Un serveur Datacloud à Dakar (2 vCPU, 4 Go) | Un second serveur, ou une base séparée |
+| Hébergement | Un serveur Datacloud (4 Go de mémoire) | Un second serveur, ou une base séparée |
 | Assistant | Offres gratuites, quota par personne | Offre payante ou modèles ouverts sur les serveurs GPU de Systalink |
 | Emails | Un serveur SMTP | Selon le volume d'inscriptions |
 | Paiement | Aucun | Frais de Wave et Orange Money |
 
 ## Ce qu'il faudrait mesurer avant de facturer
 
-1. Combien de membres atteignent leur quota quotidien de @kemet : c'est la
+1. Combien de membres atteignent leur quota quotidien de Kocc : c'est la
    demande réelle pour l'avantage principal de Kemet Pro.
-2. Combien de réponses de @kemet sont jugées utiles, et avec quel skill : la
+2. Combien de réponses de Kocc sont jugées utiles, et avec quel skill : la
    base des récompenses aux auteurs.
 3. Combien de travaux et de projets reçoivent un contact : la valeur de
    l'annuaire pour un recruteur.

@@ -11,25 +11,27 @@ flowchart LR
   member([Membre])
   admin([Administrateur])
   juror([Juré, niveau Architecte et plus])
-  kemet([Assistant @kemet])
+  kocc([Assistant Kocc])
 
   subgraph Lecture
     readSpaces[Lire les espaces et salons publics]
     readFeed[Lire le fil Pour toi]
     readSkills[Lire les skills publics]
     readWorks[Lire les travaux et les profils]
+    readAnswers[Lire les réponses enregistrées de Kocc]
+    relatedPeople[Voir qui a travaillé sur un sujet proche, sans le modèle]
   end
 
   subgraph Compte
     signup[Créer un compte, email ou GitHub, Google, LinkedIn]
-    profile[Compléter son profil, rôle et parcours]
+    profile[Compléter son profil, rôle, parcours, CV et liens]
     export[Exporter ses données]
     deleteAccount[Supprimer son compte]
   end
 
   subgraph Salons
     post[Écrire dans un salon, fichiers, réactions, fils]
-    mention[Appeler @kemet dans un salon]
+    mention[Appeler Kocc dans un salon]
     createSpace[Créer un espace public ou privé, inviter]
   end
 
@@ -42,6 +44,8 @@ flowchart LR
 
   subgraph Contenus
     feedPost[Publier un post, Astuce, À tester, Question]
+    react[Répondre, republier, aimer, enregistrer un post]
+    askPost[Appeler Kocc dans une réponse de post]
     createSkill[Créer un skill]
     publishWork[Publier un travail avec ses coauteurs]
     whoWorked[Demander qui a travaillé sur ce sujet]
@@ -62,23 +66,29 @@ flowchart LR
     verify[Vérifier un parcours]
   end
 
-  visitor --- readSpaces & readFeed & readSkills & readWorks & signup
+  visitor --- readSpaces & readFeed & readSkills & readWorks & readAnswers & relatedPeople & signup
   member --- profile & export & deleteAccount
   member --- post & mention & createSpace
   member --- writeDm & acceptDm & block & teamDm
-  member --- feedPost & createSkill & publishWork & whoWorked & project
+  member --- feedPost & react & askPost & createSkill & publishWork & whoWorked & project
   member --- proposeComp & join & vote & report
   juror --- score
   admin --- resolve & validateComp & verify
-  mention -.- kemet
-  whoWorked -.- kemet
+  mention -.- kocc
+  askPost -.- kocc
+  whoWorked -.- kocc
 ```
 
 Règles qui ne se voient pas sur le schéma :
 
 - Un compte suspendu garde la lecture, perd l'écriture (`requireOwnProfile`
   dans chaque module d'écriture, voir `docs/adr/0016-moderation.md`).
-- @kemet ne lit jamais une conversation privée : une mention n'y déclenche
+- Kocc ne lit jamais une conversation privée : une mention n'y déclenche
   rien (`apps/server/src/api/routes/messages.ts`).
+- Kocc ne répond qu'à un appel explicite (`@kocc`, ou l'ancien `@kemet`
+  gardé comme alias). Un post seul ne l'appelle jamais : seule une réponse
+  sous le post le fait (`docs/adr/0033-kemet-sous-les-posts.md`).
+- Un visiteur ne déclenche aucun appel au modèle : il voit des réponses
+  enregistrées et une mise en relation calculée par tags communs.
 - Un administrateur ne vérifie jamais son propre parcours, et aucun compte de
   démonstration n'est administrateur.

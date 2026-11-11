@@ -1,8 +1,12 @@
 # Séquence : "Qui a travaillé sur ce sujet ?"
 
-Sur un travail, un projet ou un post Question, un bouton demande à @kemet de
+Sur un travail, un projet ou un post Question, un bouton demande à Kocc de
 proposer des personnes qui ont publié un travail proche. L'appel n'est jamais
-fait au chargement de la page, seulement au clic. Code :
+fait au chargement de la page, seulement au clic, et jamais pour un visiteur :
+sur un travail ou un projet, un visiteur voit à la place jusqu'à trois
+personnes trouvées par tags et stack communs, sans le modèle
+(`GET /api/works/:slug/related-people`, `GET /api/projects/:slug/related-people`,
+`apps/server/src/api/repositories/related-people.ts`). Code :
 `apps/server/src/api/routes/work-matches.ts`,
 `apps/server/src/ai/work-matcher.ts`, `apps/server/src/ai/work-retriever.ts`.
 Décisions : `docs/adr/0025-travaux.md`.
@@ -17,7 +21,12 @@ sequenceDiagram
   participant DB as PostgreSQL
   participant C as LlmChain
 
-  P->>W: clic "Qui a travaillé sur ce sujet ?"
+  opt visiteur
+    W->>API: GET /api/works/:slug/related-people
+    API->>DB: findRelatedPeople : termes communs, sans figurants ni comptes suspendus
+    API-->>W: total et trois personnes, lecture seule
+  end
+  P->>W: clic "Trouver qui a travaillé sur ce sujet"
   W->>API: POST /api/work-matches { subject: work, project ou post }
   API->>API: session, profil complet, compte non suspendu, limite de débit
   API->>M: match(subject, profil)
