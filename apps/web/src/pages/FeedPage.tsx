@@ -10,10 +10,20 @@ import {
   setPostBookmark,
   togglePostReaction,
 } from "../lib/chat/api.js";
-import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
-import { ProjectFeedCard, ProjectFeedCardSkeleton } from "../components/feed/ProjectFeedCard.js";
+import {
+  POST_ESTIMATED_HEIGHT_PX,
+  PostCard,
+  PostCardSkeleton,
+} from "../components/feed/PostCard.js";
+import {
+  PROJECT_CARD_ESTIMATED_HEIGHT_PX,
+  ProjectFeedCard,
+  ProjectFeedCardSkeleton,
+} from "../components/feed/ProjectFeedCard.js";
 import { navigate } from "../lib/navigation/navigate.js";
+import { rememberedHeight } from "../lib/navigation/rememberedHeights.js";
 import { interleaveProjects } from "../lib/feed/interleave.js";
+import { useVisibleFirst } from "../lib/feed/useVisibleFirst.js";
 import {
   feedQueryKey,
   fetchFeed,
@@ -39,6 +49,25 @@ import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
+const postHeightKey = (postId: string) => `post:${postId}`;
+const projectHeightKey = (projectId: string) => `project:${projectId}`;
+
+function RowPlaceholder({
+  heightKey,
+  estimatedHeight,
+}: {
+  heightKey: string;
+  estimatedHeight: number;
+}) {
+  return (
+    <li
+      aria-hidden="true"
+      data-height-key={heightKey}
+      style={{ height: rememberedHeight(heightKey) ?? estimatedHeight }}
+    />
+  );
+}
+
 function PostListItem({
   post,
   canInteract,
@@ -62,6 +91,7 @@ function PostListItem({
     <PostCard
       post={post}
       as="li"
+      heightKey={postHeightKey(post.id)}
       bodyHref={`/fil/${post.id}`}
       replyHref={`/fil/${post.id}`}
       canInteract={canInteract}
@@ -104,6 +134,16 @@ export function FeedPage() {
   const nextCursor = feed.data?.nextCursor ?? null;
   const loading = feed.isPending;
   const error = feed.isError && !feed.data;
+
+  const entries = interleaveProjects(
+    posts,
+    projects,
+    talentFeed && tab === "pour-toi" ? TALENT_POSTS_PER_PROJECT_CARD : undefined,
+  );
+  const entryKeys = entries.map((entry) =>
+    entry.kind === "project" ? projectHeightKey(entry.item.id) : postHeightKey(entry.item.id),
+  );
+  const isBuilt = useVisibleFirst(entryKeys, POST_ESTIMATED_HEIGHT_PX);
 
   const [feedbackPostId, setFeedbackPostId] = useState<string | null>(null);
   const [feedbackBody, setFeedbackBody] = useState("");
@@ -250,21 +290,28 @@ export function FeedPage() {
   ) : (
     <div className="flex flex-col gap-3">
       <ul className="flex flex-col divide-y divide-border">
-        {interleaveProjects(
-          posts,
-          projects,
-          talentFeed && tab === "pour-toi" ? TALENT_POSTS_PER_PROJECT_CARD : undefined,
-        ).map((entry) =>
-          entry.kind === "project" ? (
+        {entries.map((entry, index) =>
+          !isBuilt(index) ? (
+            <RowPlaceholder
+              key={entryKeys[index]}
+              heightKey={entryKeys[index] ?? ""}
+              estimatedHeight={
+                entry.kind === "project"
+                  ? PROJECT_CARD_ESTIMATED_HEIGHT_PX
+                  : POST_ESTIMATED_HEIGHT_PX
+              }
+            />
+          ) : entry.kind === "project" ? (
             <ProjectFeedCard
-              key={`project-${entry.item.id}`}
+              key={entryKeys[index]}
+              heightKey={entryKeys[index]}
               project={entry.item}
               variant="card"
               viewerProfileId={profile?.id ?? null}
             />
           ) : (
             <PostListItem
-              key={entry.item.id}
+              key={entryKeys[index]}
               post={entry.item}
               canInteract={canInteract}
               viewerProfileId={profile?.id ?? null}

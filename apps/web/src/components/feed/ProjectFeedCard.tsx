@@ -2,6 +2,7 @@ import { useId } from "react";
 import { isDeletedAccountHandle, type FeedProject } from "@kemet/shared";
 import { skillDomain } from "../../lib/skills/skillDomain.js";
 import { cn } from "../../lib/cn.js";
+import { heightKeyProps } from "../../lib/navigation/rememberedHeights.js";
 import { SIGN_UP_PATH } from "../../session/signUpInvite.js";
 import { fr } from "../../i18n/fr.js";
 import { Avatar } from "../ui/Avatar.js";
@@ -24,9 +25,18 @@ export interface ProjectFeedCardProps {
   variant: "card" | "row";
   /** `null` pour un visiteur : "Proposer mon aide" mène alors à l'inscription. */
   viewerProfileId: string | null;
+  /** Dans le fil : clé de la hauteur gardée d'un aller-retour à l'autre. */
+  heightKey?: string;
 }
 
-export function ProjectFeedCard({ project, variant, viewerProfileId }: ProjectFeedCardProps) {
+export const PROJECT_CARD_ESTIMATED_HEIGHT_PX = 260;
+
+export function ProjectFeedCard({
+  project,
+  variant,
+  viewerProfileId,
+  heightKey,
+}: ProjectFeedCardProps) {
   const nameId = useId();
   // Icône du domaine de la stack, comme celle des skills : un projet n'a pas d'image à lui.
   const domain = skillDomain({
@@ -41,7 +51,13 @@ export function ProjectFeedCard({ project, variant, viewerProfileId }: ProjectFe
   const extraRoles = project.openRoles.length - MAX_ROLES;
 
   return (
-    <li className="py-4 [content-visibility:auto] [contain-intrinsic-size:auto_260px]">
+    <li
+      {...heightKeyProps(heightKey, PROJECT_CARD_ESTIMATED_HEIGHT_PX)}
+      className={cn(
+        "py-4 [content-visibility:auto]",
+        !heightKey && "[contain-intrinsic-size:auto_260px]",
+      )}
+    >
       <article
         aria-labelledby={nameId}
         className={cn(

@@ -4,6 +4,8 @@
  * précédent reste affiché jusqu'à ce qu'elle soit prête.
  */
 
+import { rememberHeights } from "./rememberedHeights.js";
+
 export const NAVIGATE_EVENT = "kemet:navigate";
 // Marque les entrées d'historique créées par la navigation de l'application,
 // pour les distinguer de celles qu'une page ajoute elle-même (questions
@@ -48,6 +50,7 @@ export function navigate(href: string, options: { replace?: boolean } = {}) {
     window.history.replaceState({ [ROUTER_STATE_KEY]: true }, "", path);
   } else {
     // La position de lecture reste sur l'entrée quittée, rendue au retour.
+    rememberHeights();
     window.history.replaceState({ ...historyState(), [SCROLL_STATE_KEY]: window.scrollY }, "");
     window.history.pushState({ [ROUTER_STATE_KEY]: true }, "", path);
   }

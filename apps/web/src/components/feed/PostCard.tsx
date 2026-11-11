@@ -1,4 +1,5 @@
 import { navigate } from "../../lib/navigation/navigate.js";
+import { heightKeyProps } from "../../lib/navigation/rememberedHeights.js";
 import { useState, type MouseEvent } from "react";
 import { Bookmark, CheckCircle2, Heart, MessageSquare, Share2 } from "lucide-react";
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
@@ -83,9 +84,9 @@ function WorkPreview({ work }: { work: PostSummary["work"] }) {
 // qu'au survol, sur bureau, quand la ligne mène au post.
 const POST_ROW_CLASS = "-mx-4 px-4 py-4 lg:-mx-3 lg:px-3";
 // Le navigateur saute style, mise en page et peinture des posts hors de
-// l'écran ; "auto" garde la dernière hauteur mesurée, pour que la position
-// de lecture rendue au retour reste exacte.
-const OFFSCREEN_SKIP_CLASS = "[content-visibility:auto] [contain-intrinsic-size:auto_220px]";
+// l'écran. Leur hauteur réservée vient de `heightKeyProps`.
+const OFFSCREEN_SKIP_CLASS = "[content-visibility:auto]";
+export const POST_ESTIMATED_HEIGHT_PX = 220;
 
 export interface PostCardProps {
   post: PostSummary;
@@ -105,6 +106,8 @@ export interface PostCardProps {
   onReply?: () => void;
   /** Pastille "Demander à @kemet d'expliquer", sous un post technique seulement. */
   askKemet?: { href?: string; onClick?: () => void };
+  /** Dans le fil : clé de la hauteur gardée d'un aller-retour à l'autre. */
+  heightKey?: string;
 }
 
 export function PostCard({
@@ -122,6 +125,7 @@ export function PostCard({
   onDelete,
   onReply,
   askKemet,
+  heightKey,
 }: PostCardProps) {
   // Le corps contient ses propres liens (mentions, adresses) : il ne peut
   // pas être lui-même un lien. La date sert de lien vers le post, au clavier
@@ -155,9 +159,11 @@ export function PostCard({
   const Tag = as;
   return (
     <Tag
+      {...heightKeyProps(heightKey, POST_ESTIMATED_HEIGHT_PX)}
       className={cn(
         POST_ROW_CLASS,
         bodyHref && OFFSCREEN_SKIP_CLASS,
+        bodyHref && !heightKey && "[contain-intrinsic-size:auto_220px]",
         bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2",
       )}
     >
