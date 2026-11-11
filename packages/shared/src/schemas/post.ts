@@ -128,6 +128,8 @@ export const postSummarySchema = z.object({
   savedByMe: z.boolean(),
   replyCount: z.number().int().nonnegative(),
   feedbackCount: z.number().int().nonnegative(),
+  /** Fil seulement : première réponse terminée de @kemet, affichée dépliée sous le post. */
+  kemetAnswer: z.lazy(() => postReplySchema.nullable()).optional(),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
   deletedAt: z.string().datetime().nullable(),

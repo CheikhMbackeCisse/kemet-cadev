@@ -1,5 +1,5 @@
 import type { skills, profiles } from "@kemet/db";
-import { skillCodeExcerpt, type SkillDetail, type SkillSummary } from "@kemet/shared";
+import { skillCodeExcerpt, type SkillCitation, type SkillDetail, type SkillSummary } from "@kemet/shared";
 
 type SkillRow = typeof skills.$inferSelect;
 type ProfileRow = typeof profiles.$inferSelect;
@@ -32,5 +32,16 @@ export function serializeSkillDetail(row: SkillRow, author: ProfileRow, ratings:
     ...serializeSkillSummary(row, author, ratings),
     content: row.content,
     spaceId: row.spaceId,
+  };
+}
+
+/** Skill cité par une réponse de @kemet, avec son auteur. */
+export function serializeSkillCitation(row: SkillRow, author: ProfileRow): SkillCitation {
+  return {
+    slug: row.slug,
+    name: row.name,
+    authorHandle: author.handle,
+    authorDisplayName: author.displayName,
+    authorAvatarUrl: author.avatarUrl,
   };
 }

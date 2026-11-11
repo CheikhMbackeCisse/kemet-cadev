@@ -1,4 +1,5 @@
-import { ASSISTANT_RECORDINGS, type AssistantRecording } from "@kemet/db";
+import { ASSISTANT_RECORDINGS, assistantRecordingTrigger, type AssistantRecording } from "@kemet/db";
+import type { SkillExampleAnswer } from "@kemet/shared";
 
 const REPLAY_CHUNK_WORDS = 4;
 
@@ -38,4 +39,16 @@ export function splitForReplay(answer: string): string[] {
     chunks.push(tokens.slice(index, index + REPLAY_CHUNK_WORDS).join(""));
   }
   return chunks;
+}
+
+/**
+ * Exemple affiché sur la page d'un skill : seulement pour un skill posé par le
+ * seed (`isDemo`, jamais accepté du client), dont le slug a une réponse
+ * enregistrée. Un skill recréé sous le même slug, même depuis un compte de
+ * démonstration, n'obtient jamais une réponse écrite pour un autre contenu.
+ */
+export function findSkillExampleAnswer(slug: string, skillIsDemo: boolean): SkillExampleAnswer | null {
+  if (!skillIsDemo) return null;
+  const recording = ASSISTANT_RECORDINGS.find((candidate) => candidate.skillSlug === slug);
+  return recording ? { question: assistantRecordingTrigger(recording), answer: recording.answer } : null;
 }

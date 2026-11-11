@@ -50,6 +50,7 @@ import type {
   Space,
   SpaceMember,
   SkillDetail,
+  SkillExampleAnswer,
   SkillSummary,
   Submission,
   SubmissionResult,
@@ -370,7 +371,9 @@ export function listSkills(query = "", options: { beginner?: boolean } = {}) {
 }
 
 export function getSkill(slug: string) {
-  return request<{ skill: SkillDetail }>(`/api/skills/${slug}`);
+  return request<{ skill: SkillDetail; exampleAnswer: SkillExampleAnswer | null }>(
+    `/api/skills/${slug}`,
+  );
 }
 
 export function createSkill(input: CreateSkillInput) {

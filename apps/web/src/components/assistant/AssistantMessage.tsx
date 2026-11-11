@@ -1,8 +1,10 @@
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import type { SkillCitation } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
+import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { KemetSymbol } from "../ui/KemetSymbol.js";
 
@@ -11,6 +13,18 @@ export interface AssistantSkillReference {
   skillHref: string;
   authorName: string;
   authorHref: string;
+  authorAvatarUrl?: string | null;
+}
+
+/** Skill cité par le serveur, sous la forme affichée par la bulle. */
+export function skillReferenceFrom(citation: SkillCitation): AssistantSkillReference {
+  return {
+    skillName: citation.name,
+    skillHref: `/skills/${citation.slug}`,
+    authorName: citation.authorDisplayName,
+    authorHref: `/u/${citation.authorHandle}`,
+    authorAvatarUrl: citation.authorAvatarUrl,
+  };
 }
 
 export interface AssistantMessageProps {
@@ -54,22 +68,25 @@ export function AssistantMessage({
         {recorded && <Badge tone="accent">{fr.chat.assistantRecorded}</Badge>}
       </div>
 
+      {skill && (
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-text-2">
+          <Avatar name={skill.authorName} src={skill.authorAvatarUrl ?? undefined} size={20} />
+          <span>
+            {fr.chat.assistantCitedFrom}{" "}
+            <a href={skill.skillHref} className="font-medium text-link hover:underline">
+              {skill.skillName}
+            </a>
+            , {fr.chat.assistantCitedAuthor}{" "}
+            <a href={skill.authorHref} className="font-medium text-link hover:underline">
+              {skill.authorName}
+            </a>
+          </span>
+        </p>
+      )}
+
       <div className="mt-3 min-w-0 text-sm leading-relaxed text-text">{content}</div>
 
       {readSummary && <p className="mt-3 text-xs text-muted">{readSummary}</p>}
-
-      {skill && (
-        <p className="mt-2 text-xs text-muted">
-          Basé sur le skill{" "}
-          <a href={skill.skillHref} className="text-link hover:underline">
-            {skill.skillName}
-          </a>{" "}
-          de{" "}
-          <a href={skill.authorHref} className="text-link hover:underline">
-            {skill.authorName}
-          </a>
-        </p>
-      )}
 
       {!hideFeedback && (
         <div className="mt-3 flex items-center gap-2">

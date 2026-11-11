@@ -7,6 +7,7 @@ export const skillCitationSchema = z.object({
   name: z.string(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
 });
 
 export type SkillCitation = z.infer<typeof skillCitationSchema>;

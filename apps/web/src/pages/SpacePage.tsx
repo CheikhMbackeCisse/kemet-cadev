@@ -32,7 +32,7 @@ import { DaySeparator, UnreadSeparator } from "../components/chat/TimelineSepara
 import { MessageAttachments } from "../components/chat/MessageAttachments.js";
 import { useVoiceMessage } from "../components/chat/VoiceRecorder.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
-import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
+import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { RichText } from "../components/content/RichText.js";
@@ -706,15 +706,9 @@ export function SpacePage() {
                         }
                         skill={
                           assistantMetaByMessageId[group.messages[0]!.id]?.skill
-                            ? {
-                                skillName:
-                                  assistantMetaByMessageId[group.messages[0]!.id]!.skill!.name,
-                                skillHref: `/skills/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.slug}`,
-                                authorName:
-                                  assistantMetaByMessageId[group.messages[0]!.id]!.skill!
-                                    .authorDisplayName,
-                                authorHref: `/u/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.authorHandle}`,
-                              }
+                            ? skillReferenceFrom(
+                                assistantMetaByMessageId[group.messages[0]!.id]!.skill!,
+                              )
                             : undefined
                         }
                         initialFeedback={

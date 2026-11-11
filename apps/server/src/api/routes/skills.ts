@@ -19,6 +19,7 @@ import { findSpaceMembership } from "../repositories/chat.js";
 import { hasProfileUsedSkill } from "../repositories/assistant.js";
 import { serializeSkillDetail, serializeSkillSummary } from "../skill-serializers.js";
 import type { ChatAppDeps } from "../app.js";
+import { findSkillExampleAnswer } from "../../ai/recorded-answers.js";
 
 async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
   const profile = await findProfileByUserId(db, userId);
@@ -87,7 +88,10 @@ export function registerSkillRoutes(app: FastifyInstance, { db, auth }: ChatAppD
     const profile = userId ? await findProfileByUserId(db, userId) : null;
     const skill = await requireVisibleSkill(db, request.params.slug, profile?.id ?? null);
     const [author, ratings] = await Promise.all([findAuthorProfile(db, skill.authorId), getSkillStats(db, skill.id)]);
-    return { skill: serializeSkillDetail(skill, author, ratings) };
+    return {
+      skill: serializeSkillDetail(skill, author, ratings),
+      exampleAnswer: findSkillExampleAnswer(skill.slug, skill.isDemo && author.isDemo),
+    };
   });
 
   app.patch<{ Params: { slug: string } }>(

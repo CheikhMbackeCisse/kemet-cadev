@@ -17,6 +17,7 @@ import type { postReplies, posts } from "@kemet/db";
 import { KEMET_ASSISTANT_PROFILE_ID, mentionsAssistant } from "../../chat/kemet-assistant.js";
 import {
   findInvocationById,
+  listFirstAssistantRepliesByPostIds,
   listInvocationsByResponseReplyIds,
 } from "../repositories/assistant.js";
 import { describeInvocation, loadReplyAssistantDetails } from "../post-reply-assistant.js";
@@ -177,8 +178,19 @@ export function registerPostRoutes(
                 beginner: profile !== null && isBeginnerAudience(profile),
               })
             : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
-      const items = await toSerializedPosts(db, page.items, profile?.id ?? null);
-      return { items, nextCursor: page.nextCursor };
+      const viewerProfileId = profile?.id ?? null;
+      const [items, kemetAnswers] = await Promise.all([
+        toSerializedPosts(db, page.items, viewerProfileId),
+        listFirstAssistantRepliesByPostIds(
+          db,
+          page.items.map((post) => post.id),
+        ).then((replies) => toSerializedReplies(db, replies, viewerProfileId)),
+      ]);
+      const answerByPostId = new Map(kemetAnswers.map((answer) => [answer.postId, answer]));
+      return {
+        items: items.map((item) => ({ ...item, kemetAnswer: answerByPostId.get(item.id) ?? null })),
+        nextCursor: page.nextCursor,
+      };
     },
   );
 

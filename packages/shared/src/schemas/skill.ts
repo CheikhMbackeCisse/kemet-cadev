@@ -74,3 +74,11 @@ export const skillDetailSchema = skillSummarySchema.extend({
 });
 
 export type SkillDetail = z.infer<typeof skillDetailSchema>;
+
+/** Échange enregistré montré sur la page d'un skill de démonstration, sans appel au modèle. */
+export const skillExampleAnswerSchema = z.object({
+  question: z.string(),
+  answer: z.string(),
+});
+
+export type SkillExampleAnswer = z.infer<typeof skillExampleAnswerSchema>;

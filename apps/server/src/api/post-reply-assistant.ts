@@ -2,6 +2,7 @@ import type { assistantInvocations, Db } from "@kemet/db";
 import type { AssistantInvocationDetail } from "@kemet/shared";
 import { listInvocationsByResponseReplyIds } from "./repositories/assistant.js";
 import { canViewSkill, findAuthorProfile, findSkillsByIds } from "./repositories/skills.js";
+import { serializeSkillCitation } from "./skill-serializers.js";
 
 type InvocationRow = typeof assistantInvocations.$inferSelect;
 
@@ -17,13 +18,7 @@ export async function describeInvocation(
   const [citedSkill] = await findSkillsByIds(db, invocation.skillIds);
   let skill: AssistantInvocationDetail["skill"] = null;
   if (citedSkill && (await canViewSkill(db, citedSkill, viewerProfileId))) {
-    const author = await findAuthorProfile(db, citedSkill.authorId);
-    skill = {
-      slug: citedSkill.slug,
-      name: citedSkill.name,
-      authorHandle: author.handle,
-      authorDisplayName: author.displayName,
-    };
+    skill = serializeSkillCitation(citedSkill, await findAuthorProfile(db, citedSkill.authorId));
   }
   return {
     invocationId: invocation.id,

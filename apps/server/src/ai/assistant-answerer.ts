@@ -1,5 +1,7 @@
 import type { Db, skills as skillsTable } from "@kemet/db";
+import type { SkillCitation } from "@kemet/shared";
 import { canViewSkill, findAuthorProfile, findSkillBySlug, findSkillsByIds } from "../api/repositories/skills.js";
+import { serializeSkillCitation } from "../api/skill-serializers.js";
 import {
   AllProvidersUnavailableError,
   LlmProviderError,
@@ -95,12 +97,7 @@ export interface AnswerResult {
   recorded: boolean;
 }
 
-export interface CitedSkill {
-  slug: string;
-  name: string;
-  authorHandle: string;
-  authorDisplayName: string;
-}
+export type CitedSkill = SkillCitation;
 
 /**
  * Cœur commun à toutes les réponses de @kemet, dans un salon comme sous un
@@ -166,7 +163,7 @@ export class AssistantAnswerer {
     const cited = skills[0];
     if (!cited) return null;
     const author = await findAuthorProfile(this.db, cited.authorId);
-    return { slug: cited.slug, name: cited.name, authorHandle: author.handle, authorDisplayName: author.displayName };
+    return serializeSkillCitation(cited, author);
   }
 
   private async resolveSkills(

@@ -1,7 +1,7 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, Star } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { SkillDetail } from "@kemet/shared";
+import type { SkillDetail, SkillExampleAnswer } from "@kemet/shared";
 import { ChatApiError, deleteSkill, getSkill, rateSkill } from "../lib/chat/api.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
@@ -13,6 +13,7 @@ import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { RichText } from "../components/content/RichText.js";
+import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
 import { AskKemetDialog } from "../components/skills/AskKemetDialog.js";
 import { SkillCodeCover } from "../components/skills/SkillCodeCover.js";
 import { SkillRating } from "../components/skills/SkillRating.js";
@@ -33,6 +34,7 @@ export function SkillPage() {
   // l'adresse a déjà changé.
   const [slug] = useState(() => readSlug(window.location.pathname));
   const [skill, setSkill] = useState<SkillDetail | null>(null);
+  const [exampleAnswer, setExampleAnswer] = useState<SkillExampleAnswer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -47,7 +49,10 @@ export function SkillPage() {
     setLoading(true);
     setError(false);
     getSkill(slug)
-      .then((result) => setSkill(result.skill))
+      .then((result) => {
+        setSkill(result.skill);
+        setExampleAnswer(result.exampleAnswer);
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [slug]);
@@ -146,6 +151,29 @@ export function SkillPage() {
           </div>
         </div>
       </div>
+
+      {exampleAnswer && (
+        <section aria-labelledby="skill-example-title" className="flex flex-col gap-2">
+          <h2 id="skill-example-title" className="text-md font-semibold text-text">
+            {fr.skills.exampleTitle}
+          </h2>
+          <p className="self-end rounded-card bg-surface-2 px-3 py-2 text-sm text-text">
+            {exampleAnswer.question}
+          </p>
+          <AssistantMessage
+            content={<RichText source={exampleAnswer.answer} />}
+            skill={{
+              skillName: skill.name,
+              skillHref: `/skills/${skill.slug}`,
+              authorName: skill.authorDisplayName,
+              authorHref: `/u/${skill.authorHandle}`,
+              authorAvatarUrl: skill.authorAvatarUrl,
+            }}
+            recorded
+            hideFeedback
+          />
+        </section>
+      )}
 
       {/* Un visiteur passe par la connexion : sans compte, rien ne part dans un salon. */}
       {status === "visitor" ? (

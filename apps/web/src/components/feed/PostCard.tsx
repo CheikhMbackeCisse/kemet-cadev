@@ -14,6 +14,7 @@ import { ReportDialog } from "../moderation/ReportMenu.js";
 import { PostImages } from "./PostImages.js";
 import { AskKemetChip } from "./AskKemetChip.js";
 import { RichText } from "../content/RichText.js";
+import { AssistantMessage, skillReferenceFrom } from "../assistant/AssistantMessage.js";
 import { WORK_TYPE_LABELS } from "../works/workLabels.js";
 import { cn } from "../../lib/cn.js";
 import { formatCount } from "../../lib/formatCount.js";
@@ -258,7 +259,7 @@ export function PostCard({
             </a>
           )}
           {post.testAsk && <p className="mt-1 text-sm text-subtle">{post.testAsk}</p>}
-          {askKemet && !post.deletedAt && (
+          {askKemet && !post.deletedAt && !post.kemetAnswer && (
             <div className="mt-2">
               <AskKemetChip href={askKemet.href} onClick={askKemet.onClick} />
             </div>
@@ -336,6 +337,19 @@ export function PostCard({
               </Button>
             )}
           </div>
+          {post.kemetAnswer && !post.deletedAt && (
+            <AssistantMessage
+              className="mt-2"
+              content={<RichText source={post.kemetAnswer.body} />}
+              skill={
+                post.kemetAnswer.assistant?.skill
+                  ? skillReferenceFrom(post.kemetAnswer.assistant.skill)
+                  : undefined
+              }
+              recorded={post.kemetAnswer.assistant?.recorded ?? false}
+              hideFeedback
+            />
+          )}
         </div>
       </div>
       {canReport && !isOwnPost && (

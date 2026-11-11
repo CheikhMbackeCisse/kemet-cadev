@@ -570,6 +570,8 @@ export const fr = {
     retryAssistantQuestion: "Reposer la question",
     dismissAssistantFailure: "Masquer ce message",
     assistantRecorded: "Réponse enregistrée",
+    assistantCitedFrom: "D'après",
+    assistantCitedAuthor: "de",
   },
   spaces: {
     spaceWithUnread: (name: string) => `${name}, messages non lus`,
@@ -602,6 +604,7 @@ export const fr = {
     title: "Skills",
     askKemet: "Demander à @kemet avec ce skill",
     askKemetSignIn: "Se connecter pour demander à @kemet",
+    exampleTitle: "Exemple de réponse de @kemet",
     askKemetTitle: "Choisis un salon",
     askKemetDescription:
       "Ton message s'ouvre en brouillon dans ce salon, avec @kemet et ce skill déjà écrits.",

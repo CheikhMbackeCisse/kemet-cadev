@@ -1,11 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { assistantFeedbackSchema } from "@kemet/shared";
+import { assistantFeedbackSchema, type SkillCitation } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { findPostById } from "../repositories/posts.js";
 import { findInvocationById, findInvocationByResponseMessageId, setInvocationHelpful } from "../repositories/assistant.js";
 import { canViewSkill, findAuthorProfile, findSkillsByIds } from "../repositories/skills.js";
+import { serializeSkillCitation } from "../skill-serializers.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import { awardPoints, computeUtileAwardAmount, POINTS_ASSISTANT_SKILL_HELPFUL } from "../repositories/points.js";
 import type { ChatAppDeps } from "../app.js";
@@ -28,19 +29,13 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
     if (!invocation?.channelId) throw notFound("Cette réponse n'a pas d'invocation associée.");
     await requireChannelAccess(db, invocation.channelId, profileId);
     const [citedSkill] = await findSkillsByIds(db, invocation.skillIds);
-    let skill: { slug: string; name: string; authorHandle: string; authorDisplayName: string } | null = null;
+    let skill: SkillCitation | null = null;
     // Défense en profondeur : si la visibilité du skill a changé depuis la
     // réponse (passé de public à privé, retiré d'un espace), on ne la
     // révèle plus ici même si elle apparaît toujours dans le message déjà
     // posté.
     if (citedSkill && (await canViewSkill(db, citedSkill, profileId))) {
-      const author = await findAuthorProfile(db, citedSkill.authorId);
-      skill = {
-        slug: citedSkill.slug,
-        name: citedSkill.name,
-        authorHandle: author.handle,
-        authorDisplayName: author.displayName,
-      };
+      skill = serializeSkillCitation(citedSkill, await findAuthorProfile(db, citedSkill.authorId));
     }
     return { invocationId: invocation.id, skill, helpful: invocation.helpful, recorded: invocation.recorded };
   });

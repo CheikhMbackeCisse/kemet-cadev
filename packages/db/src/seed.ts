@@ -3,6 +3,7 @@ import { DEMO_PASSWORD, seedDemoDataset } from "./seed/demo-dataset.js";
 import { hash } from "@node-rs/argon2";
 import { seedDemoMedia } from "./seed/demo-media.js";
 import { seedNewcomers } from "./seed/newcomers.js";
+import { seedShowcase } from "./seed/showcase.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -41,6 +42,12 @@ async function main(): Promise<void> {
       `Débutants et recruteurs : ${newcomers.accounts} comptes, ${newcomers.cvs} CV, ${newcomers.posts} posts ` +
         `et ${newcomers.spaceMessages} messages ajoutés.`,
     );
+  const showcase = await seedShowcase(db);
+  console.log(
+    showcase.status === "done"
+      ? "Vitrine du fil (question Wave et réponse de @kemet) en place."
+      : `Vitrine du fil sautée : ${showcase.reason}.`,
+  );
   console.log(
     `Médias de démonstration : ${media.posts} posts, ${media.postImages} images sur des posts existants, ` +
       `${media.works} travaux illustrés, ${media.banners} bannières, ${media.skillUses} utilisations ` +

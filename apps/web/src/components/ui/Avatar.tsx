@@ -5,7 +5,7 @@ import { Flag } from "./Flag.js";
 export interface AvatarProps {
   name: string;
   src?: string;
-  size?: 24 | 32 | 40 | 88;
+  size?: 20 | 24 | 32 | 40 | 88;
   /** Drapeau du pays, affiché en badge sur la photo. Réservé aux tailles 32 et 40 : à 24 px, le badge ne laisse plus voir la photo ; à 88 px, le pays est écrit à côté. */
   countryCode?: string;
   /** Compte supprimé : icône neutre, sans initiales ni drapeau (ADR 0023). */
@@ -39,6 +39,7 @@ export function generatedAvatarColor(name: string): string {
 }
 
 const SIZE_CLASSES: Record<NonNullable<AvatarProps["size"]>, string> = {
+  20: "size-5 text-[8px]",
   24: "size-6 text-[10px]",
   32: "size-8 text-xs",
   40: "size-10 text-sm",
@@ -46,6 +47,7 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps["size"]>, string> = {
 };
 
 const ICON_SIZES: Record<NonNullable<AvatarProps["size"]>, string> = {
+  20: "size-3",
   24: "size-3.5",
   32: "size-4",
   40: "size-5",
@@ -97,7 +99,7 @@ export function Avatar({
     </span>
   );
 
-  if (!countryCode || size === 24 || size === 88) return photo;
+  if (!countryCode || size === 20 || size === 24 || size === 88) return photo;
 
   return (
     <span className="relative inline-flex shrink-0">

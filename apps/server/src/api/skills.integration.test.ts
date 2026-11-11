@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { assistantInvocations, createDb, messages, profiles, type Db } from "@kemet/db";
+import { assistantInvocations, createDb, messages, profiles, skills, type Db } from "@kemet/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
@@ -103,6 +103,28 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     const list = await app.inject({ method: "GET", url: "/api/skills" });
     expect(list.statusCode).toBe(200);
     expect((list.json().items as { slug: string }[]).map((skill) => skill.slug)).toEqual(["wave-paiements"]);
+  });
+
+  it("montre l'échange enregistré d'un skill du seed, jamais celui d'un skill recréé sous son slug", async () => {
+    const author = await createMember("author-e@test.kemet", "authore");
+    await createSkill(author);
+
+    const created = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(created.json().exampleAnswer).toBeNull();
+
+    // Un skill du seed : seul le seed pose `is_demo` sur le skill et sur son auteur.
+    await db.update(skills).set({ isDemo: true }).where(eq(skills.slug, "wave-paiements"));
+    await db.update(profiles).set({ isDemo: true }).where(eq(profiles.handle, "authore"));
+    const asVisitor = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(asVisitor.json().exampleAnswer).toMatchObject({
+      question: "@kemet avec wave-paiements, comment vérifier la signature d'un webhook Wave en Node.js ?",
+    });
+    const asMember = await app.inject({
+      method: "GET",
+      url: "/api/skills/wave-paiements",
+      headers: { cookie: author },
+    });
+    expect(asMember.json().exampleAnswer).not.toBeNull();
   });
 
   it("ne montre jamais à un visiteur un skill limité à un espace", async () => {

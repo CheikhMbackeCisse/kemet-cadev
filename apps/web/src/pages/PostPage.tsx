@@ -53,7 +53,7 @@ import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
-import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
+import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
 import { KemetSymbol } from "../components/ui/KemetSymbol.js";
 import { usePostAssistant } from "../lib/feed/usePostAssistant.js";
@@ -412,14 +412,7 @@ export function PostPage() {
                       reply.deletedAt ? fr.chat.messageDeleted : <RichText source={reply.body} />
                     }
                     skill={
-                      reply.assistant.skill
-                        ? {
-                            skillName: reply.assistant.skill.name,
-                            skillHref: `/skills/${reply.assistant.skill.slug}`,
-                            authorName: reply.assistant.skill.authorDisplayName,
-                            authorHref: `/u/${reply.assistant.skill.authorHandle}`,
-                          }
-                        : undefined
+                      reply.assistant.skill ? skillReferenceFrom(reply.assistant.skill) : undefined
                     }
                     recorded={reply.assistant.recorded}
                     initialFeedback={

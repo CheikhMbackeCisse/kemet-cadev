@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { assistantInvocations, createDb, pointsLedger, profiles, type Db } from "@kemet/db";
+import { assistantInvocations, createDb, pointsLedger, profiles, skills, type Db } from "@kemet/db";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
@@ -341,6 +341,59 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
       .from(pointsLedger)
       .where(eq(pointsLedger.profileId, skillAuthor.profileId));
     expect(ledger.some((row) => row.source === "assistant_skill_helpful")).toBe(true);
+  });
+
+  it("déplie dans le fil la première réponse de @kemet sous un post, jamais une réponse retirée", async () => {
+    setup(new FakeStreamingProvider(["Réponse appuyée sur le skill."]));
+    const skillAuthor = await createMember("fil-skill@test.kemet", "filskill");
+    const asker = await createMember("fil-asker@test.kemet", "filasker");
+    await createSkill(db, skillAuthor.profileId, {
+      slug: "index-postgres",
+      name: "Index Postgres",
+      description: "Choisir un index Postgres",
+      content: "Utilise un index GIN pour la recherche plein texte.",
+      tags: ["postgres"],
+      visibility: "public",
+    });
+    const answeredId = await createPost(asker.cookie, "Quel index pour chercher du texte ?");
+    const quietId = await createPost(asker.cookie, "Un post sans question à @kemet.");
+    await reply(asker.cookie, answeredId, "@kemet avec index-postgres, lequel choisir ?");
+    await postAssistant.idle();
+
+    type FeedItem = {
+      id: string;
+      kemetAnswer: {
+        id: string;
+        body: string;
+        assistant: { recorded: boolean; skill: { slug: string; authorAvatarUrl: string | null } | null };
+      } | null;
+    };
+    const readFeed = async () =>
+      (await app.inject({ method: "GET", url: "/api/posts?tab=pour-toi" })).json().items as FeedItem[];
+
+    const items = await readFeed();
+    const answered = items.find((item) => item.id === answeredId)!;
+    expect(answered.kemetAnswer).toMatchObject({
+      body: "Réponse appuyée sur le skill.",
+      assistant: { recorded: false, skill: { slug: "index-postgres", authorAvatarUrl: null } },
+    });
+    expect(items.find((item) => item.id === quietId)!.kemetAnswer).toBeNull();
+
+    const single = await app.inject({ method: "GET", url: `/api/posts/${answeredId}` });
+    expect(single.json().post.kemetAnswer).toBeUndefined();
+
+    // Un skill devenu privé après la réponse n'est plus cité dans le fil.
+    await db.update(skills).set({ visibility: "private" }).where(eq(skills.slug, "index-postgres"));
+    const afterPrivate = (await readFeed()).find((item) => item.id === answeredId)!;
+    expect(afterPrivate.kemetAnswer!.assistant.skill).toBeNull();
+
+    const removed = await app.inject({
+      method: "DELETE",
+      url: `/api/post-replies/${answered.kemetAnswer!.id}`,
+      headers: { cookie: asker.cookie },
+    });
+    expect(removed.statusCode).toBe(200);
+    expect((await readFeed()).find((item) => item.id === answeredId)!.kemetAnswer).toBeNull();
   });
 
   it("accepte une réponse de @kemet comme solution sans créditer de points à l'assistant", async () => {
