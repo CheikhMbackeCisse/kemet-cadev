@@ -47,9 +47,14 @@ export function WelcomePage() {
         <span className="kemet-on-dark">
           <KemetWordmark className="h-7 w-auto md:h-10" />
         </span>
-        <h1 className="text-balance text-lg font-bold leading-tight min-[375px]:text-xl">
-          {fr.intro.welcomeTitle}
-        </h1>
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-balance text-lg font-bold leading-tight min-[375px]:text-xl">
+            {fr.intro.welcomeTitle}
+          </h1>
+          <p className="text-balance text-sm text-auth-text-muted md:text-base">
+            {fr.intro.welcomePromise}
+          </p>
+        </div>
         <div className="flex w-full flex-col items-center gap-2">
           <a
             href={introQuestionPath("who")}

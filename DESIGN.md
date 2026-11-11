@@ -192,7 +192,8 @@ ne passe donc jamais sous la carte, ne touche ni elle ni le bord de l'écran
 (`decorLayout.test.ts`) ; une bande trop petite reste vide, un formulaire
 long sur un petit écran n'a aucun décor. Dix éléments au plus sur ordinateur,
 six sur téléphone : quatre logos de langages (Python, JavaScript,
-TypeScript, Kotlin), trois icônes Lucide (terminal, base de données, réseau,
+TypeScript, Flutter ; Kotlin retiré le 11/11, son K violet se confondait
+avec le k de Kemet), trois icônes Lucide (terminal, base de données, réseau,
 26 ou 30 px, trait de 1,5 px : à cette taille, il pèse autant que le trait de
 2 px des icônes de 20 px) et trois bouts de code en Geist Mono.
 
@@ -225,7 +226,9 @@ Le contenu de chaque écran est posé sur une carte en verre dépoli (teinte du
 fond à 60 %, flou de 3 px, bord blanc à 20 %), demandée explicitement le
 08/11/2026. Le texte de la carte est blanc dans les deux thèmes (`--auth-*`),
 les champs gardent leurs couleurs ordinaires, le bouton principal est blanc.
-Aucun texte descriptif sous les titres, une barre de progression sans
+Aucun texte descriptif sous les titres, sauf la phrase de promesse de
+l'accueil (une ligne plus petite, en `--auth-text-muted`, décidée le
+11/11/2026), une barre de progression sans
 « Étape X sur N » sur les questions et l'onboarding. Sur l'onboarding seulement,
 la raison d'un bouton Continuer bloqué est écrite sous lui (une liste longue
 peut la cacher). Un insigne de niveau posé sur la carte prend les couleurs

@@ -194,6 +194,8 @@ export const fr = {
   },
   intro: {
     welcomeTitle: "Bienvenue dans le salon des développeurs africains",
+    // Seule phrase posée sous un titre dans toute l'application (décision du 11/11).
+    welcomePromise: "Montre tes travaux et trouve ceux qui ont déjà résolu ton problème.",
     // Seul texte de l'accueil qui change avec la langue de l'interface :
     // "Powered by" le jour où une version anglaise existera.
     poweredBy: "Propulsé par",

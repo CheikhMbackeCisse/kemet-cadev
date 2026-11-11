@@ -46,7 +46,7 @@ export const DECOR_MIN_BAND: Record<DecorScreen, { width: number; height: number
 const python = { kind: "logo", name: "python" } as const;
 const javascript = { kind: "logo", name: "javascript" } as const;
 const typescript = { kind: "logo", name: "typescript" } as const;
-const kotlin = { kind: "logo", name: "kotlin" } as const;
+const flutter = { kind: "logo", name: "flutter" } as const;
 const terminal = { kind: "icon", name: "terminal" } as const;
 const database = { kind: "icon", name: "database" } as const;
 const network = { kind: "icon", name: "network" } as const;
@@ -70,7 +70,7 @@ export const DECOR: Record<DecorScreen, Record<DecorBandSide, readonly DecorItem
       { content: typescript, x: 70, y: 15, duration: 20, delay: -8 },
       { content: database, x: 46, y: 33, duration: 18, delay: -12 },
       { content: gitPush, x: 62, y: 50, duration: 24, delay: -5 },
-      { content: kotlin, x: 48, y: 69, duration: 22, delay: -16 },
+      { content: flutter, x: 48, y: 69, duration: 22, delay: -16 },
       { content: network, x: 74, y: 86, duration: 16, delay: -9 },
     ],
   },
