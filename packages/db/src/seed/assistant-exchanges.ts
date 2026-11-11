@@ -36,7 +36,7 @@ const EXCHANGES: Exchange[] = [
 ];
 
 /**
- * Échanges avec @kemet dans le salon "général" de CADEV 2026 : des invocations
+ * Échanges avec @kocc dans le salon "général" de CADEV 2026 : des invocations
  * enregistrées (`recorded`), affichées comme telles, jamais comme des réponses
  * générées en direct.
  */

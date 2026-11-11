@@ -2,7 +2,7 @@ import { assistantRecordingTrigger, WAVE_WEBHOOK_RECORDING } from "../assistant-
 
 /**
  * Question Wave en tête du fil "Pour toi" d'un visiteur, avec la réponse
- * enregistrée de @kemet dépliée dessous. Comme dans l'application, @kemet est
+ * enregistrée de @kocc dépliée dessous. Comme dans l'application, @kocc est
  * appelé par une réponse au post, jamais par le post seul (ADR 0033).
  */
 export const WAVE_SHOWCASE = {

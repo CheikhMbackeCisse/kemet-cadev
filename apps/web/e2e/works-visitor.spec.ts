@@ -17,7 +17,7 @@ async function publishWork(request: APIRequestContext, slug: string, title: stri
   expect(response.ok(), `POST /api/works : ${response.status()}`).toBe(true);
 }
 
-test("un visiteur voit qui a travaillé sur un sujet proche, sans appeler @kemet", async ({
+test("un visiteur voit qui a travaillé sur un sujet proche, sans appeler Kocc", async ({
   page,
   request,
   playwright,

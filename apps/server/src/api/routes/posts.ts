@@ -466,7 +466,7 @@ export function registerPostRoutes(
       !invocation.triggerReplyId ||
       invocation.requestedBy !== profileId
     ) {
-      throw notFound("Cette demande à @kemet n'existe pas.");
+      throw notFound("Cette demande à Kocc n'existe pas.");
     }
     return invocation;
   }
@@ -479,7 +479,7 @@ export function registerPostRoutes(
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const invocation = await findOwnPostInvocation(profile.id, request.params);
-      if (invocation.status !== "failed") throw conflict("Cette demande à @kemet n'a pas échoué.");
+      if (invocation.status !== "failed") throw conflict("Cette demande à Kocc n'a pas échoué.");
       const [post, trigger] = await Promise.all([
         findPostById(db, invocation.postId!),
         findPostReplyById(db, invocation.triggerReplyId!),
@@ -504,7 +504,7 @@ export function registerPostRoutes(
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await findProfileByUserId(db, userId);
-      if (!profile) throw notFound("Cette demande à @kemet n'existe pas.");
+      if (!profile) throw notFound("Cette demande à Kocc n'existe pas.");
       const invocation = await findOwnPostInvocation(profile.id, request.params);
       const replyRow = invocation.responseReplyId
         ? await findPostReplyById(db, invocation.responseReplyId)

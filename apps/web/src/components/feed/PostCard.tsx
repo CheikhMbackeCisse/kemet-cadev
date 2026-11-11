@@ -11,7 +11,6 @@ import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
 import { ReportDialog } from "../moderation/ReportMenu.js";
 import { PostImages } from "./PostImages.js";
-import { AskKemetChip } from "./AskKemetChip.js";
 import { RichText } from "../content/RichText.js";
 import { AssistantMessage, skillReferenceFrom } from "../assistant/AssistantMessage.js";
 import { WORK_TYPE_LABELS } from "../works/workLabels.js";
@@ -108,8 +107,6 @@ export interface PostCardProps {
   onReply?: () => void;
   /** Republication ou abonnement réglés depuis la carte, pour que la liste suive. */
   onChange?: (change: Partial<PostSummary>) => void;
-  /** Pastille "Demander à @kemet d'expliquer", sous un post technique seulement. */
-  askKemet?: { href?: string; onClick?: () => void };
   /** Dans le fil : clé de la hauteur gardée d'un aller-retour à l'autre. */
   heightKey?: string;
 }
@@ -141,7 +138,6 @@ export function PostCard({
   onDelete,
   onReply,
   onChange,
-  askKemet,
   heightKey,
 }: PostCardProps) {
   // Le corps contient ses propres liens (mentions, adresses) : il ne peut
@@ -359,11 +355,6 @@ export function PostCard({
               <CheckCircle2 className="size-5" aria-hidden="true" />
               {fr.feed.iTested}
             </Button>
-          )}
-          {askKemet && !post.deletedAt && !post.kemetAnswer && (
-            <div className="mt-2">
-              <AskKemetChip href={askKemet.href} onClick={askKemet.onClick} />
-            </div>
           )}
 
           <div className="-ml-2 mt-2 flex max-w-md items-center justify-between">

@@ -56,7 +56,7 @@ const WORK_TYPE_LABELS: Record<WorkType, string> = {
 // Exporté pour evals/ : la suite d'attaques et l'éval de mise en relation
 // testent exactement la consigne envoyée en production.
 export const WORK_MATCH_SYSTEM_PROMPT = [
-  "Tu es @kemet, l'assistant de la plateforme Kemet pour les développeurs africains.",
+  "Tu es Kocc, l'assistant de la plateforme Kemet pour les développeurs africains.",
   "Tu mets en relation : on te donne un sujet et une liste de travaux publiés sur Kemet (projets de classe, stages, mémoires, applications, articles), chacun avec ses auteurs.",
   "Choisis de 0 à 5 personnes dont le travail est vraiment proche du sujet. Pour chacune, écris une seule phrase en français qui cite son travail et dit en quoi il est proche du sujet.",
   "N'invente aucun travail ni aucune personne : utilise seulement les identifiants de travail (t1, t2…) et les identifiants de personne (@…) de la liste.",

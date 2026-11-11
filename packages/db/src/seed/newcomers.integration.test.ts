@@ -42,7 +42,7 @@ describe.skipIf(!databaseUrl)("débutants, recruteurs et bibliothèques de démo
     });
   });
 
-  it("ajoute comptes, CV, posts, réponses de @kemet et messages, une seule fois", async () => {
+  it("ajoute comptes, CV, posts, réponses de @kocc et messages, une seule fois", async () => {
     await seedDemoDataset(db);
     await seedDemoMedia(db, { uploadsDir });
     const first = await seedNewcomers(db, { uploadsDir, passwordHash });

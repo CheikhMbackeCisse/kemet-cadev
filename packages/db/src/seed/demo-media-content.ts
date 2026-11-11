@@ -246,7 +246,7 @@ export const DEMO_WORK_MEDIA: DemoWorkMediaPlan[] = [
 ];
 
 /**
- * Utilisations par @kemet et avis visés pour chaque skill de démonstration.
+ * Utilisations par @kocc et avis visés pour chaque skill de démonstration.
  * Deux skills seulement passent le millier : des compteurs tous énormes ne
  * seraient pas crédibles. Le seed amène chaque skill à ces nombres, en
  * ajoutant ou en retirant des lignes de figurants, jamais celles d'un compte.

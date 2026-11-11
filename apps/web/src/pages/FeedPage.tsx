@@ -32,7 +32,6 @@ import {
   type FeedData,
   type FeedView,
 } from "../lib/feed/feedQuery.js";
-import { ASK_KEMET_PARAM, isTechnicalPost } from "../lib/feed/technicalPost.js";
 import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { Button } from "../components/ui/Button.js";
@@ -106,11 +105,6 @@ function PostListItem({
       onFeedback={() => onFeedback(post.id)}
       onDelete={() => onDeleteRequest(post.id)}
       onChange={(change) => onChange(post, change)}
-      askKemet={
-        canInteract && !post.deletedAt && isTechnicalPost(post.body)
-          ? { href: `/fil/${post.id}?${ASK_KEMET_PARAM}=kemet` }
-          : undefined
-      }
     />
   );
 }

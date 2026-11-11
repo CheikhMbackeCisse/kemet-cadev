@@ -4,8 +4,8 @@ import { markAssistantNoticeSeen, shouldShowAssistantNotice } from "./assistantN
 describe("shouldShowAssistantNotice", () => {
   beforeEach(() => localStorage.clear());
 
-  it("s'affiche quand le brouillon appelle @kemet pour la première fois", () => {
-    expect(shouldShowAssistantNotice("@kemet comment faire un webhook ?")).toBe(true);
+  it("s'affiche quand le brouillon appelle @kocc pour la première fois", () => {
+    expect(shouldShowAssistantNotice("@kocc comment faire un webhook ?")).toBe(true);
   });
 
   it("ne s'affiche pas sans mention de l'assistant", () => {
@@ -15,6 +15,6 @@ describe("shouldShowAssistantNotice", () => {
 
   it("ne s'affiche plus après un premier appel envoyé", () => {
     markAssistantNoticeSeen();
-    expect(shouldShowAssistantNotice("@kemet encore une question")).toBe(false);
+    expect(shouldShowAssistantNotice("@kocc encore une question")).toBe(false);
   });
 });

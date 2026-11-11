@@ -117,7 +117,7 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     await db.update(profiles).set({ isDemo: true }).where(eq(profiles.handle, "authore"));
     const asVisitor = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
     expect(asVisitor.json().exampleAnswer).toMatchObject({
-      question: "@kemet avec wave-paiements, comment vérifier la signature d'un webhook Wave en Node.js ?",
+      question: "@kocc avec wave-paiements, comment vérifier la signature d'un webhook Wave en Node.js ?",
     });
     const asMember = await app.inject({
       method: "GET",
@@ -236,7 +236,7 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     expect(all.json().items).toHaveLength(2);
   });
 
-  it("compte les réponses de @kemet terminées qui ont retenu un skill", async () => {
+  it("compte les réponses de @kocc terminées qui ont retenu un skill", async () => {
     const cookie = await createMember("uses@test.kemet", "utilisatrice");
     const skillId = (await createSkill(cookie)).json().skill.id as string;
     const [profile] = await db.select().from(profiles).where(eq(profiles.handle, "utilisatrice"));
@@ -252,7 +252,7 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     const channelId = channels[0]!.id;
     const [trigger] = await db
       .insert(messages)
-      .values({ channelId, authorId: profile!.id, clientId: crypto.randomUUID(), body: "@kemet Wave ?" })
+      .values({ channelId, authorId: profile!.id, clientId: crypto.randomUUID(), body: "@kocc Wave ?" })
       .returning();
     const base = { channelId, triggerMessageId: trigger!.id, requestedBy: profile!.id };
     await db.insert(assistantInvocations).values([

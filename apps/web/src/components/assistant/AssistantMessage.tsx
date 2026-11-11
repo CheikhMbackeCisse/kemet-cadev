@@ -6,7 +6,7 @@ import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
-import { KemetSymbol } from "../ui/KemetSymbol.js";
+import { KoccSymbol } from "./KoccSymbol.js";
 
 export interface AssistantSkillReference {
   skillName: string;
@@ -63,8 +63,8 @@ export function AssistantMessage({
       className={cn("rounded-card border border-assistant-border bg-assistant-bg p-4", className)}
     >
       <div className="flex items-center gap-2">
-        <KemetSymbol className="size-5" />
-        <span className="text-sm font-semibold text-text">kemet</span>
+        <KoccSymbol className="size-5" />
+        <span className="text-sm font-semibold text-text">{fr.chat.assistantName}</span>
         {recorded && <Badge tone="accent">{fr.chat.assistantRecorded}</Badge>}
       </div>
 

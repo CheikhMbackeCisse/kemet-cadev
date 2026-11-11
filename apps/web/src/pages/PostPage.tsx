@@ -11,7 +11,7 @@ import {
 } from "../lib/feed/feedQuery.js";
 import {
   isDeletedAccountHandle,
-  KEMET_HANDLE,
+  isAssistantHandle,
   type PostFeedbackEntry,
   type PostReply,
   type PostSummary,
@@ -55,13 +55,11 @@ import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
 import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
-import { KemetSymbol } from "../components/ui/KemetSymbol.js";
+import { KoccButton } from "../components/assistant/KoccButton.js";
+import { KoccQuestionTag } from "../components/assistant/KoccQuestionTag.js";
+import { KoccSymbol } from "../components/assistant/KoccSymbol.js";
+import { asksKocc, removeKoccMention } from "../lib/assistant/koccDraft.js";
 import { usePostAssistant } from "../lib/feed/usePostAssistant.js";
-import {
-  ASK_KEMET_PARAM,
-  EXPLAIN_POST_PROMPT,
-  isTechnicalPost,
-} from "../lib/feed/technicalPost.js";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -158,33 +156,6 @@ export function PostPage() {
     [setReplies, setPost],
   );
   const assistant = usePostAssistant(appendReply);
-
-  function prepareKemetQuestion() {
-    // Ce qui était déjà écrit reste, sous la question.
-    setReplyDraft((draft) =>
-      draft.trim() && !draft.includes(EXPLAIN_POST_PROMPT)
-        ? `${EXPLAIN_POST_PROMPT}\n\n${draft}`
-        : draft.trim()
-          ? draft
-          : EXPLAIN_POST_PROMPT,
-    );
-    // Après le rendu : le champ reçoit la question avant le focus.
-    requestAnimationFrame(() => {
-      const textarea = replyTextareaRef.current;
-      if (!textarea) return;
-      textarea.focus();
-      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-    });
-  }
-
-  // Pastille du fil : la question est préparée ici, jamais envoyée seule.
-  const askedFromFeed = useRef(false);
-  useEffect(() => {
-    if (askedFromFeed.current || !canInteract || !post) return;
-    if (new URLSearchParams(window.location.search).get(ASK_KEMET_PARAM) !== "kemet") return;
-    askedFromFeed.current = true;
-    prepareKemetQuestion();
-  }, [canInteract, post]);
 
   function loadPost() {
     void postQuery.refetch();
@@ -367,11 +338,6 @@ export function PostPage() {
           onChange={(change) =>
             setPost((current) => (current ? { ...current, ...change } : current))
           }
-          askKemet={
-            canInteract && isTechnicalPost(post.body)
-              ? { onClick: prepareKemetQuestion }
-              : undefined
-          }
         />
 
         {post.format === "question" && !post.deletedAt && (
@@ -410,7 +376,7 @@ export function PostPage() {
             <EmptyState message={fr.feed.noReplies} />
           ) : (
             replies.map((reply) =>
-              reply.authorHandle === KEMET_HANDLE && reply.assistant ? (
+              isAssistantHandle(reply.authorHandle) && reply.assistant ? (
                 <div key={reply.id} className="flex flex-col gap-1">
                   <AssistantMessage
                     content={
@@ -518,7 +484,7 @@ export function PostPage() {
               role="status"
               className="flex items-center gap-2 rounded-card border border-assistant-border bg-assistant-bg px-4 py-3 text-sm text-text-2"
             >
-              <KemetSymbol className="size-5 motion-safe:animate-pulse" />
+              <KoccSymbol className="size-5 motion-safe:animate-pulse" />
               {fr.feed.assistantPending}
             </div>
           )}
@@ -544,8 +510,17 @@ export function PostPage() {
           {canInteract && (
             <div className="flex flex-col gap-2">
               {replyPaste.notice}
+              {asksKocc(replyDraft) && (
+                <KoccQuestionTag
+                  onRemove={() => {
+                    setReplyDraft(removeKoccMention);
+                    replyTextareaRef.current?.focus();
+                  }}
+                />
+              )}
               <div className="flex gap-2">
                 <CodeButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />
+                <KoccButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />
                 <Textarea
                   ref={replyTextareaRef}
                   placeholder={fr.feed.replyPlaceholder}

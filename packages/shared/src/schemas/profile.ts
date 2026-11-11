@@ -3,6 +3,7 @@ import { COUNTRY_CODES } from "../data/countries.js";
 import { PROFILE_ROLES } from "../data/onboarding-values.js";
 import { levelSchema } from "./points.js";
 import { profileLinkSchema } from "./profile-link.js";
+import { isAssistantHandle } from "./assistant.js";
 
 export const handleSchema = z
   .string()
@@ -15,6 +16,11 @@ export const DELETED_ACCOUNT_HANDLE_PREFIX = "supprime-";
 
 export function isDeletedAccountHandle(handle: string): boolean {
   return handle.startsWith(DELETED_ACCOUNT_HANDLE_PREFIX);
+}
+
+/** Identifiants qu'aucune personne ne peut prendre : profils anonymisés et noms de l'assistant. */
+export function isReservedHandle(handle: string): boolean {
+  return isDeletedAccountHandle(handle) || isAssistantHandle(handle);
 }
 
 export const countryCodeSchema = z.enum(COUNTRY_CODES);
@@ -30,7 +36,7 @@ export type ProfileRole = z.infer<typeof profileRoleSchema>;
 
 export const updateProfileSchema = z
   .object({
-    handle: handleSchema.refine((handle) => !isDeletedAccountHandle(handle), {
+    handle: handleSchema.refine((handle) => !isReservedHandle(handle), {
       message: "Cet identifiant est réservé.",
     }),
     displayName: z.string().min(1).max(80),

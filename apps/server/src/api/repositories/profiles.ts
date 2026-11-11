@@ -1,6 +1,6 @@
 import { and, count, desc, eq, isNull, lt, ne, sql } from "drizzle-orm";
 import { credentials, follows, profileBlocks, profiles, user, type Db } from "@kemet/db";
-import type { UpdateProfileInput } from "@kemet/shared";
+import { ASSISTANT_MENTION_HANDLE, KEMET_HANDLE, type UpdateProfileInput } from "@kemet/shared";
 
 export async function findAccountById(db: Db, userId: string) {
   const [account] = await db.select().from(user).where(eq(user.id, userId));
@@ -20,10 +20,12 @@ export async function isProfileDeleted(db: Db, profileId: string): Promise<boole
 
 /** Profil visible d'un identifiant : un figurant du seed n'existe pour personne. */
 export async function findProfileByHandle(db: Db, handle: string) {
+  // "/u/kocc" mène au profil système de l'assistant, rangé sous "kemet".
+  const storedHandle = handle === ASSISTANT_MENTION_HANDLE ? KEMET_HANDLE : handle;
   const [profile] = await db
     .select()
     .from(profiles)
-    .where(and(eq(profiles.handle, handle), eq(profiles.isFiller, false)));
+    .where(and(eq(profiles.handle, storedHandle), eq(profiles.isFiller, false)));
   return profile ?? null;
 }
 

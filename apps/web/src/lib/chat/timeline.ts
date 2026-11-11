@@ -1,4 +1,4 @@
-import { KEMET_HANDLE, type Level, type Message } from "@kemet/shared";
+import { isAssistantHandle, type Level, type Message } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
 
 const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -88,7 +88,7 @@ export function buildTimeline(
       ? createdAt.getTime() - new Date(lastMessage.createdAt).getTime() < MESSAGE_GROUP_WINDOW_MS
       : false;
     const assistantInvolved =
-      message.authorHandle === KEMET_HANDLE || last?.authorHandle === KEMET_HANDLE;
+      isAssistantHandle(message.authorHandle) || isAssistantHandle(last?.authorHandle ?? "");
 
     if (last && last.authorId === message.authorId && withinWindow && !assistantInvolved) {
       last.messages.push(message);

@@ -126,13 +126,13 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
   it("diffuse la réponse en morceaux puis la persiste comme message de l'assistant", async () => {
     const { cookie, profileId } = await createMember("daf@test.kemet", "daf");
     const { channelId } = await createSpaceAndChannel(cookie);
-    const triggerMessageId = await sendTriggerMessage(cookie, channelId, "@kemet comment ça va ?");
+    const triggerMessageId = await sendTriggerMessage(cookie, channelId, "@kocc comment ça va ?");
 
     const chat = new RecordingChatPublisher();
     const provider = new FakeStreamingProvider(["Bon", "jour"]);
     const orchestrator = new KemetAssistantOrchestrator(db, chat, provider, new FullTextRetriever(db), new InMemoryResponseCache());
 
-    await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: profileId, body: "@kemet comment ça va ?" });
+    await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: profileId, body: "@kocc comment ça va ?" });
 
     const chunkEvents = chat.events.filter((event) => event.type === "assistant:chunk");
     expect(chunkEvents.map((event) => (event.type === "assistant:chunk" ? event.delta : null))).toEqual(["Bon", "jour"]);
@@ -151,7 +151,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
   it("cite le skill demandé explicitement et traite son contenu comme une donnée, pas comme une instruction", async () => {
     const { cookie, profileId } = await createMember("daf2@test.kemet", "daf2");
     const { channelId } = await createSpaceAndChannel(cookie);
-    const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";
+    const triggerBody = "@kocc avec wave-paiements, comment gérer un remboursement ?";
     const triggerMessageId = await sendTriggerMessage(cookie, channelId, triggerBody);
 
     await createSkill(db, profileId, {
@@ -190,7 +190,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     const { channelId: channelB } = await createSpaceAndChannel(cookieB, "espace-b");
 
     const cache = new InMemoryResponseCache();
-    const question = "@kemet comment ça va ?";
+    const question = "@kocc comment ça va ?";
 
     const triggerA = await sendTriggerMessage(cookieA, channelA, question);
     const chatA = new RecordingChatPublisher();
@@ -226,13 +226,13 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     const provider = new FakeStreamingProvider(["ok"]);
     const orchestrator = new KemetAssistantOrchestrator(db, chat, provider, new FullTextRetriever(db), new InMemoryResponseCache(), 1);
 
-    const firstTrigger = await sendTriggerMessage(cookie, channelId, "@kemet une question");
-    await orchestrator.handleMention({ channelId, triggerMessageId: firstTrigger, requestedBy: profileId, body: "@kemet une question" });
+    const firstTrigger = await sendTriggerMessage(cookie, channelId, "@kocc une question");
+    await orchestrator.handleMention({ channelId, triggerMessageId: firstTrigger, requestedBy: profileId, body: "@kocc une question" });
     expect(chat.events.some((event) => event.type === "assistant:done")).toBe(true);
 
     chat.events = [];
-    const secondTrigger = await sendTriggerMessage(cookie, channelId, "@kemet une autre question");
-    await orchestrator.handleMention({ channelId, triggerMessageId: secondTrigger, requestedBy: profileId, body: "@kemet une autre question" });
+    const secondTrigger = await sendTriggerMessage(cookie, channelId, "@kocc une autre question");
+    await orchestrator.handleMention({ channelId, triggerMessageId: secondTrigger, requestedBy: profileId, body: "@kocc une autre question" });
 
     const failedEvent = chat.events.find((event) => event.type === "assistant:failed");
     expect(failedEvent).toBeDefined();
@@ -252,7 +252,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     // le cas normal, le garde-fou de fraîcheur est couvert plus bas.
     await db.update(profiles).set({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }).where(eq(profiles.id, reactorId));
 
-    const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";
+    const triggerBody = "@kocc avec wave-paiements, comment gérer un remboursement ?";
     const triggerMessageId = await sendTriggerMessage(askerCookie, channelId, triggerBody);
     await createSkill(db, authorId, {
       slug: "wave-paiements",
@@ -306,7 +306,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     const { cookie: reactorCookie } = await createMember("fresh-reactor@test.kemet", "freshreactor");
     const { channelId } = await createSpaceAndChannel(askerCookie);
 
-    const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";
+    const triggerBody = "@kocc avec wave-paiements, comment gérer un remboursement ?";
     const triggerMessageId = await sendTriggerMessage(askerCookie, channelId, triggerBody);
     await createSkill(db, authorId, {
       slug: "wave-paiements",
@@ -340,7 +340,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     const { channelId } = await createSpaceAndChannel(authorCookie);
     await db.update(profiles).set({ createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }).where(eq(profiles.id, authorId));
 
-    const triggerBody = "@kemet avec wave-paiements, comment gérer un remboursement ?";
+    const triggerBody = "@kocc avec wave-paiements, comment gérer un remboursement ?";
     const triggerMessageId = await sendTriggerMessage(authorCookie, channelId, triggerBody);
     await createSkill(db, authorId, {
       slug: "wave-paiements",
@@ -370,7 +370,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
   });
 
   describe("réponses enregistrées", () => {
-    const waveTrigger = `@kemet avec wave-paiements, ${WAVE_WEBHOOK_RECORDING.question}`;
+    const waveTrigger = `@kocc avec wave-paiements, ${WAVE_WEBHOOK_RECORDING.question}`;
 
     async function setUpWaveQuestion(
       email: string,
@@ -446,7 +446,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
     it("n'invente rien pour une question qui n'est pas une question de démo", async () => {
       const { profileId, channelId, triggerMessageId } = await setUpWaveQuestion("rec3@test.kemet", "rec3");
       const chat = new RecordingChatPublisher();
-      const body = "@kemet avec wave-paiements, comment gérer un remboursement partiel ?";
+      const body = "@kocc avec wave-paiements, comment gérer un remboursement partiel ?";
 
       await orchestratorWith(chat, new UnavailableLlmProvider()).handleMention({
         channelId,

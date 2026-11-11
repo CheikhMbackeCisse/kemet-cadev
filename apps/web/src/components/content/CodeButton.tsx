@@ -78,7 +78,7 @@ export function CodeButton({ textareaRef, onChange, disabled, className }: CodeB
           )}
         >
           <Braces className="size-4" aria-hidden="true" />
-          {fr.content.codeButton}
+          <span className="max-sm:sr-only">{fr.content.codeButton}</span>
         </button>
       }
     />

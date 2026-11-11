@@ -1,7 +1,7 @@
 const NOTICE_SEEN_KEY = "kemet:assistant-notice-seen";
 
-/** Même règle que `mentionsAssistant` côté serveur : `@kemetien` n'appelle pas l'assistant. */
-const MENTION_PATTERN = /@kemet\b/i;
+/** Même règle que `mentionsAssistant` côté serveur : `@kocc`, ou l'ancien `@kemet`, seuls. */
+const MENTION_PATTERN = /@(?:kocc|kemet)(?![a-z0-9-])/i;
 
 export function mentionsAssistant(body: string): boolean {
   return MENTION_PATTERN.test(body);

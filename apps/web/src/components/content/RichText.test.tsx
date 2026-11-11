@@ -77,10 +77,16 @@ describe("RichText", () => {
     expect(screen.queryByRole("link", { name: "@example" })).toBeNull();
   });
 
-  it("met en valeur @kemet sans en faire un lien de profil", async () => {
+  it("met en valeur @kocc sans en faire un lien de profil", async () => {
+    await renderRichText("@kocc comment signer un webhook ?");
+    expect(screen.getByText("@kocc").tagName).toBe("SPAN");
+    expect(screen.queryByRole("link", { name: "@kocc" })).toBeNull();
+  });
+
+  it("affiche @kocc à la place de l'ancien @kemet d'un message déjà écrit", async () => {
     await renderRichText("@kemet comment signer un webhook ?");
-    expect(screen.getByText("@kemet").tagName).toBe("SPAN");
-    expect(screen.queryByRole("link", { name: "@kemet" })).toBeNull();
+    expect(screen.getByText("@kocc").tagName).toBe("SPAN");
+    expect(screen.queryByText("@kemet")).toBeNull();
   });
 
   it("ne transforme pas une mention écrite dans du code", async () => {

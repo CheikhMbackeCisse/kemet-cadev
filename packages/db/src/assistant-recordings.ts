@@ -5,7 +5,7 @@
  */
 export interface AssistantRecording {
   skillSlug: string;
-  /** Écrit "@kemet avec <skill>, <question>" plutôt que de laisser l'assistant choisir. */
+  /** Écrit "@kocc avec <skill>, <question>" plutôt que de laisser l'assistant choisir. */
   explicitSkill: boolean;
   question: string;
   answer: string;
@@ -109,6 +109,6 @@ export const ASSISTANT_RECORDINGS: readonly AssistantRecording[] = [
 /** Corps du message qui appelle l'assistant pour cet enregistrement. */
 export function assistantRecordingTrigger(recording: AssistantRecording): string {
   return recording.explicitSkill
-    ? `@kemet avec ${recording.skillSlug}, ${recording.question}`
-    : `@kemet ${recording.question}`;
+    ? `@kocc avec ${recording.skillSlug}, ${recording.question}`
+    : `@kocc ${recording.question}`;
 }

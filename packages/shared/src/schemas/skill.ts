@@ -55,7 +55,7 @@ export const skillSummarySchema = z.object({
   }),
   averageStars: z.number().min(0).max(5).nullable(),
   ratingCount: z.number().int().nonnegative(),
-  /** Réponses de @kemet qui ont retenu ce skill. */
+  /** Réponses de @kocc qui ont retenu ce skill. */
   usageCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
 });

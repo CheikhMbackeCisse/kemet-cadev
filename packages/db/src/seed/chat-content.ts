@@ -44,7 +44,7 @@ export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): 
       clientId: randomUUID(),
       body:
         "Bienvenue sur l'espace officiel de CADEV 2026 ! Posez vos questions, partagez vos skills, " +
-        "et n'hésitez pas à utiliser @kemet si vous bloquez sur quelque chose.",
+        "et n'hésitez pas à utiliser @kocc si vous bloquez sur quelque chose.",
       createdAt: hoursAgo(96),
     },
     {

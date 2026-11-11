@@ -251,7 +251,7 @@ export const workMatchRequestSchema = z.object({ subject: workMatchSubjectSchema
 export type WorkMatchRequestInput = z.infer<typeof workMatchRequestSchema>;
 
 /**
- * `assistant` : choix et justifications de @kemet. `recorded` : réponse de
+ * `assistant` : choix et justifications de @kocc. `recorded` : réponse de
  * démonstration enregistrée. `full_text` : recherche plein texte seule, sans
  * l'assistant (fournisseurs saturés, quota atteint ou réponse refusée).
  */

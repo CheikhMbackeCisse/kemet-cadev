@@ -27,12 +27,13 @@ describe("findMentionQuery", () => {
     });
   });
 
-  it("switches to skills after @kemet avec", () => {
-    expect(findMentionQuery("@kemet avec wave", 16)).toEqual({
+  it("switches to skills after @kocc avec", () => {
+    expect(findMentionQuery("@kocc avec wave", 15)).toEqual({
       kind: "skill",
       query: "wave",
-      start: 12,
+      start: 11,
     });
+    // L'ancienne mention ouvre toujours les suggestions de skills.
     expect(findMentionQuery("@Kemet  avec ", 13)).toEqual({ kind: "skill", query: "", start: 13 });
   });
 });

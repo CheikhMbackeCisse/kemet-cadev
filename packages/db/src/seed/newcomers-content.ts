@@ -213,9 +213,9 @@ export interface NewcomerReply {
 }
 
 export interface NewcomerAssistantReply {
-  /** Réponse qui appelle @kemet. */
+  /** Réponse qui appelle @kocc. */
   trigger: NewcomerReply;
-  /** Réponse enregistrée de @kemet, publiée sous le post. */
+  /** Réponse enregistrée de @kocc, publiée sous le post. */
   answer: string;
   skillKey: string;
   helpful: boolean;
@@ -271,7 +271,7 @@ export const NEWCOMER_POSTS: NewcomerPost[] = [
         key: "premier-langage-salma",
         authorHandle: "salma-haddad",
         hoursAgo: 25,
-        body: "@kemet tu peux résumer ce fil simplement pour quelqu'un qui débute ?",
+        body: "@kocc tu peux résumer ce fil simplement pour quelqu'un qui débute ?",
       },
       answer:
         "Voici l'essentiel du fil :\n\n" +
@@ -316,7 +316,7 @@ export const NEWCOMER_POSTS: NewcomerPost[] = [
         key: "maths-moussa-kemet",
         authorHandle: "moussa-sow",
         hoursAgo: 42,
-        body: "@kemet explique-moi simplement quels métiers de l'informatique demandent peu de maths",
+        body: "@kocc explique-moi simplement quels métiers de l'informatique demandent peu de maths",
       },
       answer:
         "Bonne question. Beaucoup de métiers demandent surtout de la logique et de la rigueur, pas des maths " +

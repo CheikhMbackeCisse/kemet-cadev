@@ -38,7 +38,7 @@ describe.skipIf(!databaseUrl)("seed de démonstration", () => {
     }
   });
 
-  it("pose des échanges avec @kemet marqués comme enregistrés, avec leurs points", async () => {
+  it("pose des échanges avec @kocc marqués comme enregistrés, avec leurs points", async () => {
     const invocations = await db.select().from(assistantInvocations);
     expect(invocations).toHaveLength(6);
     for (const invocation of invocations) {

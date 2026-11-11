@@ -698,12 +698,12 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
     expect(response.statusCode).toBe(400);
   });
 
-  it("n'appelle jamais @kemet dans une conversation privée", async () => {
+  it("n'appelle jamais @kocc dans une conversation privée", async () => {
     const awa = await createMember("awa");
     const binta = await createMember("binta");
     await follow(binta, awa);
     const conversation = (await openConversation(awa, binta)).json().conversation;
-    expect((await send(awa, conversation.channelId, "@kemet tu peux résumer ?")).statusCode).toBe(200);
+    expect((await send(awa, conversation.channelId, "@kocc tu peux résumer ?")).statusCode).toBe(200);
     expect(mentions).toHaveLength(0);
   });
 

@@ -106,6 +106,7 @@ export const fr = {
     handlePlaceholder: "aminadiallo",
     handleInvalid:
       "Lettres minuscules, chiffres et tirets seulement, sans tiret au début ni à la fin.",
+    handleReserved: "Cet identifiant est réservé.",
     displayNameLabel: "Nom affiché",
     countryLabel: "Pays",
     countrySelectPlaceholder: "Choisis un pays",
@@ -257,7 +258,7 @@ export const fr = {
       replySolution: "Ta réponse est choisie comme solution d'une question",
       feedbackGiven: "Tu fais un retour structuré sur un post À tester",
       assistantSkillHelpful:
-        "Une réponse de @kemet qui cite ton skill est jugée utile (plus si la personne a un niveau élevé)",
+        "Une réponse de Kocc qui cite ton skill est jugée utile (plus si la personne a un niveau élevé)",
       projectHelpConfirmed: "Ton aide sur un projet est confirmée par son propriétaire",
       competitionParticipation: "Tu soumets un projet à une compétition",
       competitionPodium: (first: number, second: number, third: number) =>
@@ -385,7 +386,7 @@ export const fr = {
     unblockError: "Le déblocage a échoué. Réessaie.",
     aboutTitle: "À propos de Kemet",
     aboutText:
-      "Kemet est la plateforme d'échange des développeurs africains : salons en direct, fil, travaux, skills et l'assistant @kemet.",
+      "Kemet est la plateforme d'échange des développeurs africains : salons en direct, fil, travaux, skills et l'assistant Kocc.",
     versionLabel: "Version",
     contactLabel: "Contact",
     contactMissing: "Le contact n'est pas encore configuré sur ce serveur.",
@@ -438,7 +439,7 @@ export const fr = {
       "Tes sujets d'intérêt et ce que tu viens faire sur Kemet : ils ne servent qu'à te suggérer des espaces et des personnes, et ne sont pas affichés. Avant l'inscription, tes réponses à l'accueil restent dans ton navigateur, un jour au plus.",
       "Tes messages, posts, réponses, skills, projets et fichiers envoyés : pour les montrer aux personnes à qui tu les adresses.",
       "Tes abonnements, réactions, republications, votes, notes de skills et candidatures : pour que ces actions fonctionnent. Une candidature n'est visible que par toi et le propriétaire du projet.",
-      "Le journal de tes appels à @kemet (salon, message, skills choisis) : pour ton quota quotidien.",
+      "Le journal de tes appels à Kocc (salon, message, skills choisis) : pour ton quota quotidien.",
       "Le registre de tes points : pour calculer ton niveau et pouvoir toujours l'expliquer.",
       "Tes sessions, avec l'adresse IP et le navigateur : pour la sécurité de ton compte et les limites contre les abus.",
       "Les signalements que tu envoies : pour la modération.",
@@ -447,24 +448,24 @@ export const fr = {
     privateMessages: [
       "Tes messages privés sont stockés sur notre serveur, comme ceux des salons. Ils ne sont pas chiffrés de bout en bout : techniquement, l'équipe qui administre le serveur pourrait y accéder.",
       "Personne d'autre que les membres d'une conversation ne la lit dans Kemet, pas même un administrateur. La modération ne voit un message privé que si quelqu'un le lui signale, et pour une conversation signalée, seulement les dix derniers messages écrits avant le signalement.",
-      "@kemet n'est jamais appelé dans une conversation privée : aucun message privé ne part chez Google ni chez OpenRouter.",
+      "Kocc n'est jamais appelé dans une conversation privée : aucun message privé ne part chez Google ni chez OpenRouter.",
       "Si tu bloques quelqu'un, nous gardons la liste des personnes que tu as bloquées, pour l'appliquer. Elle figure dans l'export de tes données.",
     ],
-    assistantTitle: "Tes questions à @kemet",
+    assistantTitle: "Tes questions à Kocc",
     assistant: [
-      "Quand tu mentionnes @kemet, ta question, les 10 derniers messages du salon et le skill choisi sont envoyés à un fournisseur d'IA, qui fait tourner le modèle.",
+      "Quand tu mentionnes @kocc, ta question, les 10 derniers messages du salon et le skill choisi sont envoyés à un fournisseur d'IA, qui fait tourner le modèle.",
       "Kemet passe par trois fournisseurs, dans cet ordre : Google (modèles Gemini), puis Groq si Gemini ne répond pas, puis OpenRouter en dernier recours. Chaque demande part chez un seul d'entre eux à la fois, mais elle peut passer au suivant si le premier ne répond pas.",
       "OpenRouter transmet la demande à un modèle gratuit hébergé par un autre fournisseur.",
       "Kemet utilise les offres gratuites de ces fournisseurs, qui peuvent garder ces données. Google peut se servir de ces données pour améliorer ses modèles.",
-      "Tes messages dans un salon peuvent aussi partir chez ces fournisseurs quand une autre personne y appelle @kemet.",
-      "N'écris donc jamais d'information personnelle ou confidentielle dans une question à @kemet.",
+      "Tes messages dans un salon peuvent aussi partir chez ces fournisseurs quand une autre personne y appelle Kocc.",
+      "N'écris donc jamais d'information personnelle ou confidentielle dans une question à Kocc.",
     ],
     retentionTitle: "Combien de temps",
     retention: [
       "Tes contenus restent tant que ton compte existe. Un contenu que tu supprimes disparaît pour tout le monde, mais reste en base tant que ton compte existe ; son texte est effacé avec ton compte.",
-      "Le journal de tes appels à @kemet est gardé tant que ton compte existe.",
+      "Le journal de tes appels à Kocc est gardé tant que ton compte existe.",
       "Un fichier envoyé mais jamais rattaché à un message ou à un post est effacé une à deux heures plus tard.",
-      "Une réponse de @kemet reste en cache une heure au plus.",
+      "Une réponse de Kocc reste en cache une heure au plus.",
       "Ta session de connexion expire après 7 jours sans visite.",
       "Les sauvegardes chiffrées de la base sont gardées 7 jours sur le serveur et 14 jours hors du serveur.",
     ],
@@ -490,6 +491,12 @@ export const fr = {
   assistantNotice: {
     text: "Ta question et les 10 derniers messages du salon partent chez Google (Gemini), ou chez Groq ou OpenRouter en secours.",
     link: "Lire la politique de confidentialité",
+  },
+  assistant: {
+    askButton: "Kocc",
+    askButtonLabel: "Poser une question à Kocc",
+    questionTag: "Question à Kocc",
+    removeQuestionTag: "Retirer la question à Kocc",
   },
   chat: {
     messageList: "Messages du salon",
@@ -530,7 +537,7 @@ export const fr = {
       count === 1
         ? "1 suggestion, flèches pour choisir"
         : `${count} suggestions, flèches pour choisir`,
-    assistantName: "Assistant Kemet",
+    assistantName: "Kocc",
     copyText: "Copier le texte",
     textCopied: "Texte copié.",
     copyError: "Le texte n'a pas pu être copié.",
@@ -567,10 +574,10 @@ export const fr = {
     voiceLoading: "Chargement du message vocal",
     voicePlayError: "Le message vocal n'a pas pu être lu.",
     voiceRetry: "Réessayer",
-    assistantUnavailable: "@kemet est très sollicité. Réessaie dans quelques minutes.",
-    assistantFailed: "@kemet n'a pas pu répondre. Repose ta question.",
+    assistantUnavailable: "Kocc est très sollicité. Réessaie dans quelques minutes.",
+    assistantFailed: "Kocc n'a pas pu répondre. Repose ta question.",
     assistantQuotaReached:
-      "Tu as utilisé toutes tes questions à @kemet pour aujourd'hui. Elles reviennent à minuit.",
+      "Tu as utilisé toutes tes questions à Kocc pour aujourd'hui. Elles reviennent à minuit.",
     retryAssistantQuestion: "Reposer la question",
     dismissAssistantFailure: "Masquer ce message",
     assistantRecorded: "Réponse enregistrée",
@@ -606,17 +613,17 @@ export const fr = {
   },
   skills: {
     title: "Skills",
-    askKemet: "Demander à @kemet avec ce skill",
-    askKemetSignIn: "Se connecter pour demander à @kemet",
-    exampleTitle: "Exemple de réponse de @kemet",
+    askKemet: "Demander à Kocc avec ce skill",
+    askKemetSignIn: "Se connecter pour demander à Kocc",
+    exampleTitle: "Exemple de réponse de Kocc",
     askKemetTitle: "Choisis un salon",
     askKemetDescription:
-      "Ton message s'ouvre en brouillon dans ce salon, avec @kemet et ce skill déjà écrits.",
+      "Ton message s'ouvre en brouillon dans ce salon, avec @kocc et ce skill déjà écrits.",
     askKemetLoading: "Chargement de tes salons…",
-    askKemetNoSpace: "Rejoins d'abord un espace pour poser ta question à @kemet.",
+    askKemetNoSpace: "Rejoins d'abord un espace pour poser ta question à Kocc.",
     askKemetBrowseSpaces: "Voir les espaces",
     askKemetLoadingError: "Impossible de charger tes salons.",
-    askKemetDraft: (slug: string) => `@kemet avec ${slug}, `,
+    askKemetDraft: (slug: string) => `@kocc avec ${slug}, `,
     createTitle: "Publier un skill",
     create: "Publier",
     back: "Retour aux skills",
@@ -638,8 +645,8 @@ export const fr = {
     reviewCount: (count: string) => `(${count} avis)`,
     usageCount: (formatted: string, count: number) =>
       count === 0
-        ? "Pas encore utilisé par @kemet"
-        : `${formatted} ${count === 1 ? "utilisation" : "utilisations"} par @kemet`,
+        ? "Pas encore utilisé par Kocc"
+        : `${formatted} ${count === 1 ? "utilisation" : "utilisations"} par Kocc`,
     reviewCountShort: (count: string) => `${count} avis`,
     usageCountShort: (formatted: string, count: number) =>
       `${formatted} ${count > 1 ? "utilisations" : "utilisation"}`,
@@ -695,14 +702,13 @@ export const fr = {
     reply: "Répondre",
     replyAriaLabel: (count: number) =>
       count === 1 ? "Répondre, 1 réponse" : `Répondre, ${count} réponses`,
-    replyPlaceholder: "Répondre, ou @kemet suivi d'une question…",
+    replyPlaceholder: "Répondre, ou @kocc suivi d'une question…",
     replyCount: (count: number) => (count <= 1 ? `${count} réponse` : `${count} réponses`),
     replySendError: "La réponse n'a pas pu être envoyée.",
     replyDeleteError: "La réponse n'a pas pu être supprimée.",
     replyDeleteConfirm: "Supprimer cette réponse ? Cette action est irréversible.",
     noReplies: "Aucune réponse pour l'instant.",
-    askKemetExplain: "Demander à @kemet d'expliquer",
-    assistantPending: "@kemet rédige une réponse…",
+    assistantPending: "Kocc rédige une réponse…",
     tabProjets: "Projets",
     noProjects: "Aucun projet récent dans le fil. Publie le tien pour trouver de l'aide.",
     noProjectsVisitor: "Aucun projet récent dans le fil. Parcours tous les projets.",
@@ -968,7 +974,7 @@ export const fr = {
     feedAnnouncement: "a publié un travail",
     matchButton: "Trouver qui a travaillé sur ce sujet",
     matchTitle: "Qui a travaillé sur ce sujet ?",
-    matchLoading: "@kemet cherche parmi les travaux publiés…",
+    matchLoading: "Kocc cherche parmi les travaux publiés…",
     matchEmpty: "Aucun travail publié ne porte encore sur ce sujet.",
     matchError: "La recherche n'a pas pu aboutir.",
     matchWithoutAssistant: "Sans l'assistant",
@@ -981,7 +987,7 @@ export const fr = {
     matchRecorded: "Réponse enregistrée",
     matchRecordedHint:
       "Réponse préparée pour la démonstration, rejouée parce que l'assistant est indisponible.",
-    matchByAssistant: "Proposé par @kemet",
+    matchByAssistant: "Proposé par Kocc",
     matchCites: (title: string) => `Travail : ${title}`,
     relatedCount: (count: number) =>
       count === 1
@@ -1123,8 +1129,7 @@ export const fr = {
     previewNotice:
       "Aucun paiement n'est traité sur cette page. Kemet Pro est présenté ici tel qu'il est prévu après la compétition, sans offre active pour le moment.",
     benefitAiQuotaTitle: "Plus de quota pour l'assistant",
-    benefitAiQuotaBody:
-      "Plus de messages par jour à @kemet, au-delà du quota déjà lié à ton niveau.",
+    benefitAiQuotaBody: "Plus de messages par jour à Kocc, au-delà du quota déjà lié à ton niveau.",
     benefitStatsTitle: "Statistiques de profil",
     benefitStatsBody: "Le détail de ce que tes réponses et tes skills ont apporté à la communauté.",
     benefitDirectoryTitle: "Mise en avant dans l'annuaire",
@@ -1290,7 +1295,7 @@ export const fr = {
     handlesInvalid: (handle: string) => `« ${handle} » n'est pas un identifiant valide.`,
     open: "Ouvrir la conversation",
     privacyNote:
-      "Les messages privés sont stockés sur notre serveur, sans chiffrement de bout en bout. La modération ne les lit que si quelqu'un les lui signale. @kemet n'y a pas accès.",
+      "Les messages privés sont stockés sur notre serveur, sans chiffrement de bout en bout. La modération ne les lit que si quelqu'un les lui signale. Kocc n'y a pas accès.",
   },
   profile: {
     viewProfile: (name: string) => `Voir le profil de ${name}`,

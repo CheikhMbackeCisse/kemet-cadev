@@ -33,7 +33,7 @@ describe("splitForReplay", () => {
 describe("findSkillExampleAnswer", () => {
   it("montre l'échange enregistré d'un skill de démonstration, question comprise", () => {
     expect(findSkillExampleAnswer("wave-paiements", true)).toEqual({
-      question: "@kemet avec wave-paiements, comment vérifier la signature d'un webhook Wave en Node.js ?",
+      question: "@kocc avec wave-paiements, comment vérifier la signature d'un webhook Wave en Node.js ?",
       answer: WAVE_WEBHOOK_RECORDING.answer,
     });
     expect(findSkillExampleAnswer("ci-docker-fiable", true)?.answer).toBe(CI_DOCKER_RECORDING.answer);

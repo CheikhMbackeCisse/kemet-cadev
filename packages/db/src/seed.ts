@@ -45,7 +45,7 @@ async function main(): Promise<void> {
   const showcase = await seedShowcase(db);
   console.log(
     showcase.status === "done"
-      ? "Vitrine du fil (question Wave et réponse de @kemet) en place."
+      ? "Vitrine du fil (question Wave et réponse de Kocc) en place."
       : `Vitrine du fil sautée : ${showcase.reason}.`,
   );
   console.log(

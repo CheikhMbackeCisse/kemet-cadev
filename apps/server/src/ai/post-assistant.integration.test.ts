@@ -44,7 +44,7 @@ class GatedProvider {
   }
 }
 
-describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () => {
+describe.skipIf(!databaseUrl)("@kocc sous un post (base Postgres réelle)", () => {
   let db: Db;
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
@@ -149,8 +149,8 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     const author = await createMember("file-auteur@test.kemet", "fileauteur");
     const other = await createMember("file-autre@test.kemet", "fileautre");
     const postId = await createPost(author.cookie, "Un post sur les index.");
-    const first = await reply(author.cookie, postId, "@kemet explique les index");
-    const second = await reply(other.cookie, postId, "@kemet et les index partiels ?");
+    const first = await reply(author.cookie, postId, "@kocc explique les index");
+    const second = await reply(other.cookie, postId, "@kocc et les index partiels ?");
 
     const statusOf = async (id: string | null) =>
       (await db.select().from(assistantInvocations).where(eq(assistantInvocations.id, id!)))[0]!.status;
@@ -164,7 +164,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     expect(await statusOf(second.assistant!.invocationId)).toBe("done");
   });
 
-  it("répond sous le post quand une réponse appelle @kemet, avec le post et les réponses passés comme données", async () => {
+  it("répond sous le post quand une réponse appelle @kocc, avec le post et les réponses passés comme données", async () => {
     const provider = new FakeStreamingProvider(["Ce post ", "explique un index."]);
     setup(provider);
     const author = await createMember("auteur@test.kemet", "auteur");
@@ -175,7 +175,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     );
     await reply(reader.cookie, postId, "Et pour un LIKE avec joker au début ?");
 
-    const created = await reply(reader.cookie, postId, "@kemet explique-moi ce post simplement");
+    const created = await reply(reader.cookie, postId, "@kocc explique-moi ce post simplement");
     expect(created.assistant?.invocationId).toBeTruthy();
     await postAssistant.idle();
 
@@ -220,7 +220,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     const author = await createMember("auteur@test.kemet", "auteur");
     const postId = await createPost(
       author.cookie,
-      "@kemet un post qui le mentionne n'est pas une question.",
+      "@kocc un post qui le mentionne n'est pas une question.",
     );
     const created = await reply(author.cookie, postId, "Une réponse ordinaire.");
 
@@ -233,7 +233,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     setup(new FakeStreamingProvider(["ok"]), 0);
     const author = await createMember("auteur@test.kemet", "auteur");
     const postId = await createPost(author.cookie, "Un post.");
-    const created = await reply(author.cookie, postId, "@kemet résume");
+    const created = await reply(author.cookie, postId, "@kocc résume");
 
     expect(created.assistant).toEqual({ invocationId: null, errorCode: "quota_exceeded" });
     expect(await db.select().from(assistantInvocations)).toHaveLength(0);
@@ -243,9 +243,9 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     setup(new FakeStreamingProvider(["ok"]), 1);
     const author = await createMember("auteur@test.kemet", "auteur");
     const postId = await createPost(author.cookie, "Un post.");
-    expect((await reply(author.cookie, postId, "@kemet résume")).assistant?.errorCode).toBeNull();
+    expect((await reply(author.cookie, postId, "@kocc résume")).assistant?.errorCode).toBeNull();
     await postAssistant.idle();
-    expect((await reply(author.cookie, postId, "@kemet encore")).assistant?.errorCode).toBe(
+    expect((await reply(author.cookie, postId, "@kocc encore")).assistant?.errorCode).toBe(
       "quota_exceeded",
     );
   });
@@ -254,7 +254,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     setup(new UnavailableLlmProvider());
     const author = await createMember("auteur@test.kemet", "auteur");
     const postId = await createPost(author.cookie, "Un post.");
-    const created = await reply(author.cookie, postId, "@kemet résume");
+    const created = await reply(author.cookie, postId, "@kocc résume");
     await postAssistant.idle();
 
     const status = await app.inject({
@@ -274,7 +274,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     const author = await createMember("auteur@test.kemet", "auteur");
     const other = await createMember("autre@test.kemet", "autre");
     const postId = await createPost(author.cookie, "Un post.");
-    const created = await reply(author.cookie, postId, "@kemet résume");
+    const created = await reply(author.cookie, postId, "@kocc résume");
     await postAssistant.idle();
     const url = `/api/post-assistant-invocations/${created.assistant!.invocationId}`;
 
@@ -309,7 +309,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     const created = await reply(
       asker.cookie,
       postId,
-      "@kemet avec index-postgres, lequel choisir ?",
+      "@kocc avec index-postgres, lequel choisir ?",
     );
     await postAssistant.idle();
 
@@ -343,7 +343,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     expect(ledger.some((row) => row.source === "assistant_skill_helpful")).toBe(true);
   });
 
-  it("déplie dans le fil la première réponse de @kemet sous un post, jamais une réponse retirée", async () => {
+  it("déplie dans le fil la première réponse de @kocc sous un post, jamais une réponse retirée", async () => {
     setup(new FakeStreamingProvider(["Réponse appuyée sur le skill."]));
     const skillAuthor = await createMember("fil-skill@test.kemet", "filskill");
     const asker = await createMember("fil-asker@test.kemet", "filasker");
@@ -356,8 +356,8 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
       visibility: "public",
     });
     const answeredId = await createPost(asker.cookie, "Quel index pour chercher du texte ?");
-    const quietId = await createPost(asker.cookie, "Un post sans question à @kemet.");
-    await reply(asker.cookie, answeredId, "@kemet avec index-postgres, lequel choisir ?");
+    const quietId = await createPost(asker.cookie, "Un post sans question à @kocc.");
+    await reply(asker.cookie, answeredId, "@kocc avec index-postgres, lequel choisir ?");
     await postAssistant.idle();
 
     type FeedItem = {
@@ -396,11 +396,11 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     expect((await readFeed()).find((item) => item.id === answeredId)!.kemetAnswer).toBeNull();
   });
 
-  it("accepte une réponse de @kemet comme solution sans créditer de points à l'assistant", async () => {
+  it("accepte une réponse de @kocc comme solution sans créditer de points à l'assistant", async () => {
     setup(new FakeStreamingProvider(["La solution."]));
     const author = await createMember("auteur@test.kemet", "auteur");
     const postId = await createPost(author.cookie, "Comment faire ?", "question");
-    await reply(author.cookie, postId, "@kemet aide-moi");
+    await reply(author.cookie, postId, "@kocc aide-moi");
     await postAssistant.idle();
     const replies = await app.inject({ method: "GET", url: `/api/posts/${postId}/replies` });
     const answerId = (replies.json().items as { id: string; authorId: string }[]).find(
@@ -453,8 +453,8 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     });
     const postId = await createPost(asker.cookie, "Quel index postgres choisir ?");
 
-    await reply(asker.cookie, postId, "@kemet quel index postgres choisir ?");
-    await reply(asker.cookie, postId, "@kemet avec secret-prive, quel index ?");
+    await reply(asker.cookie, postId, "@kocc quel index postgres choisir ?");
+    await reply(asker.cookie, postId, "@kocc avec secret-prive, quel index ?");
     await postAssistant.idle();
 
     const sent = provider.capturedMessages
@@ -472,7 +472,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     const asker = await createMember("asker@test.kemet", "asker");
     const other = await createMember("autre@test.kemet", "autre");
     const postId = await createPost(author.cookie, "Un post.");
-    const created = await reply(asker.cookie, postId, "@kemet résume");
+    const created = await reply(asker.cookie, postId, "@kocc résume");
     await postAssistant.idle();
     const url = `/api/assistant-invocations/${created.assistant!.invocationId}/feedback`;
 
@@ -506,20 +506,20 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
       method: "POST",
       url: `/api/posts/${postId}/replies`,
       headers: { cookie: asker.cookie },
-      payload: { body: "@kemet encore" },
+      payload: { body: "@kocc encore" },
     });
     expect(suspendedReply.statusCode).toBe(403);
     expect(await db.select().from(assistantInvocations)).toHaveLength(1);
   });
 
-  it("laisse la personne qui a demandé et l'auteur du post retirer la réponse de @kemet, personne d'autre", async () => {
+  it("laisse la personne qui a demandé et l'auteur du post retirer la réponse de @kocc, personne d'autre", async () => {
     setup(new FakeStreamingProvider(["ok"]));
     const author = await createMember("auteur@test.kemet", "auteur");
     const asker = await createMember("asker@test.kemet", "asker");
     const other = await createMember("autre@test.kemet", "autre");
     const postId = await createPost(author.cookie, "Un post.");
-    await reply(asker.cookie, postId, "@kemet résume");
-    await reply(asker.cookie, postId, "@kemet encore");
+    await reply(asker.cookie, postId, "@kocc résume");
+    await reply(asker.cookie, postId, "@kocc encore");
     await postAssistant.idle();
     const replies = await app.inject({ method: "GET", url: `/api/posts/${postId}/replies` });
     const answers = (replies.json().items as { id: string; authorId: string }[]).filter(
@@ -540,7 +540,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     const author = await createMember("auteur@test.kemet", "auteur");
     const other = await createMember("autre@test.kemet", "autre");
     const postId = await createPost(author.cookie, "Un post.");
-    const created = await reply(author.cookie, postId, "@kemet résume");
+    const created = await reply(author.cookie, postId, "@kocc résume");
     await postAssistant.idle();
     const failedUrl = `/api/post-assistant-invocations/${created.assistant!.invocationId}/retry`;
 
@@ -574,7 +574,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     await postAssistant.idle();
     const replies = await app.inject({ method: "GET", url: `/api/posts/${postId}/replies` });
     expect((replies.json().items as { body: string }[]).map((item) => item.body)).toEqual([
-      "@kemet résume",
+      "@kocc résume",
       "Enfin.",
     ]);
   });
@@ -591,7 +591,7 @@ describe.skipIf(!databaseUrl)("@kemet sous un post (base Postgres réelle)", () 
     });
     const author = await createMember("auteur@test.kemet", "auteur");
     const postId = await createPost(author.cookie, "Un post.");
-    const created = await reply(author.cookie, postId, "@kemet résume");
+    const created = await reply(author.cookie, postId, "@kocc résume");
     await app.inject({
       method: "DELETE",
       url: `/api/posts/${postId}`,

@@ -1,6 +1,20 @@
 import { z } from "zod";
 
+/** Identifiant interne du profil de l'assistant, gardé en base depuis la migration 0003. */
 export const KEMET_HANDLE = "kemet";
+
+/** Nom de l'assistant dans l'interface. */
+export const ASSISTANT_NAME = "Kocc";
+
+/** Mention affichée dans l'interface : "@kocc". */
+export const ASSISTANT_MENTION_HANDLE = "kocc";
+
+/** Mentions qui appellent l'assistant ; "@kemet" reste compris, jamais affiché. */
+export const ASSISTANT_MENTION_HANDLES: readonly string[] = [ASSISTANT_MENTION_HANDLE, KEMET_HANDLE];
+
+export function isAssistantHandle(handle: string): boolean {
+  return ASSISTANT_MENTION_HANDLES.includes(handle.toLowerCase());
+}
 
 export const skillCitationSchema = z.object({
   slug: z.string(),

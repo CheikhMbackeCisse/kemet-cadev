@@ -1,10 +1,28 @@
 import type { credentials, profiles } from "@kemet/db";
-import { isLevelAtLeast, OPEN_TO_OPPORTUNITIES_MIN_LEVEL, type Credential, type Level, type Profile, type ProfileSummary } from "@kemet/shared";
+import {
+  ASSISTANT_MENTION_HANDLE,
+  ASSISTANT_NAME,
+  isLevelAtLeast,
+  OPEN_TO_OPPORTUNITIES_MIN_LEVEL,
+  type Credential,
+  type Level,
+  type Profile,
+  type ProfileSummary,
+} from "@kemet/shared";
+import { KEMET_ASSISTANT_PROFILE_ID } from "../chat/kemet-assistant.js";
 
 type ProfileRow = typeof profiles.$inferSelect;
 type CredentialRow = typeof credentials.$inferSelect;
 
-export function serializeProfile(row: ProfileRow, level: Level): Profile {
+// Le profil système garde "kemet" en base (migration 0003) ; l'interface
+// ne montre que Kocc, sans bio ni titre, sans réécrire la ligne.
+function presentProfileRow(row: ProfileRow): ProfileRow {
+  if (row.id !== KEMET_ASSISTANT_PROFILE_ID) return row;
+  return { ...row, handle: ASSISTANT_MENTION_HANDLE, displayName: ASSISTANT_NAME, bio: null, title: null };
+}
+
+export function serializeProfile(stored: ProfileRow, level: Level): Profile {
+  const row = presentProfileRow(stored);
   return {
     id: row.id,
     handle: row.handle,
@@ -30,7 +48,8 @@ export function serializeProfile(row: ProfileRow, level: Level): Profile {
   };
 }
 
-export function serializeProfileSummary(row: ProfileRow): ProfileSummary {
+export function serializeProfileSummary(stored: ProfileRow): ProfileSummary {
+  const row = presentProfileRow(stored);
   return {
     id: row.id,
     handle: row.handle,

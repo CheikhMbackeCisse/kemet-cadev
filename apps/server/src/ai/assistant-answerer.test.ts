@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildAssistantMessages, SYSTEM_PROMPT_PREFIX } from "./assistant-answerer.js";
 
-describe("consigne de @kemet", () => {
+describe("consigne de Kocc", () => {
   it("dit à l'assistant qu'il n'a aucun outil et ne doit jamais prétendre avoir agi", () => {
     expect(SYSTEM_PROMPT_PREFIX).toContain(
       "Tu n'as aucun outil : ne prétends jamais avoir exécuté une action.",

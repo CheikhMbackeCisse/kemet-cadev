@@ -33,6 +33,9 @@ import { MessageAttachments } from "../components/chat/MessageAttachments.js";
 import { useVoiceMessage } from "../components/chat/VoiceRecorder.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
 import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
+import { KoccButton } from "../components/assistant/KoccButton.js";
+import { KoccQuestionTag } from "../components/assistant/KoccQuestionTag.js";
+import { asksKocc, removeKoccMention } from "../lib/assistant/koccDraft.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { RichText } from "../components/content/RichText.js";
@@ -75,7 +78,7 @@ import { formatCount } from "../lib/formatCount.js";
 import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
 import {
-  KEMET_HANDLE,
+  isAssistantHandle,
   isDeletedAccountHandle,
   type Attachment,
   type Channel,
@@ -694,7 +697,7 @@ export function SpacePage() {
                     if (item.type === "day")
                       return <DaySeparator key={item.key} label={item.label} />;
                     const { group } = item;
-                    return group.authorHandle === KEMET_HANDLE ? (
+                    return isAssistantHandle(group.authorHandle) ? (
                       <AssistantMessage
                         key={group.messages[0]!.id}
                         content={
@@ -994,6 +997,14 @@ export function SpacePage() {
                 />
               )}
               {composerPaste.notice}
+              {asksKocc(draft) && (
+                <KoccQuestionTag
+                  onRemove={() => {
+                    setDraft(removeKoccMention(draft));
+                    composerRef.current?.focus();
+                  }}
+                />
+              )}
               <div className="relative flex gap-2">
                 {voice.overlay}
                 <p className="sr-only" aria-live="polite">
@@ -1024,6 +1035,14 @@ export function SpacePage() {
                   <Paperclip className="size-4" aria-hidden="true" />
                 </IconButton>
                 <CodeButton
+                  textareaRef={composerRef}
+                  onChange={(value) => {
+                    setDraft(value);
+                    mentions.syncCaret();
+                  }}
+                  disabled={!activeChannelId}
+                />
+                <KoccButton
                   textareaRef={composerRef}
                   onChange={(value) => {
                     setDraft(value);

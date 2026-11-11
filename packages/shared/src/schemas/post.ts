@@ -142,7 +142,7 @@ export const postSummarySchema = z.object({
   authorFollowedByMe: z.boolean(),
   /** Fil seulement : personne suivie (ou soi) qui a republié ce post, la plus récente. */
   repostedBy: postRepostedBySchema.nullable().optional(),
-  /** Fil seulement : première réponse terminée de @kemet, affichée dépliée sous le post. */
+  /** Fil seulement : première réponse terminée de @kocc, affichée dépliée sous le post. */
   kemetAnswer: z.lazy(() => postReplySchema.nullable()).optional(),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
@@ -184,7 +184,7 @@ export const postReplySchema = z.object({
   authorLevel: levelSchema,
   body: z.string(),
   isSolution: z.boolean(),
-  /** Renseigné seulement pour une réponse de @kemet : skill cité, avis, réponse enregistrée. */
+  /** Renseigné seulement pour une réponse de @kocc : skill cité, avis, réponse enregistrée. */
   assistant: assistantInvocationDetailSchema.nullable(),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
@@ -194,8 +194,8 @@ export const postReplySchema = z.object({
 export type PostReply = z.infer<typeof postReplySchema>;
 
 /**
- * Suite donnée à une réponse qui appelle @kemet : l'invocation lancée, ou la
- * raison immédiate du refus (quota atteint). `null` sans appel à @kemet.
+ * Suite donnée à une réponse qui appelle @kocc : l'invocation lancée, ou la
+ * raison immédiate du refus (quota atteint). `null` sans appel à @kocc.
  */
 export const postReplyAssistantStartSchema = z.object({
   invocationId: z.string().uuid().nullable(),
@@ -211,7 +211,7 @@ export const createPostReplyResultSchema = z.object({
 
 export type CreatePostReplyResult = z.infer<typeof createPostReplyResultSchema>;
 
-/** État d'une réponse de @kemet sous un post, lu par la personne qui l'a demandée. */
+/** État d'une réponse de @kocc sous un post, lu par la personne qui l'a demandée. */
 export const postAssistantStatusSchema = z.object({
   status: assistantInvocationStatusSchema,
   errorCode: z.string().nullable(),

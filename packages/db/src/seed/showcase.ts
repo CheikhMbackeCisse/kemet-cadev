@@ -317,7 +317,7 @@ async function putFeaturedWorkFirst(db: DbOrTx): Promise<void> {
 
 /**
  * Ce qu'un visiteur voit en premier : la question Wave et la réponse
- * enregistrée de @kemet, des réponses et des cœurs sur les posts qui suivent,
+ * enregistrée de @kocc, des réponses et des cœurs sur les posts qui suivent,
  * des soumissions dans les compétitions d'exemple. Relancé à chaque seed, ne
  * complète que ce qui manque.
  */

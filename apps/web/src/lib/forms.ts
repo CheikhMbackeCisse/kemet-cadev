@@ -1,3 +1,4 @@
+import { isReservedHandle } from "@kemet/shared";
 import { fr } from "../i18n/fr.js";
 
 /** Erreur de chaque champ, par nom ; un champ sans entrée est valide. */
@@ -40,6 +41,7 @@ export function handleError(handle: string): string | undefined {
   if (value.length < 3) return fr.common.tooShort(3);
   if (value.length > 30) return fr.common.tooLong(30);
   if (!HANDLE_PATTERN.test(value)) return fr.auth.handleInvalid;
+  if (isReservedHandle(value)) return fr.auth.handleReserved;
   return undefined;
 }
 
