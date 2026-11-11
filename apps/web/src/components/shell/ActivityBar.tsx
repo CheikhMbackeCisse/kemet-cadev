@@ -5,7 +5,13 @@ import { KemetSymbol } from "../ui/KemetSymbol.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { AccountMenu } from "./AccountMenu.js";
 import { ActivityBarDemoNotice } from "./DemoNotice.js";
-import { RAIL_FOOTER_NAV, RAIL_NAV, SETTINGS_NAV, type RailNavItem } from "./railNav.js";
+import {
+  RAIL_FOOTER_NAV,
+  RAIL_NAV,
+  SECURITY_NAV,
+  SETTINGS_NAV,
+  type RailNavItem,
+} from "./railNav.js";
 import { SIDE_PANEL_ID, useSidePanel } from "./sidePanel.js";
 
 export interface ActivityBarProps {
@@ -21,7 +27,7 @@ function unreadBadgeText(count: number): string {
 }
 
 const TOP_ITEMS = RAIL_NAV;
-const BOTTOM_ITEMS = [RAIL_FOOTER_NAV, SETTINGS_NAV];
+const BOTTOM_ITEMS = [RAIL_FOOTER_NAV, SECURITY_NAV, SETTINGS_NAV];
 const ALL_ITEMS = [...TOP_ITEMS, ...BOTTOM_ITEMS];
 
 const SHORTCUT_LABEL =

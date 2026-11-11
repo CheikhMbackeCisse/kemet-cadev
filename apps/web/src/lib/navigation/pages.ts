@@ -70,6 +70,7 @@ export const PAGE_LOADERS = {
   savedPosts: page(() => import("../../pages/SavedPostsPage.js"), "SavedPostsPage"),
   deleteAccount: page(() => import("../../pages/DeleteAccountPage.js"), "DeleteAccountPage"),
   privacy: page(() => import("../../pages/PrivacyPage.js"), "PrivacyPage"),
+  security: page(() => import("../../pages/SecurityPage.js"), "SecurityPage"),
   works: page(() => import("../../pages/WorksPage.js"), "WorksPage"),
   work: page(() => import("../../pages/WorkPage.js"), "WorkPage"),
   workForm: page(() => import("../../pages/WorkFormPage.js"), "WorkFormPage"),
@@ -106,6 +107,7 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
   if (pathname === "/enregistres") return "savedPosts";
   if (pathname === "/donnees-de-demo") return "demoData";
   if (pathname === "/confidentialite") return "privacy";
+  if (pathname === "/securite") return "security";
   if (pathname.startsWith("/salons/invite/")) return "invite";
   if (pathname === "/salons/nouveau") return "newSpace";
   if (pathname.startsWith("/salons")) return "space";

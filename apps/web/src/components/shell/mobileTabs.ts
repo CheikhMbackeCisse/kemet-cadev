@@ -3,6 +3,7 @@ import {
   MOBILE_TAB_ORDER,
   NAV_SECTIONS,
   RAIL_FOOTER_NAV,
+  SECURITY_NAV,
   SETTINGS_NAV,
   type RailNavItem,
 } from "./railNav.js";
@@ -22,6 +23,7 @@ export const MOI_ITEMS: RailNavItem[] = [
   { id: "niveaux", label: fr.levels.pageTitle, href: "/niveaux", icon: Award },
   SETTINGS_NAV,
   RAIL_FOOTER_NAV,
+  SECURITY_NAV,
 ];
 
 /**
@@ -32,7 +34,7 @@ export function mobileTabFor(sectionId: string): string {
   const section = NAV_SECTIONS.find((candidate) => candidate.id === sectionId);
   if (section?.mobile === "moi") return "";
   if (section?.mobile === "salons") return "salons";
-  if (sectionId === SETTINGS_NAV.id || sectionId === RAIL_FOOTER_NAV.id) return MOI_TAB_ID;
+  if ([SETTINGS_NAV.id, RAIL_FOOTER_NAV.id, SECURITY_NAV.id].includes(sectionId)) return MOI_TAB_ID;
   return sectionId;
 }
 

@@ -11,9 +11,16 @@ describe("navigation mobile", () => {
     expect(RAIL_NAV.map((item) => item.id).slice(0, 2)).toEqual(["fil", "travaux"]);
   });
 
-  it("range Projets, Compétitions, Paramètres et Confidentialité dans la page Moi, jamais Kemet Pro", () => {
+  it("range Projets, Compétitions, Paramètres, Confidentialité et Sécurité dans la page Moi, jamais Kemet Pro", () => {
     const ids = MOI_ITEMS.map((item) => item.id);
-    expect(ids).toEqual(["projets", "competitions", "niveaux", "parametres", "confidentialite"]);
+    expect(ids).toEqual([
+      "projets",
+      "competitions",
+      "niveaux",
+      "parametres",
+      "confidentialite",
+      "securite",
+    ]);
     expect(MOI_ITEMS.some((item) => item.href === "/pro")).toBe(false);
   });
 
@@ -38,6 +45,7 @@ describe("navigation mobile", () => {
     expect(mobileTabFor("projets")).toBe("");
     expect(mobileTabFor("travaux")).toBe("travaux");
     expect(mobileTabFor("confidentialite")).toBe("moi");
+    expect(mobileTabFor("securite")).toBe("moi");
     expect(mobileTabFor("skills")).toBe("skills");
     expect(mobileTabHref("skills")).toBe("/skills");
     expect(mobileTabHref("moi")).toBe("/moi");
