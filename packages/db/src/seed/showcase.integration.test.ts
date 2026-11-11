@@ -1,15 +1,17 @@
-import { eq, inArray, isNull, and } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../client.js";
 import { getTestDatabaseUrl, resetTestDatabase } from "../testing.js";
 import {
   assistantInvocations,
   competitions,
+  messages,
   postReactions,
   postReplies,
   posts,
   profiles,
   submissions,
+  works,
 } from "../schema/index.js";
 import { seedDemoDataset } from "./demo-dataset.js";
 import { seedShowcase } from "./showcase.js";
@@ -77,5 +79,23 @@ describe.skipIf(!databaseUrl)("vitrine du fil", () => {
         plan.submissions.length,
       );
     }
+
+    const discussions = await db
+      .select({ slug: works.slug, total: count(messages.id) })
+      .from(works)
+      .leftJoin(messages, eq(messages.channelId, works.channelId))
+      .where(eq(works.isDemo, true))
+      .groupBy(works.slug);
+    expect(discussions.length).toBeGreaterThan(0);
+    for (const discussion of discussions) expect(discussion.total).toBeGreaterThanOrEqual(2);
+
+    const [newest] = await db
+      .select({ id: works.id, slug: works.slug, createdAt: works.createdAt })
+      .from(works)
+      .orderBy(desc(works.createdAt))
+      .limit(1);
+    expect(newest!.slug).toBe("maladies-manioc-vision-mobile");
+    const [announcement] = await db.select().from(posts).where(eq(posts.workId, newest!.id));
+    expect(announcement!.createdAt).toEqual(newest!.createdAt);
   }, 120_000);
 });

@@ -14,6 +14,8 @@ export const MAX_WORK_MATCH_SUGGESTIONS = 5;
 export const MAX_WORK_MATCH_JUSTIFICATION_LENGTH = 300;
 
 const slugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+// Adresses de pages sous /travaux/ : un travail ne peut pas les prendre.
+const RESERVED_WORK_SLUGS = ["nouveau", "filtres"];
 
 export const workTypeSchema = z.enum([
   "class_project",
@@ -99,7 +101,8 @@ export const createWorkSchema = workFieldsSchema.extend({
     .string()
     .min(3)
     .max(80)
-    .regex(slugPattern, "Lettres minuscules, chiffres et tirets seulement."),
+    .regex(slugPattern, "Lettres minuscules, chiffres et tirets seulement.")
+    .refine((slug) => !RESERVED_WORK_SLUGS.includes(slug), "Cet identifiant est déjà pris."),
   // Sans cette case cochée, rien n'est publié : refusé ici et en base.
   publishRightConfirmed: z.literal(true),
   coauthorHandles: z.array(handleSchema).max(MAX_WORK_COAUTHORS).default([]),
@@ -226,6 +229,16 @@ export const pendingWorkInvitationSchema = z.object({
   invitedAt: z.string().datetime(),
 });
 export type PendingWorkInvitation = z.infer<typeof pendingWorkInvitationSchema>;
+
+/**
+ * Personnes qui ont travaillé sur un sujet proche, par tags communs, sans
+ * l'assistant : ce qu'un visiteur voit avant de se connecter.
+ */
+export const relatedPeopleSchema = z.object({
+  total: z.number().int().nonnegative(),
+  people: z.array(workPersonSchema),
+});
+export type RelatedPeople = z.infer<typeof relatedPeopleSchema>;
 
 export const workMatchSubjectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("work"), slug: z.string().min(1).max(80) }),

@@ -239,6 +239,8 @@ export function ProjectPage() {
           )}
         </div>
 
+        <WorkMatchPanel subject={{ type: "project", slug: project.slug }} />
+
         <ProfileLink handle={project.ownerHandle} className="flex w-fit items-center gap-2">
           <Avatar
             deleted={isDeletedAccountHandle(project.ownerHandle)}
@@ -298,11 +300,6 @@ export function ProjectPage() {
 
       {isVisitor && <VisitorBanner />}
 
-      <WorkMatchPanel
-        subject={{ type: "project", slug: project.slug }}
-        signedIn={myProfileId !== null}
-      />
-
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-text">{fr.projects.helpRequestsTitle}</p>
@@ -322,9 +319,9 @@ export function ProjectPage() {
           <ul className="flex flex-col divide-y divide-border">
             {helpRequests.map((helpRequest) => (
               <li key={helpRequest.id} className="py-4">
-                <div className="flex items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-sm font-medium text-text">{helpRequest.title}</span>
-                  <Badge>{KIND_LABELS[helpRequest.kind]}</Badge>
+                  <span className="text-xs text-subtle">{KIND_LABELS[helpRequest.kind]}</span>
                   <Badge tone={helpRequest.status === "open" ? "success" : "neutral"}>
                     {helpRequest.status === "open"
                       ? fr.projects.statusOpen

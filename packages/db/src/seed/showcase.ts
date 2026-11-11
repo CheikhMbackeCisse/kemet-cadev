@@ -1,8 +1,9 @@
-import { and, asc, count, eq, inArray, isNull, like, notInArray, or } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, like, max, ne, notInArray, or } from "drizzle-orm";
 import type { DbOrTx } from "../client.js";
 import {
   assistantInvocations,
   competitions,
+  messages,
   postReactions,
   postReplies,
   posts,
@@ -12,7 +13,9 @@ import {
   submissions,
   teamMembers,
   teams,
+  works,
 } from "../schema/index.js";
+import { DEMO_ACCOUNTS } from "./accounts.js";
 import { demoUuid } from "./demo-uuid.js";
 import {
   FEED_TOP_POSTS,
@@ -21,11 +24,18 @@ import {
   type ShowcaseSubmission,
 } from "./showcase-content.js";
 import { daysAgo, daysFromNow, hoursAgo } from "./time.js";
+import { DEMO_WORKS, demoWorkMessageClientId } from "./works.js";
+
+const HANDLE_BY_ACCOUNT_KEY = new Map(
+  DEMO_ACCOUNTS.map((account) => [account.key, account.handle]),
+);
 
 const ASSISTANT_HANDLE = "kemet";
 // Profil de l'assistant créé par la migration 0003, jamais connectable.
 const ASSISTANT_PROFILE_ID = "00000000-0000-0000-0000-000000000001";
 const MINUTE_MS = 60_000;
+// Sa couverture se lit encore en vignette : c'est la première carte de /travaux.
+const FEATURED_WORK_SLUG = "maladies-manioc-vision-mobile";
 
 export type ShowcaseResult = { status: "done" } | { status: "skipped"; reason: string };
 
@@ -250,6 +260,62 @@ async function seedCompetitionSubmissions(db: DbOrTx, ids: Map<string, string>):
 }
 
 /**
+ * Discussions des travaux de démonstration ajoutées après leur création : une
+ * base déjà remplie les reçoit aussi, un message déjà posé n'est jamais doublé.
+ */
+async function seedWorkDiscussions(db: DbOrTx, ids: Map<string, string>): Promise<void> {
+  for (const demo of DEMO_WORKS) {
+    if (!demo.discussion?.length) continue;
+    const [work] = await db
+      .select({ channelId: works.channelId })
+      .from(works)
+      .where(and(eq(works.slug, demo.slug), eq(works.isDemo, true), isNull(works.deletedAt)));
+    if (!work?.channelId) continue;
+    const channelId = work.channelId;
+    await db
+      .insert(messages)
+      .values(
+        demo.discussion.map((entry, index) => ({
+          channelId,
+          authorId: ids.get(HANDLE_BY_ACCOUNT_KEY.get(entry.author)!)!,
+          clientId: demoWorkMessageClientId(demo.slug, index),
+          body: entry.body,
+          createdAt: hoursAgo(entry.hoursAgo),
+        })),
+      )
+      .onConflictDoNothing();
+  }
+}
+
+/**
+ * Place le travail mis en avant juste après le plus récent des autres travaux
+ * de démonstration, avec son post d'annonce. Ses messages de discussion, posés
+ * après, restent postérieurs. Un travail publié par un compte reste devant.
+ */
+async function putFeaturedWorkFirst(db: DbOrTx): Promise<void> {
+  const [featured] = await db
+    .select({ id: works.id, publisherId: works.publisherId, createdAt: works.createdAt })
+    .from(works)
+    .where(
+      and(eq(works.slug, FEATURED_WORK_SLUG), eq(works.isDemo, true), isNull(works.deletedAt)),
+    );
+  if (!featured) return;
+  const [{ latest }] = (await db
+    .select({ latest: max(works.createdAt) })
+    .from(works)
+    .where(and(eq(works.isDemo, true), ne(works.id, featured.id), isNull(works.deletedAt)))) as [
+    { latest: Date | null },
+  ];
+  if (!latest || featured.createdAt > latest) return;
+  const at = new Date(latest.getTime() + 60 * MINUTE_MS);
+  await db.update(works).set({ createdAt: at, updatedAt: at }).where(eq(works.id, featured.id));
+  await db
+    .update(posts)
+    .set({ createdAt: at })
+    .where(and(eq(posts.workId, featured.id), eq(posts.authorId, featured.publisherId)));
+}
+
+/**
  * Ce qu'un visiteur voit en premier : la question Wave et la réponse
  * enregistrée de @kemet, des réponses et des cœurs sur les posts qui suivent,
  * des soumissions dans les compétitions d'exemple. Relancé à chaque seed, ne
@@ -265,6 +331,9 @@ export async function seedShowcase(db: DbOrTx): Promise<ShowcaseResult> {
         entry.authorHandle,
         ...entry.replies.map((reply) => reply.authorHandle),
       ]),
+      ...DEMO_WORKS.flatMap((demo) =>
+        (demo.discussion ?? []).map((entry) => HANDLE_BY_ACCOUNT_KEY.get(entry.author)!),
+      ),
       ...SHOWCASE_SUBMISSIONS.flatMap((plan) =>
         plan.submissions.flatMap((entry) => [entry.captainHandle, ...entry.memberHandles]),
       ),
@@ -285,6 +354,8 @@ export async function seedShowcase(db: DbOrTx): Promise<ShowcaseResult> {
     await seedWaveQuestion(tx, ids, waveSkill.id);
     await seedTopPosts(tx, ids);
     await seedCompetitionSubmissions(tx, ids);
+    await seedWorkDiscussions(tx, ids);
+    await putFeaturedWorkFirst(tx);
   });
   return { status: "done" };
 }

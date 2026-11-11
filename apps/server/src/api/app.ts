@@ -46,6 +46,7 @@ import { FullTextWorkRetriever } from "../ai/work-retriever.js";
 import { registerWorkRoutes } from "./routes/works.js";
 import { registerWorkMediaRoutes } from "./routes/work-media.js";
 import { registerWorkMatchRoutes } from "./routes/work-matches.js";
+import { registerRelatedPeopleRoutes } from "./routes/related-people.js";
 
 export interface AppDeps {
   db: Db;
@@ -210,6 +211,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerLibraryRoutes(app, chatDeps);
     registerWorkMediaRoutes(app, chatDeps);
     registerWorkMatchRoutes(app, chatDeps);
+    registerRelatedPeopleRoutes(app, chatDeps);
     registerConversationRoutes(app, chatDeps);
   });
 

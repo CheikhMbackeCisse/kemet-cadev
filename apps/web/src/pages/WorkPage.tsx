@@ -31,7 +31,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { ReportDialog } from "../components/moderation/ReportMenu.js";
 import { WorkDiscussion } from "../components/works/WorkDiscussion.js";
-import { WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
+import { useWorkMatch, WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
 import {
   formatFileSize,
   WORK_LINK_ICONS,
@@ -111,6 +111,7 @@ export function WorkPage() {
   // l'adresse a déjà changé.
   const [slug] = useState(() => readSlug(window.location.pathname));
   const { status, profile, isSuspended } = useSession();
+  const workMatch = useWorkMatch({ type: "work", slug });
 
   const [work, setWork] = useState<WorkDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -446,6 +447,13 @@ export function WorkPage() {
             )}
           </div>
 
+          {/* Sous le titre sur téléphone, en haut de la colonne de droite sur ordinateur : un seul état. */}
+          <WorkMatchPanel
+            subject={{ type: "work", slug: work.slug }}
+            match={workMatch}
+            className="lg:hidden"
+          />
+
           {work.viewerRole === "invited" && (
             <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
               <p className="text-sm text-text">{fr.works.invitedBanner}</p>
@@ -487,6 +495,11 @@ export function WorkPage() {
         </article>
 
         <aside className="flex flex-col gap-6 border-t border-border pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <WorkMatchPanel
+            subject={{ type: "work", slug: work.slug }}
+            match={workMatch}
+            className="hidden border-b border-border pb-6 lg:flex"
+          />
           <div className="flex flex-col gap-2">
             <Button onClick={joinDiscussion} aria-describedby="work-discussion-participants">
               <MessagesSquare className="size-4" aria-hidden="true" />
@@ -502,12 +515,6 @@ export function WorkPage() {
               </Button>
             )}
           </div>
-
-          <WorkMatchPanel
-            subject={{ type: "work", slug: work.slug }}
-            signedIn={status === "ready"}
-            className="border-t border-border pt-6"
-          />
         </aside>
       </div>
 

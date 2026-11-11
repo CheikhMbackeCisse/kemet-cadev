@@ -73,6 +73,7 @@ export const PAGE_LOADERS = {
   works: page(() => import("../../pages/WorksPage.js"), "WorksPage"),
   work: page(() => import("../../pages/WorkPage.js"), "WorkPage"),
   workForm: page(() => import("../../pages/WorkFormPage.js"), "WorkFormPage"),
+  workFilters: page(() => import("../../pages/WorkFiltersPage.js"), "WorkFiltersPage"),
   user: page(() => import("../../pages/UserPage.js"), "UserPage"),
 } as const;
 
@@ -123,6 +124,7 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
   if (pathname === "/travaux" || pathname === "/travaux/") return "works";
   if (pathname === "/travaux/nouveau" || /^\/travaux\/[^/]+\/modifier\/?$/.test(pathname))
     return "workForm";
+  if (pathname === "/travaux/filtres") return "workFilters";
   if (pathname.startsWith("/travaux/")) return "work";
   if (pathname === "/competitions" || pathname === "/competitions/") return "competitions";
   if (pathname === "/competitions/nouvelle") return "newCompetition";

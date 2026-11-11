@@ -68,6 +68,7 @@ import type {
   WorkDetail,
   WorkMatchResult,
   WorkMatchSubject,
+  RelatedPeople,
   WorkSummary,
   WorkSort,
   WorkStatus,
@@ -1023,6 +1024,14 @@ export function findWorkMatches(subject: WorkMatchSubject) {
     method: "POST",
     body: JSON.stringify({ subject }),
   });
+}
+
+/** Tags communs seulement, sans l'assistant : ouvert à un visiteur. */
+export function getRelatedPeople(subject: { type: "work" | "project"; slug: string }) {
+  const base = subject.type === "work" ? "/api/works" : "/api/projects";
+  return request<{ related: RelatedPeople }>(
+    `${base}/${encodeURIComponent(subject.slug)}/related-people`,
+  );
 }
 
 export function getUserLibrary(handle: string) {

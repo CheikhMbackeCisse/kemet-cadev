@@ -372,7 +372,7 @@ export function PostPage() {
         />
 
         {post.format === "question" && !post.deletedAt && (
-          <WorkMatchPanel subject={{ type: "post", id: post.id }} signedIn={status === "ready"} />
+          <WorkMatchPanel subject={{ type: "post", id: post.id }} />
         )}
 
         {post.format === "a_tester" && feedback.length > 0 && (

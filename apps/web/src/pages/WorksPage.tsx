@@ -1,8 +1,14 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { BookOpen, Plus, Search, X } from "lucide-react";
+import { BookOpen, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WorkSort, WorkType } from "@kemet/shared";
+import {
+  countActiveWorkFilters,
+  readWorkFilters,
+  workFiltersSearch,
+  type WorkFilters,
+} from "../lib/works/filters.js";
 import { listWorks } from "../lib/chat/api.js";
 import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
@@ -21,33 +27,8 @@ import { fr } from "../i18n/fr.js";
 
 const ALL = "all";
 
-interface WorkFilters {
-  q: string;
-  type: WorkType | null;
-  sort: WorkSort;
-  tag: string;
-}
-
-// Les filtres vivent dans l'adresse : une liste filtrée se partage par un lien.
-function readFilters(): WorkFilters {
-  const params = new URLSearchParams(window.location.search);
-  const type = params.get("type");
-  return {
-    q: params.get("q") ?? "",
-    type: WORK_TYPES.includes(type as WorkType) ? (type as WorkType) : null,
-    sort: params.get("tri") === "discussed" ? "discussed" : "recent",
-    tag: params.get("tag") ?? "",
-  };
-}
-
 function writeFilters(filters: WorkFilters) {
-  const params = new URLSearchParams();
-  if (filters.q) params.set("q", filters.q);
-  if (filters.type) params.set("type", filters.type);
-  if (filters.sort !== "recent") params.set("tri", filters.sort);
-  if (filters.tag) params.set("tag", filters.tag);
-  const query = params.toString();
-  window.history.replaceState(null, "", `/travaux${query ? `?${query}` : ""}`);
+  window.history.replaceState(null, "", `/travaux${workFiltersSearch(filters)}`);
 }
 
 function toQuery(filters: WorkFilters) {
@@ -62,7 +43,7 @@ function toQuery(filters: WorkFilters) {
 export function WorksPage() {
   const toast = useToast();
   const { status } = useSession();
-  const initial = readFilters();
+  const [initial] = useState(() => readWorkFilters(window.location.search));
   const [q, setQ] = useState(initial.q);
   const [qDraft, setQDraft] = useState(initial.q);
   const [type, setType] = useState<WorkType | null>(initial.type);
@@ -164,12 +145,20 @@ export function WorksPage() {
             <X className="size-4" aria-hidden="true" />
           </IconButton>
         )}
-        <Button type="submit" variant="secondary">
+        <Button type="submit" variant="secondary" className="max-md:hidden">
           {fr.works.searchSubmit}
         </Button>
+        {/* Sur téléphone, Entrée lance la recherche et les filtres ont leur page. */}
+        <a
+          href={`/travaux/filtres${workFiltersSearch({ q, type, sort, tag })}`}
+          className="inline-flex h-control-mobile shrink-0 items-center gap-2 rounded-control border border-border-strong px-3 text-sm font-medium text-text hover:bg-surface-2 md:hidden"
+        >
+          <SlidersHorizontal className="size-4" aria-hidden="true" />
+          {fr.works.filtersButton(countActiveWorkFilters({ q, type, sort, tag }))}
+        </a>
       </form>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 max-md:hidden">
         <Select
           value={type ?? ALL}
           onValueChange={(value) => setType(value === ALL ? null : (value as WorkType))}

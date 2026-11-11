@@ -1,7 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import { UsersRound } from "lucide-react";
 import { useId, useState } from "react";
 import type { WorkMatchFallbackReason, WorkMatchResult, WorkMatchSubject } from "@kemet/shared";
-import { findWorkMatches } from "../../lib/chat/api.js";
+import { findWorkMatches, getRelatedPeople } from "../../lib/chat/api.js";
+import { useSession } from "../../session/SessionProvider.js";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { Button } from "../ui/Button.js";
@@ -17,21 +19,19 @@ const FALLBACK_MESSAGES: Record<WorkMatchFallbackReason, string> = {
   invalid_response: fr.works.matchWithoutAssistantInvalid,
 };
 
-export interface WorkMatchPanelProps {
-  subject: WorkMatchSubject;
-  /** Un visiteur voit le bouton mais est invité à se connecter : l'appel compte dans un quota personnel. */
-  signedIn: boolean;
-  className?: string;
+export interface WorkMatch {
+  state: "idle" | "loading" | "error" | "done";
+  result: WorkMatchResult | null;
+  ask: () => void;
 }
 
 /**
- * "Qui a travaillé sur ce sujet ?" : rien n'est demandé à l'assistant tant
- * que le bouton n'est pas pressé.
+ * État de l'appel à @kemet, à part du panneau : une page qui affiche le
+ * panneau à deux endroits selon la largeur garde un seul résultat.
  */
-export function WorkMatchPanel({ subject, signedIn, className }: WorkMatchPanelProps) {
-  const [state, setState] = useState<"idle" | "loading" | "error" | "done">("idle");
+export function useWorkMatch(subject: WorkMatchSubject): WorkMatch {
+  const [state, setState] = useState<WorkMatch["state"]>("idle");
   const [result, setResult] = useState<WorkMatchResult | null>(null);
-  const titleId = useId();
 
   async function ask() {
     setState("loading");
@@ -44,6 +44,48 @@ export function WorkMatchPanel({ subject, signedIn, className }: WorkMatchPanelP
     }
   }
 
+  return { state, result, ask: () => void ask() };
+}
+
+export interface WorkMatchPanelProps {
+  subject: WorkMatchSubject;
+  /** Fourni par la page quand le panneau apparaît à plus d'un endroit. */
+  match?: WorkMatch;
+  className?: string;
+}
+
+/**
+ * "Qui a travaillé sur ce sujet ?". Avec un compte, rien n'est demandé à
+ * l'assistant tant que le bouton n'est pas pressé. Sans compte, un travail ou
+ * un projet montre déjà les personnes rapprochées par tags communs, sans
+ * l'assistant.
+ */
+export function WorkMatchPanel({ subject, match, className }: WorkMatchPanelProps) {
+  const { status } = useSession();
+  const ownMatch = useWorkMatch(subject);
+  const { state, result, ask } = match ?? ownMatch;
+  const titleId = useId();
+
+  if (status === "loading") return null;
+  if (status !== "ready") {
+    if (subject.type === "post")
+      return (
+        <a
+          href="/connexion"
+          className={cn(
+            "inline-flex h-control items-center gap-2 self-start rounded-control border border-border-strong bg-transparent px-3 text-sm font-medium text-text hover:bg-surface-2 max-md:h-control-mobile",
+            className,
+          )}
+        >
+          <UsersRound className="size-4" aria-hidden="true" />
+          {fr.works.matchButton}
+        </a>
+      );
+    return (
+      <RelatedPeoplePreview subject={subject} signIn={status === "visitor"} className={className} />
+    );
+  }
+
   return (
     <section
       className={cn("flex flex-col gap-3", className)}
@@ -53,21 +95,12 @@ export function WorkMatchPanel({ subject, signedIn, className }: WorkMatchPanelP
       <p className="sr-only" aria-live="polite">
         {state === "loading" ? fr.works.matchLoading : ""}
       </p>
-      {state === "idle" &&
-        (signedIn ? (
-          <Button variant="secondary" onClick={ask} className="self-start">
-            <UsersRound className="size-4" aria-hidden="true" />
-            {fr.works.matchButton}
-          </Button>
-        ) : (
-          <a
-            href="/connexion"
-            className="inline-flex h-control items-center gap-2 self-start rounded-control border border-border-strong bg-transparent px-3 text-sm font-medium text-text hover:bg-surface-2 max-md:h-control-mobile"
-          >
-            <UsersRound className="size-4" aria-hidden="true" />
-            {fr.works.matchButton}
-          </a>
-        ))}
+      {state === "idle" && (
+        <Button variant="secondary" onClick={ask} className="self-start">
+          <UsersRound className="size-4" aria-hidden="true" />
+          {fr.works.matchButton}
+        </Button>
+      )}
 
       {state === "loading" && (
         <div className="flex flex-col gap-2" aria-busy="true">
@@ -138,6 +171,66 @@ export function WorkMatchPanel({ subject, signedIn, className }: WorkMatchPanelP
             <p className="text-xs text-subtle">{fr.works.matchByAssistant}</p>
           )}
         </div>
+      )}
+    </section>
+  );
+}
+
+function RelatedPeoplePreview({
+  subject,
+  signIn,
+  className,
+}: {
+  subject: { type: "work" | "project"; slug: string };
+  signIn: boolean;
+  className?: string;
+}) {
+  const titleId = useId();
+  const query = useQuery({
+    queryKey: ["related-people", subject.type, subject.slug],
+    queryFn: () => getRelatedPeople(subject).then((response) => response.related),
+  });
+  const related = query.data;
+  // Rien de proche : le bloc disparaît plutôt que d'annoncer un vide sous le titre.
+  if (related?.total === 0) return null;
+
+  return (
+    <section className={cn("flex flex-col gap-2", className)} aria-labelledby={titleId}>
+      <h2 id={titleId} className="text-sm font-semibold text-text">
+        {fr.works.matchTitle}
+      </h2>
+      {query.isPending && <Skeleton className="h-8 w-56" />}
+      {query.isError && !related && <p className="text-sm text-subtle">{fr.works.matchError}</p>}
+      {related && (
+        <>
+          <div className="flex items-center gap-3">
+            <ul className="flex shrink-0 -space-x-2">
+              {related.people.map((person) => (
+                <li key={person.id}>
+                  <a
+                    href={`/u/${person.handle}`}
+                    aria-label={person.displayName}
+                    title={person.displayName}
+                    className="block rounded-full"
+                  >
+                    <Avatar
+                      name={person.displayName}
+                      src={person.avatarUrl ?? undefined}
+                      size={32}
+                      className="ring-2 ring-bg"
+                    />
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="text-sm text-text-2">{fr.works.relatedCount(related.total)}</p>
+          </div>
+          {signIn && (
+            <a href="/connexion" className="self-start text-sm text-link hover:underline">
+              {fr.works.relatedSignIn}
+            </a>
+          )}
+        </>
       )}
     </section>
   );

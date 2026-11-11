@@ -963,6 +963,11 @@ export const fr = {
       "Réponse préparée pour la démonstration, rejouée parce que l'assistant est indisponible.",
     matchByAssistant: "Proposé par @kemet",
     matchCites: (title: string) => `Travail : ${title}`,
+    relatedCount: (count: number) =>
+      count === 1
+        ? "1 personne a travaillé sur un sujet proche"
+        : `${count} personnes ont travaillé sur un sujet proche`,
+    relatedSignIn: "Connecte-toi pour leur écrire",
     profileTab: "Travaux",
     profileCredentialsTab: "Parcours",
     profileEmptyOwn: "Publie ton premier travail : un projet de classe, un stage, un mémoire…",
@@ -986,6 +991,9 @@ export const fr = {
     statusCompleted: "Terminé",
     statusInProgress: "En cours",
     sortLabel: "Trier",
+    filtersButton: (active: number) => (active > 0 ? `Filtres (${active})` : "Filtres"),
+    filtersTitle: "Filtres",
+    filtersApply: "Afficher les travaux",
     sortRecent: "Trier : les plus récents",
     sortDiscussed: "Trier : les plus discutés",
     messageCount: (count: number) => (count === 1 ? "1 message" : `${count} messages`),
