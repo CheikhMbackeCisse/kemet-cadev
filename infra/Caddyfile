@@ -7,7 +7,13 @@
 	# web ; encode ne retouche pas une réponse qui porte Content-Encoding.
 	encode zstd gzip
 
+	# defer : appliqués à l'écriture de la réponse, ces en-têtes remplacent
+	# ceux que l'API pose déjà (helmet) au lieu de s'y ajouter, sans quoi
+	# chacun partait deux fois sur /api.
+	# microphone=(self) : enregistrement des messages vocaux.
 	header {
+		defer
+		Permissions-Policy "camera=(), geolocation=(), payment=(), usb=(), microphone=(self)"
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"

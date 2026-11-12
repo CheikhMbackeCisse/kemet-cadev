@@ -2,6 +2,7 @@ import {
   BookOpen,
   FolderGit2,
   House,
+  LockKeyhole,
   MessageSquare,
   Send,
   Settings,
@@ -55,6 +56,14 @@ export const RAIL_FOOTER_NAV: RailNavItem = {
   icon: ShieldCheck,
 };
 
+/** Au pied du rail, sous Confidentialité. */
+export const SECURITY_NAV: RailNavItem = {
+  id: "securite",
+  label: "Sécurité",
+  href: "/securite",
+  icon: LockKeyhole,
+};
+
 /** Au pied de la barre d'activité sur bureau, dans la feuille "Moi" sur mobile. */
 export const SETTINGS_NAV: RailNavItem = {
   id: "parametres",
@@ -77,5 +86,6 @@ export function activeRailSection(pathname: string): string {
   if (pathname.startsWith("/salons")) return "salons";
   if (pathname.startsWith("/messages")) return "messages";
   if (pathname === "/confidentialite") return "confidentialite";
+  if (pathname === "/securite") return "securite";
   return "";
 }
