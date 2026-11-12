@@ -1,6 +1,6 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { FileUp } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "../components/ui/Button.js";
 import { Tabs } from "../components/ui/Tabs.js";
 import { RichText } from "../components/content/RichText.js";
@@ -30,6 +30,13 @@ export function NewSkillPage() {
   const [contentView, setContentView] = useState<"write" | "preview">("write");
   const [importedName, setImportedName] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  // Ce que l'import a remplacé, pour pouvoir revenir en arrière.
+  const [beforeImport, setBeforeImport] = useState<{
+    name: string;
+    description: string;
+    content: string;
+  } | null>(null);
+  const contentLabelId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors<"name" | "description" | "content">>(
@@ -51,11 +58,22 @@ export function NewSkillPage() {
     }
     setImportError(null);
     setImportedName(file.name);
+    if (!beforeImport) setBeforeImport({ name, description, content });
     if (result.name) setName(result.name);
     if (result.description) setDescription(result.description);
     setContent(result.content);
     // On relit ce qui vient d'un fichier avant de le publier.
     setContentView("preview");
+  }
+
+  function undoImport() {
+    if (!beforeImport) return;
+    setName(beforeImport.name);
+    setDescription(beforeImport.description);
+    setContent(beforeImport.content);
+    setBeforeImport(null);
+    setImportedName(null);
+    setContentView("write");
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -122,9 +140,14 @@ export function NewSkillPage() {
           </p>
         ) : (
           importedName && (
-            <p role="status" className="text-sm text-muted">
-              {fr.skills.importedFile(importedName)}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-3">
+              <p role="status" className="text-sm text-muted">
+                {fr.skills.importedFile(importedName)}
+              </p>
+              <Button type="button" variant="ghost" onClick={undoImport}>
+                {fr.skills.undoImport}
+              </Button>
+            </div>
           )
         )}
       </div>
@@ -134,35 +157,46 @@ export function NewSkillPage() {
       <FormField label={fr.skills.descriptionLabel} error={fieldErrors.description}>
         <Textarea value={description} onChange={(event) => setDescription(event.target.value)} />
       </FormField>
-      <Tabs
-        value={contentView}
-        onValueChange={(value) => setContentView(value as "write" | "preview")}
-        items={[
-          {
-            value: "write",
-            label: fr.skills.contentWrite,
-            content: (
-              <CodeTextarea
-                label={fr.skills.contentLabel}
-                value={content}
-                onValueChange={setContent}
-                error={fieldErrors.content}
-              />
-            ),
-          },
-          {
-            value: "preview",
-            label: fr.skills.contentPreview,
-            content: content.trim() ? (
-              <div className="max-h-[60vh] overflow-y-auto rounded-card border border-border p-4">
-                <RichText source={content} className="text-base" />
-              </div>
-            ) : (
-              <p className="text-sm text-muted">{fr.skills.previewEmpty}</p>
-            ),
-          },
-        ]}
-      />
+      <div className="flex flex-col gap-1">
+        <p id={contentLabelId} className="text-sm text-text-2">
+          {fr.skills.contentLabel}
+        </p>
+        <Tabs
+          labelledBy={contentLabelId}
+          value={contentView}
+          onValueChange={(value) => setContentView(value as "write" | "preview")}
+          items={[
+            {
+              value: "write",
+              label: fr.skills.contentWrite,
+              content: (
+                <CodeTextarea
+                  aria-labelledby={contentLabelId}
+                  value={content}
+                  onValueChange={setContent}
+                  error={fieldErrors.content}
+                />
+              ),
+            },
+            {
+              value: "preview",
+              label: fr.skills.contentPreview,
+              content: content.trim() ? (
+                <div className="rounded-card border border-border p-4 md:max-h-[60vh] md:overflow-y-auto">
+                  <RichText source={content} className="text-base" />
+                </div>
+              ) : (
+                <div className="flex flex-col items-start gap-2">
+                  <p className="text-sm text-muted">{fr.skills.previewEmpty}</p>
+                  <Button type="button" variant="secondary" onClick={() => setContentView("write")}>
+                    {fr.skills.contentWrite}
+                  </Button>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </div>
       <label className="flex flex-col gap-1 text-sm text-text-2">
         {fr.skills.tagsLabel}
         <Input value={tags} onChange={(event) => setTags(event.target.value)} />

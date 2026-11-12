@@ -81,15 +81,12 @@ export function neighbourTab(activeTabId: string, direction: SwipeDirection): st
   return MOBILE_TABS[index + (direction === "next" ? 1 : -1)]?.id ?? null;
 }
 
-function markTransition(direction: SwipeDirection, scope: "page" | "inner") {
+function markPageTransition(direction: SwipeDirection) {
   const root = document.documentElement;
-  const key = scope === "page" ? "tabSwipe" : "tabSwipeInner";
   // La page qu'on quitte ne glisse pas : seule la nouvelle entre.
-  if (scope === "page") {
-    for (const main of document.querySelectorAll("main")) main.dataset.swipeLeaving = "";
-  }
-  root.dataset[key] = direction;
-  window.setTimeout(() => delete root.dataset[key], TRANSITION_WINDOW_MS);
+  for (const main of document.querySelectorAll("main")) main.dataset.swipeLeaving = "";
+  root.dataset.tabSwipe = direction;
+  window.setTimeout(() => delete root.dataset.tabSwipe, TRANSITION_WINDOW_MS);
 }
 
 /**
@@ -131,13 +128,10 @@ export function useTabSwipe(navigateTabs: boolean, activeTabId: string) {
         detail: { direction },
         cancelable: true,
       });
-      if (!window.dispatchEvent(swipe)) {
-        markTransition(direction, "inner");
-        return;
-      }
+      if (!window.dispatchEvent(swipe)) return;
       const target = navigateTabs ? neighbourTab(activeTabId, direction) : null;
       if (!target) return;
-      markTransition(direction, "page");
+      markPageTransition(direction);
       navigate(mobileTabHref(target));
     }
 
@@ -161,7 +155,7 @@ export function useInnerTabSwipe(
   enabled: boolean,
   values: readonly string[],
   value: string,
-  onValueChange: (value: string) => void,
+  onValueChange: (value: string, direction: SwipeDirection) => void,
 ) {
   // Lu par l'écouteur au moment du geste : un second glissement juste après
   // le premier part de l'onglet affiché, pas de celui d'avant.
@@ -179,7 +173,7 @@ export function useInnerTabSwipe(
       const next = values[index + (direction === "next" ? 1 : -1)];
       if (index === -1 || next === undefined) return;
       event.preventDefault();
-      onValueChange(next);
+      onValueChange(next, direction);
     }
     window.addEventListener(TAB_SWIPE_EVENT, onSwipe);
     return () => window.removeEventListener(TAB_SWIPE_EVENT, onSwipe);

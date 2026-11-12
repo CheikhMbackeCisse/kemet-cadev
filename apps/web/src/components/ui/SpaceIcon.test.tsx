@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { Braces, Briefcase, Cloud, Database, Flag, Gamepad2, Lock, Sprout, Trophy } from "lucide-react";
+import {
+  AppWindow,
+  Braces,
+  Briefcase,
+  Cloud,
+  CodeXml,
+  Database,
+  Flag,
+  Gamepad2,
+  Lock,
+  Sprout,
+  Trophy,
+} from "lucide-react";
 import { spaceTechLogo, spaceThemeIcon, spaceTints } from "./SpaceIcon.js";
 
 describe("spaceThemeIcon", () => {
@@ -13,6 +25,13 @@ describe("spaceThemeIcon", () => {
     expect(spaceThemeIcon("Débuter en informatique")).toBe(Sprout);
     expect(spaceThemeIcon("Hackathons et concours")).toBe(Trophy);
     expect(spaceThemeIcon("CADEV 2026")).toBe(Flag);
+  });
+
+  it("ne confond pas un mot qui contient le motif d'un autre sujet", () => {
+    expect(spaceThemeIcon("Linux pour tous")).not.toBe(AppWindow);
+    expect(spaceThemeIcon("Jeunes codeurs")).not.toBe(Gamepad2);
+    expect(spaceThemeIcon("Développeurs de Lomé")).toBe(CodeXml);
+    expect(spaceThemeIcon("UI et UX")).toBe(AppWindow);
   });
 
   it("garde le logo d'une technologie précise", () => {

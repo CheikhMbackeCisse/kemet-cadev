@@ -158,7 +158,7 @@ export function WorksPage() {
         </a>
       </form>
 
-      <div data-no-tab-swipe className="flex flex-wrap items-center gap-2 max-md:hidden">
+      <div className="flex flex-wrap items-center gap-2 max-md:hidden">
         <Select
           value={type ?? ALL}
           onValueChange={(value) => setType(value === ALL ? null : (value as WorkType))}

@@ -139,7 +139,7 @@ describe("useTabSwipe", () => {
     });
 
     swipe(surface, 300, 120);
-    expect(onValueChange).toHaveBeenCalledWith("projets");
+    expect(onValueChange).toHaveBeenCalledWith("projets", "next");
     expect(navigate).not.toHaveBeenCalled();
 
     inner.rerender({ value: "opportunites" });

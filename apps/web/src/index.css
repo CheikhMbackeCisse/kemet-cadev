@@ -605,12 +605,12 @@
  * est coupé avec prefers-reduced-motion, l'animation n'a donc pas de repli.
  */
 :root[data-tab-swipe="next"] main:not([data-swipe-leaving]),
-:root[data-tab-swipe-inner="next"] [role="tabpanel"] {
+[data-swipe-in="next"] {
   animation: tab-swipe-from-right 180ms ease-out;
 }
 
 :root[data-tab-swipe="previous"] main:not([data-swipe-leaving]),
-:root[data-tab-swipe-inner="previous"] [role="tabpanel"] {
+[data-swipe-in="previous"] {
   animation: tab-swipe-from-left 180ms ease-out;
 }
 

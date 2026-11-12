@@ -76,10 +76,7 @@ export function PostImages({ attachments: all, className, linked = true }: PostI
     );
 
   return (
-    <div
-      data-no-tab-swipe
-      className={cn("mt-2 overflow-hidden rounded-card border border-border", className)}
-    >
+    <div className={cn("mt-2 overflow-hidden rounded-card border border-border", className)}>
       {layout}
     </div>
   );

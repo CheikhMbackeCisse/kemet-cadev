@@ -1,7 +1,7 @@
 import * as RadixTabs from "@radix-ui/react-tabs";
-import { useId, useMemo, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
-import { useInnerTabSwipe } from "../../lib/navigation/tabSwipe.js";
+import { useInnerTabSwipe, type SwipeDirection } from "../../lib/navigation/tabSwipe.js";
 
 export interface TabItem {
   value: string;
@@ -26,6 +26,8 @@ export interface TabsProps {
    * bas, qui ne reprend la main qu'au premier ou au dernier onglet.
    */
   swipeable?: boolean;
+  /** Identifiant du libellé qui nomme la rangée d'onglets. */
+  labelledBy?: string;
 }
 
 // Le panneau actif est rendu hors de RadixTabs.Content : son Presence lit
@@ -39,6 +41,7 @@ export function Tabs({
   layout = "start",
   scrollable = false,
   swipeable = false,
+  labelledBy,
 }: TabsProps) {
   const centered = layout === "centered";
   const baseId = useId();
@@ -46,10 +49,18 @@ export function Tabs({
   const panelId = (itemValue: string) => `${baseId}-panel-${itemValue}`;
   const active = items.find((item) => item.value === value);
   const values = useMemo(() => items.map((item) => item.value), [items]);
-  useInnerTabSwipe(swipeable, values, value, onValueChange);
+  // Seul le panneau qui arrive par un glissement s'anime, pas un clic.
+  const [swipedIn, setSwipedIn] = useState<{ value: string; direction: SwipeDirection } | null>(
+    null,
+  );
+  useInnerTabSwipe(swipeable, values, value, (next, direction) => {
+    setSwipedIn({ value: next, direction });
+    onValueChange(next);
+  });
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className={className}>
       <RadixTabs.List
+        aria-labelledby={labelledBy}
         className={cn(
           "flex items-end border-b border-border",
           centered ? "justify-center gap-2 [&>*]:after:h-[3px]" : "gap-5",
@@ -81,6 +92,8 @@ export function Tabs({
       </RadixTabs.List>
       {active && (
         <div
+          key={swipeable ? active.value : undefined}
+          data-swipe-in={swipedIn?.value === active.value ? swipedIn.direction : undefined}
           role="tabpanel"
           id={panelId(active.value)}
           aria-labelledby={triggerId(active.value)}

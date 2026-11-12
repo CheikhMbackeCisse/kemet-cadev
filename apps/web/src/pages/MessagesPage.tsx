@@ -63,6 +63,7 @@ function ConversationBoxes({ activeConversationId }: { activeConversationId: str
       value={box}
       onValueChange={changeBox}
       className="px-3 pt-1"
+      swipeable
       items={[
         {
           value: "inbox",

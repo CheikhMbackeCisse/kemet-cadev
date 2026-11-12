@@ -31,10 +31,10 @@ const THEME_ICONS: [RegExp, LucideIcon][] = [
   [/backend|\bapi\b/i, Braces],
   [/devops|cloud|infra/i, Cloud],
   [/s[ée]curit[ée]|cyber/i, Lock],
-  [/jeu|game|gaming/i, Gamepad2],
-  [/frontend|design|ux|ui\b|figma|web/i, AppWindow],
+  [/\bjeux?\b|game|gaming/i, Gamepad2],
+  [/frontend|design|\bux\b|\bui\b|figma|web/i, AppWindow],
   [/startup|entrepr|produit/i, Rocket],
-  [/code|dev|programm/i, CodeXml],
+  [/code|d[ée]v|programm/i, CodeXml],
 ];
 
 const TINT_COUNT = 6;
