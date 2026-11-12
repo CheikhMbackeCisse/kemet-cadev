@@ -85,7 +85,7 @@ test("publie un post avec une image et la voit affichée dans le fil", async ({ 
   await page.getByRole("link", { name: "Publier", exact: true }).click();
   await expect(page).toHaveURL(/\/fil\/nouveau$/);
 
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[type="file"][accept="image/*"]').setInputFiles({
     name: fileName,
     mimeType: "image/png",
     buffer: PNG_BYTES,
@@ -98,7 +98,11 @@ test("publie un post avec une image et la voit affichée dans le fil", async ({ 
   await expect(page.getByAltText(fileName)).toBeVisible();
 });
 
-test("enregistre un post, le retrouve dans Enregistrés et copie son lien", async ({ page, request, context }) => {
+test("enregistre un post, le retrouve dans Enregistrés et copie son lien", async ({
+  page,
+  request,
+  context,
+}) => {
   const email = `e2e-feedsave-${test.info().project.name}-${Date.now()}@test.kemet`;
   const handle = `e2esave${test.info().project.name}${Date.now()}`;
   const body = `Post à garder ${Date.now()}`;
@@ -110,9 +114,15 @@ test("enregistre un post, le retrouve dans Enregistrés et copie son lien", asyn
 
   await page.goto(`/fil/${postId}`);
   await page.getByRole("button", { name: /Marquer utile/ }).click();
-  await expect(page.getByRole("button", { name: /Marquer utile, 1 personne/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: /Marquer utile, 1 personne/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Enregistrer", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Enregistrer", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(page.getByText("Enregistré.", { exact: true }).first()).toBeVisible();
 
   await page.goto("/enregistres");
@@ -125,7 +135,10 @@ test("enregistre un post, le retrouve dans Enregistrés et copie son lien", asyn
   await expect(page.getByText(/Lien copié|Le lien n'a pas pu être copié/).first()).toBeVisible();
 });
 
-test("republie le post d'une autre personne et la suit depuis le menu du post", async ({ page, request }) => {
+test("republie le post d'une autre personne et la suit depuis le menu du post", async ({
+  page,
+  request,
+}) => {
   const project = test.info().project.name;
   const stamp = Date.now();
   const authorHandle = `e2erpa${project}${stamp}`;

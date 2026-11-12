@@ -20,7 +20,6 @@ export function PinnedPostBanner({ spaceId }: { spaceId: string }) {
   return (
     <a
       href={`/fil/${pinned.postId}`}
-      aria-label={fr.spaces.openPinned(pinned.title)}
       className="flex min-h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-4 py-2 hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary lg:px-6"
     >
       {pinned.imageId ? (

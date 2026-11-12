@@ -337,7 +337,12 @@ export function PostCard({
             )
           )}
           {!post.deletedAt && (
-            <PostImages attachments={post.attachments} credit={post.mediaCredit} postId={post.id} />
+            <PostImages
+              attachments={post.attachments}
+              credit={post.mediaCredit}
+              postId={post.id}
+              authorName={post.authorDisplayName}
+            />
           )}
           {!post.deletedAt && <SharedPostPreview post={post.sharedPost} />}
           {!post.deletedAt && <WorkPreview work={post.work} />}

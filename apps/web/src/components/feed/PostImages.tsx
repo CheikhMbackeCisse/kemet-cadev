@@ -16,6 +16,8 @@ export interface PostImagesProps {
   credit?: { label: string; url: string | null } | null;
   /** Post des pièces jointes : une vidéo s'ouvre alors en plein écran. */
   postId?: string;
+  /** Auteur du post, pour nommer une vidéo sans lire son nom de fichier. */
+  authorName?: string;
 }
 
 // Le cadre a ses proportions avant l'arrivée de l'image (dimensions lues à
@@ -48,6 +50,38 @@ function Slide({ attachment, linked }: { attachment: Attachment; linked: boolean
     >
       <Picture attachment={attachment} />
     </a>
+  );
+}
+
+const ARROW_CLASS =
+  "absolute top-1/2 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black [@media(hover:hover)]:flex";
+
+function ArrowButton({
+  side,
+  disabled,
+  onClick,
+}: {
+  side: "previous" | "next";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const Icon = side === "previous" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      aria-disabled={disabled}
+      aria-label={side === "previous" ? fr.feed.previousImage : fr.feed.nextImage}
+      className={cn(
+        ARROW_CLASS,
+        side === "previous" ? "left-2" : "right-2",
+        disabled
+          ? "cursor-default opacity-0 focus-visible:opacity-40"
+          : "opacity-0 focus-visible:opacity-100 group-hover/carousel:opacity-100",
+      )}
+    >
+      <Icon className="size-5" aria-hidden="true" />
+    </button>
   );
 }
 
@@ -84,6 +118,7 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
         // Le glissement entre onglets ne part jamais d'un carrousel.
         data-no-tab-swipe
         tabIndex={0}
+        role="region"
         aria-label={fr.feed.carouselScroller}
         className="scrollbar-none flex max-h-[min(512px,70vh)] snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         style={{ aspectRatio: String(ratio) }}
@@ -106,26 +141,11 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
       >
         {index + 1}/{count}
       </span>
-      {index > 0 && (
-        <button
-          type="button"
-          onClick={() => go(index - 1)}
-          aria-label={fr.feed.previousImage}
-          className="absolute left-2 top-1/2 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity focus-visible:opacity-100 group-hover/carousel:opacity-100 [@media(hover:hover)]:flex"
-        >
-          <ChevronLeft className="size-5" aria-hidden="true" />
-        </button>
-      )}
-      {index < count - 1 && (
-        <button
-          type="button"
-          onClick={() => go(index + 1)}
-          aria-label={fr.feed.nextImage}
-          className="absolute right-2 top-1/2 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity focus-visible:opacity-100 group-hover/carousel:opacity-100 [@media(hover:hover)]:flex"
-        >
-          <ChevronRight className="size-5" aria-hidden="true" />
-        </button>
-      )}
+      {/* Toujours rendues : une flèche qui disparaîtrait sous le focus le
+          laisserait tomber sur la page. Aux extrémités, elle reste joignable
+          au clavier mais ne fait rien. */}
+      <ArrowButton side="previous" disabled={index === 0} onClick={() => go(index - 1)} />
+      <ArrowButton side="next" disabled={index === count - 1} onClick={() => go(index + 1)} />
       <div aria-hidden="true" className="flex justify-center gap-1.5 bg-surface py-2">
         {attachments.map((attachment, position) => (
           <span
@@ -141,9 +161,21 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
   );
 }
 
-function Credit({ credit }: { credit: NonNullable<PostImagesProps["credit"]> }) {
+function Credit({
+  credit,
+  detached = false,
+}: {
+  credit: NonNullable<PostImagesProps["credit"]>;
+  /** Sous une vidéo, qui a son propre cadre : pas de filet ni de fond. */
+  detached?: boolean;
+}) {
   return (
-    <p className="flex flex-wrap gap-x-2 border-t border-border bg-surface px-3 py-2 text-xs text-text-2">
+    <p
+      className={cn(
+        "flex flex-wrap gap-x-2 text-xs text-text-2",
+        detached ? "mt-1" : "border-t border-border bg-surface px-3 py-2",
+      )}
+    >
       <span>{credit.label}</span>
       {credit.url && (
         <a
@@ -153,6 +185,7 @@ function Credit({ credit }: { credit: NonNullable<PostImagesProps["credit"]> }) 
           className="text-link hover:underline"
         >
           {fr.feed.creditLink}
+          <span className="sr-only"> {fr.feed.newTab}</span>
         </a>
       )}
     </p>
@@ -165,6 +198,7 @@ export function PostImages({
   linked = true,
   credit,
   postId,
+  authorName,
 }: PostImagesProps) {
   // Images effacées avec le compte de leur auteur : on le dit, sans cadre vide.
   const attachments = all.filter((attachment) => !attachment.removed);
@@ -181,8 +215,8 @@ export function PostImages({
   if (first.kind === "video") {
     return (
       <div className={className}>
-        <PostVideo attachment={first} playable={linked} postId={postId} />
-        {credit && <Credit credit={credit} />}
+        <PostVideo attachment={first} playable={linked} postId={postId} authorName={authorName} />
+        {credit && <Credit credit={credit} detached />}
       </div>
     );
   }
@@ -198,9 +232,15 @@ export function PostImages({
         <div className="relative max-h-[min(512px,70vh)]" style={{ aspectRatio: String(ratio) }}>
           <Slide attachment={attachments[0]!} linked={linked} />
           {attachments.length > 1 && (
-            <span className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium tabular-nums text-white">
-              1/{attachments.length}
-            </span>
+            <>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium tabular-nums text-white"
+              >
+                1/{attachments.length}
+              </span>
+              <span className="sr-only">{fr.feed.carouselLabel(attachments.length)}</span>
+            </>
           )}
         </div>
       ) : (

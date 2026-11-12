@@ -365,7 +365,10 @@ export function uploadPostVideo(
       if (event.lengthComputable) onProgress(event.loaded / event.total);
     };
     xhr.onload = () => {
-      const body = xhr.response as { attachment?: Attachment; error?: { code?: string; message?: string } } | null;
+      const body = xhr.response as {
+        attachment?: Attachment;
+        error?: { code?: string; message?: string };
+      } | null;
       if (xhr.status >= 200 && xhr.status < 300 && body?.attachment) resolve(body.attachment);
       else
         reject(
@@ -376,7 +379,8 @@ export function uploadPostVideo(
           ),
         );
     };
-    xhr.onerror = () => reject(new ChatApiError("network_error", "La connexion a été coupée pendant l'envoi.", 0));
+    xhr.onerror = () =>
+      reject(new ChatApiError("network_error", "La connexion a été coupée pendant l'envoi.", 0));
     xhr.send(formData);
   });
 }
@@ -622,7 +626,7 @@ export function listPosts(tab: FeedTab, cursor?: string): Promise<Page<PostSumma
 }
 
 export function getPost(postId: string) {
-  return request<{ post: PostSummary }>(`/api/posts/${postId}`);
+  return request<{ post: PostSummary }>(`/api/posts/${encodeURIComponent(postId)}`);
 }
 
 export function createPost(input: CreatePostInput) {
@@ -1167,11 +1171,15 @@ export function listOpportunities(filters: OpportunityFilters, cursor?: string |
   if (filters.author) params.set("author", filters.author);
   if (filters.includeClosed) params.set("includeClosed", "true");
   if (cursor) params.set("cursor", cursor);
-  return request<{ items: OpportunitySummary[]; nextCursor: string | null }>(`/api/opportunities?${params}`);
+  return request<{ items: OpportunitySummary[]; nextCursor: string | null }>(
+    `/api/opportunities?${params}`,
+  );
 }
 
 export function getOpportunity(slug: string) {
-  return request<{ opportunity: OpportunityDetail }>(`/api/opportunities/${encodeURIComponent(slug)}`);
+  return request<{ opportunity: OpportunityDetail }>(
+    `/api/opportunities/${encodeURIComponent(slug)}`,
+  );
 }
 
 export function createOpportunity(input: CreateOpportunityInput) {
@@ -1182,12 +1190,17 @@ export function createOpportunity(input: CreateOpportunityInput) {
 }
 
 export function updateOpportunity(slug: string, input: OpportunityInput) {
-  return request<{ opportunity: OpportunityDetail }>(`/api/opportunities/${encodeURIComponent(slug)}`, {
-    method: "PUT",
-    body: JSON.stringify(input),
-  });
+  return request<{ opportunity: OpportunityDetail }>(
+    `/api/opportunities/${encodeURIComponent(slug)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(input),
+    },
+  );
 }
 
 export function deleteOpportunity(slug: string) {
-  return request<{ deleted: boolean }>(`/api/opportunities/${encodeURIComponent(slug)}`, { method: "DELETE" });
+  return request<{ deleted: boolean }>(`/api/opportunities/${encodeURIComponent(slug)}`, {
+    method: "DELETE",
+  });
 }
