@@ -462,6 +462,11 @@ export function updateMyProfile(input: UpdateProfileInput) {
   });
 }
 
+export function listOrganizationSuggestions(kind: "school" | "company", query: string) {
+  const params = new URLSearchParams({ kind, q: query });
+  return request<{ items: string[] }>(`/api/organizations?${params.toString()}`);
+}
+
 export function getUserProfile(handle: string) {
   return request<PublicProfileResponse>(`/api/users/${handle}`);
 }

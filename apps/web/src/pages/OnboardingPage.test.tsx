@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { MeResponse, OnboardingState } from "@kemet/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,6 +16,7 @@ vi.mock("../lib/chat/api.js", async (importOriginal) => ({
   updateMyProfile: (input: unknown) => updateMyProfile(input),
   getOnboardingSpaces: () => new Promise(() => {}),
   getOnboardingPeople: () => new Promise(() => {}),
+  listOrganizationSuggestions: () => Promise.resolve({ items: [] }),
 }));
 
 vi.mock("../session/SessionProvider.js", () => ({
@@ -27,6 +29,8 @@ const PROFILE: NonNullable<MeResponse["profile"]> = {
   displayName: "Awa",
   country: "",
   role: null,
+  workMode: null,
+  organization: null,
   title: null,
   bio: null,
   stack: [],
@@ -47,7 +51,11 @@ const PROFILE: NonNullable<MeResponse["profile"]> = {
 function start(path: string, onboarding: OnboardingState) {
   window.history.replaceState(null, "", path);
   session = { status: "ready", profile: PROFILE, onboarding };
-  render(<OnboardingPage />);
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <OnboardingPage />
+    </QueryClientProvider>,
+  );
 }
 
 describe("OnboardingPage", () => {
@@ -133,6 +141,39 @@ describe("OnboardingPage", () => {
     expect(screen.queryByRole("button", { name: fr.onboarding.back })).not.toBeInTheDocument();
   });
 
+  it("précise le rôle sur l'écran suivant : freelance ou en entreprise", async () => {
+    start("/bienvenue/role", {
+      step: "role",
+      completed: false,
+      interests: [],
+      interestOther: null,
+      intents: [],
+      roleOther: null,
+    });
+    fireEvent.click(screen.getByRole("radio", { name: fr.auth.roleDeveloper }));
+    fireEvent.click(screen.getByRole("button", { name: fr.onboarding.continue }));
+
+    expect(
+      await screen.findByRole("heading", { name: fr.roleDetail.developerTitle }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/bienvenue/precision");
+    fireEvent.click(screen.getByRole("radio", { name: fr.roleDetail.employed }));
+    fireEvent.change(screen.getByLabelText(fr.roleDetail.companyLabel), {
+      target: { value: " Kobo Market " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: fr.onboarding.continue }));
+
+    await waitFor(() =>
+      expect(updateMyProfile).toHaveBeenLastCalledWith({
+        workMode: "employed",
+        organization: "Kobo Market",
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: fr.onboarding.specialtyTitle }),
+    ).toBeInTheDocument();
+  });
+
   it("filtre les pays sans tenir compte des accents", () => {
     start("/bienvenue/pays", {
       step: "country",
@@ -184,14 +225,15 @@ describe("OnboardingPage", () => {
       roleOther: null,
     });
 
+    // "Je code" a une question de précision : elle n'a pas été posée avant l'inscription.
     expect(
-      await screen.findByRole("heading", { name: fr.onboarding.specialtyTitle }),
+      await screen.findByRole("heading", { name: fr.roleDetail.developerTitle }),
     ).toBeInTheDocument();
     expect(updateMyProfile).toHaveBeenCalledWith({ country: "SN", role: "developer" });
     expect(updateOnboarding).toHaveBeenCalledWith({ interests: ["payments"], intents: ["learn"] });
-    expect(window.location.pathname).toBe("/bienvenue/specialite");
+    expect(window.location.pathname).toBe("/bienvenue/precision");
     expect(
-      screen.getByRole("progressbar", { name: fr.onboarding.progress(1, 3) }),
+      screen.getByRole("progressbar", { name: fr.onboarding.progress(1, 4) }),
     ).toBeInTheDocument();
     expect(readIntroAnswers()).toEqual({ interests: undefined, intents: undefined });
     window.localStorage.clear();

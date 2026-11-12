@@ -20,6 +20,7 @@ import { getSessionUserId } from "../auth/session.js";
 import { registerRateLimit } from "./rate-limit.js";
 import { registerMeRoutes } from "./routes/me.js";
 import { registerOnboardingRoutes } from "./routes/onboarding.js";
+import { registerOrganizationRoutes } from "./routes/organizations.js";
 import { registerAccountDeletionRoutes } from "./routes/account-deletion.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerLibraryRoutes } from "./routes/library.js";
@@ -196,6 +197,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
     registerMeRoutes(app, deps);
     registerOnboardingRoutes(app, deps);
+    registerOrganizationRoutes(app, deps);
     registerUserRoutes(app, deps);
     registerLevelRoutes(app, deps);
 

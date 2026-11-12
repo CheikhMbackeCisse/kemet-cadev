@@ -19,6 +19,7 @@ import { seedDemoDataset } from "./demo-dataset.js";
 import { seedDemoMedia } from "./demo-media.js";
 import { DEMO_CVS, NEWCOMER_ACCOUNTS, NEWCOMER_POSTS } from "./newcomers-content.js";
 import { seedNewcomers } from "./newcomers.js";
+import { completeDemoRoleDetails, DEMO_ROLE_DETAILS } from "./role-details.js";
 
 const databaseUrl = getTestDatabaseUrl();
 const passwordHash = () => Promise.resolve("hash-de-test");
@@ -81,13 +82,23 @@ describe.skipIf(!databaseUrl)("débutants, recruteurs et bibliothèques de démo
     const original = await db
       .select({ interests: profiles.interests })
       .from(profiles)
-      .where(inArray(profiles.handle, DEMO_ACCOUNTS.map((entry) => entry.handle)));
+      .where(
+        inArray(
+          profiles.handle,
+          DEMO_ACCOUNTS.map((entry) => entry.handle),
+        ),
+      );
     expect(original.every((row) => row.interests.length > 0)).toBe(true);
 
     const newcomers = await db
       .select({ isFiller: profiles.isFiller, userId: profiles.userId })
       .from(profiles)
-      .where(inArray(profiles.handle, NEWCOMER_ACCOUNTS.map((entry) => entry.handle)));
+      .where(
+        inArray(
+          profiles.handle,
+          NEWCOMER_ACCOUNTS.map((entry) => entry.handle),
+        ),
+      );
     expect(newcomers.every((row) => !row.isFiller && row.userId !== null)).toBe(true);
   });
 
@@ -97,5 +108,34 @@ describe.skipIf(!databaseUrl)("débutants, recruteurs et bibliothèques de démo
     ).toBeGreaterThan(5);
     expect(await db.$count(messages, sql`${messages.clientId} like 'demo-beginners-%'`)).toBe(10);
     expect(await db.$count(posts, eq(posts.isBeginner, true))).toBeGreaterThanOrEqual(6);
+  });
+
+  it("précise le rôle des profils de démonstration une seule fois, sans toucher un vrai compte", async () => {
+    await db.update(profiles).set({ isDemo: false }).where(eq(profiles.handle, "ebo-quansah"));
+    expect(await completeDemoRoleDetails(db)).toBe(Object.keys(DEMO_ROLE_DETAILS).length - 1);
+    expect(await completeDemoRoleDetails(db)).toBe(0);
+
+    const rows = await db
+      .select({
+        handle: profiles.handle,
+        role: profiles.role,
+        workMode: profiles.workMode,
+        organization: profiles.organization,
+      })
+      .from(profiles)
+      .where(
+        inArray(profiles.handle, ["coumba-thiam", "lyna-bouzid", "ahou-kouadio", "ebo-quansah"]),
+      );
+    const byHandle = new Map(rows.map((row) => [row.handle, row]));
+    expect(byHandle.get("coumba-thiam")).toMatchObject({
+      role: "developer",
+      organization: "Jàmm Pay",
+    });
+    expect(byHandle.get("lyna-bouzid")).toMatchObject({
+      workMode: "freelance",
+      organization: null,
+    });
+    expect(byHandle.get("ahou-kouadio")).toMatchObject({ role: "student" });
+    expect(byHandle.get("ebo-quansah")).toMatchObject({ role: null, organization: null });
   });
 });

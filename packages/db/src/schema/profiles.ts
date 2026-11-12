@@ -15,11 +15,14 @@ export const profileRoleEnum = pgEnum("profile_role", [
 export const onboardingStepEnum = pgEnum("onboarding_step", [
   "country",
   "role",
+  "role_detail",
   "specialty",
   "interests",
   "spaces",
   "people",
 ]);
+
+export const profileWorkModeEnum = pgEnum("profile_work_mode", ["freelance", "employed"]);
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -35,6 +38,11 @@ export const profiles = pgTable("profiles", {
   role: profileRoleEnum("role"),
   // Précision libre quand le rôle choisi est "other", posée par l'accueil.
   roleOther: text("role_other"),
+  // Précision du rôle, facultative : freelance ou en entreprise pour "Je
+  // code" ; organization porte l'établissement d'une personne qui étudie,
+  // ou l'entreprise (en entreprise, recrute, dirige).
+  workMode: profileWorkModeEnum("work_mode"),
+  organization: text("organization"),
   title: text("title"),
   bio: text("bio"),
   stack: text("stack").array().notNull().default([]),

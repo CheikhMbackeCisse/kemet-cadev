@@ -48,15 +48,29 @@ export const INTENTS = [
   "follow_community",
 ] as const;
 
-/** Les six écrans, dans l'ordre. Le pays, le rôle et la spécialité sont des champs du profil. */
+/**
+ * Les écrans, dans l'ordre. Le pays, le rôle, sa précision et la spécialité
+ * sont des champs du profil. "role_detail" ne se montre qu'aux rôles de
+ * ROLES_WITH_DETAIL.
+ */
 export const ONBOARDING_STEPS = [
   "country",
   "role",
+  "role_detail",
   "specialty",
   "interests",
   "spaces",
   "people",
 ] as const;
+
+/** Rôles qui reçoivent une question de précision : établissement, freelance ou entreprise. */
+export const ROLES_WITH_DETAIL = ["student", "developer", "hr", "entrepreneur"] as const;
+
+/** Pour "Je code" : à son compte, ou dans une entreprise (nommée ou non). */
+export const PROFILE_WORK_MODES = ["freelance", "employed"] as const;
+
+/** Longueur maximale d'un nom d'établissement ou d'entreprise. */
+export const ORGANIZATION_MAX_LENGTH = 80;
 
 /** Longueur maximale d'une précision écrite à côté d'un choix "Autre". */
 export const OTHER_ANSWER_MAX_LENGTH = 60;

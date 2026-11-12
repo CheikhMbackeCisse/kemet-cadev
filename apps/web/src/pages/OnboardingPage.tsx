@@ -2,9 +2,11 @@ import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState } from "react";
 import {
   ONBOARDING_STEPS,
+  ROLES_WITH_DETAIL,
   type Interest,
   type OnboardingStep,
   type ProfileRole,
+  type ProfileWorkMode,
 } from "@kemet/shared";
 import { OnboardingLayout, OnboardingSkeleton } from "../components/onboarding/OnboardingLayout.js";
 import { CountryList } from "../components/onboarding/CountryList.js";
@@ -14,6 +16,7 @@ import { OtherAnswerField } from "../components/onboarding/OtherAnswerField.js";
 import { SpaceSuggestions } from "../components/onboarding/SpaceSuggestions.js";
 import { PeopleSuggestions } from "../components/onboarding/PeopleSuggestions.js";
 import { Input } from "../components/ui/Input.js";
+import { RoleDetailFields, roleDetailTitle } from "../components/profile/RoleDetailFields.js";
 import { updateMyProfile, updateOnboarding } from "../lib/chat/api.js";
 import { PROFILE_ROLE_OPTIONS } from "../lib/profileRoles.js";
 import { onboardingPath, stepFromPath, stepIndex } from "../lib/onboarding/steps.js";
@@ -27,6 +30,10 @@ import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 
 const FEED_PATH = "/fil";
+
+function hasRoleDetail(role: string): boolean {
+  return (ROLES_WITH_DETAIL as readonly string[]).includes(role);
+}
 
 /** Écrans déjà répondus avant l'inscription, sur l'écran d'accueil. */
 function stepsAnsweredByIntro(answers: IntroAnswers): Set<OnboardingStep> {
@@ -69,6 +76,8 @@ export function OnboardingPage() {
   );
   const [country, setCountry] = useState("");
   const [role, setRole] = useState("");
+  const [workMode, setWorkMode] = useState<ProfileWorkMode | null>(null);
+  const [organization, setOrganization] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [interests, setInterests] = useState<Interest[]>([]);
   const [interestOther, setInterestOther] = useState("");
@@ -89,11 +98,18 @@ export function OnboardingPage() {
     const fromIntro = hasIntroAnswers(intro);
     let cancelled = false;
 
-    function start(answered: Set<OnboardingStep>) {
+    function start(answeredByIntro: Set<OnboardingStep>) {
       if (cancelled || !profile || !onboarding) return;
-      setSkipped(answered);
+      const startRole = intro.role ?? profile.role ?? "";
+      // Sans rôle à préciser, l'écran de précision ne doit jamais servir de reprise.
+      const answered = hasRoleDetail(startRole)
+        ? answeredByIntro
+        : new Set([...answeredByIntro, "role_detail" as const]);
+      setSkipped(answeredByIntro);
       setCountry(intro.country ?? profile.country);
-      setRole(intro.role ?? profile.role ?? "");
+      setRole(startRole);
+      setWorkMode(profile.workMode);
+      setOrganization(profile.organization ?? "");
       setSpecialty(profile.title ?? "");
       setInterests(intro.interests?.length ? intro.interests : onboarding.interests);
       setInterestOther(intro.interestOther ?? onboarding.interestOther ?? "");
@@ -158,8 +174,11 @@ export function OnboardingPage() {
   }
 
   const current = step;
+  // La précision n'a de question que pour quatre rôles : sinon l'écran n'existe pas.
   const visibleSteps = ONBOARDING_STEPS.filter(
-    (candidate) => !skipped.has(candidate) || candidate === current,
+    (candidate) =>
+      (!skipped.has(candidate) || candidate === current) &&
+      (candidate !== "role_detail" || hasRoleDetail(role)),
   );
   const position = visibleSteps.indexOf(current);
   const next = visibleSteps[position + 1] ?? null;
@@ -200,6 +219,30 @@ export function OnboardingPage() {
             options={PROFILE_ROLE_OPTIONS}
             value={role}
             onChange={setRole}
+            tone="glass"
+          />
+        </OnboardingLayout>
+      );
+    case "role_detail":
+      return (
+        <OnboardingLayout
+          {...common}
+          title={roleDetailTitle(role as ProfileRole)}
+          onSubmit={() =>
+            void goTo(next, () =>
+              updateMyProfile({
+                workMode,
+                organization: organization.trim() || null,
+              }),
+            )
+          }
+        >
+          <RoleDetailFields
+            role={role as ProfileRole}
+            workMode={workMode}
+            organization={organization}
+            onWorkModeChange={setWorkMode}
+            onOrganizationChange={setOrganization}
             tone="glass"
           />
         </OnboardingLayout>

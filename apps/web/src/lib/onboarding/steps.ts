@@ -4,6 +4,7 @@ import type { SessionStatus } from "../../session/SessionProvider.js";
 const STEP_SLUGS: Record<OnboardingStep, string> = {
   country: "pays",
   role: "role",
+  role_detail: "precision",
   specialty: "specialite",
   interests: "interets",
   spaces: "espaces",

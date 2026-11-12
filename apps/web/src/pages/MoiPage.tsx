@@ -18,6 +18,7 @@ import { Skeleton } from "../components/ui/Skeleton.js";
 import { useToast } from "../components/ui/Toast.js";
 import { WorkInvitations } from "../components/works/ProfileWorks.js";
 import { getUserProfile } from "../lib/chat/api.js";
+import { profileSubtitle } from "../lib/profileIdentity.js";
 import { shareLink } from "../lib/shareLink.js";
 import { useSession } from "../session/SessionProvider.js";
 import { SIGN_UP_PATH } from "../session/signUpInvite.js";
@@ -71,6 +72,7 @@ export function MoiPage() {
         <>
           <ProfileHeader
             profile={profile}
+            subtitle={profileSubtitle(profile)}
             // Après un échec, les deux chiffres lus sur le profil public
             // disparaissent au lieu de rester en squelette à côté de l'erreur.
             stats={[

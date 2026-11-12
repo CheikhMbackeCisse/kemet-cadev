@@ -119,6 +119,8 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
       country: "",
       role: null,
       roleOther: null,
+      workMode: null,
+      organization: null,
       title: null,
       bio: null,
       stack: [],

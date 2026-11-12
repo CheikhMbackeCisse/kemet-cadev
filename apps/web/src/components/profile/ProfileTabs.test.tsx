@@ -24,6 +24,8 @@ const PROFILE: Profile = {
   displayName: "Nala Uwase",
   country: "RW",
   role: "student",
+      workMode: null,
+      organization: null,
   title: null,
   bio: null,
   stack: [],

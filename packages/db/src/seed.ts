@@ -6,6 +6,7 @@ import { seedNewcomers } from "./seed/newcomers.js";
 import { seedShowcase } from "./seed/showcase.js";
 import { seedOpportunities } from "./seed/opportunities.js";
 import { renameCadevSpace } from "./seed/chat-content.js";
+import { completeDemoRoleDetails } from "./seed/role-details.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -48,6 +49,9 @@ async function main(): Promise<void> {
       `Débutants et recruteurs : ${newcomers.accounts} comptes, ${newcomers.cvs} CV, ${newcomers.posts} posts ` +
         `et ${newcomers.spaceMessages} messages ajoutés.`,
     );
+  const roleDetails = await completeDemoRoleDetails(db);
+  if (roleDetails > 0)
+    console.log(`Précision du rôle posée sur ${roleDetails} profils de démonstration.`);
   const offers = await seedOpportunities(db);
   console.log(
     offers.status === "done"

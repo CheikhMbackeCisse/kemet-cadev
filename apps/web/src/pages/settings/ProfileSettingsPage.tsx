@@ -1,6 +1,11 @@
 import { navigate } from "../../lib/navigation/navigate.js";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { isValidProfileLink, type ProfileLinkKind, type ProfileRole } from "@kemet/shared";
+import {
+  isValidProfileLink,
+  type ProfileLinkKind,
+  type ProfileRole,
+  type ProfileWorkMode,
+} from "@kemet/shared";
 import { SettingsSubPage } from "../../components/settings/SettingsSubPage.js";
 import { SuspendedBanner } from "../../components/shell/SuspendedBanner.js";
 import { CountrySelect } from "../../components/ui/CountrySelect.js";
@@ -21,6 +26,7 @@ import {
 } from "../../lib/forms.js";
 import { FormField } from "../../components/ui/FormField.js";
 import { PROFILE_ROLE_OPTIONS } from "../../lib/profileRoles.js";
+import { RoleDetailFields } from "../../components/profile/RoleDetailFields.js";
 import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
 
@@ -33,6 +39,8 @@ export function ProfileSettingsPage() {
   const [displayName, setDisplayName] = useState("");
   const [country, setCountry] = useState("");
   const [role, setRole] = useState("none");
+  const [workMode, setWorkMode] = useState<ProfileWorkMode | null>(null);
+  const [organization, setOrganization] = useState("");
   const [specialty, setSpecialty] = useState("");
   const [bio, setBio] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
@@ -57,6 +65,8 @@ export function ProfileSettingsPage() {
     setDisplayName(profile.displayName);
     setCountry(profile.country);
     setRole(profile.role ?? "none");
+    setWorkMode(profile.workMode);
+    setOrganization(profile.organization ?? "");
     setSpecialty(profile.title ?? "");
     setBio(profile.bio ?? "");
     setGithubUrl(profile.githubUrl ?? "");
@@ -68,6 +78,14 @@ export function ProfileSettingsPage() {
   }, [profile]);
 
   if (status !== "ready" || !profile) return null;
+
+  const selectedRole = role === "none" ? null : (role as ProfileRole);
+
+  function changeRole(value: string) {
+    setRole(value);
+    setWorkMode(null);
+    setOrganization("");
+  }
 
   const linkFields: {
     kind: ProfileLinkKind;
@@ -141,7 +159,9 @@ export function ProfileSettingsPage() {
         displayName,
         // Un pays jamais choisi (onboarding passé) reste vide sans bloquer le reste.
         ...(country && { country }),
-        role: role === "none" ? null : (role as ProfileRole),
+        role: selectedRole,
+        workMode,
+        organization: organization.trim() || null,
         title: specialty.trim() || null,
         bio: bio.trim() || null,
         githubUrl: githubUrl.trim() || null,
@@ -200,11 +220,20 @@ export function ProfileSettingsPage() {
           <Select
             aria-label={fr.auth.roleLabel}
             value={role}
-            onValueChange={setRole}
+            onValueChange={changeRole}
             options={ROLE_OPTIONS}
             disabled={isSuspended}
           />
         </label>
+        <fieldset disabled={isSuspended} className="contents">
+          <RoleDetailFields
+            role={selectedRole}
+            workMode={workMode}
+            organization={organization}
+            onWorkModeChange={setWorkMode}
+            onOrganizationChange={setOrganization}
+          />
+        </fieldset>
         <label className="flex flex-col gap-1 text-sm text-text-2">
           {fr.auth.specialtyLabel}
           <Input

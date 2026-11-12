@@ -29,6 +29,8 @@ export function serializeProfile(stored: ProfileRow, level: Level): Profile {
     displayName: row.displayName,
     country: row.country as Profile["country"],
     role: row.role,
+    workMode: row.workMode,
+    organization: row.organization,
     title: row.title,
     bio: row.bio,
     stack: row.stack,

@@ -30,6 +30,7 @@ import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { WorkInvitations } from "../components/works/ProfileWorks.js";
 import { ProfileTabs } from "../components/profile/ProfileTabs.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
+import { profileSubtitle } from "../lib/profileIdentity.js";
 import { useSession } from "../session/SessionProvider.js";
 import { shareLink } from "../lib/shareLink.js";
 import { ProfileHeader } from "../components/profile/ProfileHeader.js";
@@ -40,7 +41,6 @@ import {
 import { fr } from "../i18n/fr.js";
 
 // "Autre" ne dit rien sur un profil : la spécialité suffit.
-const ROLE_LABELS: Record<string, string | undefined> = fr.profile.roleNames;
 
 function readHandle(pathname: string): string {
   return pathname.replace(/^\/u\//, "");
@@ -241,11 +241,7 @@ export function UserPage() {
       <div className="flex flex-col gap-3">
         <ProfileHeader
           profile={profile}
-          subtitle={
-            [profile.role ? ROLE_LABELS[profile.role] : null, profile.title]
-              .filter(Boolean)
-              .join(" · ") || null
-          }
+          subtitle={profileSubtitle(profile)}
           stats={[
             { label: fr.profile.statWorks(data.workCount), value: data.workCount },
             {

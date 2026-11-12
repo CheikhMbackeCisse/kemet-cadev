@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { COUNTRY_CODES } from "../data/countries.js";
-import { PROFILE_ROLES } from "../data/onboarding-values.js";
+import {
+  ORGANIZATION_MAX_LENGTH,
+  PROFILE_ROLES,
+  PROFILE_WORK_MODES,
+} from "../data/onboarding-values.js";
 import { levelSchema } from "./points.js";
 import { profileLinkSchema } from "./profile-link.js";
 import { isAssistantHandle } from "./assistant.js";
@@ -34,6 +38,21 @@ export const profileRoleSchema = z.enum(PROFILE_ROLES);
 
 export type ProfileRole = z.infer<typeof profileRoleSchema>;
 
+export const profileWorkModeSchema = z.enum(PROFILE_WORK_MODES);
+
+export type ProfileWorkMode = z.infer<typeof profileWorkModeSchema>;
+
+/** Établissement (études) ou entreprise, saisi librement. */
+export const organizationSchema = z.string().trim().min(1).max(ORGANIZATION_MAX_LENGTH);
+
+export const ORGANIZATION_SUGGESTIONS_LIMIT = 8;
+
+/** Suggestions pendant la saisie : établissements des personnes qui étudient, ou entreprises. */
+export const organizationSuggestionsQuerySchema = z.object({
+  kind: z.enum(["school", "company"]),
+  q: z.string().trim().max(ORGANIZATION_MAX_LENGTH).default(""),
+});
+
 export const updateProfileSchema = z
   .object({
     handle: handleSchema.refine((handle) => !isReservedHandle(handle), {
@@ -42,6 +61,8 @@ export const updateProfileSchema = z
     displayName: z.string().min(1).max(80),
     country: countryCodeSchema,
     role: profileRoleSchema.nullable(),
+    workMode: profileWorkModeSchema.nullable(),
+    organization: organizationSchema.nullable(),
     title: z.string().max(120).nullable(),
     bio: z.string().max(500).nullable(),
     stack: stackSchema,
@@ -63,6 +84,8 @@ export const profileSchema = z.object({
   displayName: z.string(),
   country: profileCountrySchema,
   role: profileRoleSchema.nullable(),
+  workMode: profileWorkModeSchema.nullable(),
+  organization: z.string().nullable(),
   title: z.string().nullable(),
   bio: z.string().nullable(),
   stack: z.array(z.string()),
