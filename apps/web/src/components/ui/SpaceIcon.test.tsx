@@ -40,30 +40,38 @@ describe("spaceThemeIcon", () => {
 });
 
 describe("spaceTints", () => {
-  it("donne des teintes différentes à deux espaces de même icône", () => {
-    const tints = spaceTints([
-      { id: "a", name: "DevOps Dakar" },
-      { id: "b", name: "Cloud et infra" },
-      { id: "c", name: "Design produit" },
-      { id: "d", name: "UX Afrique" },
-    ]);
-    expect(tints.get("a")).not.toBe(tints.get("b"));
-    expect(tints.get("c")).not.toBe(tints.get("d"));
+  it("donne à chaque icône de thème sa propre teinte, la même partout", () => {
+    const names = [
+      "Débuter en informatique",
+      "CADEV 2026",
+      "Hackathons et concours",
+      "Carrière & Freelance Tech",
+      "Data & Intelligence Artificielle",
+      "Backend & API",
+      "DevOps & Cloud Afrique",
+      "Cybersécurité",
+      "Jeux Vidéo Afrique",
+      "Frontend & Design Systems",
+      "Startups et produit",
+      "Développeurs de Lomé",
+    ];
+    const tints = spaceTints(names.map((name) => ({ id: name, name })));
+    expect(new Set(names.map((name) => spaceThemeIcon(name))).size).toBe(12);
+    expect(new Set(names.map((name) => tints.get(name))).size).toBe(12);
+    const again = spaceTints([{ id: "x", name: "Cloud et infra" }]);
+    expect(again.get("x")).toBe(tints.get("DevOps & Cloud Afrique"));
   });
 
-  it("garde des teintes entre 1 et 6 et la même pour une même liste", () => {
-    const spaces = Array.from({ length: 9 }, (_, index) => ({
+  it("fait tourner les douze teintes sur les espaces sans thème", () => {
+    const spaces = Array.from({ length: 14 }, (_, index) => ({
       id: String(index),
-      name: `Backend ${index}`,
+      name: `Discussions ${index}`,
     }));
-    const first = spaceTints(spaces);
-    const second = spaceTints(spaces);
+    const tints = spaceTints(spaces);
     for (const space of spaces) {
-      const tint = first.get(space.id);
-      expect(tint).toBeGreaterThanOrEqual(1);
-      expect(tint).toBeLessThanOrEqual(6);
-      expect(second.get(space.id)).toBe(tint);
+      expect(tints.get(space.id)).toBeGreaterThanOrEqual(1);
+      expect(tints.get(space.id)).toBeLessThanOrEqual(12);
     }
-    expect(new Set(spaces.slice(0, 6).map((space) => first.get(space.id))).size).toBe(6);
+    expect(new Set(spaces.slice(0, 12).map((space) => tints.get(space.id))).size).toBe(12);
   });
 });

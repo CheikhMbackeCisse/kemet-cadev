@@ -1447,18 +1447,20 @@ export const fr = {
     stackTitle: "Stack",
     githubLink: "GitHub",
     openToOpportunities: "Disponible pour des opportunités",
-    // Rôle affiché sur un profil, sans accord : "Développement", pas
-    // "Développeur/se".
+    // Ligne d'identité d'un profil, en verbes : aucun accord à faire.
     identity: {
-      student: "Étudiant en informatique",
-      developer: "Développeur",
-      developerFreelance: "Développeur freelance",
-      developerAt: (organization: string) => `Développeur chez ${organization}`,
-      designer: "Designer",
-      recruiter: "Recruteur",
-      recruiterAt: (organization: string) => `Recruteur chez ${organization}`,
-      projectManager: "Chef de projet",
-      entrepreneur: "Entrepreneur",
+      student: "Étudie l'informatique",
+      /** `place` porte déjà sa préposition : "à l'EPT", "au Cesag". */
+      studentAt: (place: string) => `Étudie l'informatique ${place}`,
+      developer: "Code",
+      developerFreelance: "Code en freelance",
+      developerAt: (organization: string) => `Code chez ${organization}`,
+      designer: "Fait du design",
+      recruiter: "Recrute",
+      recruiterAt: (organization: string) => `Recrute chez ${organization}`,
+      projectManager: "Pilote des projets",
+      entrepreneur: "Dirige une entreprise",
+      entrepreneurOf: (organization: string) => `Dirige ${organization}`,
     },
     helpsBeginners: "Aide les débutants",
     tabWorks: "Travaux",
