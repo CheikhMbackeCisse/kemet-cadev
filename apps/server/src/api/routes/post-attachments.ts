@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { readImageSize } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { PUBLIC_FILE_CACHE } from "../../storage/cache-control.js";
@@ -84,6 +85,7 @@ export function registerPostAttachmentRoutes(
           mimeType: detected.mimeType,
           originalName: sanitizeFilename(part.filename),
           byteSize: buffer.length,
+          ...(readImageSize(buffer, detected.mimeType) ?? { width: null, height: null }),
         });
       });
 

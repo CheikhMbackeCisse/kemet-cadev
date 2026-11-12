@@ -253,6 +253,13 @@
       "when": 1794475019730,
       "tag": "0035_profile_role_detail",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794490183031,
+      "tag": "0036_g13_carousel_and_pin",
+      "breakpoints": true
     }
   ]
 }

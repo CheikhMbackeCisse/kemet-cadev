@@ -5,6 +5,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -13,6 +14,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
+import { spaces } from "./chat.js";
 import { works } from "./works.js";
 
 export const postFormatEnum = pgEnum("post_format", ["astuce", "a_tester", "question"]);
@@ -35,6 +37,10 @@ export const posts = pgTable(
     isBeginner: boolean("is_beginner").notNull().default(false),
     // Post publié automatiquement avec un travail : il renvoie vers lui.
     workId: uuid("work_id").references(() => works.id, { onDelete: "cascade" }),
+    // Crédit d'un visuel repris d'un tiers ("Visuel : Systalink"), affiché
+    // sous les images. Posé par le seed seulement, jamais accepté en entrée.
+    mediaCredit: text("media_credit"),
+    mediaCreditUrl: text("media_credit_url"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),
     deletedAt: timestamp("deleted_at"),
@@ -69,6 +75,12 @@ export const postAttachments = pgTable(
     mimeType: text("mime_type").notNull(),
     originalName: text("original_name").notNull(),
     byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+    // Rang dans le carrousel, dans l'ordre choisi à l'envoi du post.
+    position: integer("position").notNull().default(0),
+    // Lues dans l'en-tête du fichier à l'envoi : le cadre garde sa taille
+    // avant l'arrivée de l'image. Nulles pour les images d'avant G13.
+    width: integer("width"),
+    height: integer("height"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -76,6 +88,20 @@ export const postAttachments = pgTable(
     index("post_attachments_author_idx").on(table.authorId),
   ],
 );
+
+/**
+ * Post épinglé en tête des salons d'un espace, un seul par espace. Posé par
+ * le seed seulement (post "La CADEV 2026 en bref").
+ */
+export const spacePinnedPosts = pgTable("space_pinned_posts", {
+  spaceId: uuid("space_id")
+    .primaryKey()
+    .references(() => spaces.id, { onDelete: "cascade" }),
+  postId: uuid("post_id")
+    .notNull()
+    .references(() => posts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const postReplies = pgTable(
   "post_replies",

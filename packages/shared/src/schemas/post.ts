@@ -129,6 +129,8 @@ export const postSummarySchema = z.object({
   testAsk: z.string().nullable(),
   isBeginner: z.boolean(),
   attachments: z.array(attachmentSchema),
+  /** Crédit d'un visuel repris d'un tiers, affiché sous les images. */
+  mediaCredit: z.object({ label: z.string(), url: z.string().nullable() }).nullable().optional(),
   sharedPost: sharedPostPreviewSchema.nullable(),
   work: postWorkPreviewSchema.nullable(),
   utileCount: z.number().int().nonnegative(),

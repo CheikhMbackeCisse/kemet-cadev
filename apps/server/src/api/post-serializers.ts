@@ -25,6 +25,8 @@ export function serializePostAttachment(row: PostAttachmentRow, removed = false)
     originalName: row.originalName,
     byteSize: row.byteSize,
     durationMs: null,
+    width: row.width,
+    height: row.height,
     createdAt: row.createdAt.toISOString(),
     removed,
   };
@@ -99,6 +101,8 @@ export function serializePostSummary(
       : attachments.map((attachment) =>
           serializePostAttachment(attachment, author.deletedAt !== null),
         ),
+    mediaCredit:
+      row.mediaCredit && !deleted ? { label: row.mediaCredit, url: row.mediaCreditUrl } : null,
     sharedPost: sharedPost
       ? serializeSharedPostPreview(
           sharedPost.row,

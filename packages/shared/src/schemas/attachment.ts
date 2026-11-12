@@ -58,6 +58,9 @@ export const attachmentSchema = z.object({
   byteSize: z.number().int().nonnegative(),
   /** Durée d'un message vocal, nulle pour tout autre fichier. */
   durationMs: z.number().int().nullable(),
+  /** Image d'un post : dimensions lues à l'envoi, pour réserver le cadre. */
+  width: z.number().int().positive().nullable().optional(),
+  height: z.number().int().positive().nullable().optional(),
   createdAt: z.string().datetime(),
   // Fichier effacé du disque avec le compte de son auteur : la ligne reste
   // pour afficher "Fichier supprimé" plutôt qu'un lien cassé.

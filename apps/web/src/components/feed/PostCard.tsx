@@ -336,7 +336,7 @@ export function PostCard({
               </div>
             )
           )}
-          {!post.deletedAt && <PostImages attachments={post.attachments} />}
+          {!post.deletedAt && <PostImages attachments={post.attachments} credit={post.mediaCredit} />}
           {!post.deletedAt && <SharedPostPreview post={post.sharedPost} />}
           {!post.deletedAt && <WorkPreview work={post.work} />}
           {post.format === "a_tester" && post.testUrl && (
