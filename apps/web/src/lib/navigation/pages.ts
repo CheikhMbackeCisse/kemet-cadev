@@ -68,6 +68,7 @@ export const PAGE_LOADERS = {
   levels: page(() => import("../../pages/LevelsPage.js"), "LevelsPage"),
   demoData: page(() => import("../../pages/DemoDataPage.js"), "DemoDataPage"),
   savedPosts: page(() => import("../../pages/SavedPostsPage.js"), "SavedPostsPage"),
+  myWorks: page(() => import("../../pages/MyWorksPage.js"), "MyWorksPage"),
   deleteAccount: page(() => import("../../pages/DeleteAccountPage.js"), "DeleteAccountPage"),
   privacy: page(() => import("../../pages/PrivacyPage.js"), "PrivacyPage"),
   security: page(() => import("../../pages/SecurityPage.js"), "SecurityPage"),
@@ -105,6 +106,7 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
   if (pathname === "/parametres/donnees") return "dataSettings";
   if (pathname === "/parametres/aide") return "helpSettings";
   if (pathname === "/moi") return "moi";
+  if (pathname === "/moi/travaux") return "myWorks";
   if (pathname === "/niveaux" || pathname === "/niveaux/") return "levels";
   if (pathname === "/enregistres") return "savedPosts";
   if (pathname === "/donnees-de-demo") return "demoData";

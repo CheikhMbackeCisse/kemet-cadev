@@ -81,6 +81,7 @@ export function MoiPage() {
                     {
                       label: fr.profile.statWorks(publicProfile?.workCount ?? null),
                       value: publicProfile?.workCount ?? null,
+                      onClick: () => navigate("/moi/travaux"),
                     },
                     {
                       label: fr.profile.statFollowers(publicProfile?.followerCount ?? null),

@@ -64,18 +64,19 @@ export function CompleteProfileCard({ gaps }: { gaps: ProfileGaps }) {
   if (rows.length === 0) return null;
   return (
     <section aria-labelledby="complete-profile-title" className="rounded-card border border-border">
-      <h2 id="complete-profile-title" className="px-3 pb-1 pt-3 text-md font-semibold text-text">
+      <h2 id="complete-profile-title" className="px-3 pt-2.5 text-md font-semibold text-text">
         {fr.profile.completeTitle}
       </h2>
       <ul className="flex flex-col divide-y divide-border">
         {rows.map((row) => (
-          <li key={row.key} className="flex min-h-control-mobile items-center gap-3 px-3 py-1.5">
-            <row.icon className="size-5 shrink-0 text-muted" aria-hidden="true" />
+          <li key={row.key} className="flex h-11 items-center gap-3 px-3">
+            <row.icon className="size-[18px] shrink-0 text-muted" aria-hidden="true" />
             <span className="min-w-0 flex-1 text-sm text-text">{row.label}</span>
             <a
               href={row.href}
               aria-label={`${row.action} : ${row.label}`}
-              className="inline-flex h-8 shrink-0 items-center rounded-control border border-border-strong px-3 text-sm font-medium text-text hover:bg-surface-2 max-md:h-control-mobile"
+              // 32 px à l'œil, 44 px sous le doigt : la zone d'appui déborde de la ligne.
+              className="relative inline-flex h-8 shrink-0 items-center rounded-control border border-border-strong px-2.5 text-[13px] font-medium text-text after:absolute after:-inset-y-1.5 after:inset-x-0 hover:bg-surface-2"
             >
               {row.action}
             </a>

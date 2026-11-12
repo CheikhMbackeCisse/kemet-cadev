@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   ChevronRight,
   Flag as FlagIcon,
   FlaskConical,
@@ -39,7 +40,12 @@ export function MoiMenu({
   const desktop = useMediaQuery("(min-width: 1024px)");
 
   const rows: MenuRow[] = [
-    ...(profile ? [{ label: fr.messages.segmentMessages, href: "/messages", icon: Send }] : []),
+    ...(profile
+      ? [
+          { label: fr.moi.myWorks, href: "/moi/travaux", icon: BookOpen },
+          { label: fr.messages.segmentMessages, href: "/messages", icon: Send },
+        ]
+      : []),
     ...MOI_ITEMS,
     { label: fr.moi.pro, href: "/pro", icon: Sparkles },
     ...(isPlatformAdmin
