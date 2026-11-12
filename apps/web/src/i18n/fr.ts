@@ -714,6 +714,17 @@ export const fr = {
   },
   skills: {
     title: "Skills",
+    importFile: "Importer un fichier .md",
+    importedFile: (name: string) => `Importé depuis ${name}`,
+    importErrors: {
+      tooLarge: "Ce fichier dépasse 100 Ko.",
+      notText: "Ce fichier n'est pas du texte Markdown.",
+      empty: "Ce fichier n'a pas de contenu sous son en-tête.",
+      contentTooLong: "Ce contenu dépasse 20 000 caractères, la limite d'un skill.",
+    },
+    contentWrite: "Écrire",
+    contentPreview: "Aperçu",
+    previewEmpty: "Rien à prévisualiser pour l'instant.",
     askKemet: "Demander à Kocc avec ce skill",
     askKemetSignIn: "Se connecter pour demander à Kocc",
     exampleTitle: "Exemple de réponse de Kocc",
