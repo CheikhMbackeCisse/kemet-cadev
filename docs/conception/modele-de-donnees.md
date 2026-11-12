@@ -47,6 +47,7 @@ erDiagram
   profiles ||--o{ projects : "possède"
   projects ||--o{ help_requests : "publie"
   help_requests ||--o{ applications : "reçoit"
+  profiles ||--o{ opportunities : "publie une offre"
   competitions ||--o{ teams : "inscrit"
   teams ||--o{ team_members : "compte"
   teams ||--o{ submissions : "soumet"
@@ -152,6 +153,17 @@ erDiagram
     work_match_mode mode "assistant, recorded, full_text"
     llm_provider_name provider
   }
+  opportunities {
+    uuid id PK
+    uuid author_id FK
+    text slug UK
+    opportunity_kind kind "job, internship, mission"
+    contract_type contract_type "emploi et stage"
+    integer budget_min_fcfa "mission"
+    integer budget_max_fcfa "mission"
+    date deadline "clôture lue à la lecture"
+    timestamp deleted_at
+  }
   points_ledger {
     uuid profile_id FK
     points_source source
@@ -178,6 +190,11 @@ Contraintes à connaître :
   son message, ou un post et sa réponse (`docs/adr/0033-kemet-sous-les-posts.md`).
 - `post_reposts` et `post_bookmarks` : une ligne au plus par personne et par
   post ; le nombre de republications se compte à la lecture.
-- `reports` et `moderation_actions` visent un message, un post ou un profil
-  sans clé étrangère (`target_type`, `target_id`) : une cible supprimée ne
+- `opportunities` : `CHECK` par type, une mission porte un budget et une date
+  limite, un emploi ou un stage un contrat et une date de début
+  (`docs/adr/0035-opportunites.md`). Une offre n'est jamais dite "clôturée"
+  en base : la date limite suffit. Pas de table de candidatures, postuler
+  ouvre une demande de conversation.
+- `reports` et `moderation_actions` visent un message, un post, un profil,
+  un travail, une conversation ou une offre sans clé étrangère (`target_type`, `target_id`) : une cible supprimée ne
   fait pas disparaître le journal de modération.

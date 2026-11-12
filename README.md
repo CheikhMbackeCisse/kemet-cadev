@@ -1,7 +1,7 @@
 # Kemet
 
 La plateforme d'échange des développeurs africains : des salons de discussion
-en temps réel, un fil de posts, un assistant `@kemet` nourri par les skills
+en temps réel, un fil de posts, un assistant, Kocc, nourri par les skills
 écrits par la communauté, des projets qui cherchent de l'aide, des
 compétitions, et des points qui récompensent l'utilité plutôt que les vues.
 

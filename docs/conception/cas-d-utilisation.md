@@ -18,6 +18,7 @@ flowchart LR
     readFeed[Lire le fil Pour toi]
     readSkills[Lire les skills publics]
     readWorks[Lire les travaux et les profils]
+    readOffers[Lire les offres d'emploi, de stage et de mission]
     readAnswers[Lire les réponses enregistrées de Kocc]
     relatedPeople[Voir qui a travaillé sur un sujet proche, sans le modèle]
   end
@@ -50,6 +51,8 @@ flowchart LR
     publishWork[Publier un travail avec ses coauteurs]
     whoWorked[Demander qui a travaillé sur ce sujet]
     project[Créer un projet, publier une demande d'aide, postuler]
+    publishOffer[Publier une offre, emploi, stage ou mission]
+    applyOffer[Postuler à une offre par un message privé]
   end
 
   subgraph Compétitions
@@ -66,11 +69,11 @@ flowchart LR
     verify[Vérifier un parcours]
   end
 
-  visitor --- readSpaces & readFeed & readSkills & readWorks & readAnswers & relatedPeople & signup
+  visitor --- readSpaces & readFeed & readSkills & readWorks & readOffers & readAnswers & relatedPeople & signup
   member --- profile & export & deleteAccount
   member --- post & mention & createSpace
   member --- writeDm & acceptDm & block & teamDm
-  member --- feedPost & react & askPost & createSkill & publishWork & whoWorked & project
+  member --- feedPost & react & askPost & createSkill & publishWork & whoWorked & project & publishOffer & applyOffer
   member --- proposeComp & join & vote & report
   juror --- score
   admin --- resolve & validateComp & verify

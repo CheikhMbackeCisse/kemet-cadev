@@ -1137,8 +1137,7 @@ export const fr = {
       "Une place plus visible dans l'annuaire des talents, en plus de celle déjà gagnée par ton niveau.",
     benefitSpacesTitle: "Espaces privés plus grands",
     benefitSpacesBody: "Plus de membres dans les espaces privés que tu crées.",
-    verificationNote:
-      "La vérification d'identité du parcours reste gratuite, pour tout le monde, avec ou sans Kemet Pro.",
+    verificationNote: "La vérification du parcours reste gratuite, pour tout le monde.",
     paymentTitle: "Paiement prévu",
     paymentBody: "Abonnement à petit prix en FCFA, par Wave ou Orange Money.",
     comingSoon: "Bientôt disponible",

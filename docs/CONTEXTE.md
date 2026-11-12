@@ -146,7 +146,7 @@ Le jury, c'est Systalink : il voudra voir comment la plateforme peut rapporter. 
 
 | Source de revenus | Pour qui | Détail |
 | --- | --- | --- |
-| Kemet Pro | Devs | Abonnement à petit prix en FCFA, payable par Wave ou Orange Money : plus de quota d'IA, statistiques sur son profil et ses skills, mise en avant dans l'annuaire, espaces privés plus grands. La vérification d'identité n'est jamais payante. |
+| Kemet Pro | Devs | Abonnement à petit prix en FCFA, payable par Wave ou Orange Money : plus de quota pour Kocc, statistiques sur son profil et ses skills, mise en avant dans l'annuaire, espaces privés plus grands. La vérification du parcours n'est jamais payante. |
 | Récompenses en crédits Datacloud | Systalink | Gagnants de compétitions, auteurs des skills les plus utiles, meilleurs testeurs reçoivent des crédits Datacloud. Coût faible pour Systalink, et les devs hébergent leurs projets chez eux. |
 | Recrutement | Entreprises | Publication de missions et accès à l'annuaire des talents. Plus tard, commission sur les missions payées via la plateforme. |
 | Compétitions sponsorisées | Opérateurs, banques, fintechs | Organiser un défi pour repérer des talents, sur l'infrastructure de Systalink. |

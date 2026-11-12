@@ -1,7 +1,7 @@
 # Dossier de conception
 
 Six schémas Mermaid, écrits le 06/11/2026 à partir du code et revérifiés le
-11/11. Chaque nom de table, de route et de service qu'ils citent existe dans
+12/11 (offres d'emploi, de stage et de mission comprises). Chaque nom de table, de route et de service qu'ils citent existe dans
 le dépôt. GitHub affiche les schémas directement.
 
 ## [Cas d'utilisation](cas-d-utilisation.md)
