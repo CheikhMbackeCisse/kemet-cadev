@@ -1,3 +1,4 @@
+import { ORGANIZATION_REQUEST_PATH } from "./paths.js";
 import type { ComponentType } from "react";
 import { INTRO_BASE_PATH } from "../intro/introSteps.js";
 import { ONBOARDING_BASE_PATH } from "../onboarding/steps.js";
@@ -80,6 +81,10 @@ export const PAGE_LOADERS = {
   user: page(() => import("../../pages/UserPage.js"), "UserPage"),
   opportunity: page(() => import("../../pages/OpportunityPage.js"), "OpportunityPage"),
   opportunityForm: page(() => import("../../pages/OpportunityFormPage.js"), "OpportunityFormPage"),
+  organizationRequest: page(
+    () => import("../../pages/OrganizationRequestPage.js"),
+    "OrganizationRequestPage",
+  ),
 } as const;
 
 export type PageKey = keyof typeof PAGE_LOADERS;
@@ -144,6 +149,7 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
   )
     return "opportunityForm";
   if (/^\/opportunites\/[^/]+\/?$/.test(pathname)) return "opportunity";
+  if (pathname === ORGANIZATION_REQUEST_PATH) return "organizationRequest";
   if (pathname.startsWith("/u/")) return "user";
   if (pathname === "/pro") return "pro";
   if (pathname === "/moderation") return "moderation";

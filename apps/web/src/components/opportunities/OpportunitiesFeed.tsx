@@ -1,4 +1,5 @@
-import { Briefcase } from "lucide-react";
+import { Briefcase, Building2 } from "lucide-react";
+import { ORGANIZATION_REQUEST_PATH } from "../../lib/navigation/paths.js";
 import { useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listOpportunities, type OpportunityFilters as ApiFilters } from "../../lib/chat/api.js";
@@ -150,6 +151,15 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
             {includeClosed ? fr.opportunities.hideClosed : fr.opportunities.showClosed}
           </Button>
         </div>
+      )}
+      {!loading && viewerProfileId && (
+        <a
+          href={ORGANIZATION_REQUEST_PATH}
+          className="inline-flex items-center gap-1.5 self-center text-sm text-link hover:underline max-md:min-h-11"
+        >
+          <Building2 className="size-4" aria-hidden="true" />
+          {fr.organizations.refer}
+        </a>
       )}
     </div>
   );

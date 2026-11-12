@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Building2,
   ChevronRight,
   Flag as FlagIcon,
   FlaskConical,
@@ -9,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useSiteConfig } from "../../lib/useSiteConfig.js";
+import { ORGANIZATION_REQUEST_PATH } from "../../lib/navigation/paths.js";
 import { useMediaQuery } from "../../lib/useMediaQuery.js";
 import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
@@ -44,6 +46,7 @@ export function MoiMenu({
       ? [
           { label: fr.moi.myWorks, href: "/moi/travaux", icon: BookOpen },
           { label: fr.messages.segmentMessages, href: "/messages", icon: Send },
+          { label: fr.organizations.refer, href: ORGANIZATION_REQUEST_PATH, icon: Building2 },
         ]
       : []),
     ...MOI_ITEMS,

@@ -12,6 +12,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { OrganizationRequestsAdmin } from "../components/organizations/OrganizationRequestsAdmin.js";
 
 const TARGET_LABELS = {
   message: fr.moderation.targetMessage,
@@ -186,6 +187,8 @@ export function ModerationPage() {
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <h1 className="text-lg font-bold text-text">{fr.moderation.title}</h1>
       </div>
+
+      <OrganizationRequestsAdmin />
 
       <div className="flex flex-col gap-3">
         <p className="text-sm font-medium text-text">{fr.moderation.queueTitle}</p>

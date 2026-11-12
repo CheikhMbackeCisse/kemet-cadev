@@ -44,6 +44,9 @@ import type {
   PostReactionResult,
   PostReply,
   PostSummary,
+  ManagedOrganization,
+  OrganizationRequest,
+  OrganizationType,
   ProfileSummary,
   ProjectDetail,
   ProjectSummary,
@@ -334,6 +337,58 @@ export async function uploadPostAttachment(file: File): Promise<Attachment> {
   }
   const { attachment } = (await response.json()) as { attachment: Attachment };
   return attachment;
+}
+
+export interface OrganizationRequestForm {
+  name: string;
+  organizationType: OrganizationType;
+  country: string;
+  websiteUrl: string;
+  description: string;
+  logo: File | null;
+}
+
+export async function sendOrganizationRequest(form: OrganizationRequestForm) {
+  const formData = new FormData();
+  formData.append("name", form.name);
+  formData.append("organizationType", form.organizationType);
+  formData.append("country", form.country);
+  formData.append("websiteUrl", form.websiteUrl);
+  formData.append("description", form.description);
+  if (form.logo) formData.append("logo", form.logo);
+  const response = await fetch("/api/organization-requests", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  return (await response.json()) as { request: OrganizationRequest };
+}
+
+export function getMyOrganizationRequest() {
+  return request<{ request: OrganizationRequest | null }>("/api/me/organization-request");
+}
+
+export function listMyOrganizations() {
+  return request<{ items: ManagedOrganization[] }>("/api/me/organizations");
+}
+
+export function listPendingOrganizationRequests() {
+  return request<{ items: OrganizationRequest[] }>("/api/organization-requests");
+}
+
+export function decideOrganizationRequest(id: string, decision: "accept" | "refuse") {
+  return request<{ status: "accepted" | "refused"; organizationHandle: string | null }>(
+    `/api/organization-requests/${encodeURIComponent(id)}`,
+    { method: "PUT", body: JSON.stringify({ decision }) },
+  );
 }
 
 export function postAttachmentUrl(attachmentId: string): string {
