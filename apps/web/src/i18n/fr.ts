@@ -655,6 +655,8 @@ export const fr = {
     retryAssistantQuestion: "Reposer la question",
     dismissAssistantFailure: "Masquer ce message",
     assistantRecorded: "Réponse enregistrée",
+    assistantShowMore: "Voir plus",
+    assistantShowLess: "Voir moins",
     assistantCitedFrom: "D'après",
     assistantCitedAuthor: "de",
   },

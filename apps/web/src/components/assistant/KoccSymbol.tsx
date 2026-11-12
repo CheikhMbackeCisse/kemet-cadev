@@ -1,20 +1,27 @@
 import { cn } from "../../lib/cn.js";
 
-export type KoccSymbolVariant = "touffes" | "bulle";
+export type KoccEyes = "pilules" | "points";
+
+/**
+ * Yeux du symbole, deux propositions : "pilules", deux petits rectangles
+ * arrondis debout ; "points", deux points ronds. Une ligne à changer une
+ * fois le choix fait.
+ */
+export const KOCC_EYES: KoccEyes = "pilules";
 
 /**
  * Symbole de Kocc, dessiné au trait comme une icône Lucide pour suivre le
- * thème. "touffes" : une tête et quatre touffes, clin d'œil à Kocc Barma et
- * à ses quatre maximes ; "bulle" : une bulle de parole qui porte un k.
+ * thème : une tête et quatre touffes, clin d'œil à Kocc Barma et à ses
+ * quatre maximes, et deux yeux pleins qui disent "assistant" au premier
+ * regard. Les yeux sont des formes pleines, sans trait : à 16 px, un trait
+ * de 1,75 les aurait bouchés.
  */
-export const KOCC_SYMBOL_VARIANT: KoccSymbolVariant = "touffes";
-
 export function KoccSymbol({
   className,
-  variant = KOCC_SYMBOL_VARIANT,
+  eyes = KOCC_EYES,
 }: {
   className?: string;
-  variant?: KoccSymbolVariant;
+  eyes?: KoccEyes;
 }) {
   return (
     <svg
@@ -27,20 +34,21 @@ export function KoccSymbol({
       aria-hidden="true"
       className={cn("shrink-0 text-primary", className)}
     >
-      {variant === "touffes" ? (
-        <>
-          <circle cx="12" cy="14.5" r="6.5" />
-          <path d="M8.6 8.9 7.4 5.2" />
-          <path d="M10.9 8.1 10.5 4" />
-          <path d="M13.1 8.1 13.5 4" />
-          <path d="M15.4 8.9 16.6 5.2" />
-        </>
+      <circle cx="12" cy="14.5" r="6.5" />
+      <path d="M8.6 8.9 7.4 5.2" />
+      <path d="M10.9 8.1 10.5 4" />
+      <path d="M13.1 8.1 13.5 4" />
+      <path d="M15.4 8.9 16.6 5.2" />
+      {eyes === "pilules" ? (
+        <g fill="currentColor" stroke="none">
+          <rect x="8.7" y="12.4" width="2.3" height="4" rx="1.15" />
+          <rect x="13" y="12.4" width="2.3" height="4" rx="1.15" />
+        </g>
       ) : (
-        <>
-          <path d="M20 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
-          <path d="M10 6.5v7" />
-          <path d="M14.5 6.5 10.5 10l4 3.5" />
-        </>
+        <g fill="currentColor" stroke="none">
+          <circle cx="9.7" cy="14.3" r="1.45" />
+          <circle cx="14.3" cy="14.3" r="1.45" />
+        </g>
       )}
     </svg>
   );

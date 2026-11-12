@@ -918,6 +918,7 @@ export function SpacePage() {
                           assistantStream.text ? <RichText source={assistantStream.text} /> : "…"
                         }
                         hideFeedback
+                        streaming
                         recorded={assistantStream.recorded}
                       />
                     </div>
