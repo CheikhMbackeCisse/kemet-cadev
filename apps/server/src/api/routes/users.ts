@@ -56,6 +56,7 @@ export function registerUserRoutes(app: FastifyInstance, { db, auth }: AppDeps):
       followingCount: await countFollowing(db, profile.id),
       workCount: await countProfileWorks(db, profile.id),
       isFollowedByViewer: viewerProfile ? await isFollowing(db, viewerProfile.id, profile.id) : null,
+      acceptsMessages: profile.userId !== null && profile.deletedAt === null,
     };
   });
 

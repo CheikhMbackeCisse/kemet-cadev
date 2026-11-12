@@ -8,6 +8,7 @@ import {
   postReposts,
   posts,
   profiles,
+  spaceMembers,
   works,
   type Db,
   type DbOrTx,
@@ -99,6 +100,18 @@ export async function listFolloweeIds(db: Db, profileId: string) {
   return rows.map((row) => row.id);
 }
 
+/**
+ * Un post d'espace (posts.spaceId) n'entre que dans le fil des membres de son
+ * espace : jamais dans celui d'un visiteur ni d'une personne extérieure.
+ */
+export function inFeedOf(viewerProfileId: string | null) {
+  if (!viewerProfileId) return isNull(posts.spaceId);
+  return sql`(${posts.spaceId} is null or exists (
+    select 1 from ${spaceMembers}
+    where ${spaceMembers.spaceId} = ${posts.spaceId} and ${spaceMembers.profileId} = ${viewerProfileId}
+  ))`;
+}
+
 // Sous-requête plutôt qu'une liste d'identifiants : un paramètre par
 // abonnement finirait par dépasser la limite de Postgres.
 function followedOrSelf(viewerProfileId: string) {
@@ -139,6 +152,7 @@ export async function listAbonnementsFeed(
     join ${posts} on ${posts.id} = "feed"."post_id"
     where ${posts.deletedAt} is null
       and ${notWrittenByFiller(posts.authorId)}
+      and ${inFeedOf(viewerProfileId)}
       ${before ? sql`and "feed"."activity_at" < ${before.toISOString()}::timestamp` : sql``}
     order by "feed"."activity_at" desc, "feed"."post_id" desc
     limit ${limit + 1}
@@ -205,11 +219,17 @@ export async function findLatestRepostersAmongSources(
 }
 
 /** Posts marqués "Débutant", du plus récent au plus ancien : filtre "Pour débuter". */
-export async function listBeginnerFeed(db: Db, cursor: string | undefined, limit: number) {
+export async function listBeginnerFeed(
+  db: Db,
+  viewerProfileId: string | null,
+  cursor: string | undefined,
+  limit: number,
+) {
   const visible = and(
     isNull(posts.deletedAt),
     eq(posts.isBeginner, true),
     notWrittenByFiller(posts.authorId),
+    inFeedOf(viewerProfileId),
   );
   const condition = cursor ? and(visible, lt(posts.createdAt, new Date(cursor))) : visible;
   const rows = await db
@@ -227,6 +247,7 @@ export async function listBeginnerFeed(db: Db, cursor: string | undefined, limit
  */
 export async function listPourToiFeed(
   db: Db,
+  viewerProfileId: string | null,
   limit: number,
   options: { talent?: boolean; beginner?: boolean } = {},
 ) {
@@ -255,7 +276,12 @@ export async function listPourToiFeed(
     .select({ post: posts })
     .from(posts)
     .where(
-      and(isNull(posts.deletedAt), gt(posts.createdAt, since), notWrittenByFiller(posts.authorId)),
+      and(
+        isNull(posts.deletedAt),
+        gt(posts.createdAt, since),
+        notWrittenByFiller(posts.authorId),
+        inFeedOf(viewerProfileId),
+      ),
     )
     .orderBy(desc(score), desc(posts.createdAt))
     .limit(limit);

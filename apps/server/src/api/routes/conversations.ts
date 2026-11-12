@@ -131,6 +131,8 @@ export function registerConversationRoutes(app: FastifyInstance, { db, auth, cha
         const recipient = await findProfileByHandle(db, handle);
         if (!recipient) throw notFound(`Le profil @${handle} n'existe pas.`);
         if (recipient.id === viewer.id) throw badRequest("Vous ne pouvez pas vous écrire à vous-même.");
+        // Profil sans compte de connexion (organisation du seed) : personne ne lirait la demande.
+        if (recipient.userId === null) throw forbidden(`@${handle} ne reçoit pas de messages.`);
         if (await isBlockedEitherWay(db, viewer.id, recipient.id)) {
           throw forbidden(`Vous ne pouvez pas écrire à @${handle}.`);
         }

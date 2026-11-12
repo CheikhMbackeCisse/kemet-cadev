@@ -41,6 +41,9 @@ export const posts = pgTable(
     // sous les images. Posé par le seed seulement, jamais accepté en entrée.
     mediaCredit: text("media_credit"),
     mediaCreditUrl: text("media_credit_url"),
+    // Post d'espace : visible dans le fil des seuls membres de l'espace, et
+    // dans l'espace lui-même. Posé par le seed seulement, jamais accepté en entrée.
+    spaceId: uuid("space_id").references(() => spaces.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),
     deletedAt: timestamp("deleted_at"),
@@ -49,6 +52,7 @@ export const posts = pgTable(
     index("posts_author_created_idx").on(table.authorId, table.createdAt),
     index("posts_shared_post_idx").on(table.sharedPostId),
     index("posts_work_idx").on(table.workId),
+    index("posts_space_idx").on(table.spaceId),
     // Pas de CHECK "texte ou image" : les images vivent dans une autre table.
     // La règle est appliquée par createPostSchema.
     // Écrit avec coalesce pour éviter le piège des CHECK Postgres : une

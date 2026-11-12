@@ -233,7 +233,14 @@ export function UserPage() {
     );
   }
 
-  const { profile, credentials, followerCount, followingCount, isFollowedByViewer } = data;
+  const {
+    profile,
+    credentials,
+    followerCount,
+    followingCount,
+    isFollowedByViewer,
+    acceptsMessages,
+  } = data;
   const isOwnProfile = viewerProfile?.handle === profile.handle;
 
   return (
@@ -281,7 +288,7 @@ export function UserPage() {
                   >
                     {isFollowedByViewer ? fr.profile.unfollow : fr.profile.follow}
                   </Button>
-                  {blocked === false && !isSuspended && (
+                  {blocked === false && !isSuspended && acceptsMessages && (
                     <Button
                       variant="secondary"
                       onClick={handleWrite}

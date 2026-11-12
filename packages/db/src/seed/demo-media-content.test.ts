@@ -34,9 +34,10 @@ describe("contenu des médias de démonstration", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("met une image ou un bloc de code dans chaque nouveau post", () => {
+  it("met une image, un carrousel, une vidéo ou un bloc de code dans chaque nouveau post", () => {
     for (const post of DEMO_MEDIA_POSTS) {
-      expect(Boolean(post.image) || post.body.includes("```"), post.key).toBe(true);
+      const media = Boolean(post.image) || Boolean(post.images?.length) || Boolean(post.video);
+      expect(media || post.body.includes("```"), post.key).toBe(true);
     }
   });
 

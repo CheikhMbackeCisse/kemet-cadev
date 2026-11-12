@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { BEGINNERS_SPACE_ID, follows, profileBlocks, profiles, spaceMembers, spaces, type Db } from "@kemet/db";
 import {
   INTEREST_KEYWORDS,
@@ -169,6 +169,8 @@ export async function suggestPeople(db: Db, viewer: ProfileRow) {
       and(
         ne(profiles.id, viewer.id),
         ne(profiles.id, KEMET_ASSISTANT_PROFILE_ID),
+        // Un profil sans compte de connexion (Systalink) n'est jamais proposé.
+        isNotNull(profiles.userId),
         isNull(profiles.deletedAt),
         isNull(profiles.suspendedAt),
         eq(profiles.isFiller, false),

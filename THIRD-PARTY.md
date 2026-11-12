@@ -110,6 +110,20 @@ trois paquets.
 | Drapeaux des pays | flag-icons 7.5.0, fichiers SVG servis comme images | MIT | Avatars et listes de pays (`apps/web/src/components/ui/Flag.tsx`) |
 | Contour de l'Afrique | Natural Earth (countries-50m) via world-atlas 2.0.2, généré par `scripts/build-africa-outline.ts` | Domaine public (Natural Earth), ISC (world-atlas) | Parcours d'arrivée (`apps/web/src/components/arrival/africaOutline.ts`) |
 
+## Contenus de Systalink
+
+Systalink, organisatrice de la CADEV 2026, a donné le 12/11/2026 son accord
+écrit pour trois usages, et seulement ceux-là :
+
+| Contenu | Source | Usage |
+| --- | --- | --- |
+| Visuel promotionnel de la CADEV 2026, repris sans retouche ni recadrage | Publication Instagram de Systalink (https://www.instagram.com/systalink/p/DewrHGNjtTM/) | Images du post « La CADEV 2026 en bref » (`packages/db/seed-assets/cadev/`) |
+| Symbole de leur logo, deux tracés repris à l'identique de leur icône | https://systalink.com/icon0.svg | Photo de profil du compte Systalink du seed (`packages/db/src/seed/systalink.ts`) |
+| Post « La CADEV 2026 en bref » publié à leur nom | Texte écrit par nous | Espace CADEV 2026, épinglé, avec un lien vers la publication d'origine (`packages/db/src/seed/cadev-post.ts`) |
+
+Le compte Systalink n'a ni bio, ni bannière, ni badge de vérification, et
+aucun moyen de connexion. Tous droits réservés à Systalink sur ces contenus.
+
 Les ressources copiées plutôt qu'installées sont listées dans
 `scripts/vendored-assets.ts` et recopiées dans `THIRD_PARTY_LICENSES.md`.
 Le logo de Kemet (`brand/`) est propre au projet.

@@ -22,9 +22,12 @@ export function isDeletedAccountHandle(handle: string): boolean {
   return handle.startsWith(DELETED_ACCOUNT_HANDLE_PREFIX);
 }
 
-/** Identifiants qu'aucune personne ne peut prendre : profils anonymisés et noms de l'assistant. */
+/** Profil de l'organisatrice de la CADEV 2026, posé par le seed, sans compte de connexion. */
+export const SYSTALINK_HANDLE = "systalink";
+
+/** Identifiants qu'aucune personne ne peut prendre : profils anonymisés, noms de l'assistant, organisations du seed. */
 export function isReservedHandle(handle: string): boolean {
-  return isDeletedAccountHandle(handle) || isAssistantHandle(handle);
+  return isDeletedAccountHandle(handle) || isAssistantHandle(handle) || handle === SYSTALINK_HANDLE;
 }
 
 export const countryCodeSchema = z.enum(COUNTRY_CODES);

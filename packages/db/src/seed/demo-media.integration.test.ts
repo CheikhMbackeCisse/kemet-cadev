@@ -12,8 +12,10 @@ import {
   profiles,
   skillRatings,
   skills,
+  spaceMembers,
   spacePinnedPosts,
   spaces,
+  user,
   workMedia,
   works,
 } from "../schema/index.js";
@@ -34,6 +36,7 @@ import {
 } from "./demo-media-content.js";
 import { seedDemoMedia } from "./demo-media.js";
 import { demoUuid } from "./demo-uuid.js";
+import { SYSTALINK_DISPLAY_NAME, SYSTALINK_PROFILE_ID } from "./systalink.js";
 
 const databaseUrl = getTestDatabaseUrl();
 
@@ -99,25 +102,82 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
     }
   });
 
-  it("publie le post CADEV avec le visuel tel quel, crédité, épinglé dans son espace", async () => {
+  it("publie le post CADEV au nom de Systalink, dans son espace, avec le visuel tel quel, épinglé", async () => {
     const [post] = await db.select().from(posts).where(eq(posts.id, demoUuid("post:cadev-en-bref")));
-    expect(post).toMatchObject({ mediaCredit: CADEV_MEDIA_CREDIT, mediaCreditUrl: CADEV_MEDIA_CREDIT_URL });
     const [space] = await db.select().from(spaces).where(eq(spaces.slug, "cadev-2026"));
+    expect(post).toMatchObject({
+      authorId: SYSTALINK_PROFILE_ID,
+      spaceId: space!.id,
+      mediaCredit: CADEV_MEDIA_CREDIT,
+      mediaCreditUrl: CADEV_MEDIA_CREDIT_URL,
+    });
     const [pin] = await db.select().from(spacePinnedPosts).where(eq(spacePinnedPosts.spaceId, space!.id));
     expect(pin?.postId).toBe(post!.id);
     const [image] = await db.select().from(postAttachments).where(eq(postAttachments.postId, post!.id));
     const stored = await readFile(join(uploadsDir, image!.storageKey));
     expect(stored.equals(await readFile(join(CADEV_ASSETS_DIR, "cadev-couverture.jpg")))).toBe(true);
+    expect(image!.authorId).toBe(SYSTALINK_PROFILE_ID);
   });
 
-  it("remplace le visuel CADEV par cadev-1, cadev-2... dès qu'ils sont dans le dossier", async () => {
+  it("crée Systalink sans aucun moyen de connexion, avec son symbole pour seule image", async () => {
+    const [systalink] = await db.select().from(profiles).where(eq(profiles.handle, "systalink"));
+    expect(systalink).toMatchObject({
+      id: SYSTALINK_PROFILE_ID,
+      userId: null,
+      displayName: SYSTALINK_DISPLAY_NAME,
+      bio: null,
+      bannerUrl: null,
+      isFiller: false,
+      isPlatformAdmin: false,
+      deletedAt: null,
+    });
+    // Symbole en vectoriel, couleur de la marque, jamais une image tramée.
+    const svg = decodeURIComponent(systalink!.avatarUrl!.replace("data:image/svg+xml,", ""));
+    expect(svg).toContain('fill="#1264DA"');
+    expect(svg).toMatch(/scale\(([\d.]+)\)/);
+    expect(await db.$count(user, eq(user.name, SYSTALINK_DISPLAY_NAME))).toBe(0);
+    const [space] = await db.select().from(spaces).where(eq(spaces.slug, "cadev-2026"));
+    expect(
+      await db.$count(
+        spaceMembers,
+        and(eq(spaceMembers.spaceId, space!.id), eq(spaceMembers.profileId, SYSTALINK_PROFILE_ID)),
+      ),
+    ).toBe(1);
+  });
+
+  it("passe à Systalink un post CADEV publié auparavant par un compte de démonstration", async () => {
+    const ids = new Map(
+      (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
+        .map((row) => [row.handle, row.id] as const),
+    );
+    const postId = demoUuid("post:cadev-en-bref");
+    const coumba = ids.get("coumba-thiam")!;
+    await db.update(posts).set({ authorId: coumba, spaceId: null }).where(eq(posts.id, postId));
+    await db.update(postAttachments).set({ authorId: coumba }).where(eq(postAttachments.postId, postId));
+
+    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("1 image(s), épinglé");
+    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("1 image(s), épinglé");
+
+    const [post] = await db.select().from(posts).where(eq(posts.id, postId));
+    expect(post!.authorId).toBe(SYSTALINK_PROFILE_ID);
+    expect(post!.spaceId).not.toBeNull();
+    expect(await db.$count(postAttachments, eq(postAttachments.authorId, coumba))).toBe(0);
+    expect(await db.$count(profiles, eq(profiles.handle, "systalink"))).toBe(1);
+  });
+
+  it("ajoute cadev-1, cadev-2... après la couverture dès qu'ils sont dans le dossier", async () => {
     const assetsDir = await mkdtemp(join(tmpdir(), "kemet-cadev-"));
     try {
       const cover = join(CADEV_ASSETS_DIR, "cadev-couverture.jpg");
       for (const name of ["cadev-couverture.jpg", "cadev-2.jpg", "cadev-1.jpg", "cadev-10.jpg"]) {
         await copyFile(cover, join(assetsDir, name));
       }
-      expect(await cadevImages(assetsDir)).toEqual(["cadev-1.jpg", "cadev-2.jpg", "cadev-10.jpg"]);
+      expect(await cadevImages(assetsDir)).toEqual([
+        "cadev-couverture.jpg",
+        "cadev-1.jpg",
+        "cadev-2.jpg",
+        "cadev-10.jpg",
+      ]);
       const ids = new Map(
         (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
           .map((row) => [row.handle, row.id] as const),
@@ -126,14 +186,15 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
         .select()
         .from(postAttachments)
         .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")));
-      expect(await seedCadevPost(db, ids, uploadsDir, assetsDir)).toBe("3 image(s), épinglé");
+      expect(await seedCadevPost(db, ids, uploadsDir, assetsDir)).toBe("4 image(s), épinglé");
       const after = await db
         .select()
         .from(postAttachments)
         .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")))
         .orderBy(postAttachments.position);
-      expect(after.map((row) => row.position)).toEqual([0, 1, 2]);
-      await expect(readFile(join(uploadsDir, before!.storageKey))).rejects.toThrow();
+      expect(after.map((row) => row.position)).toEqual([0, 1, 2, 3]);
+      expect(after[0]!.storageKey).toBe(before!.storageKey);
+      expect((await readFile(join(uploadsDir, before!.storageKey))).byteLength).toBe(before!.byteSize);
       const keys = after.map((row) => row.id);
       await seedCadevPost(db, ids, uploadsDir, assetsDir);
       const again = await db
@@ -301,5 +362,27 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
       filesWritten: false,
     });
     expect(await db.$count(posts, inArray(posts.id, imagePostIds))).toBe(0);
+  });
+
+  it("ne touche jamais un compte réel qui porterait l'identifiant systalink", async () => {
+    await db.delete(profiles).where(eq(profiles.id, SYSTALINK_PROFILE_ID));
+    await db
+      .insert(user)
+      .values({ id: "vrai-systalink", name: "Vrai compte", email: "vrai@test.kemet", emailVerified: true });
+    const [real] = await db
+      .insert(profiles)
+      .values({ userId: "vrai-systalink", handle: "systalink", displayName: "Vrai compte", country: "SN" })
+      .returning();
+    const ids = new Map(
+      (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
+        .map((row) => [row.handle, row.id] as const),
+    );
+
+    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("identifiant systalink pris");
+
+    const [after] = await db.select().from(profiles).where(eq(profiles.id, real!.id));
+    expect(after).toEqual(real);
+    expect(await db.$count(posts, eq(posts.authorId, real!.id))).toBe(0);
+    expect(await db.$count(posts, eq(posts.id, demoUuid("post:cadev-en-bref")))).toBe(0);
   });
 });

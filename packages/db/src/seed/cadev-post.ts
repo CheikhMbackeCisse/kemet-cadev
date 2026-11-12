@@ -6,16 +6,17 @@ import type { DbOrTx } from "../client.js";
 import { postAttachments, posts, spacePinnedPosts, spaces } from "../schema/index.js";
 import { demoUuid } from "./demo-uuid.js";
 import { storePostImage } from "./demo-media.js";
+import { ensureSystalinkMembership, ensureSystalinkProfile, SYSTALINK_PROFILE_ID } from "./systalink.js";
 import { hoursAgo } from "./time.js";
 
 /**
- * Visuel promotionnel de l'organisateur, repris tel quel (seule image du seed
- * qui ne soit pas fabriquée par nous) : voir THIRD_PARTY_LICENSES.md.
+ * Visuel promotionnel de Systalink, organisatrice de la CADEV 2026, repris
+ * tel quel avec son accord (seule image du seed qui ne soit pas fabriquée
+ * par nous) : voir THIRD_PARTY_LICENSES.md.
  */
 export const CADEV_ASSETS_DIR = fileURLToPath(new URL("../../seed-assets/cadev/", import.meta.url));
 
 const CADEV_SPACE_SLUG = "cadev-2026";
-const AUTHOR_HANDLE = "coumba-thiam";
 const POST_ID = demoUuid("post:cadev-en-bref");
 const COVER = "cadev-couverture.jpg";
 const NUMBERED = /^cadev-(\d+)\.(jpe?g|png|webp)$/i;
@@ -29,8 +30,8 @@ export const CADEV_MEDIA_CREDIT = "Visuel : Systalink";
 export const CADEV_MEDIA_CREDIT_URL = "https://www.instagram.com/systalink/p/DewrHGNjtTM/";
 
 /**
- * Images du post : `cadev-1`, `cadev-2`... dans l'ordre de leur numéro s'il y
- * en a dans le dossier (carrousel), sinon la couverture seule.
+ * Images du post : la couverture d'abord, puis `cadev-1`, `cadev-2`... dans
+ * l'ordre de leur numéro s'il y en a dans le dossier (carrousel).
  */
 export async function cadevImages(dir: string = CADEV_ASSETS_DIR): Promise<string[]> {
   const numbered = (await readdir(dir))
@@ -38,14 +39,16 @@ export async function cadevImages(dir: string = CADEV_ASSETS_DIR): Promise<strin
     .filter((entry): entry is { name: string; match: RegExpExecArray } => entry.match !== null)
     .sort((a, b) => Number(a.match[1]) - Number(b.match[1]))
     .map((entry) => entry.name);
-  return numbered.length > 0 ? numbered : [COVER];
+  return [COVER, ...numbered];
 }
 
 /**
- * Post "La CADEV 2026 en bref", publié par un compte de démonstration et
- * épinglé en tête de l'espace CADEV 2026. Relançable : les images sont
+ * Post "La CADEV 2026 en bref", publié par Systalink dans l'espace CADEV 2026
+ * et épinglé en tête de ses salons. Relançable : un post publié auparavant
+ * par un compte de démonstration passe à Systalink, et les images sont
  * remplacées seulement quand la liste des fichiers du dossier a changé.
- * Rien n'est fait si l'espace n'a pas été créé par un compte de démonstration.
+ * Rien n'est fait si l'espace n'a pas été créé par un compte de démonstration,
+ * ni si l'identifiant systalink est porté par un autre profil.
  */
 export async function seedCadevPost(
   db: DbOrTx,
@@ -53,24 +56,31 @@ export async function seedCadevPost(
   uploadsDir: string,
   assetsDir: string = CADEV_ASSETS_DIR,
 ): Promise<string> {
-  const authorId = ids.get(AUTHOR_HANDLE);
   const [space] = await db
     .select({ id: spaces.id, createdBy: spaces.createdBy })
     .from(spaces)
     .where(eq(spaces.slug, CADEV_SPACE_SLUG));
-  if (!authorId || !space || ![...ids.values()].includes(space.createdBy)) return "espace absent";
+  if (!space || ![...ids.values()].includes(space.createdBy)) return "espace absent";
 
   const [existing] = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, POST_ID));
-  if (existing && existing.authorId !== authorId) return "identifiant pris";
-  if (!existing) {
-    await db.insert(posts).values({
-      id: POST_ID,
-      authorId,
-      body: CADEV_POST_BODY,
-      mediaCredit: CADEV_MEDIA_CREDIT,
-      mediaCreditUrl: CADEV_MEDIA_CREDIT_URL,
-      createdAt: hoursAgo(72),
-    });
+  const demoAuthors = new Set([...ids.values(), SYSTALINK_PROFILE_ID]);
+  if (existing && !demoAuthors.has(existing.authorId)) return "identifiant pris";
+  const authorId = await ensureSystalinkProfile(db);
+  if (!authorId) return "identifiant systalink pris";
+  await ensureSystalinkMembership(db, space.id);
+
+  const content = {
+    authorId,
+    spaceId: space.id,
+    body: CADEV_POST_BODY,
+    mediaCredit: CADEV_MEDIA_CREDIT,
+    mediaCreditUrl: CADEV_MEDIA_CREDIT_URL,
+  };
+  if (existing) {
+    await db.update(posts).set(content).where(eq(posts.id, POST_ID));
+    await db.update(postAttachments).set({ authorId }).where(eq(postAttachments.postId, POST_ID));
+  } else {
+    await db.insert(posts).values({ id: POST_ID, createdAt: hoursAgo(72), ...content });
   }
 
   const images = await cadevImages(assetsDir);

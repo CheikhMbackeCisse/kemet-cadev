@@ -178,9 +178,9 @@ export function registerPostRoutes(
       // place de l'onglet Abonnements. "Pour débuter" lui reste ouvert.
       const page =
         query.tab === "debuter"
-          ? await listBeginnerFeed(db, query.cursor, query.limit)
+          ? await listBeginnerFeed(db, profile?.id ?? null, query.cursor, query.limit)
           : query.tab === "pour-toi" || !profile
-            ? await listPourToiFeed(db, query.limit, {
+            ? await listPourToiFeed(db, profile?.id ?? null, query.limit, {
                 talent: prefersTalentFeed(profile?.role ?? null),
                 beginner: profile !== null && isBeginnerAudience(profile),
               })

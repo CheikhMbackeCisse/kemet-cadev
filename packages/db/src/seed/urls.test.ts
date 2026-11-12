@@ -7,6 +7,10 @@ const DEMO_LINK = /^https:\/\/([a-z0-9-]+\.)*demo\.kemetlabs\.dev(\/|$)/;
 // Espace de noms XML des avatars SVG, jamais affiché comme un lien.
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
+// Publication d'origine du visuel CADEV, lien voulu par Systalink, qui a
+// donné son accord pour ce post (THIRD_PARTY_LICENSES.md).
+const APPROVED_SOURCES = new Set(["https://www.instagram.com/systalink/p/DewrHGNjtTM/"]);
+
 // Un lien vers un domaine tiers (GitHub, GitLab, Hugging Face...) peut
 // pointer vers le compte d'une vraie personne qui porte le même nom qu'un
 // compte de démonstration.
@@ -17,7 +21,9 @@ describe("liens des données de démonstration", () => {
       .flatMap((file) =>
         [...readFileSync(`${seedDirectory}/${file}`, "utf8").matchAll(/https?:\/\/[^\s"'`)]+/g)]
           .map(([url]) => url)
-          .filter((url) => url !== SVG_NAMESPACE && !DEMO_LINK.test(url))
+          .filter(
+            (url) => url !== SVG_NAMESPACE && !APPROVED_SOURCES.has(url) && !DEMO_LINK.test(url),
+          )
           .map((url) => `${file}: ${url}`),
       );
     expect(foreignUrls).toEqual([]);
