@@ -1,18 +1,70 @@
 import { randomUUID } from "node:crypto";
+import { and, eq, like } from "drizzle-orm";
 import type { DbOrTx } from "../client.js";
-import { channels, messages, spaceMembers, spaces } from "../schema/index.js";
+import { channels, messages, profiles, spaceMembers, spaces } from "../schema/index.js";
 import type { DemoAccountIds } from "./accounts.js";
 import { hoursAgo } from "./time.js";
 
+const CADEV_SPACE_SLUG = "cadev-2026";
+export const CADEV_SPACE_DESCRIPTION = "Espace d'échange autour de la CADEV 2026.";
+export const CADEV_WELCOME_OPENING =
+  "Bienvenue dans cet espace d'échange autour de la CADEV 2026 !";
+// Textes des premières versions du seed : un espace de démonstration ne se
+// présente pas comme celui de l'organisateur.
+const OLD_CADEV_DESCRIPTION =
+  "Espace officiel de la compétition CADEV 2026, organisée par Systalink.";
+const OLD_CADEV_WELCOME_OPENING = "Bienvenue sur l'espace officiel de CADEV 2026 !";
+
+/**
+ * Remplace les anciens textes de l'espace CADEV 2026 sur une base déjà
+ * remplie. Ne touche que la description d'origine et le message d'accueil
+ * d'un compte de démonstration.
+ */
+export async function renameCadevSpace(db: DbOrTx): Promise<{ spaces: number; messages: number }> {
+  const renamedSpaces = await db
+    .update(spaces)
+    .set({ description: CADEV_SPACE_DESCRIPTION })
+    .where(and(eq(spaces.slug, CADEV_SPACE_SLUG), eq(spaces.description, OLD_CADEV_DESCRIPTION)))
+    .returning({ id: spaces.id });
+
+  const [space] = await db
+    .select({ id: spaces.id })
+    .from(spaces)
+    .where(eq(spaces.slug, CADEV_SPACE_SLUG));
+  if (!space) return { spaces: renamedSpaces.length, messages: 0 };
+  const welcome = await db
+    .select({ id: messages.id, body: messages.body })
+    .from(messages)
+    .innerJoin(channels, eq(channels.id, messages.channelId))
+    .innerJoin(profiles, eq(profiles.id, messages.authorId))
+    .where(
+      and(
+        eq(channels.spaceId, space.id),
+        eq(profiles.isDemo, true),
+        like(messages.body, `${OLD_CADEV_WELCOME_OPENING}%`),
+      ),
+    );
+  for (const message of welcome) {
+    await db
+      .update(messages)
+      .set({ body: CADEV_WELCOME_OPENING + message.body.slice(OLD_CADEV_WELCOME_OPENING.length) })
+      .where(eq(messages.id, message.id));
+  }
+  return { spaces: renamedSpaces.length, messages: welcome.length };
+}
+
 // Public et rempli de messages, pour que la plateforme ne paraisse pas vide
 // à la première visite.
-export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): Promise<{ generalChannelId: string }> {
+export async function createCadevSpace(
+  db: DbOrTx,
+  accountIds: DemoAccountIds,
+): Promise<{ generalChannelId: string }> {
   const [cadevSpace] = await db
     .insert(spaces)
     .values({
       name: "CADEV 2026",
       slug: "cadev-2026",
-      description: "Espace officiel de la compétition CADEV 2026, organisée par Systalink.",
+      description: CADEV_SPACE_DESCRIPTION,
       visibility: "public",
       createdBy: accountIds.coumbaThiam,
     })
@@ -43,7 +95,7 @@ export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): 
       authorId: accountIds.coumbaThiam,
       clientId: randomUUID(),
       body:
-        "Bienvenue sur l'espace officiel de CADEV 2026 ! Posez vos questions, partagez vos skills, " +
+        `${CADEV_WELCOME_OPENING} Posez vos questions, partagez vos skills, ` +
         "et n'hésitez pas à utiliser @kocc si vous bloquez sur quelque chose.",
       createdAt: hoursAgo(96),
     },
@@ -132,7 +184,7 @@ export async function createCadevSpace(db: DbOrTx, accountIds: DemoAccountIds): 
       channelId: memesChannel!.id,
       authorId: accountIds.lynaBouzid,
       clientId: randomUUID(),
-      body: "\"Ça compile, donc ça marche\" — phrase la plus dangereuse du métier.",
+      body: '"Ça compile, donc ça marche" — phrase la plus dangereuse du métier.',
       createdAt: hoursAgo(55),
     },
     {

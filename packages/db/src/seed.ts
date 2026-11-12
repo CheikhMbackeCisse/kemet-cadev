@@ -4,6 +4,7 @@ import { hash } from "@node-rs/argon2";
 import { seedDemoMedia } from "./seed/demo-media.js";
 import { seedNewcomers } from "./seed/newcomers.js";
 import { seedShowcase } from "./seed/showcase.js";
+import { renameCadevSpace } from "./seed/chat-content.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -22,6 +23,10 @@ async function main(): Promise<void> {
     );
     console.log("Espaces, salons, fil, skills, projets et compétitions de démonstration créés.");
   }
+
+  const cadev = await renameCadevSpace(db);
+  if (cadev.spaces + cadev.messages > 0)
+    console.log("Espace CADEV 2026 : ancienne description et message d'accueil remplacés.");
 
   const uploadsDir = process.env.UPLOADS_DIR;
   if (!uploadsDir)
