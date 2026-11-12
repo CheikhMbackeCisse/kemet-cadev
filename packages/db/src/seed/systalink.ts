@@ -38,8 +38,9 @@ export function systalinkAvatarDataUri(): string {
 }
 
 /**
- * Profil de Systalink, sans compte de connexion : aucune ligne `user`, donc
- * aucun mot de passe, aucune session possible. Ni bio, ni bannière, ni pays.
+ * Profil de Systalink, une organisation (organisateur d'événements), sans
+ * compte de connexion : aucune ligne `user`, donc aucun mot de passe, aucune
+ * session possible. Ni bio, ni bannière, ni pays, ni niveau.
  * Relançable. Renvoie null si l'identifiant est déjà porté par un autre
  * profil (un compte réel n'est jamais touché).
  */
@@ -51,6 +52,8 @@ export async function ensureSystalinkProfile(db: DbOrTx): Promise<string | null>
   if (holder && holder.id !== SYSTALINK_PROFILE_ID) return null;
 
   const fields = {
+    kind: "organization" as const,
+    organizationType: "event_organizer" as const,
     userId: null,
     displayName: SYSTALINK_DISPLAY_NAME,
     country: "",

@@ -440,6 +440,7 @@ export function PostPage() {
                       name={reply.authorDisplayName}
                       src={reply.authorAvatarUrl ?? undefined}
                       countryCode={reply.authorCountry}
+                      square={reply.authorKind === "organization"}
                     />
                   </ProfileLink>
                   <div className="min-w-0 flex-1">
@@ -448,6 +449,7 @@ export function PostPage() {
                         name={reply.authorDisplayName}
                         handle={reply.authorHandle}
                         level={authorLevel(reply.authorHandle, reply.authorLevel)}
+                        organization={reply.authorKind === "organization"}
                       />
                       <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
                       {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}

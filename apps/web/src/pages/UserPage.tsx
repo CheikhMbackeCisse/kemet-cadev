@@ -335,10 +335,12 @@ export function UserPage() {
         )}
 
         {((profile.openToOpportunities &&
+          profile.level &&
           isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL)) ||
           profile.helpsBeginners) && (
           <div className="flex flex-wrap items-center gap-2">
             {profile.openToOpportunities &&
+              profile.level &&
               isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL) && (
                 <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
               )}
@@ -384,8 +386,9 @@ export function UserPage() {
                   src={item.avatarUrl ?? undefined}
                   size={32}
                   countryCode={item.country}
+                  square={item.kind === "organization"}
                 />
-                <UserName name={item.displayName} />
+                <UserName name={item.displayName} organization={item.kind === "organization"} />
               </a>
             ))
           )}

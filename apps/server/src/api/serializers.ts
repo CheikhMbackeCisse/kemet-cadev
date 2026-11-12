@@ -18,14 +18,32 @@ type CredentialRow = typeof credentials.$inferSelect;
 // ne montre que Kocc, sans bio ni titre, sans réécrire la ligne.
 function presentProfileRow(row: ProfileRow): ProfileRow {
   if (row.id !== KEMET_ASSISTANT_PROFILE_ID) return row;
-  return { ...row, handle: ASSISTANT_MENTION_HANDLE, displayName: ASSISTANT_NAME, bio: null, title: null };
+  return {
+    ...row,
+    handle: ASSISTANT_MENTION_HANDLE,
+    displayName: ASSISTANT_NAME,
+    bio: null,
+    title: null,
+  };
 }
 
-export function serializeProfile(stored: ProfileRow, level: Level): Profile {
+/**
+ * Niveau affiché à côté d'un nom. Une organisation et le profil de
+ * l'assistant n'en ont pas : ni insigne, ni points, ni progression.
+ */
+export function shownLevel(profile: Pick<ProfileRow, "id" | "kind">, level: Level): Level | null {
+  if (profile.kind !== "person" || profile.id === KEMET_ASSISTANT_PROFILE_ID) return null;
+  return level;
+}
+
+export function serializeProfile(stored: ProfileRow, computedLevel: Level): Profile {
   const row = presentProfileRow(stored);
+  const level = shownLevel(row, computedLevel);
   return {
     id: row.id,
     handle: row.handle,
+    kind: row.kind,
+    organizationType: row.organizationType,
     displayName: row.displayName,
     country: row.country as Profile["country"],
     role: row.role,
@@ -42,7 +60,10 @@ export function serializeProfile(stored: ProfileRow, level: Level): Profile {
     avatarUrl: row.avatarUrl,
     bannerUrl: row.bannerUrl,
     // Masqué aussi à la lecture : un total revu à la baisse le retire.
-    openToOpportunities: row.openToOpportunities && isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL),
+    openToOpportunities:
+      level !== null &&
+      row.openToOpportunities &&
+      isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL),
     helpsBeginners: row.helpsBeginners,
     isDemo: row.isDemo,
     level,
@@ -55,6 +76,7 @@ export function serializeProfileSummary(stored: ProfileRow): ProfileSummary {
   return {
     id: row.id,
     handle: row.handle,
+    kind: row.kind,
     displayName: row.displayName,
     country: row.country as ProfileSummary["country"],
     title: row.title,

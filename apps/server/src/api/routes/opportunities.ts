@@ -18,6 +18,7 @@ import {
   type OpportunityWithAuthor,
 } from "../repositories/opportunities.js";
 import { computeLevels } from "../repositories/points.js";
+import { findOrganizationContact } from "../repositories/organization-accounts.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import {
   serializeOpportunityDetail,
@@ -45,7 +46,18 @@ export function registerOpportunityRoutes(
 
   async function presentDetail(row: OpportunityWithAuthor) {
     const levels = await computeLevels(db, [row.author.id]);
-    return serializeOpportunityDetail(row, levels.get(row.author.id)!, todayIsoDate());
+    const contact =
+      row.author.kind === "organization"
+        ? await findOrganizationContact(db, row.author.id)
+        : row.author.userId
+          ? row.author
+          : null;
+    return serializeOpportunityDetail(
+      row,
+      levels.get(row.author.id)!,
+      contact?.handle ?? null,
+      todayIsoDate(),
+    );
   }
 
   async function requireOwnOpportunity(userId: string, slug: string) {

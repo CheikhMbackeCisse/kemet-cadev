@@ -19,6 +19,7 @@ export * from "./schemas/post.js";
 export * from "./schemas/points.js";
 export * from "./schemas/project.js";
 export * from "./schemas/opportunity.js";
+export * from "./schemas/organization.js";
 export * from "./schemas/work.js";
 export * from "./schemas/work-media.js";
 export * from "./schemas/competition.js";

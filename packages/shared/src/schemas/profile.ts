@@ -25,10 +25,30 @@ export function isDeletedAccountHandle(handle: string): boolean {
 /** Profil de l'organisatrice de la CADEV 2026, posé par le seed, sans compte de connexion. */
 export const SYSTALINK_HANDLE = "systalink";
 
+/** Organisations fictives des données de démonstration : identifiants réservés comme celui de Systalink. */
+export const DEMO_ORGANIZATION_HANDLES = [
+  "lagune-logiciels",
+  "cayor-distribution",
+  "code-des-collines",
+] as const;
+
 /** Identifiants qu'aucune personne ne peut prendre : profils anonymisés, noms de l'assistant, organisations du seed. */
 export function isReservedHandle(handle: string): boolean {
-  return isDeletedAccountHandle(handle) || isAssistantHandle(handle) || handle === SYSTALINK_HANDLE;
+  return (
+    isDeletedAccountHandle(handle) ||
+    isAssistantHandle(handle) ||
+    handle === SYSTALINK_HANDLE ||
+    (DEMO_ORGANIZATION_HANDLES as readonly string[]).includes(handle)
+  );
 }
+
+export const PROFILE_KINDS = ["person", "organization"] as const;
+export const profileKindSchema = z.enum(PROFILE_KINDS);
+export type ProfileKind = z.infer<typeof profileKindSchema>;
+
+export const ORGANIZATION_TYPES = ["company", "school", "community", "event_organizer"] as const;
+export const organizationTypeSchema = z.enum(ORGANIZATION_TYPES);
+export type OrganizationType = z.infer<typeof organizationTypeSchema>;
 
 export const countryCodeSchema = z.enum(COUNTRY_CODES);
 
@@ -84,6 +104,8 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export const profileSchema = z.object({
   id: z.string().uuid(),
   handle: handleSchema,
+  kind: profileKindSchema,
+  organizationType: organizationTypeSchema.nullable(),
   displayName: z.string(),
   country: profileCountrySchema,
   role: profileRoleSchema.nullable(),
@@ -102,7 +124,8 @@ export const profileSchema = z.object({
   openToOpportunities: z.boolean(),
   helpsBeginners: z.boolean(),
   isDemo: z.boolean(),
-  level: levelSchema,
+  /** Absent pour une organisation et pour le profil de l'assistant : ni niveau, ni points. */
+  level: levelSchema.nullable(),
   createdAt: z.string().datetime(),
 });
 
@@ -111,6 +134,7 @@ export type Profile = z.infer<typeof profileSchema>;
 export const profileSummarySchema = profileSchema.pick({
   id: true,
   handle: true,
+  kind: true,
   displayName: true,
   country: true,
   title: true,

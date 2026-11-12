@@ -43,7 +43,7 @@ export function OpenProfilesStrip() {
                 <span className="line-clamp-1 text-sm font-semibold text-text">
                   {profile.displayName}
                 </span>
-                <LevelBadge level={profile.level} />
+                {profile.level && <LevelBadge level={profile.level} />}
               </span>
               {profile.title && (
                 <span className="line-clamp-2 text-xs text-text-2">{profile.title}</span>

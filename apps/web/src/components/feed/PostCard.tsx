@@ -50,8 +50,13 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
           src={post.authorAvatarUrl ?? undefined}
           size={32}
           countryCode={post.authorCountry}
+          square={post.authorKind === "organization"}
         />
-        <UserName name={post.authorDisplayName} level={post.authorLevel} />
+        <UserName
+          name={post.authorDisplayName}
+          level={post.authorLevel}
+          organization={post.authorKind === "organization"}
+        />
         <time
           dateTime={post.createdAt}
           title={formatFullDate(post.createdAt)}
@@ -275,6 +280,7 @@ export function PostCard({
             name={post.authorDisplayName}
             src={post.authorAvatarUrl ?? undefined}
             countryCode={post.authorCountry}
+            square={post.authorKind === "organization"}
           />
         </ProfileLink>
         <div className="relative min-w-0 flex-1">
@@ -297,6 +303,7 @@ export function PostCard({
               name={post.authorDisplayName}
               handle={post.authorHandle}
               level={authorLevel(post.authorHandle, post.authorLevel)}
+              organization={post.authorKind === "organization"}
             />
             <span aria-hidden="true" className="text-xs text-subtle">
               ·

@@ -241,6 +241,29 @@ export async function listBeginnerFeed(
   return toPage(rows, limit);
 }
 
+/** Posts d'un profil, du plus récent au plus ancien. Un post d'espace n'y paraît que pour les membres de l'espace, comme dans le fil. */
+export async function listPostsByAuthor(
+  db: Db,
+  authorId: string,
+  viewerProfileId: string | null,
+  cursor: string | undefined,
+  limit: number,
+) {
+  const visible = and(
+    isNull(posts.deletedAt),
+    eq(posts.authorId, authorId),
+    inFeedOf(viewerProfileId),
+  );
+  const condition = cursor ? and(visible, lt(posts.createdAt, new Date(cursor))) : visible;
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(condition)
+    .orderBy(desc(posts.createdAt))
+    .limit(limit + 1);
+  return toPage(rows, limit);
+}
+
 /**
  * Liste bornée, sans curseur : le score n'est pas monotone avec la date, un
  * curseur stable demanderait de figer le score au premier chargement.

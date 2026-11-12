@@ -116,7 +116,7 @@ export function ProfileHeader({
       <div className="flex flex-col gap-1">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <h1 className="min-w-0 break-words text-xl font-bold text-text">{profile.displayName}</h1>
-          <LevelBadge level={profile.level} showLabel link />
+          {profile.level && <LevelBadge level={profile.level} showLabel link />}
         </div>
         {subtitle && <p className="text-sm text-text-2">{subtitle}</p>}
         <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-subtle">

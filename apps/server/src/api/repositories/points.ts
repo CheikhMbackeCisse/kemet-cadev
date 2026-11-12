@@ -70,6 +70,12 @@ export interface AwardPointsInput {
 export async function awardPoints(db: DbOrTx, input: AwardPointsInput): Promise<void> {
   if (input.amount <= 0) return;
   if (input.givenByProfileId && input.givenByProfileId === input.profileId) return;
+  // Une organisation n'a ni points ni niveau : rien n'entre au registre pour elle.
+  const [recipient] = await db
+    .select({ kind: profiles.kind })
+    .from(profiles)
+    .where(eq(profiles.id, input.profileId));
+  if (recipient?.kind === "organization") return;
 
   if (!input.givenByProfileId) {
     await insertLedgerRow(db, input.profileId, input.source, input.sourceId, input.amount, null);
@@ -78,7 +84,9 @@ export async function awardPoints(db: DbOrTx, input: AwardPointsInput): Promise<
 
   const giverId = input.givenByProfileId;
   await db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${giverId} || ${input.profileId}, 0))`);
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${giverId} || ${input.profileId}, 0))`,
+    );
     const givenToday = await sumGivenToday(tx, giverId, input.profileId);
     const headroom = POINTS_DAILY_GIVER_CAP - givenToday;
     if (headroom <= 0) return;
@@ -98,10 +106,16 @@ async function insertLedgerRow(
   await db
     .insert(pointsLedger)
     .values({ profileId, source, sourceId, amount, givenByProfileId })
-    .onConflictDoNothing({ target: [pointsLedger.source, pointsLedger.sourceId, pointsLedger.profileId] });
+    .onConflictDoNothing({
+      target: [pointsLedger.source, pointsLedger.sourceId, pointsLedger.profileId],
+    });
 }
 
-async function sumGivenToday(db: DbOrTx, giverProfileId: string, receiverProfileId: string): Promise<number> {
+async function sumGivenToday(
+  db: DbOrTx,
+  giverProfileId: string,
+  receiverProfileId: string,
+): Promise<number> {
   const startOfDay = new Date();
   startOfDay.setUTCHours(0, 0, 0, 0);
   const [row] = await db
@@ -117,7 +131,11 @@ async function sumGivenToday(db: DbOrTx, giverProfileId: string, receiverProfile
   return row?.total ?? 0;
 }
 
-async function countActiveDaysByProfile(db: DbOrTx, profileIds: string[], windowDays: number): Promise<Map<string, number>> {
+async function countActiveDaysByProfile(
+  db: DbOrTx,
+  profileIds: string[],
+  windowDays: number,
+): Promise<Map<string, number>> {
   const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
   const rows = await db
     .select({ profileId: pointsLedger.profileId, createdAt: pointsLedger.createdAt })
@@ -150,7 +168,10 @@ export interface ProfilePoints {
  * dates du registre : un gain annulé corrige le bonus tout seul. Deux
  * requêtes quel que soit le nombre de profils, pour les listes.
  */
-export async function computeProfilesPoints(db: DbOrTx, profileIds: string[]): Promise<Map<string, ProfilePoints>> {
+export async function computeProfilesPoints(
+  db: DbOrTx,
+  profileIds: string[],
+): Promise<Map<string, ProfilePoints>> {
   const uniqueIds = [...new Set(profileIds)];
   const result = new Map<string, ProfilePoints>();
   if (uniqueIds.length === 0) return result;
@@ -174,7 +195,10 @@ export async function computeProfilesPoints(db: DbOrTx, profileIds: string[]): P
       if (ENTRAIDE_SOURCES.has(row.source)) entraide += row.total;
       else parcours += row.total;
     }
-    const regularite = Math.min(POINTS_REGULARITE_CAP, POINTS_REGULARITE_DAILY_BONUS * (activeDays.get(profileId) ?? 0));
+    const regularite = Math.min(
+      POINTS_REGULARITE_CAP,
+      POINTS_REGULARITE_DAILY_BONUS * (activeDays.get(profileId) ?? 0),
+    );
     const totalPoints = Math.min(parcours, POINTS_PARCOURS_CAP) + entraide + regularite;
     result.set(profileId, { totalPoints, level: levelForPoints(totalPoints) });
   }
@@ -207,19 +231,40 @@ export async function computeUtileAwardAmount(
 /**
  * Nombre de membres à chaque niveau, calculé comme le niveau de chacun : à
  * partir du registre. Un profil sans aucune ligne au registre est Apprenti.
- * Ni l'assistant ni un compte supprimé ne comptent.
+ * Ni l'assistant, ni une organisation, ni un compte supprimé ne comptent.
  */
-export async function countMembersByLevel(db: DbOrTx, excludedProfileId: string): Promise<Record<Level, number>> {
-  const counts: Record<Level, number> = { apprenti: 0, artisan: 0, scribe: 0, architecte: 0, legende: 0 };
+export async function countMembersByLevel(
+  db: DbOrTx,
+  excludedProfileId: string,
+): Promise<Record<Level, number>> {
+  const counts: Record<Level, number> = {
+    apprenti: 0,
+    artisan: 0,
+    scribe: 0,
+    architecte: 0,
+    legende: 0,
+  };
   const [members] = await db
     .select({ total: sql<number>`count(*)::int` })
     .from(profiles)
-    .where(and(isNull(profiles.deletedAt), ne(profiles.id, excludedProfileId)));
+    .where(
+      and(
+        isNull(profiles.deletedAt),
+        eq(profiles.kind, "person"),
+        ne(profiles.id, excludedProfileId),
+      ),
+    );
   const withPoints = await db
     .selectDistinct({ profileId: pointsLedger.profileId })
     .from(pointsLedger)
     .innerJoin(profiles, eq(profiles.id, pointsLedger.profileId))
-    .where(and(isNull(profiles.deletedAt), ne(profiles.id, excludedProfileId)));
+    .where(
+      and(
+        isNull(profiles.deletedAt),
+        eq(profiles.kind, "person"),
+        ne(profiles.id, excludedProfileId),
+      ),
+    );
   const points = await computeProfilesPoints(
     db,
     withPoints.map((row) => row.profileId),

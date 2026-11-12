@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { assistantInvocationDetailSchema, assistantInvocationStatusSchema } from "./assistant.js";
 import { levelSchema } from "./points.js";
+import { profileKindSchema } from "./profile.js";
 import { attachmentSchema, MAX_POST_ATTACHMENTS } from "./attachment.js";
 import { httpUrlSchema } from "./url.js";
 import { workTypeSchema } from "./work.js";
@@ -87,7 +88,8 @@ export const sharedPostPreviewSchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
-  authorLevel: levelSchema,
+  authorKind: profileKindSchema,
+  authorLevel: levelSchema.nullable(),
   body: z.string(),
   format: postFormatSchema.nullable(),
   attachments: z.array(attachmentSchema),
@@ -122,7 +124,8 @@ export const postSummarySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
-  authorLevel: levelSchema,
+  authorKind: profileKindSchema,
+  authorLevel: levelSchema.nullable(),
   body: z.string(),
   format: postFormatSchema.nullable(),
   testUrl: z.string().nullable(),
@@ -183,7 +186,8 @@ export const postReplySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
-  authorLevel: levelSchema,
+  authorKind: profileKindSchema,
+  authorLevel: levelSchema.nullable(),
   body: z.string(),
   isSolution: z.boolean(),
   /** Renseigné seulement pour une réponse de @kocc : skill cité, avis, réponse enregistrée. */

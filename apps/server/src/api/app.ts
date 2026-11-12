@@ -38,6 +38,7 @@ import { registerPostRoutes } from "./routes/posts.js";
 import { registerPostAttachmentRoutes } from "./routes/post-attachments.js";
 import { registerPostVideoRoutes } from "./routes/post-videos.js";
 import { registerProjectRoutes } from "./routes/projects.js";
+import { registerOrganizationRequestRoutes } from "./routes/organization-requests.js";
 import { registerOpportunityRoutes } from "./routes/opportunities.js";
 import { registerCompetitionRoutes } from "./routes/competitions.js";
 import { registerModerationRoutes } from "./routes/moderation.js";
@@ -144,11 +145,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     // Les routes valident avec schema.parse() : une entrée refusée par Zod
     // tomberait sinon dans la branche 500.
     if (error instanceof ZodError) {
-      reply
-        .status(400)
-        .send({
-          error: { code: "invalid_input", message: "Les données envoyées ne sont pas valides." },
-        });
+      reply.status(400).send({
+        error: { code: "invalid_input", message: "Les données envoyées ne sont pas valides." },
+      });
       return;
     }
     // @fastify/rate-limit (429) et Fastify posent un statusCode 4xx sur
@@ -228,6 +227,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerPostVideoRoutes(app, chatDeps);
     registerProjectRoutes(app, chatDeps);
     registerOpportunityRoutes(app, chatDeps);
+    registerOrganizationRequestRoutes(app, chatDeps);
     registerCompetitionRoutes(app, chatDeps);
     registerModerationRoutes(app, chatDeps);
     registerCredentialRoutes(app, chatDeps);

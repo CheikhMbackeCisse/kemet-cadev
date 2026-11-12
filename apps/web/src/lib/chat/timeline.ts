@@ -9,7 +9,7 @@ export interface MessageGroup {
   authorDisplayName: string;
   authorAvatarUrl: string | null;
   authorCountry: string | null;
-  authorLevel: Level;
+  authorLevel: Level | null;
   messages: Message[];
 }
 

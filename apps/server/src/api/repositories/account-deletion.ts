@@ -27,6 +27,8 @@ import {
   workAttachments,
   workMedia,
   profileCvs,
+  organizationManagers,
+  organizationRequests,
   workAuthors,
   type Db,
 } from "@kemet/db";
@@ -196,7 +198,10 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .from(messageAttachments)
     .where(eq(messageAttachments.authorId, profileId));
   const postRows = await tx
-    .select({ storageKey: postAttachments.storageKey, posterStorageKey: postAttachments.posterStorageKey })
+    .select({
+      storageKey: postAttachments.storageKey,
+      posterStorageKey: postAttachments.posterStorageKey,
+    })
     .from(postAttachments)
     .where(eq(postAttachments.authorId, profileId));
   // L'image d'aperçu d'une vidéo est un second fichier sur le disque.
@@ -223,8 +228,22 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
   await tx
     .delete(workAuthors)
     .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "pending")));
+  // Une demande de référencement encore en attente part avec le compte. La
+  // page d'une organisation déjà acceptée reste : elle n'est pas à la
+  // personne, qui perd seulement le droit d'y publier.
+  const requestLogos = await tx
+    .delete(organizationRequests)
+    .where(
+      and(
+        eq(organizationRequests.requesterId, profileId),
+        eq(organizationRequests.status, "pending"),
+      ),
+    )
+    .returning({ storageKey: organizationRequests.logoStorageKey });
+  await tx.delete(organizationManagers).where(eq(organizationManagers.managerId, profileId));
   return [
     ...[...messageFiles, ...postFiles, ...workFiles, ...cvFiles].map((file) => file.storageKey),
+    ...requestLogos.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
     ...mediaFiles.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
   ];
 }

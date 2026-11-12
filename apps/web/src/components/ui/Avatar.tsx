@@ -10,6 +10,8 @@ export interface AvatarProps {
   countryCode?: string;
   /** Compte supprimé : icône neutre, sans initiales ni drapeau (ADR 0023). */
   deleted?: boolean;
+  /** Logo d'une organisation : carré arrondi, jamais un rond comme une personne. */
+  square?: boolean;
   className?: string;
 }
 
@@ -55,8 +57,10 @@ export function Avatar({
   size = 32,
   countryCode,
   deleted = false,
+  square = false,
   className,
 }: AvatarProps) {
+  const shape = square ? "rounded-[22%]" : "rounded-full";
   if (deleted) {
     return (
       <span
@@ -73,11 +77,7 @@ export function Avatar({
     );
   }
   const photo = src ? (
-    <img
-      src={src}
-      alt=""
-      className={cn("rounded-full object-cover", SIZE_CLASSES[size], className)}
-    />
+    <img src={src} alt="" className={cn(shape, "object-cover", SIZE_CLASSES[size], className)} />
   ) : (
     // Décoratif comme la photo : le nom est toujours écrit à côté ou porté
     // par le lien qui l'entoure, sinon il était lu deux fois.
@@ -85,7 +85,8 @@ export function Avatar({
       aria-hidden="true"
       style={{ backgroundColor: generatedAvatarColor(name) }}
       className={cn(
-        "inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-white",
+        "inline-flex shrink-0 select-none items-center justify-center font-semibold text-white",
+        shape,
         SIZE_CLASSES[size],
         className,
       )}

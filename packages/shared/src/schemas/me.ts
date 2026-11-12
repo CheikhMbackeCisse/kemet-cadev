@@ -47,6 +47,8 @@ export const publicProfileResponseSchema = z.object({
   followingCount: z.number().int().nonnegative(),
   /** Travaux publiés et travaux co-signés acceptés, comme l'onglet Bibliothèque. */
   workCount: z.number().int().nonnegative(),
+  /** Offres publiées et visibles, closes comprises : en-tête d'une organisation. */
+  opportunityCount: z.number().int().nonnegative(),
   isFollowedByViewer: z.boolean().nullable(),
   /** Faux pour un profil sans compte de connexion (organisation du seed, compte supprimé). */
   acceptsMessages: z.boolean(),

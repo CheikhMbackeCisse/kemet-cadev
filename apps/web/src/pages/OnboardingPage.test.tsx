@@ -26,6 +26,8 @@ vi.mock("../session/SessionProvider.js", () => ({
 const PROFILE: NonNullable<MeResponse["profile"]> = {
   id: "00000000-0000-0000-0000-0000000000aa",
   handle: "awa",
+  kind: "person",
+  organizationType: null,
   displayName: "Awa",
   country: "",
   role: null,

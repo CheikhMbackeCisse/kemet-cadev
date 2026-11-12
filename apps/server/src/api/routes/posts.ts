@@ -41,6 +41,7 @@ import {
   listPostReplies,
   listBeginnerFeed,
   listPourToiFeed,
+  listPostsByAuthor,
   setPostBookmark,
   setPostReplySolution,
   setPostRepost,
@@ -53,7 +54,7 @@ import {
   findPendingPostAttachment,
   listAttachmentsForPosts,
 } from "../repositories/post-attachments.js";
-import { findProfileByUserId } from "../repositories/profiles.js";
+import { findProfileByHandle, findProfileByUserId } from "../repositories/profiles.js";
 import {
   awardPoints,
   computeLevels,
@@ -248,6 +249,29 @@ export function registerPostRoutes(
         return created;
       });
       return { post: await toSerializedPost(db, post, profile.id) };
+    },
+  );
+
+  app.get<{ Params: { handle: string }; Querystring: { cursor?: string; limit?: string } }>(
+    "/api/users/:handle/posts",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const author = await findProfileByHandle(db, request.params.handle);
+      if (!author || author.deletedAt) throw notFound("Ce profil n'existe pas.");
+      const userId = await getSessionUserId(auth, request);
+      const profile = await findOwnProfile(db, userId);
+      const query = paginationQuerySchema.parse(request.query);
+      const page = await listPostsByAuthor(
+        db,
+        author.id,
+        profile?.id ?? null,
+        query.cursor,
+        query.limit,
+      );
+      return {
+        items: await toSerializedPosts(db, page.items, profile?.id ?? null),
+        nextCursor: page.nextCursor,
+      };
     },
   );
 

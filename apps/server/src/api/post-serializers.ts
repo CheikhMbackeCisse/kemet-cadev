@@ -1,5 +1,6 @@
 import type { postAttachments, postFeedback, postReplies, posts, profiles, works } from "@kemet/db";
 import { serializePostWorkPreview } from "./work-serializers.js";
+import { shownLevel } from "./serializers.js";
 import type {
   AssistantInvocationDetail,
   Attachment,
@@ -46,7 +47,8 @@ export function serializeSharedPostPreview(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
-    authorLevel,
+    authorKind: author.kind,
+    authorLevel: shownLevel(author, authorLevel),
     body: deleted ? "" : row.body,
     format: deleted ? null : row.format,
     attachments: deleted
@@ -90,7 +92,8 @@ export function serializePostSummary(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
-    authorLevel,
+    authorKind: author.kind,
+    authorLevel: shownLevel(author, authorLevel),
     body: deleted ? "" : row.body,
     format: row.format,
     testUrl: deleted ? null : row.testUrl,
@@ -141,7 +144,8 @@ export function serializePostReply(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
-    authorLevel,
+    authorKind: author.kind,
+    authorLevel: shownLevel(author, authorLevel),
     body: deleted ? "" : row.body,
     isSolution: row.isSolution,
     assistant,

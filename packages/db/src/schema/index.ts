@@ -12,3 +12,4 @@ export * from "./works.js";
 export * from "./competitions.js";
 export * from "./moderation.js";
 export * from "./opportunities.js";
+export * from "./organizations.js";

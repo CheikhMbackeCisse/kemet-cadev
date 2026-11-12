@@ -5,6 +5,7 @@ import {
   type OpportunitySummary,
 } from "@kemet/shared";
 import type { OpportunityWithAuthor } from "./repositories/opportunities.js";
+import { shownLevel } from "./serializers.js";
 
 export function serializeOpportunitySummary(
   { opportunity, author }: OpportunityWithAuthor,
@@ -32,6 +33,7 @@ export function serializeOpportunitySummary(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
+    authorKind: author.kind,
     createdAt: opportunity.createdAt.toISOString(),
   };
 }
@@ -39,11 +41,13 @@ export function serializeOpportunitySummary(
 export function serializeOpportunityDetail(
   row: OpportunityWithAuthor,
   authorLevel: Level,
+  contactHandle: string | null,
   today: string,
 ): OpportunityDetail {
   return {
     ...serializeOpportunitySummary(row, today),
-    authorLevel,
+    authorLevel: shownLevel(row.author, authorLevel),
+    contactHandle,
     description: row.opportunity.description,
     criteria: row.opportunity.criteria,
     updatedAt: row.opportunity.updatedAt.toISOString(),

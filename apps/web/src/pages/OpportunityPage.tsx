@@ -109,18 +109,22 @@ function ApplyAction({ offer }: { offer: OpportunityDetail }) {
     );
   }
   if (!profile) return null;
-  if (profile.id === offer.authorId)
+  if (profile.id === offer.authorId || profile.handle === offer.contactHandle)
     return <p className="text-base text-muted">{fr.opportunities.ownOffer}</p>;
+  // Une organisation sans personne pour répondre : on ne propose pas d'écrire dans le vide.
+  if (!offer.contactHandle) return null;
+  const contactHandle: string = offer.contactHandle;
+  const organization = offer.authorKind === "organization" ? offer.authorDisplayName : null;
 
   async function handleApply() {
     if (!profile) return;
     setOpening(true);
     try {
-      const { conversation } = await openConversation([offer.authorHandle]);
+      const { conversation } = await openConversation([contactHandle]);
       const profileUrl = `${window.location.origin}/u/${profile.handle}`;
       const draft = isMission
-        ? fr.opportunities.offerDraft(offer.title, profileUrl)
-        : fr.opportunities.applyDraft(offer.title, profileUrl);
+        ? fr.opportunities.offerDraft(offer.title, profileUrl, organization)
+        : fr.opportunities.applyDraft(offer.title, profileUrl, organization);
       storeChannelDraft(conversation.channelId, draft);
       navigate(`/messages/${conversation.id}`);
     } catch (error) {
@@ -272,8 +276,13 @@ export function OpportunityPage() {
                 name={offer.authorDisplayName}
                 src={offer.authorAvatarUrl ?? undefined}
                 countryCode={offer.authorCountry}
+                square={offer.authorKind === "organization"}
               />
-              <UserName name={offer.authorDisplayName} level={offer.authorLevel} />
+              <UserName
+                name={offer.authorDisplayName}
+                level={offer.authorLevel}
+                organization={offer.authorKind === "organization"}
+              />
             </ProfileLink>
           </section>
         </article>

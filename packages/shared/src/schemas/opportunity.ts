@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { levelSchema } from "./points.js";
+import { profileKindSchema } from "./profile.js";
 import { AFRICAN_COUNTRY_CODES } from "../data/countries.js";
 import { INTERESTS } from "../data/onboarding-values.js";
 
@@ -23,11 +24,9 @@ export const contractTypeSchema = z.enum(CONTRACT_TYPES);
 export type OpportunityKind = z.infer<typeof opportunityKindSchema>;
 export type ContractType = z.infer<typeof contractTypeSchema>;
 
-const africanCountrySchema = z
-  .string()
-  .refine((code) => AFRICAN_COUNTRY_CODES.includes(code), {
-    message: "Choisis un pays d'Afrique.",
-  });
+const africanCountrySchema = z.string().refine((code) => AFRICAN_COUNTRY_CODES.includes(code), {
+  message: "Choisis un pays d'Afrique.",
+});
 
 const isoDateSchema = z
   .string()
@@ -170,12 +169,18 @@ export const opportunitySummarySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
+  authorKind: profileKindSchema,
   createdAt: z.string().datetime(),
 });
 export type OpportunitySummary = z.infer<typeof opportunitySummarySchema>;
 
 export const opportunityDetailSchema = opportunitySummarySchema.extend({
-  authorLevel: levelSchema,
+  authorLevel: levelSchema.nullable(),
+  /**
+   * À qui écrire pour postuler : l'auteur, ou pour une organisation la
+   * personne qui gère sa page. Nul si personne ne peut répondre.
+   */
+  contactHandle: z.string().nullable(),
   description: z.string(),
   criteria: z.array(z.string()),
   updatedAt: z.string().datetime(),
