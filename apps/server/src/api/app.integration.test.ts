@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
 import { buildApp } from "./app.js";
+import { JSON_BODY_LIMIT_BYTES } from "./json-body-limit.js";
 
 const databaseUrl = getTestDatabaseUrl();
 
@@ -109,6 +110,46 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
 
   it("refuse l'accès à /api/me sans session", async () => {
     const response = await app.inject({ method: "GET", url: "/api/me" });
+    expect(response.statusCode).toBe(401);
+  });
+
+  it("refuse en 413 un corps JSON au-delà de la limite, avant toute validation", async () => {
+    const tooLarge = JSON.stringify({ body: "x".repeat(JSON_BODY_LIMIT_BYTES) });
+    const refused = await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { "content-type": "application/json" },
+      payload: tooLarge,
+    });
+    expect(refused.statusCode).toBe(413);
+
+    // Juste sous la limite, le corps est lu et la route répond elle-même.
+    const fits = JSON.stringify({ body: "x".repeat(JSON_BODY_LIMIT_BYTES - 100) });
+    const accepted = await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { "content-type": "application/json" },
+      payload: fits,
+    });
+    expect(accepted.statusCode).toBe(401);
+  });
+
+  it("laisse passer un envoi de fichier plus gros que la limite JSON", async () => {
+    const boundary = "kemet-test-boundary";
+    const payload = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="a.png"\r\n` +
+          "Content-Type: image/png\r\n\r\n",
+      ),
+      Buffer.alloc(JSON_BODY_LIMIT_BYTES * 2),
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/posts/attachments",
+      headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+      payload,
+    });
     expect(response.statusCode).toBe(401);
   });
 
@@ -328,7 +369,9 @@ describe.skipIf(!databaseUrl)("limite de tentatives sur la connexion", () => {
     });
     const app = buildApp({ db, auth });
     const email = "oubli@test.kemet";
-    await db.insert(user).values({ id: "forgetful-user", name: "Oubli", email, emailVerified: true });
+    await db
+      .insert(user)
+      .values({ id: "forgetful-user", name: "Oubli", email, emailVerified: true });
 
     const request = () =>
       app.inject({

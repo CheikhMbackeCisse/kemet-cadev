@@ -558,7 +558,7 @@ export const fr = {
       "Pas de double authentification à la connexion.",
       "Les fichiers envoyés ne passent pas par un antivirus. Leur type est lu dans leur contenu, et ils sont servis avec des en-têtes qui empêchent le navigateur de les exécuter.",
       "La politique de contenu accepte encore les styles écrits dans la page, dont certains composants ont besoin.",
-      "Une requête très volumineuse coûte encore cher à valider : la bibliothèque de validation doit passer à sa version 4.",
+      "Alerte connue sur zod 3 (déni de service), réduite par une limite de taille des requêtes et la limite de débit ; migration vers zod 4 prévue.",
     ],
   },
   assistantNotice: {

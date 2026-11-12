@@ -1,6 +1,7 @@
 import { loadSiteConfig, type SiteConfig } from "../config/site-config.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import multipart from "@fastify/multipart";
+import { JSON_BODY_LIMIT_BYTES } from "./json-body-limit.js";
 import { MULTIPART_FIELD_LIMITS } from "./multipart-limits.js";
 import helmet from "@fastify/helmet";
 import { toNodeHandler } from "better-auth/node";
@@ -39,7 +40,10 @@ import { registerCompetitionRoutes } from "./routes/competitions.js";
 import { registerModerationRoutes } from "./routes/moderation.js";
 import { registerCredentialRoutes } from "./routes/credentials.js";
 import { registerConversationRoutes } from "./routes/conversations.js";
-import { NoopAssistantOrchestrator, type AssistantOrchestrator } from "../ai/assistant-orchestrator.js";
+import {
+  NoopAssistantOrchestrator,
+  type AssistantOrchestrator,
+} from "../ai/assistant-orchestrator.js";
 import { NoopPostAssistant, type PostAssistant } from "../ai/post-assistant.js";
 import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { WorkMatcher } from "../ai/work-matcher.js";
@@ -72,7 +76,14 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // toutes les limites de débit sont partagées entre tous les utilisateurs.
   // Tout appelant d'une adresse privée peut poser son X-Forwarded-For (un
   // autre conteneur, ou le réseau local en développement).
-  const app = Fastify({ logger: true, trustProxy: TRUSTED_PROXY_RANGES });
+  // Fastify n'applique bodyLimit qu'aux parseurs qui lisent tout le corps
+  // (JSON, texte) : multipart et Better Auth lisent le flux eux-mêmes et
+  // gardent leurs propres limites.
+  const app = Fastify({
+    logger: true,
+    trustProxy: TRUSTED_PROXY_RANGES,
+    bodyLimit: JSON_BODY_LIMIT_BYTES,
+  });
   const chat = deps.chat ?? createNoopChatPublisher();
   const storage = deps.storage ?? new InMemoryStorage();
   const attachmentLimits = deps.attachmentLimits ?? loadAttachmentLimits();
@@ -81,12 +92,14 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   // Une réponse en cours de rédaction n'est pas abandonnée à l'arrêt du serveur.
   app.addHook("onClose", async () => postAssistant.idle());
   const authConfig = deps.authConfig ?? loadAuthConfig();
-  const privacyContact = deps.privacyContact === undefined ? loadPrivacyContact() : deps.privacyContact;
+  const privacyContact =
+    deps.privacyContact === undefined ? loadPrivacyContact() : deps.privacyContact;
   const antiSpamConfig = deps.antiSpamConfig ?? loadAntiSpamConfig();
   const siteConfig = deps.siteConfig ?? loadSiteConfig();
   // Sans fournisseur d'IA, la mise en relation garde la recherche plein texte.
   const workMatcher =
-    deps.workMatcher ?? new WorkMatcher(deps.db, new UnavailableLlmProvider(), new FullTextWorkRetriever(deps.db));
+    deps.workMatcher ??
+    new WorkMatcher(deps.db, new UnavailableLlmProvider(), new FullTextWorkRetriever(deps.db));
 
   registerRateLimit(app, {
     resolveUserId: (request) => getSessionUserId(deps.auth, request),
@@ -128,7 +141,11 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     // Les routes valident avec schema.parse() : une entrée refusée par Zod
     // tomberait sinon dans la branche 500.
     if (error instanceof ZodError) {
-      reply.status(400).send({ error: { code: "invalid_input", message: "Les données envoyées ne sont pas valides." } });
+      reply
+        .status(400)
+        .send({
+          error: { code: "invalid_input", message: "Les données envoyées ne sont pas valides." },
+        });
       return;
     }
     // @fastify/rate-limit (429) et Fastify posent un statusCode 4xx sur
