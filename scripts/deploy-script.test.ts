@@ -25,14 +25,25 @@ shift
 exec bash -c "$1"
 `;
 
-// Échoue au démarrage des services quand .env.deployed vise FAIL_TAG.
+// Échoue au démarrage des services quand .env.deployed vise FAIL_TAG, et
+// présente FAKE_CADDYFILE comme la configuration lue par le Caddy en place.
 const FAKE_DOCKER = `#!/usr/bin/env bash
 echo "docker $*" >> "$FAKE_LOG"
+if [[ " $* " == *" exec "*" caddy cat "* ]]; then
+  cat "\${FAKE_CADDYFILE:-/dev/null}"
+  exit 0
+fi
 if [[ $1 == compose && " $* " == *" up "* && -n \${FAIL_TAG:-} ]] &&
   grep -qx "KEMET_IMAGE_TAG=$FAIL_TAG" .env.deployed 2>/dev/null; then
   exit 1
 fi
 exit 0
+`;
+
+// Le test de fumée échoue toujours quand SKIP_SMOKE n'est pas posé.
+const FAKE_PNPM = `#!/usr/bin/env bash
+echo "pnpm $*" >> "$FAKE_LOG"
+exit 1
 `;
 
 interface Sandbox {
@@ -48,13 +59,17 @@ cat > "$root/bin/ssh" <<'EOF'
 ${FAKE_SSH}EOF
 cat > "$root/bin/docker" <<'EOF'
 ${FAKE_DOCKER}EOF
-chmod +x "$root/bin/ssh" "$root/bin/docker"
+cat > "$root/bin/pnpm" <<'EOF'
+${FAKE_PNPM}EOF
+chmod +x "$root/bin/ssh" "$root/bin/docker" "$root/bin/pnpm"
 cp infra/server/compose.sh "$root/server/infra/server/compose.sh"
 cd "$root/server"
 git init --quiet
+git config core.autocrlf false
 git remote add origin "$root/server"
 for name in a b c; do
   echo "$name" > version
+  echo "caddy-$name" > infra/Caddyfile
   git add --all
   git -c user.name=test -c user.email=test@example.com commit --quiet -m "$name"
 done
@@ -85,6 +100,10 @@ function serverFile(sandbox: Sandbox, name: string): string {
 function writeServerFile(sandbox: Sandbox, name: string, content: string): void {
   const run = bash(`printf '%s' '${content}' > "${sandbox.root}/server/${name}"`);
   assert.equal(run.status, 0, run.stderr);
+}
+
+function log(sandbox: Sandbox): string {
+  return bash(`cat "${sandbox.root}/log" 2>/dev/null || true`).stdout;
 }
 
 function removeSandbox(sandbox: Sandbox): void {
@@ -165,9 +184,59 @@ describe("infra/deploy.sh", () => {
       const run = deploy(sandbox, ["kemet@test", "https://kemet.test", c], { FAIL_TAG: c });
       assert.notEqual(run.status, 0);
       assert.equal(serverFile(sandbox, ".env.deployed"), `KEMET_IMAGE_TAG=${b}\n`);
-      const log = bash(`cat "${sandbox.root}/log"`).stdout;
-      assert.match(log, /compose .* pull /);
-      assert.doesNotMatch(log, /compose .* build /);
+      assert.match(log(sandbox), /compose .* pull /);
+      assert.doesNotMatch(log(sandbox), /compose .* build /);
+    } finally {
+      removeSandbox(sandbox);
+    }
+  });
+
+  it("recrée Caddy quand le commit change sa configuration, et seulement alors", () => {
+    const sandbox = createSandbox();
+    const [a, b] = sandbox.commits;
+    const env = { KEMET_BUILD_ON_SERVER: "1", FAKE_CADDYFILE: `${sandbox.root}/running-caddyfile` };
+    try {
+      assert.equal(bash(`echo caddy-a > "${sandbox.root}/running-caddyfile"`).status, 0);
+      assert.equal(deploy(sandbox, ["kemet@test", "https://kemet.test", a], env).status, 0);
+      assert.doesNotMatch(log(sandbox), /--force-recreate/);
+
+      const run = deploy(sandbox, ["kemet@test", "https://kemet.test", b], env);
+      assert.equal(run.status, 0, run.stderr);
+      assert.match(log(sandbox), /compose .* up -d --no-build --no-deps --force-recreate .* caddy/);
+    } finally {
+      removeSandbox(sandbox);
+    }
+  });
+
+  it("retire de l'historique un commit refusé par le test de fumée", () => {
+    const sandbox = createSandbox();
+    const [, b, c] = sandbox.commits;
+    try {
+      writeServerFile(
+        sandbox,
+        ".deploy-history",
+        `${b}
+`,
+      );
+      writeServerFile(
+        sandbox,
+        ".env.deployed",
+        `KEMET_IMAGE_TAG=${b}
+`,
+      );
+      const run = deploy(sandbox, ["kemet@test", "https://kemet.test", c], { SKIP_SMOKE: "0" });
+      assert.notEqual(run.status, 0);
+      assert.match(run.stderr, /Le test de fumée a échoué/);
+      assert.equal(
+        serverFile(sandbox, ".deploy-history"),
+        `${b}
+`,
+      );
+      assert.equal(
+        serverFile(sandbox, ".env.deployed"),
+        `KEMET_IMAGE_TAG=${b}
+`,
+      );
     } finally {
       removeSandbox(sandbox);
     }

@@ -69,6 +69,7 @@ fi
 #                      téléchargées (0) ou construites sur place (1)
 #   previous <commit>  affiche le dernier déploiement autre que ce commit,
 #                      sous la forme "<commit>" ou "<commit> server"
+#   forget <commit>    retire ce commit de l'historique (test de fumée échoué)
 #
 # .deploy-history : une ligne par déploiement réussi, "<commit>" pour des
 # images de GHCR, "<commit> server" pour des images construites sur le
@@ -96,8 +97,9 @@ case $ACTION in
     # Un déploiement fait avant que l'historique note les constructions sur
     # place n'y figure pas : on le note d'après .env.deployed, pour que le
     # retour arrière revienne à ce qui tournait vraiment. .deploy-pending
-    # signale une activation qui n'est jamais devenue saine : son commit est
-    # dans .env.deployed mais ne doit pas entrer dans l'historique.
+    # signale une activation jamais devenue saine ou refusée par le test de
+    # fumée : son commit est dans .env.deployed mais ne doit pas entrer dans
+    # l'historique.
     if [[ -f .deploy-pending ]]; then
       rm -f .deploy-pending
     elif [[ -f .env.deployed ]]; then
@@ -136,6 +138,13 @@ case $ACTION in
     # Les migrations Drizzle tournent au démarrage de l'api
     # (apps/server/src/api/main.ts) : --wait couvre aussi leur succès.
     compose up -d --no-build --wait --wait-timeout 180
+    # Le Caddyfile est monté fichier par fichier : git checkout le remplace par
+    # un nouveau fichier que le conteneur en place ne voit pas, même rechargé.
+    # Seul un nouveau conteneur lit la configuration de ce commit.
+    if ! compose exec -T caddy cat /etc/caddy/Caddyfile 2>/dev/null | cmp -s - infra/Caddyfile; then
+      echo "Configuration de Caddy modifiée : recréation de caddy"
+      compose up -d --no-build --no-deps --force-recreate --wait --wait-timeout 60 caddy
+    fi
     if [[ $BUILD == 1 ]]; then
       record_deployment "$COMMIT" server
     else
@@ -151,12 +160,22 @@ case $ACTION in
   previous)
     awk -v commit="$3" '$1 != commit' .deploy-history 2>/dev/null | tail -n 1 || true
     ;;
+  forget)
+    if [[ -f .deploy-history ]]; then
+      awk -v commit="$3" '$1 != commit' .deploy-history > .deploy-history.tmp
+      mv .deploy-history.tmp .deploy-history
+    fi
+    echo "$3" > .deploy-pending
+    ;;
 esac
 REMOTE_SCRIPT
 }
 
 rollback() {
   local previous previous_commit previous_build
+  # Un commit devenu sain puis refusé par le test de fumée ne doit pas servir
+  # de cible à un prochain retour arrière.
+  remote forget "$COMMIT"
   previous=$(remote previous "$COMMIT")
   if [[ -z $previous ]]; then
     echo "Aucun déploiement précédent connu : pas de retour arrière possible." >&2

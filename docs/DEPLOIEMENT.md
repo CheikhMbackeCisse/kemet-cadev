@@ -311,7 +311,14 @@ noté dans `.deploy-history` sur le serveur (une ligne par déploiement
 devenu sain, `<commit>` pour GHCR, `<commit> server` pour une construction
 sur place), et sort en erreur. `.deploy-pending` marque une activation en
 cours : un commit qui n'est jamais devenu sain n'entre pas dans
-l'historique. Une
+l'historique, et un commit refusé par le test de fumée en est retiré.
+
+`infra/Caddyfile` est monté fichier par fichier dans le conteneur Caddy :
+après `git checkout`, le conteneur en place lit toujours l'ancien fichier,
+même rechargé. Le script compare la configuration lue par Caddy à celle du
+commit et recrée le conteneur quand elles diffèrent (quelques secondes
+d'interruption). Sans ça, l'en-tête `Permissions-Policy` du 11/11 n'a jamais
+été servi, ce que le test de fumée a relevé le 12/11. Une
 migration n'est jamais annulée par ce retour arrière : les migrations
 restent additives pour que l'ancienne version tourne sur le nouveau schéma.
 
