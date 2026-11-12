@@ -1,4 +1,5 @@
 import type {
+  SpacePinnedPost,
   Application,
   AssistantInvocationDetail,
   Attachment,
@@ -159,6 +160,10 @@ export interface Page<T> {
 export function listSpaces(cursor?: string): Promise<Page<Space>> {
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
   return request(`/api/spaces${query}`);
+}
+
+export function getSpacePinnedPost(spaceId: string): Promise<{ pinned: SpacePinnedPost | null }> {
+  return request(`/api/spaces/${spaceId}/pinned-post`);
 }
 
 export function getMostActiveSpaceId(): Promise<{ spaceId: string | null }> {

@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { copyFile, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { and, avg, count, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
@@ -12,11 +12,21 @@ import {
   profiles,
   skillRatings,
   skills,
+  spacePinnedPosts,
+  spaces,
   workMedia,
   works,
 } from "../schema/index.js";
+import {
+  CADEV_ASSETS_DIR,
+  CADEV_MEDIA_CREDIT,
+  CADEV_MEDIA_CREDIT_URL,
+  cadevImages,
+  seedCadevPost,
+} from "./cadev-post.js";
 import { seedDemoDataset } from "./demo-dataset.js";
 import {
+  DEMO_ASSET_NAMES,
   DEMO_EXISTING_POST_IMAGES,
   DEMO_MEDIA_POSTS,
   DEMO_SKILL_TARGETS,
@@ -53,6 +63,8 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
       banners: 10,
       posts: DEMO_MEDIA_POSTS.length,
       postImages: DEMO_EXISTING_POST_IMAGES.length,
+      postImageSizes: 0,
+      cadevPost: "1 image(s), épinglé",
       works: DEMO_WORK_MEDIA.length,
       skillUses: expect.any(Number),
       skillRatings: expect.any(Number),
@@ -70,6 +82,74 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
       const file = await readFile(join(uploadsDir, attachments[0]!.storageKey));
       expect(file.byteLength).toBe(attachments[0]!.byteSize);
       expect(attachments[0]!.mimeType).toBe("image/jpeg");
+    }
+  });
+
+  it("range les images d'un carrousel dans l'ordre, avec leurs dimensions", async () => {
+    for (const post of DEMO_MEDIA_POSTS.filter((candidate) => candidate.images)) {
+      const attachments = await db
+        .select()
+        .from(postAttachments)
+        .where(eq(postAttachments.postId, demoUuid(`post:${post.key}`)))
+        .orderBy(postAttachments.position);
+      expect(attachments.map((row) => row.originalName), post.key).toEqual(
+        post.images!.map((image) => DEMO_ASSET_NAMES[image]),
+      );
+      for (const row of attachments) expect([row.width, row.height]).toEqual([960, 960]);
+    }
+  });
+
+  it("publie le post CADEV avec le visuel tel quel, crédité, épinglé dans son espace", async () => {
+    const [post] = await db.select().from(posts).where(eq(posts.id, demoUuid("post:cadev-en-bref")));
+    expect(post).toMatchObject({ mediaCredit: CADEV_MEDIA_CREDIT, mediaCreditUrl: CADEV_MEDIA_CREDIT_URL });
+    const [space] = await db.select().from(spaces).where(eq(spaces.slug, "cadev-2026"));
+    const [pin] = await db.select().from(spacePinnedPosts).where(eq(spacePinnedPosts.spaceId, space!.id));
+    expect(pin?.postId).toBe(post!.id);
+    const [image] = await db.select().from(postAttachments).where(eq(postAttachments.postId, post!.id));
+    const stored = await readFile(join(uploadsDir, image!.storageKey));
+    expect(stored.equals(await readFile(join(CADEV_ASSETS_DIR, "cadev-couverture.jpg")))).toBe(true);
+  });
+
+  it("remplace le visuel CADEV par cadev-1, cadev-2... dès qu'ils sont dans le dossier", async () => {
+    const assetsDir = await mkdtemp(join(tmpdir(), "kemet-cadev-"));
+    try {
+      const cover = join(CADEV_ASSETS_DIR, "cadev-couverture.jpg");
+      for (const name of ["cadev-couverture.jpg", "cadev-2.jpg", "cadev-1.jpg", "cadev-10.jpg"]) {
+        await copyFile(cover, join(assetsDir, name));
+      }
+      expect(await cadevImages(assetsDir)).toEqual(["cadev-1.jpg", "cadev-2.jpg", "cadev-10.jpg"]);
+      const ids = new Map(
+        (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
+          .map((row) => [row.handle, row.id] as const),
+      );
+      const [before] = await db
+        .select()
+        .from(postAttachments)
+        .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")));
+      expect(await seedCadevPost(db, ids, uploadsDir, assetsDir)).toBe("3 image(s), épinglé");
+      const after = await db
+        .select()
+        .from(postAttachments)
+        .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")))
+        .orderBy(postAttachments.position);
+      expect(after.map((row) => row.position)).toEqual([0, 1, 2]);
+      await expect(readFile(join(uploadsDir, before!.storageKey))).rejects.toThrow();
+      const keys = after.map((row) => row.id);
+      await seedCadevPost(db, ids, uploadsDir, assetsDir);
+      const again = await db
+        .select({ id: postAttachments.id })
+        .from(postAttachments)
+        .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")))
+        .orderBy(postAttachments.position);
+      expect(again.map((row) => row.id)).toEqual(keys);
+    } finally {
+      await rm(assetsDir, { recursive: true, force: true });
+      // Retour à la couverture seule pour les tests suivants.
+      const ids = new Map(
+        (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
+          .map((row) => [row.handle, row.id] as const),
+      );
+      await seedCadevPost(db, ids, uploadsDir);
     }
   });
 
@@ -154,6 +234,8 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
       banners: 0,
       posts: 0,
       postImages: 0,
+      postImageSizes: 0,
+      cadevPost: "1 image(s), épinglé",
       works: 0,
       skillUses: 0,
       skillRatings: 0,
@@ -209,7 +291,7 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
   }, 120_000);
 
   it("garde un nouveau post sans fichier hors de la base quand UPLOADS_DIR manque", async () => {
-    const imagePostIds = DEMO_MEDIA_POSTS.filter((post) => post.image).map((post) =>
+    const imagePostIds = DEMO_MEDIA_POSTS.filter((post) => post.image || post.images).map((post) =>
       demoUuid(`post:${post.key}`),
     );
     await db.delete(posts).where(inArray(posts.id, imagePostIds));

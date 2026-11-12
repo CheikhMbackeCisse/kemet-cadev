@@ -18,6 +18,7 @@ import {
 } from "../repositories/chat.js";
 import { findProfileByHandle, findProfileByUserId } from "../repositories/profiles.js";
 import { leaveSpace } from "../repositories/space-ownership.js";
+import { findSpacePinnedPost } from "../repositories/space-pins.js";
 import { requireWritableSpace } from "./channels.js";
 import { serializeSpace, serializeSpaceMember } from "../chat-serializers.js";
 import type { ChatAppDeps } from "../app.js";
@@ -118,6 +119,14 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
       ? (await findSpacesWithUnread(db, profile.id, [space.id])).has(space.id)
       : false;
     return { space: serializeSpace(space, membership?.role ?? null, memberCount, hasUnread) };
+  });
+
+  // Même visibilité que l'espace : un visiteur voit le post épinglé d'un espace public.
+  app.get<{ Params: { id: string } }>("/api/spaces/:id/pinned-post", async (request) => {
+    const userId = await getSessionUserId(auth, request);
+    const profile = await findOwnProfile(db, userId);
+    const { space } = await requireVisibleSpace(db, request.params.id, profile?.id ?? null);
+    return { pinned: await findSpacePinnedPost(db, space.id) };
   });
 
   app.get<{ Params: { id: string }; Querystring: { cursor?: string; limit?: string } }>(

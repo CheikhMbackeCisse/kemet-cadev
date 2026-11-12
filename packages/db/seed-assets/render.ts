@@ -1,5 +1,6 @@
 // Régénère les images, vidéos et CV de démonstration à partir des pages HTML
 // de `pages/`. Usage : pnpm --filter @kemet/db seed-assets:render [--no-video] [--only-cv]
+// [--page=<fichier.html>] (une seule page d'images, sans les vidéos ni les CV)
 // Chaque `.frame[data-out]` devient `out/<data-out>.jpg` ; chaque page de
 // `VIDEOS` est filmée quelques secondes en WebM. Rien n'est chargé depuis le
 // réseau : les pages n'utilisent que du HTML, du CSS et les polices du système.
@@ -18,9 +19,15 @@ const VIDEOS = [
   { page: "video-capteurs.html", out: "work-capteurs-video", seconds: 7 },
 ];
 
+const onlyPage = process.argv.find((arg) => arg.startsWith("--page="))?.slice("--page=".length);
+
 async function renderFrames(browser: Browser): Promise<void> {
   const files = (await readdir(pagesDir)).filter(
-    (name) => name.endsWith(".html") && !name.startsWith("video-") && !name.startsWith("cv-"),
+    (name) =>
+      name.endsWith(".html") &&
+      !name.startsWith("video-") &&
+      !name.startsWith("cv-") &&
+      (!onlyPage || name === onlyPage),
   );
   const page = await browser.newPage({
     viewport: { width: 1600, height: 900 },
@@ -74,8 +81,8 @@ const browser = await chromium.launch();
 try {
   const onlyCv = process.argv.includes("--only-cv");
   if (!onlyCv) await renderFrames(browser);
-  await renderCvs(browser);
-  const skipVideos = onlyCv || process.argv.includes("--no-video");
+  if (!onlyPage) await renderCvs(browser);
+  const skipVideos = onlyCv || Boolean(onlyPage) || process.argv.includes("--no-video");
   if (!skipVideos) for (const video of VIDEOS) await renderVideo(browser, video);
 } finally {
   await browser.close();

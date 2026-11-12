@@ -76,6 +76,9 @@ async function main(): Promise<void> {
       `${media.works} travaux illustrés, ${media.banners} bannières, ${media.skillUses} utilisations ` +
       `et ${media.skillRatings} avis de skills ajoutés.`,
   );
+  console.log(
+    `Dimensions posées sur ${media.postImageSizes} images de posts. Post CADEV : ${media.cadevPost}.`,
+  );
 }
 
 main().then(

@@ -10,10 +10,40 @@ export interface DemoMediaPost {
   format?: PostFormat;
   body: string;
   image?: string;
+  /** Carrousel : plusieurs images, dans l'ordre d'affichage. */
+  images?: string[];
   hoursAgo: number;
 }
 
 export const DEMO_MEDIA_POSTS: DemoMediaPost[] = [
+  {
+    key: "carrousel-vie-d-un-bug",
+    authorHandle: "kiprono-langat",
+    images: ["carousel-bug-1.jpg", "carousel-bug-2.jpg", "carousel-bug-3.jpg", "carousel-bug-4.jpg"],
+    hoursAgo: 5,
+    body:
+      "La vie d'un bug en quatre étapes. Toute ressemblance avec mon vendredi dernier est " +
+      "purement volontaire. Faites défiler jusqu'au correctif.",
+  },
+  {
+    key: "carrousel-git-trois-cartes",
+    authorHandle: "ghizlane-amrani",
+    format: "astuce",
+    images: ["carousel-git-1.jpg", "carousel-git-2.jpg", "carousel-git-3.jpg"],
+    hoursAgo: 9,
+    body:
+      "Mémo Git en trois cartes pour celles et ceux qui débutent en équipe : une branche par idée, " +
+      "rattraper main sans fusion inutile, et annuler sans paniquer.",
+  },
+  {
+    key: "carrousel-quatre-go-de-ram",
+    authorHandle: "heritier-kabeya",
+    images: ["carousel-ram-1.jpg", "carousel-ram-2.jpg", "carousel-ram-3.jpg"],
+    hoursAgo: 14,
+    body:
+      "Pas de budget pour un nouveau PC cette année. Voici comment je code sur 4 Go de RAM sans " +
+      "devenir fou. Le chiffre de la dernière carte m'a surpris moi-même.",
+  },
   {
     key: "site-moche-perso",
     authorHandle: "ahou-kouadio",
@@ -274,6 +304,17 @@ export const DEMO_SKILL_TARGETS: {
  * alternatif d'une image, il doit donc décrire ce qu'elle montre.
  */
 export const DEMO_ASSET_NAMES: Record<string, string> = {
+  "cadev-couverture.jpg": "Coupe d'Afrique des Développeurs, 5 millions de FCFA à gagner.jpg",
+  "carousel-bug-1.jpg": "Étape 1 : les tests passent sur ma machine.jpg",
+  "carousel-bug-2.jpg": "Étape 2 : tout marche aussi en préprod.jpg",
+  "carousel-bug-3.jpg": "Étape 3 : erreur 500 en production un vendredi soir.jpg",
+  "carousel-bug-4.jpg": "Étape 4 : le correctif tient en un point-virgule.jpg",
+  "carousel-git-1.jpg": "Git : créer une branche par idée et relire chaque morceau.jpg",
+  "carousel-git-2.jpg": "Git : rattraper main avec un rebase.jpg",
+  "carousel-git-3.jpg": "Git : annuler avec restore et revert.jpg",
+  "carousel-ram-1.jpg": "Jauge de mémoire à 92 % avec 4 Go de RAM.jpg",
+  "carousel-ram-2.jpg": "Quatre astuces pour coder avec 4 Go de RAM.jpg",
+  "carousel-ram-3.jpg": "Jauge de mémoire redescendue à 58 %.jpg",
   "feed-ugly-site-perso.jpg": "Page perso aux couleurs criardes, avec un compteur de visites.jpg",
   "feed-ugly-site-boutique.jpg": "Boutique en ligne volontairement illisible.jpg",
   "feed-une-seule-div.jpg": "Baobab au coucher du soleil dessiné avec une seule div.jpg",

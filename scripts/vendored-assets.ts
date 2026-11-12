@@ -23,4 +23,10 @@ export const VENDORED_ASSETS: readonly VendoredAsset[] = [
     license: "Domaine public (Natural Earth), ISC (world-atlas)",
     usedIn: "apps/web/src/components/arrival/africaOutline.ts",
   },
+  {
+    name: "Visuel promotionnel de la CADEV 2026 (« Coupe d'Afrique des Développeurs »), © Systalink, repris sans retouche ni recadrage",
+    source: "https://www.instagram.com/systalink/p/DewrHGNjtTM/",
+    license: "© Systalink, tous droits réservés. Visuel de l'organisateur de la compétition, crédité « Visuel : Systalink » avec un lien vers la source, affiché uniquement dans le post de démonstration « La CADEV 2026 en bref »",
+    usedIn: "packages/db/seed-assets/cadev/cadev-couverture.jpg (packages/db/src/seed/cadev-post.ts)",
+  },
 ];

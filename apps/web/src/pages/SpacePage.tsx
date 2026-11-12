@@ -30,6 +30,7 @@ import { takeDraftFocusRequest, useChannelDraft } from "../lib/chat/useChannelDr
 import { useMessageListScroll } from "../lib/chat/useMessageListScroll.js";
 import { DaySeparator, UnreadSeparator } from "../components/chat/TimelineSeparator.js";
 import { MessageAttachments } from "../components/chat/MessageAttachments.js";
+import { PinnedPostBanner } from "../components/chat/PinnedPostBanner.js";
 import { useVoiceMessage } from "../components/chat/VoiceRecorder.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
 import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
@@ -617,6 +618,7 @@ export function SpacePage() {
         }
       >
         <div className="flex h-full flex-col">
+          {activeSpaceId && <PinnedPostBanner spaceId={activeSpaceId} />}
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div
               ref={messageListRef}

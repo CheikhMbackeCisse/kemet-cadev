@@ -1,4 +1,5 @@
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
+import { readImageSize } from "@kemet/shared";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { and, count, eq, inArray, isNotNull, isNull, like, sql } from "drizzle-orm";
@@ -23,6 +24,7 @@ import {
   DEMO_WORK_MEDIA,
 } from "./demo-media-content.js";
 import { demoUuid } from "./demo-uuid.js";
+import { seedCadevPost } from "./cadev-post.js";
 import { seededShuffle } from "./filler-profiles.js";
 import { daysAgo, hoursAgo } from "./time.js";
 
@@ -38,6 +40,8 @@ export type DemoMediaResult =
       banners: number;
       posts: number;
       postImages: number;
+      postImageSizes: number;
+      cadevPost: string;
       works: number;
       skillUses: number;
       skillRatings: number;
@@ -51,11 +55,17 @@ interface StoredFile {
   byteSize: number;
 }
 
-const MIME_TYPES: Record<string, string> = { ".jpg": "image/jpeg", ".webm": "video/webm" };
+const MIME_TYPES: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".webm": "video/webm",
+};
 
 // Clé de stockage dérivée de l'usage du fichier : relancer le seed réécrit le
 // même fichier au lieu d'en laisser un orphelin si la transaction échoue.
-async function storeAsset(
+export async function storeAsset(
   uploadsDir: string,
   assetsDir: string,
   asset: string,
@@ -73,6 +83,18 @@ async function storeAsset(
     originalName: DEMO_ASSET_NAMES[asset] ?? asset,
     byteSize: (await stat(target)).size,
   };
+}
+
+/** Image d'un post, avec ses dimensions lues dans le fichier copié. */
+export async function storePostImage(
+  uploadsDir: string,
+  assetsDir: string,
+  asset: string,
+  usage: string,
+): Promise<StoredFile & { width: number | null; height: number | null }> {
+  const stored = await storeAsset(uploadsDir, assetsDir, asset, usage);
+  const size = readImageSize(await readFile(join(uploadsDir, stored.storageKey)), stored.mimeType);
+  return { ...stored, width: size?.width ?? null, height: size?.height ?? null };
 }
 
 async function demoProfileIds(db: DbOrTx): Promise<Map<string, string>> {
@@ -114,7 +136,7 @@ async function createPosts(
   ids: Map<string, string>,
   files: { uploadsDir: string; assetsDir: string } | null,
 ): Promise<number> {
-  const wanted = DEMO_MEDIA_POSTS.filter((post) => files || !post.image);
+  const wanted = DEMO_MEDIA_POSTS.filter((post) => files || (!post.image && !post.images));
   const existing = await db
     .select({ id: posts.id })
     .from(posts)
@@ -138,14 +160,14 @@ async function createPosts(
       body: post.body,
       createdAt: hoursAgo(post.hoursAgo),
     });
-    if (post.image && files) {
-      const stored = await storeAsset(
-        files.uploadsDir,
-        files.assetsDir,
-        post.image,
-        `post:${post.key}`,
-      );
-      await db.insert(postAttachments).values({ postId: id, authorId, ...stored });
+    const images = post.images ?? (post.image ? [post.image] : []);
+    if (files) {
+      for (const [position, image] of images.entries()) {
+        // Clé d'usage inchangée pour une image seule : même fichier qu'avant G13.
+        const usage = post.images ? `post:${post.key}:${position}` : `post:${post.key}`;
+        const stored = await storePostImage(files.uploadsDir, files.assetsDir, image, usage);
+        await db.insert(postAttachments).values({ postId: id, authorId, position, ...stored });
+      }
     }
     created += 1;
   }
@@ -179,7 +201,7 @@ async function addImagesToExistingPosts(
       .from(postAttachments)
       .where(eq(postAttachments.postId, post.id))) as [{ total: number }];
     if (total > 0) continue;
-    const stored = await storeAsset(
+    const stored = await storePostImage(
       files.uploadsDir,
       files.assetsDir,
       target.image,
@@ -189,6 +211,27 @@ async function addImagesToExistingPosts(
     added += 1;
   }
   return added;
+}
+
+/**
+ * Dimensions des images de posts de démonstration posées avant G13 : lues
+ * dans le fichier déjà copié, pour que leur cadre ne saute plus.
+ */
+async function backfillPostImageSizes(db: DbOrTx, ids: Map<string, string>, uploadsDir: string): Promise<number> {
+  const rows = await db
+    .select({ id: postAttachments.id, storageKey: postAttachments.storageKey, mimeType: postAttachments.mimeType })
+    .from(postAttachments)
+    .where(and(inArray(postAttachments.authorId, [...ids.values()]), isNull(postAttachments.width)));
+  let filled = 0;
+  for (const row of rows) {
+    // Base sans les fichiers (tests, copie partielle) : rien à lire, la ligne garde son cadre par défaut.
+    const data = await readFile(join(uploadsDir, row.storageKey)).catch(() => null);
+    const size = data && readImageSize(data, row.mimeType);
+    if (!size) continue;
+    await db.update(postAttachments).set(size).where(eq(postAttachments.id, row.id));
+    filled += 1;
+  }
+  return filled;
 }
 
 async function fillWorkMedia(
@@ -442,6 +485,8 @@ export async function seedDemoMedia(
       banners: await setBanners(tx, ids, assetsDir),
       posts: await createPosts(tx, ids, files),
       postImages: files ? await addImagesToExistingPosts(tx, ids, files) : 0,
+      postImageSizes: files ? await backfillPostImageSizes(tx, ids, files.uploadsDir) : 0,
+      cadevPost: files ? await seedCadevPost(tx, ids, files.uploadsDir) : "sans fichiers",
       works: files ? await fillWorkMedia(tx, files) : 0,
       skillUses: await topUpSkillUses(tx, fillers),
       skillRatings: await topUpSkillRatings(tx, fillers),

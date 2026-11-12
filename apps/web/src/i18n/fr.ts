@@ -676,6 +676,8 @@ export const fr = {
     assistantCitedAuthor: "de",
   },
   spaces: {
+    pinned: "Épinglé",
+    openPinned: (title: string) => `Post épinglé : ${title}`,
     searchLabel: "Chercher un espace",
     searchPlaceholder: "Chercher un espace",
     searchResults: "Espaces trouvés",

@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+/* Carrousels du fil : cartes carrées de 960 px, une idée par carte. */
+.frame.square {
+  width: 960px;
+  height: 960px;
+  display: flex;
+  flex-direction: column;
+  padding: 72px;
+  color: #f4f6fb;
+}
+.step { font-size: 30px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
+.big { font-size: 86px; font-weight: 800; line-height: 1.05; margin-top: 36px; }
+.sub { font-size: 36px; line-height: 1.35; margin-top: 32px; opacity: 0.9; }
+.foot { margin-top: auto; font-size: 26px; opacity: 0.6; display: flex; justify-content: space-between; }
+.term {
+  margin-top: 48px;
+  background: #0b0f17;
+  border-radius: 20px;
+  padding: 36px 40px;
+  font-size: 32px;
+  line-height: 1.6;
+  color: #c9d4e5;
+  box-shadow: inset 0 0 0 2px #26324a;
+}
+.term .ok { color: #62d38a; }
+.term .ko { color: #ff7a6b; }
+.term .dim { color: #6c7a93; }
+.term .cmd { color: #ffd166; }
+
+/* Carrousel 1 : la vie d'un bug, du vert au rouge */
+.bug1 { background: #14532d; }
+.bug2 { background: #1e3a8a; }
+.bug3 { background: #7f1d1d; }
+.bug4 { background: #0f172a; }
+.siren { font-size: 220px; font-weight: 900; line-height: 1; margin-top: 24px; color: #fecaca; }
+.comma {
+  margin-top: 40px;
+  font-size: 44px;
+  background: #0b0f17;
+  border-radius: 20px;
+  padding: 32px 40px;
+  box-shadow: inset 0 0 0 2px #26324a;
+}
+.comma .add { color: #62d38a; }
+.comma .del { color: #ff7a6b; text-decoration: line-through; }
+
+/* Carrousel 2 : Git en trois cartes */
+.git { background: #1f2937; }
+.git .tag {
+  align-self: flex-start;
+  background: #f97316;
+  color: #111;
+  font-weight: 700;
+  font-size: 28px;
+  border-radius: 999px;
+  padding: 10px 26px;
+}
+
+/* Carrousel 3 : coder avec 4 Go de RAM */
+.frame.square.ram { background: #f6efe3; color: #1d1a16; }
+.ram .gauge {
+  margin-top: 48px;
+  height: 64px;
+  border-radius: 32px;
+  background: #e2d6c2;
+  overflow: hidden;
+}
+.ram .gauge div { height: 100%; background: #b45309; }
+.ram .list { margin-top: 40px; font-size: 38px; line-height: 1.7; }
+.ram .list b { color: #b45309; }
+</style>
+</head>
+<body>
+
+<div class="frame square bug1" data-out="carousel-bug-1">
+  <div class="step">Étape 1 sur 4</div>
+  <div class="big">« Ça marche sur ma machine. »</div>
+  <div class="term mono">
+    <div><span class="cmd">$</span> npm test</div>
+    <div class="ok">128 tests passés</div>
+    <div class="dim">Durée : 4,2 s</div>
+  </div>
+  <div class="foot"><span>La vie d'un bug</span><span>Suite</span></div>
+</div>
+
+<div class="frame square bug2" data-out="carousel-bug-2">
+  <div class="step">Étape 2 sur 4</div>
+  <div class="big">« Ça marche aussi en préprod. »</div>
+  <div class="sub">Tout le monde valide. Quelqu'un dit « on livre vendredi ? ». Personne ne dit non.</div>
+  <div class="foot"><span>La vie d'un bug</span><span>Suite</span></div>
+</div>
+
+<div class="frame square bug3" data-out="carousel-bug-3">
+  <div class="step">Étape 3 sur 4</div>
+  <div class="siren">500</div>
+  <div class="big">Production en rouge.</div>
+  <div class="sub">Vendredi, 18 h 02. Le téléphone vibre sans arrêt.</div>
+  <div class="foot"><span>La vie d'un bug</span><span>Suite</span></div>
+</div>
+
+<div class="frame square bug4" data-out="carousel-bug-4">
+  <div class="step">Étape 4 sur 4</div>
+  <div class="big">Le correctif.</div>
+  <div class="comma mono">
+    <div class="del">const total = prix * qte,</div>
+    <div class="add">const total = prix * qte;</div>
+  </div>
+  <div class="sub">Trois heures de recherche. Un seul caractère.</div>
+  <div class="foot"><span>La vie d'un bug</span><span>Fin</span></div>
+</div>
+
+<div class="frame square git" data-out="carousel-git-1">
+  <span class="tag">Git en 3 cartes · 1</span>
+  <div class="big">Une branche par idée</div>
+  <div class="term mono">
+    <div><span class="cmd">$</span> git switch -c correctif-panier</div>
+    <div class="dim"># travaille, puis :</div>
+    <div><span class="cmd">$</span> git add -p</div>
+    <div class="dim"># relis chaque morceau avant de l'ajouter</div>
+  </div>
+  <div class="foot"><span>Mémo Git</span><span>Suite</span></div>
+</div>
+
+<div class="frame square git" data-out="carousel-git-2">
+  <span class="tag">Git en 3 cartes · 2</span>
+  <div class="big">Rattraper main sans fusion inutile</div>
+  <div class="term mono">
+    <div><span class="cmd">$</span> git fetch origin</div>
+    <div><span class="cmd">$</span> git rebase origin/main</div>
+    <div class="dim"># conflit ? corrige, puis</div>
+    <div><span class="cmd">$</span> git rebase --continue</div>
+  </div>
+  <div class="foot"><span>Mémo Git</span><span>Suite</span></div>
+</div>
+
+<div class="frame square git" data-out="carousel-git-3">
+  <span class="tag">Git en 3 cartes · 3</span>
+  <div class="big">Annuler sans paniquer</div>
+  <div class="term mono">
+    <div><span class="cmd">$</span> git restore fichier.ts</div>
+    <div class="dim"># oublie les changements non commités</div>
+    <div><span class="cmd">$</span> git revert a1b2c3d</div>
+    <div class="dim"># défait un commit déjà poussé</div>
+    <div class="ko">Jamais : git push --force sur main</div>
+  </div>
+  <div class="foot"><span>Mémo Git</span><span>Fin</span></div>
+</div>
+
+<div class="frame square ram" data-out="carousel-ram-1">
+  <div class="step">Coder avec 4 Go de RAM · 1</div>
+  <div class="big">Mon PC a 4 Go. Je code quand même.</div>
+  <div class="gauge"><div style="width: 92%"></div></div>
+  <div class="sub">Mémoire utilisée avec Chrome, VS Code et un émulateur Android : 92 %.</div>
+</div>
+
+<div class="frame square ram" data-out="carousel-ram-2">
+  <div class="step">Coder avec 4 Go de RAM · 2</div>
+  <div class="big">Ce qui m'a sauvé</div>
+  <div class="list">
+    <div><b>1.</b> Un seul navigateur, cinq onglets au plus</div>
+    <div><b>2.</b> Le téléphone en USB au lieu de l'émulateur</div>
+    <div><b>3.</b> Les extensions de l'éditeur triées sans pitié</div>
+    <div><b>4.</b> Un fichier d'échange de 4 Go sur le SSD</div>
+  </div>
+</div>
+
+<div class="frame square ram" data-out="carousel-ram-3">
+  <div class="step">Coder avec 4 Go de RAM · 3</div>
+  <div class="big">Résultat</div>
+  <div class="gauge"><div style="width: 58%"></div></div>
+  <div class="sub">58 % de mémoire utilisée, et l'application démarre en 40 secondes au lieu de 3 minutes. À vous : vos astuces ?</div>
+</div>
+
+</body>
+</html>

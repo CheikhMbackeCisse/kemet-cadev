@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
+import { createDb, spacePinnedPosts } from "@kemet/db";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -263,5 +263,67 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
       payload: { body: "", attachmentIds: [attachmentId] },
     });
     expect(created.statusCode).toBe(400);
+  });
+
+  it("garde l'ordre choisi pour le carrousel et les dimensions lues à l'envoi", async () => {
+    const owner = await createMember("carousel@test.kemet", "carousel");
+    const ids: string[] = [];
+    for (const name of ["a.png", "b.png", "c.png"]) {
+      const uploaded = await uploadPostAttachment(owner, name, "image/png", PNG_BYTES);
+      expect(uploaded.json().attachment).toMatchObject({ width: 1, height: 1 });
+      ids.push(uploaded.json().attachment.id as string);
+    }
+    const order = [ids[2]!, ids[0]!, ids[1]!];
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { cookie: owner },
+      payload: { body: "Trois images", attachmentIds: order },
+    });
+    const postId = created.json().post.id as string;
+    const read = await app.inject({ method: "GET", url: `/api/posts/${postId}` });
+    expect(read.json().post.attachments.map((attachment: { id: string }) => attachment.id)).toEqual(order);
+    expect(read.json().post.mediaCredit).toBeNull();
+  });
+
+  it("montre le post épinglé d'un espace public à un visiteur, jamais celui d'un espace privé", async () => {
+    const owner = await createMember("pin@test.kemet", "pinowner");
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { cookie: owner },
+      payload: { body: "**La CADEV en bref**\n\nLe texte." },
+    });
+    const postId = created.json().post.id as string;
+    const db = createDb(databaseUrl!);
+    const spaceIds: string[] = [];
+    for (const visibility of ["public", "private"]) {
+      const space = await app.inject({
+        method: "POST",
+        url: "/api/spaces",
+        headers: { cookie: owner },
+        payload: { name: `Espace ${visibility}`, slug: `espace-${visibility}`, visibility },
+      });
+      const spaceId = space.json().space.id as string;
+      spaceIds.push(spaceId);
+      await db.insert(spacePinnedPosts).values({ spaceId, postId });
+    }
+
+    const visible = await app.inject({ method: "GET", url: `/api/spaces/${spaceIds[0]}/pinned-post` });
+    expect(visible.statusCode).toBe(200);
+    expect(visible.json().pinned).toEqual({ postId, title: "La CADEV en bref", imageId: null });
+
+    const hidden = await app.inject({ method: "GET", url: `/api/spaces/${spaceIds[1]}/pinned-post` });
+    expect(hidden.statusCode).toBe(404);
+    const member = await app.inject({
+      method: "GET",
+      url: `/api/spaces/${spaceIds[1]}/pinned-post`,
+      headers: { cookie: owner },
+    });
+    expect(member.json().pinned?.postId).toBe(postId);
+
+    await app.inject({ method: "DELETE", url: `/api/posts/${postId}`, headers: { cookie: owner } });
+    const afterDelete = await app.inject({ method: "GET", url: `/api/spaces/${spaceIds[0]}/pinned-post` });
+    expect(afterDelete.json().pinned).toBeNull();
   });
 });
