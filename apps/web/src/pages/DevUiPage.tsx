@@ -40,6 +40,7 @@ const SPACE_BOARD = [
   "Hackathons et concours",
   "CADEV 2026",
   "Startups et produit",
+  "Développeurs de Lomé",
   "Discussions générales",
   "Flutter Afrique",
   "Python Dakar",
