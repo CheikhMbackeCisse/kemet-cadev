@@ -145,7 +145,6 @@ function SpaceSearchResults({
               name={space.name}
               tint={tints.get(space.id)}
               className={layout === "panel" ? "size-8 rounded-[6px]" : "size-10 rounded-control"}
-              glyphClassName={layout === "panel" ? "size-4" : "size-5"}
             />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium text-text">{space.name}</span>

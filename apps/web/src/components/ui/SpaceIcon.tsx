@@ -1,14 +1,16 @@
 import {
-  BrainCircuit,
+  AppWindow,
+  Braces,
   Briefcase,
-  Code2,
+  Cloud,
+  CodeXml,
+  Database,
+  Flag,
   Gamepad2,
-  GraduationCap,
+  Lock,
   MessagesSquare,
-  Palette,
   Rocket,
-  Server,
-  ShieldCheck,
+  Sprout,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
@@ -16,19 +18,23 @@ import { TECH_LOGOS, type TechLogoName } from "./techLogos.js";
 import { techLogoFor } from "../../lib/skills/techLogo.js";
 import { cn } from "../../lib/cn.js";
 
-// Thèmes sans technologie unique : une icône Lucide. Le premier mot trouvé
-// dans le nom l'emporte.
+// Thèmes sans technologie unique : une icône Lucide, toujours un objet
+// concret (jamais de robot, d'étincelles ni de bouclier coché). Le premier
+// motif trouvé dans le nom l'emporte : CADEV avant les compétitions, le
+// backend avant le cloud.
 const THEME_ICONS: [RegExp, LucideIcon][] = [
-  [/d[ée]but|[ée]tudi|apprend|lyc[ée]e/i, GraduationCap],
+  [/d[ée]but|[ée]tudi|apprend|lyc[ée]e/i, Sprout],
+  [/cadev/i, Flag],
+  [/hackathon|concours|comp[ée]tition|d[ée]fi/i, Trophy],
   [/carri[èe]re|emploi|freelance|recrut|stage/i, Briefcase],
-  [/intelligence artificielle|\bia\b|\bai\b|data|donn[ée]es|machine learning/i, BrainCircuit],
-  [/design|ux|ui\b|figma/i, Palette],
-  [/s[ée]curit[ée]|cyber/i, ShieldCheck],
-  [/devops|cloud|backend|api|infra/i, Server],
+  [/intelligence artificielle|\bia\b|\bai\b|data|donn[ée]es|machine learning/i, Database],
+  [/backend|\bapi\b/i, Braces],
+  [/devops|cloud|infra/i, Cloud],
+  [/s[ée]curit[ée]|cyber/i, Lock],
   [/jeu|game|gaming/i, Gamepad2],
+  [/frontend|design|ux|ui\b|figma|web/i, AppWindow],
   [/startup|entrepr|produit/i, Rocket],
-  [/cadev|comp[ée]tition|hackathon|d[ée]fi/i, Trophy],
-  [/code|dev|programm/i, Code2],
+  [/code|dev|programm/i, CodeXml],
 ];
 
 const TINT_COUNT = 6;
@@ -74,8 +80,6 @@ export interface SpaceIconProps {
   tint?: number;
   /** Taille de la pastille, en classes Tailwind (size-6, size-12...). */
   className?: string;
-  /** Taille du logo ou de l'icône à l'intérieur. */
-  glyphClassName?: string;
 }
 
 /**
@@ -89,7 +93,6 @@ export function SpaceIcon({
   imageUrl,
   tint,
   className,
-  glyphClassName = "size-4",
 }: SpaceIconProps) {
   const frame = cn("flex shrink-0 items-center justify-center overflow-hidden", className);
   if (imageUrl) {
@@ -112,7 +115,7 @@ export function SpaceIcon({
       <span aria-hidden="true" className={cn(frame, "bg-white ring-1 ring-inset ring-border")}>
         <svg
           viewBox="0 0 24 24"
-          className={glyphClassName}
+          className="size-[55%]"
           fill={logo.color === "#FFFFFF" ? "#000000" : logo.color}
         >
           <path d={logo.path} />
@@ -127,7 +130,7 @@ export function SpaceIcon({
       className={frame}
       style={{ backgroundColor: `var(--space-tint-${tint ?? tintOf(id)})` }}
     >
-      <Icon className={cn("text-white", glyphClassName)} />
+      <Icon className="size-[55%] text-white" />
     </span>
   );
 }

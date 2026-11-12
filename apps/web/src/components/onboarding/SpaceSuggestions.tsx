@@ -80,7 +80,6 @@ export function SpaceSuggestions({ profileId, onError }: SpaceSuggestionsProps) 
               name={space.name}
               tint={tints.get(space.id)}
               className="size-10 rounded-control"
-              glyphClassName="size-5"
             />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-auth-text">{space.name}</p>

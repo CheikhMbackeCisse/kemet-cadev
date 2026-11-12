@@ -104,7 +104,6 @@ export function AskKemetDialog({ skillSlug, open, onOpenChange }: AskKemetDialog
                   name={space.name}
                   tint={tints.get(space.id)}
                   className="size-6 rounded-[6px]"
-                  glyphClassName="size-3.5"
                 />
                 {space.name}
               </h3>

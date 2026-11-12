@@ -169,7 +169,6 @@ function SpaceAvatar({ space, tint }: { space: SpaceItem; tint: number | undefin
       imageUrl={space.imageUrl}
       tint={tint}
       className="size-6 rounded-[6px]"
-      glyphClassName="size-3.5"
     />
   );
 }

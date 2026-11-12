@@ -1,5 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { spaceTints } from "./SpaceIcon.js";
+import { Braces, Briefcase, Cloud, Database, Flag, Gamepad2, Lock, Sprout, Trophy } from "lucide-react";
+import { spaceTechLogo, spaceThemeIcon, spaceTints } from "./SpaceIcon.js";
+
+describe("spaceThemeIcon", () => {
+  it("donne à chaque espace du seed l'icône de son sujet", () => {
+    expect(spaceThemeIcon("Data & Intelligence Artificielle")).toBe(Database);
+    expect(spaceThemeIcon("Backend & API")).toBe(Braces);
+    expect(spaceThemeIcon("DevOps & Cloud Afrique")).toBe(Cloud);
+    expect(spaceThemeIcon("Cybersécurité")).toBe(Lock);
+    expect(spaceThemeIcon("Jeux Vidéo Afrique")).toBe(Gamepad2);
+    expect(spaceThemeIcon("Carrière & Freelance Tech")).toBe(Briefcase);
+    expect(spaceThemeIcon("Débuter en informatique")).toBe(Sprout);
+    expect(spaceThemeIcon("Hackathons et concours")).toBe(Trophy);
+    expect(spaceThemeIcon("CADEV 2026")).toBe(Flag);
+  });
+
+  it("garde le logo d'une technologie précise", () => {
+    expect(spaceTechLogo("Flutter Afrique")).toBe("flutter");
+  });
+});
 
 describe("spaceTints", () => {
   it("donne des teintes différentes à deux espaces de même icône", () => {

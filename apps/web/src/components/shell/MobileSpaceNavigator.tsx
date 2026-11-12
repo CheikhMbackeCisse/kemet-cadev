@@ -89,7 +89,6 @@ export function MobileSpaceNavigator({
                       imageUrl={space.imageUrl}
                       tint={tints.get(space.id)}
                       className="size-12 rounded-card"
-                      glyphClassName="size-6"
                     />
                   </button>
                   {space.hasUnread && !active && (
