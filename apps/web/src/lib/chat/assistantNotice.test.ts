@@ -1,20 +1,14 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { markAssistantNoticeSeen, shouldShowAssistantNotice } from "./assistantNotice.js";
+import { describe, expect, it } from "vitest";
+import { mentionsAssistant } from "./assistantNotice.js";
 
-describe("shouldShowAssistantNotice", () => {
-  beforeEach(() => localStorage.clear());
-
-  it("s'affiche quand le brouillon appelle @kocc pour la première fois", () => {
-    expect(shouldShowAssistantNotice("@kocc comment faire un webhook ?")).toBe(true);
+describe("mentionsAssistant", () => {
+  it("reconnaît @kocc et l'ancien @kemet", () => {
+    expect(mentionsAssistant("@kocc comment faire un webhook ?")).toBe(true);
+    expect(mentionsAssistant("tu peux voir @kemet ?")).toBe(true);
   });
 
-  it("ne s'affiche pas sans mention de l'assistant", () => {
-    expect(shouldShowAssistantNotice("ping @kemetien")).toBe(false);
-    expect(shouldShowAssistantNotice("bonjour")).toBe(false);
-  });
-
-  it("ne s'affiche plus après un premier appel envoyé", () => {
-    markAssistantNoticeSeen();
-    expect(shouldShowAssistantNotice("@kocc encore une question")).toBe(false);
+  it("ignore un identifiant plus long et un texte sans mention", () => {
+    expect(mentionsAssistant("ping @kemetien")).toBe(false);
+    expect(mentionsAssistant("bonjour")).toBe(false);
   });
 });

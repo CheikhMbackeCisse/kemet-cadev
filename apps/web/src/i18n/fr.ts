@@ -47,6 +47,7 @@ export const fr = {
     newTab: "(nouvel onglet)",
     table: "Tableau",
     codeButton: "Code",
+    insertCode: "Insérer du code",
     inlineCode: "Code en ligne",
     pastedAsCode: "Collé comme code",
     undoPasteAsCode: "Remettre en texte",
@@ -562,8 +563,8 @@ export const fr = {
     ],
   },
   assistantNotice: {
-    text: "Ta question et les 10 derniers messages du salon partent chez Google (Gemini), ou chez Groq ou OpenRouter en secours.",
-    link: "Lire la politique de confidentialité",
+    text: "Envoyé à Gemini",
+    link: "Confidentialité",
   },
   assistant: {
     askButton: "Kocc",

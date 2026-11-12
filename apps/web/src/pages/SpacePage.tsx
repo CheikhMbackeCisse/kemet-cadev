@@ -4,8 +4,8 @@ import {
   Hash,
   MessageSquare,
   MessageSquareReply,
+  Loader2,
   Paperclip,
-  Send,
   SmilePlus,
   UserPlus,
   Users,
@@ -34,8 +34,14 @@ import { useVoiceMessage } from "../components/chat/VoiceRecorder.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
 import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
 import { KoccButton } from "../components/assistant/KoccButton.js";
-import { KoccQuestionTag } from "../components/assistant/KoccQuestionTag.js";
-import { asksKocc, removeKoccMention } from "../lib/assistant/koccDraft.js";
+import { ASSISTANT_NOTICE_ID, KoccComposerHint } from "../components/assistant/KoccQuestionTag.js";
+import {
+  COMPOSER_ICON_CLASS,
+  COMPOSER_TOOL_CLASS,
+  ComposerBar,
+  ComposerSendButton,
+} from "../components/composer/ComposerBar.js";
+import { removeKoccMention } from "../lib/assistant/koccDraft.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { RichText } from "../components/content/RichText.js";
@@ -66,11 +72,7 @@ import { IconButton } from "../components/ui/IconButton.js";
 import { Input } from "../components/ui/Input.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
-import {
-  markAssistantNoticeSeen,
-  mentionsAssistant,
-  shouldShowAssistantNotice,
-} from "../lib/chat/assistantNotice.js";
+import { mentionsAssistant } from "../lib/chat/assistantNotice.js";
 import { Tooltip } from "../components/ui/Tooltip.js";
 import { useToast } from "../components/ui/Toast.js";
 import { UserName } from "../components/ui/UserName.js";
@@ -388,8 +390,6 @@ export function SpacePage() {
     }
   }
 
-  const showAssistantNotice = shouldShowAssistantNotice(draft);
-
   function handleSend() {
     const body = draft.trim();
     const attachments = pendingAttachments;
@@ -402,7 +402,6 @@ export function SpacePage() {
       null,
       attachments.map((attachment) => attachment.id),
     );
-    if (mentionsAssistant(body)) markAssistantNoticeSeen();
   }
 
   const voice = useVoiceMessage({
@@ -997,15 +996,108 @@ export function SpacePage() {
                 />
               )}
               {composerPaste.notice}
-              {asksKocc(draft) && (
-                <KoccQuestionTag
-                  onRemove={() => {
-                    setDraft(removeKoccMention(draft));
-                    composerRef.current?.focus();
-                  }}
-                />
-              )}
-              <div className="relative flex gap-2">
+              <KoccComposerHint
+                draft={draft}
+                onRemoveMention={() => {
+                  setDraft(removeKoccMention(draft));
+                  composerRef.current?.focus();
+                }}
+              />
+              <ComposerBar
+                leading={
+                  <KoccButton
+                    textareaRef={composerRef}
+                    onChange={(value) => {
+                      setDraft(value);
+                      mentions.syncCaret();
+                    }}
+                    disabled={!activeChannelId}
+                  />
+                }
+                field={
+                  <Textarea
+                    ref={composerRef}
+                    placeholder={fr.chat.composerPlaceholder}
+                    aria-label={fr.chat.composerPlaceholder}
+                    aria-describedby={mentionsAssistant(draft) ? ASSISTANT_NOTICE_ID : undefined}
+                    value={draft}
+                    disabled={!activeChannelId}
+                    onChange={(event) => {
+                      setDraft(event.target.value);
+                      mentions.syncCaret();
+                    }}
+                    onSelect={mentions.syncCaret}
+                    onPaste={composerPaste.handlePaste}
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={mentions.suggestions.length > 0}
+                    aria-controls={mentions.suggestions.length > 0 ? MENTION_LISTBOX_ID : undefined}
+                    aria-activedescendant={
+                      mentions.suggestions.length > 0
+                        ? mentionOptionId(mentions.activeIndex)
+                        : undefined
+                    }
+                    enterKeyHint={enterSends ? "send" : "enter"}
+                    onKeyDown={(event) => {
+                      if (mentions.handleKeyDown(event)) return;
+                      if (
+                        enterSends &&
+                        event.key === "Enter" &&
+                        !event.shiftKey &&
+                        !event.nativeEvent.isComposing
+                      ) {
+                        event.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    variant="composer"
+                  />
+                }
+                tools={
+                  <>
+                    <CodeButton
+                      appearance="icon"
+                      textareaRef={composerRef}
+                      onChange={(value) => {
+                        setDraft(value);
+                        mentions.syncCaret();
+                      }}
+                      disabled={!activeChannelId}
+                    />
+                    <button
+                      type="button"
+                      aria-label={fr.chat.attachFile}
+                      title={fr.chat.attachFile}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={!activeChannelId || uploadingAttachment}
+                      aria-busy={uploadingAttachment || undefined}
+                      className={COMPOSER_TOOL_CLASS}
+                    >
+                      {uploadingAttachment ? (
+                        <Loader2
+                          className={cn(COMPOSER_ICON_CLASS, "animate-spin")}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Paperclip className={COMPOSER_ICON_CLASS} aria-hidden="true" />
+                      )}
+                    </button>
+                  </>
+                }
+                action={
+                  // Le micro prend la place de l'envoi tant qu'il n'y a rien à
+                  // envoyer, comme dans une messagerie de téléphone.
+                  voice.button && !draft.trim() && pendingAttachments.length === 0 ? (
+                    voice.button
+                  ) : (
+                    <ComposerSendButton
+                      ready={Boolean(draft.trim()) || pendingAttachments.length > 0}
+                      onClick={handleSend}
+                      disabled={!activeChannelId || uploadingAttachment}
+                    />
+                  )
+                }
+              >
                 {voice.overlay}
                 <p className="sr-only" aria-live="polite">
                   {mentions.suggestions.length > 0
@@ -1026,94 +1118,8 @@ export function SpacePage() {
                   className="hidden"
                   onChange={handleFileSelected}
                 />
-                <IconButton
-                  aria-label={fr.chat.attachFile}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!activeChannelId}
-                  loading={uploadingAttachment}
-                >
-                  <Paperclip className="size-4" aria-hidden="true" />
-                </IconButton>
-                <CodeButton
-                  textareaRef={composerRef}
-                  onChange={(value) => {
-                    setDraft(value);
-                    mentions.syncCaret();
-                  }}
-                  disabled={!activeChannelId}
-                />
-                <KoccButton
-                  textareaRef={composerRef}
-                  onChange={(value) => {
-                    setDraft(value);
-                    mentions.syncCaret();
-                  }}
-                  disabled={!activeChannelId}
-                />
-                <Textarea
-                  ref={composerRef}
-                  placeholder={fr.chat.composerPlaceholder}
-                  aria-label={fr.chat.composerPlaceholder}
-                  aria-describedby={showAssistantNotice ? "assistant-notice" : undefined}
-                  value={draft}
-                  disabled={!activeChannelId}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    mentions.syncCaret();
-                  }}
-                  onSelect={mentions.syncCaret}
-                  onPaste={composerPaste.handlePaste}
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-expanded={mentions.suggestions.length > 0}
-                  aria-controls={mentions.suggestions.length > 0 ? MENTION_LISTBOX_ID : undefined}
-                  aria-activedescendant={
-                    mentions.suggestions.length > 0
-                      ? mentionOptionId(mentions.activeIndex)
-                      : undefined
-                  }
-                  enterKeyHint={enterSends ? "send" : "enter"}
-                  onKeyDown={(event) => {
-                    if (mentions.handleKeyDown(event)) return;
-                    if (
-                      enterSends &&
-                      event.key === "Enter" &&
-                      !event.shiftKey &&
-                      !event.nativeEvent.isComposing
-                    ) {
-                      event.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  variant="composer"
-                  className="max-md:min-h-11 flex-1 rounded-card"
-                />
-                {/* Le micro prend la place de l'envoi tant qu'il n'y a rien à envoyer :
-                    sur un téléphone étroit, le champ garde sa largeur. */}
-                {voice.button && !draft.trim() && pendingAttachments.length === 0 ? (
-                  voice.button
-                ) : (
-                  <Button
-                    onClick={handleSend}
-                    // Garde le focus (et le clavier mobile ouvert) dans le composeur.
-                    onPointerDown={(event) => event.preventDefault()}
-                    aria-label={fr.chat.send}
-                    disabled={!activeChannelId || uploadingAttachment}
-                    className="max-md:size-control-mobile max-md:px-0"
-                  >
-                    <Send className="size-4" aria-hidden="true" />
-                  </Button>
-                )}
-              </div>
+              </ComposerBar>
               {voice.notice}
-              {showAssistantNotice && (
-                <p id="assistant-notice" className="text-xs text-subtle">
-                  {fr.assistantNotice.text}{" "}
-                  <a href="/confidentialite" className="text-link hover:underline">
-                    {fr.assistantNotice.link}
-                  </a>
-                </p>
-              )}
             </div>
           )}
         </div>

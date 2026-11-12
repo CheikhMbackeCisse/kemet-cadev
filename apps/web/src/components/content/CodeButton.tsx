@@ -8,6 +8,7 @@ import {
   insertCode,
   type TextEdit,
 } from "../../lib/content/insertCode.js";
+import { COMPOSER_ICON_CLASS, COMPOSER_TOOL_CLASS } from "../composer/ComposerBar.js";
 import { Menu } from "../ui/Menu.js";
 
 // "Code en ligne" puis "Texte" d'abord : ce ne sont pas des langages, ils se
@@ -25,10 +26,18 @@ export interface CodeButtonProps {
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  /** `icon` dans le champ de message, `label` (icône et mot) au-dessus d'un champ de formulaire. */
+  appearance?: "label" | "icon";
 }
 
 /** Menu des langages qui insère un bloc de code dans le champ relié. */
-export function CodeButton({ textareaRef, onChange, disabled, className }: CodeButtonProps) {
+export function CodeButton({
+  textareaRef,
+  onChange,
+  disabled,
+  className,
+  appearance = "label",
+}: CodeButtonProps) {
   const pendingSelection = useRef<TextEdit | null>(null);
 
   function handleSelect(language: string) {
@@ -67,19 +76,31 @@ export function CodeButton({ textareaRef, onChange, disabled, className }: CodeB
       onSelect={handleSelect}
       onCloseAutoFocus={restoreFocus}
       trigger={
-        <button
-          type="button"
-          disabled={disabled}
-          className={cn(
-            "inline-flex h-control items-center justify-center gap-2 rounded-control px-2 text-sm font-medium text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text",
-            "max-md:h-control-mobile",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            className,
-          )}
-        >
-          <Braces className="size-4" aria-hidden="true" />
-          <span className="max-sm:sr-only">{fr.content.codeButton}</span>
-        </button>
+        appearance === "icon" ? (
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label={fr.content.insertCode}
+            title={fr.content.insertCode}
+            className={cn(COMPOSER_TOOL_CLASS, className)}
+          >
+            <Braces className={COMPOSER_ICON_CLASS} aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={disabled}
+            className={cn(
+              "inline-flex h-control items-center justify-center gap-2 rounded-control px-2 text-sm font-medium text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text",
+              "max-md:h-control-mobile",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              className,
+            )}
+          >
+            <Braces className="size-4" aria-hidden="true" />
+            <span className="max-sm:sr-only">{fr.content.codeButton}</span>
+          </button>
+        )
       }
     />
   );

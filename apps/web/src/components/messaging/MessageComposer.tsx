@@ -1,4 +1,4 @@
-import { Paperclip, Send, X } from "lucide-react";
+import { Loader2, Paperclip, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type RefObject } from "react";
 import type { Attachment } from "@kemet/shared";
 import { ChatApiError, uploadAttachment } from "../../lib/chat/api.js";
@@ -7,8 +7,14 @@ import { fr } from "../../i18n/fr.js";
 import { SuggestionChips } from "../chat/SuggestionChips.js";
 import { useVoiceMessage } from "../chat/VoiceRecorder.js";
 import { CodeButton } from "../content/CodeButton.js";
+import {
+  COMPOSER_ICON_CLASS,
+  COMPOSER_TOOL_CLASS,
+  ComposerBar,
+  ComposerSendButton,
+} from "../composer/ComposerBar.js";
+import { cn } from "../../lib/cn.js";
 import { usePasteAsCode } from "../content/usePasteAsCode.js";
-import { Button } from "../ui/Button.js";
 import { IconButton } from "../ui/IconButton.js";
 import { Textarea } from "../ui/Textarea.js";
 import { useToast } from "../ui/Toast.js";
@@ -136,56 +142,67 @@ export function MessageComposer({
         </div>
       )}
       {paste.notice}
-      <div className="relative flex gap-2">
+      <ComposerBar
+        field={
+          <Textarea
+            ref={composerRef}
+            placeholder={placeholder}
+            aria-label={placeholder}
+            aria-describedby={notice ? noticeId : undefined}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onPaste={paste.handlePaste}
+            enterKeyHint={enterSends ? "send" : "enter"}
+            onKeyDown={(event) => {
+              if (
+                enterSends &&
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+              ) {
+                event.preventDefault();
+                send();
+              }
+            }}
+            variant="composer"
+          />
+        }
+        tools={
+          <>
+            <CodeButton appearance="icon" textareaRef={composerRef} onChange={setDraft} />
+            <button
+              type="button"
+              aria-label={fr.chat.attachFile}
+              title={fr.chat.attachFile}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              aria-busy={uploading || undefined}
+              className={COMPOSER_TOOL_CLASS}
+            >
+              {uploading ? (
+                <Loader2 className={cn(COMPOSER_ICON_CLASS, "animate-spin")} aria-hidden="true" />
+              ) : (
+                <Paperclip className={COMPOSER_ICON_CLASS} aria-hidden="true" />
+              )}
+            </button>
+          </>
+        }
+        action={
+          // Le micro prend la place de l'envoi tant qu'il n'y a rien à envoyer.
+          voice.button && !draft.trim() && pendingAttachments.length === 0 ? (
+            voice.button
+          ) : (
+            <ComposerSendButton
+              ready={Boolean(draft.trim()) || pendingAttachments.length > 0}
+              onClick={send}
+              disabled={uploading}
+            />
+          )
+        }
+      >
         {voice.overlay}
         <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
-        <IconButton
-          aria-label={fr.chat.attachFile}
-          onClick={() => fileInputRef.current?.click()}
-          loading={uploading}
-        >
-          <Paperclip className="size-4" aria-hidden="true" />
-        </IconButton>
-        <CodeButton textareaRef={composerRef} onChange={setDraft} />
-        <Textarea
-          ref={composerRef}
-          placeholder={placeholder}
-          aria-label={placeholder}
-          aria-describedby={notice ? noticeId : undefined}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onPaste={paste.handlePaste}
-          enterKeyHint={enterSends ? "send" : "enter"}
-          onKeyDown={(event) => {
-            if (
-              enterSends &&
-              event.key === "Enter" &&
-              !event.shiftKey &&
-              !event.nativeEvent.isComposing
-            ) {
-              event.preventDefault();
-              send();
-            }
-          }}
-          variant="composer"
-          className="max-md:min-h-11 flex-1 rounded-card"
-        />
-        {/* Le micro prend la place de l'envoi tant qu'il n'y a rien à envoyer. */}
-        {voice.button && !draft.trim() && pendingAttachments.length === 0 ? (
-          voice.button
-        ) : (
-          <Button
-            onClick={send}
-            // Garde le focus (et le clavier mobile ouvert) dans le composeur.
-            onPointerDown={(event) => event.preventDefault()}
-            aria-label={fr.chat.send}
-            disabled={uploading}
-            className="max-md:size-control-mobile max-md:px-0"
-          >
-            <Send className="size-4" aria-hidden="true" />
-          </Button>
-        )}
-      </div>
+      </ComposerBar>
       {voice.notice}
       {notice && (
         <p id={noticeId} className="text-xs text-subtle">

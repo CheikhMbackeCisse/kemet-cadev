@@ -1,4 +1,4 @@
-import { ChevronLeft, Mic, Send, Trash2 } from "lucide-react";
+import { ChevronLeft, Mic, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { VOICE_MAX_DURATION_MS } from "@kemet/shared";
 import { ChatApiError, uploadVoiceMessage } from "../../lib/chat/api.js";
@@ -10,7 +10,7 @@ import {
 } from "../../lib/chat/useVoiceRecorder.js";
 import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
-import { Button } from "../ui/Button.js";
+import { COMPOSER_ICON_CLASS, ComposerSendButton } from "../composer/ComposerBar.js";
 import { IconButton } from "../ui/IconButton.js";
 import { useToast } from "../ui/Toast.js";
 
@@ -181,13 +181,13 @@ export function useVoiceMessage({
       onPointerCancel={onPointerCancel}
       onContextMenu={(event) => event.preventDefault()}
       className={cn(
-        "relative z-20 touch-none select-none [-webkit-touch-callout:none]",
+        "relative z-20 size-11 touch-none select-none rounded-full bg-surface-2 text-text-2 [-webkit-touch-callout:none] md:size-11 max-md:size-11",
         recorder.recording &&
           mode === "hold" &&
           "scale-125 bg-danger text-danger-on hover:bg-danger hover:text-danger-on",
       )}
     >
-      <Mic className="size-4" aria-hidden="true" />
+      <Mic className={COMPOSER_ICON_CLASS} aria-hidden="true" />
     </IconButton>
   );
 
@@ -209,14 +209,12 @@ export function useVoiceMessage({
             <Trash2 className="size-4" aria-hidden="true" />
           </IconButton>
           <div className="flex-1">{elapsed}</div>
-          <Button
+          <ComposerSendButton
             ref={sendButton}
+            ready
+            label={fr.chat.voiceSend}
             onClick={() => void finishRecording()}
-            aria-label={fr.chat.voiceSend}
-            className="max-md:size-control-mobile max-md:px-0"
-          >
-            <Send className="size-4" aria-hidden="true" />
-          </Button>
+          />
         </>
       ) : (
         <div className="pointer-events-none flex flex-1 items-center gap-3 pl-2">

@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import { fr } from "../../i18n/fr.js";
 import { addKoccMention } from "../../lib/assistant/koccDraft.js";
 import { cn } from "../../lib/cn.js";
+import { COMPOSER_ICON_CLASS, COMPOSER_ROUND_CLASS } from "../composer/ComposerBar.js";
 import { KoccSymbol } from "./KoccSymbol.js";
 
 export interface KoccButtonProps {
@@ -35,17 +36,9 @@ export function KoccButton({ textareaRef, onChange, disabled, className }: KoccB
       disabled={disabled}
       aria-label={fr.assistant.askButtonLabel}
       title={fr.assistant.askButtonLabel}
-      className={cn(
-        "inline-flex h-control shrink-0 items-center justify-center gap-1.5 rounded-control px-2 text-sm font-medium text-text-2 transition-colors duration-150 hover:bg-surface-2 hover:text-text",
-        "max-md:h-control-mobile",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        className,
-      )}
+      className={cn(COMPOSER_ROUND_CLASS, "hover:bg-surface-2 disabled:opacity-50", className)}
     >
-      <KoccSymbol className="size-5" />
-      <span aria-hidden="true" className="max-sm:hidden">
-        {fr.assistant.askButton}
-      </span>
+      <KoccSymbol className={COMPOSER_ICON_CLASS} />
     </button>
   );
 }

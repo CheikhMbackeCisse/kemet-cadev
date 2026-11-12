@@ -56,9 +56,11 @@ import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
 import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
 import { KoccButton } from "../components/assistant/KoccButton.js";
-import { KoccQuestionTag } from "../components/assistant/KoccQuestionTag.js";
+import { ASSISTANT_NOTICE_ID, KoccComposerHint } from "../components/assistant/KoccQuestionTag.js";
+import { ComposerBar, ComposerSendButton } from "../components/composer/ComposerBar.js";
+import { mentionsAssistant } from "../lib/chat/assistantNotice.js";
 import { KoccSymbol } from "../components/assistant/KoccSymbol.js";
-import { asksKocc, removeKoccMention } from "../lib/assistant/koccDraft.js";
+import { removeKoccMention } from "../lib/assistant/koccDraft.js";
 import { usePostAssistant } from "../lib/feed/usePostAssistant.js";
 
 function formatTime(iso: string): string {
@@ -510,37 +512,50 @@ export function PostPage() {
           {canInteract && (
             <div className="flex flex-col gap-2">
               {replyPaste.notice}
-              {asksKocc(replyDraft) && (
-                <KoccQuestionTag
-                  onRemove={() => {
-                    setReplyDraft(removeKoccMention);
-                    replyTextareaRef.current?.focus();
-                  }}
-                />
-              )}
-              <div className="flex gap-2">
-                <CodeButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />
-                <KoccButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />
-                <Textarea
-                  ref={replyTextareaRef}
-                  placeholder={fr.feed.replyPlaceholder}
-                  aria-label={fr.feed.replyPlaceholder}
-                  value={replyDraft}
-                  onChange={(event) => setReplyDraft(event.target.value)}
-                  onPaste={replyPaste.handlePaste}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      void handleReply();
+              <KoccComposerHint
+                draft={replyDraft}
+                onRemoveMention={() => {
+                  setReplyDraft(removeKoccMention);
+                  replyTextareaRef.current?.focus();
+                }}
+              />
+              <ComposerBar
+                leading={<KoccButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />}
+                field={
+                  <Textarea
+                    ref={replyTextareaRef}
+                    placeholder={fr.feed.replyPlaceholder}
+                    aria-label={fr.feed.replyPlaceholder}
+                    aria-describedby={
+                      mentionsAssistant(replyDraft) ? ASSISTANT_NOTICE_ID : undefined
                     }
-                  }}
-                  variant="composer"
-                  className="max-md:min-h-11 flex-1"
-                />
-                <Button onClick={handleReply} disabled={!replyDraft.trim()}>
-                  {fr.feed.reply}
-                </Button>
-              </div>
+                    value={replyDraft}
+                    onChange={(event) => setReplyDraft(event.target.value)}
+                    onPaste={replyPaste.handlePaste}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        void handleReply();
+                      }
+                    }}
+                    variant="composer"
+                  />
+                }
+                tools={
+                  <CodeButton
+                    appearance="icon"
+                    textareaRef={replyTextareaRef}
+                    onChange={setReplyDraft}
+                  />
+                }
+                action={
+                  <ComposerSendButton
+                    label={fr.feed.reply}
+                    ready={Boolean(replyDraft.trim())}
+                    onClick={() => void handleReply()}
+                  />
+                }
+              />
             </div>
           )}
         </div>
