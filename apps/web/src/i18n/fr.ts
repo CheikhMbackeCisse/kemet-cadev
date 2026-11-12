@@ -844,6 +844,7 @@ export const fr = {
     viewerUnavailable: "Cette vidéo n'est plus disponible.",
     videoUnsupported: "Ton navigateur ne lit pas cette vidéo.",
     videoUploading: (percent: number) => `Envoi de la vidéo : ${percent} %`,
+    videoUploaded: "Vidéo envoyée.",
     videoWrongType: "Seules les vidéos MP4 ou WebM sont acceptées.",
     videoTooBig: "La vidéo dépasse 20 Mo.",
     videoTooLong: "La vidéo dépasse 60 secondes.",

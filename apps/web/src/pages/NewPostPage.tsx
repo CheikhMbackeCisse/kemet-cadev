@@ -16,6 +16,11 @@ import {
   uploadPostVideo,
 } from "../lib/chat/api.js";
 import { prepareVideo, VideoCheckError } from "../lib/feed/videoPoster.js";
+import {
+  videoUploadAnnouncement,
+  videoUploadLabel,
+  type VideoUploadState,
+} from "../lib/feed/videoUploadAnnouncement.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { hasFieldErrors, requiredFieldErrors, type FieldErrors } from "../lib/forms.js";
@@ -39,7 +44,8 @@ export function NewPostPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [video, setVideo] = useState<{ attachment: Attachment; posterUrl: string } | null>(null);
-  const [videoStatus, setVideoStatus] = useState<string | null>(null);
+  const [videoUpload, setVideoUpload] = useState<VideoUploadState>({ phase: "idle" });
+  const videoLabel = videoUploadLabel(videoUpload);
 
   useEffect(() => () => {
     if (video) URL.revokeObjectURL(video.posterUrl);
@@ -73,21 +79,22 @@ export function NewPostPage() {
     event.target.value = "";
     if (!file) return;
     setUploading(true);
-    setVideoStatus(fr.feed.videoPreparing);
+    setVideoUpload({ phase: "preparing" });
     try {
       const prepared = await prepareVideo(file);
-      setVideoStatus(fr.feed.videoUploading(0));
+      setVideoUpload({ phase: "uploading", percent: 0 });
       const attachment = await uploadPostVideo(file, prepared.poster, (fraction) =>
-        setVideoStatus(fr.feed.videoUploading(Math.round(fraction * 100))),
+        setVideoUpload({ phase: "uploading", percent: Math.round(fraction * 100) }),
       );
       setVideo({ attachment, posterUrl: URL.createObjectURL(prepared.poster) });
+      setVideoUpload({ phase: "done" });
     } catch (err) {
       const message =
         err instanceof VideoCheckError || err instanceof ChatApiError ? err.message : fr.feed.videoUploadError;
       toast.show(message, "danger");
+      setVideoUpload({ phase: "idle" });
     } finally {
       setUploading(false);
-      setVideoStatus(null);
     }
   }
 
@@ -173,7 +180,10 @@ export function NewPostPage() {
             </span>
             <IconButton
               aria-label={fr.feed.removeVideo}
-              onClick={() => setVideo(null)}
+              onClick={() => {
+                setVideo(null);
+                setVideoUpload({ phase: "idle" });
+              }}
               className="absolute -right-2 -top-2 size-control-compact max-md:size-control-mobile bg-surface"
             >
               <X className="size-4" aria-hidden="true" />
@@ -199,7 +209,7 @@ export function NewPostPage() {
             type="button"
             variant="secondary"
             onClick={() => imageInputRef.current?.click()}
-            loading={uploading && !videoStatus}
+            loading={uploading && videoLabel === null}
             disabled={isSuspended || uploading || video !== null || attachments.length >= MAX_POST_ATTACHMENTS}
           >
             <ImageIcon className="size-4" aria-hidden="true" />
@@ -209,18 +219,22 @@ export function NewPostPage() {
             type="button"
             variant="secondary"
             onClick={() => videoInputRef.current?.click()}
-            loading={videoStatus !== null}
+            loading={videoLabel !== null}
             disabled={isSuspended || uploading || video !== null || attachments.length > 0}
           >
             <Clapperboard className="size-4" aria-hidden="true" />
             {fr.feed.attachVideo}
           </Button>
         </div>
-        {videoStatus && (
-          <p role="status" className="text-sm text-text-2">
-            {videoStatus}
+        {videoLabel && (
+          <p aria-hidden="true" className="text-sm text-text-2">
+            {videoLabel}
           </p>
         )}
+        {/* Toujours présente : une zone live ajoutée au moment du message n'est pas toujours lue. */}
+        <p role="status" className="sr-only">
+          {videoUploadAnnouncement(videoUpload)}
+        </p>
 
       </div>
 
