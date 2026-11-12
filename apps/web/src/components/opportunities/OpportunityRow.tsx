@@ -10,6 +10,7 @@ import {
 } from "../../lib/opportunities/format.js";
 import { heightKeyProps } from "../../lib/navigation/rememberedHeights.js";
 import { fr } from "../../i18n/fr.js";
+import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
 import { Skeleton } from "../ui/Skeleton.js";
 
@@ -35,6 +36,7 @@ export function OpportunityRow({ opportunity, variant = "row", heightKey }: Oppo
   const money = moneyLabel(opportunity);
   const deadline = deadlineLabel(opportunity);
   const href = `/opportunites/${opportunity.slug}`;
+  const isOrganization = opportunity.authorKind === "organization";
 
   return (
     <li {...heightKeyProps(heightKey, OPPORTUNITY_ROW_ESTIMATED_HEIGHT_PX)} className="py-4">
@@ -46,15 +48,26 @@ export function OpportunityRow({ opportunity, variant = "row", heightKey }: Oppo
         )}
       >
         {/* Seule l'icône s'efface : le texte d'une offre clôturée garde un contraste de 4,5:1. */}
-        <span
-          aria-hidden="true"
-          className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-card bg-surface-2 text-text-2",
-            opportunity.closed && "opacity-70",
-          )}
-        >
-          <Icon className="size-5" />
-        </span>
+        {isOrganization ? (
+          // Offre d'une organisation : son logo à la place de l'icône du type.
+          <Avatar
+            name={opportunity.authorDisplayName}
+            src={opportunity.authorAvatarUrl ?? undefined}
+            size={40}
+            square
+            className={cn("border border-border", opportunity.closed && "opacity-70")}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-card bg-surface-2 text-text-2",
+              opportunity.closed && "opacity-70",
+            )}
+          >
+            <Icon className="size-5" />
+          </span>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge>{kindLabel(opportunity)}</Badge>
@@ -71,7 +84,7 @@ export function OpportunityRow({ opportunity, variant = "row", heightKey }: Oppo
             {opportunity.title}
           </a>
           <p className={cn("text-sm", opportunity.closed ? "text-subtle" : "text-text-2")}>
-            {opportunity.organization}
+            {isOrganization ? opportunity.authorDisplayName : opportunity.organization}
             <span aria-hidden="true"> · </span>
             {locationLabel(opportunity)}
           </p>

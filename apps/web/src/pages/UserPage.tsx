@@ -34,6 +34,9 @@ import { profileSubtitle } from "../lib/profileIdentity.js";
 import { useSession } from "../session/SessionProvider.js";
 import { shareLink } from "../lib/shareLink.js";
 import { ProfileHeader } from "../components/profile/ProfileHeader.js";
+import { OrganizationHeader } from "../components/organizations/OrganizationHeader.js";
+import { OrganizationTabs } from "../components/organizations/OrganizationTabs.js";
+import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import {
   PROFILE_ACTION_CLASS,
   PROFILE_ACTIONS_ROW_CLASS,
@@ -243,6 +246,104 @@ export function UserPage() {
   } = data;
   const isOwnProfile = viewerProfile?.handle === profile.handle;
 
+  const followDialog = (
+    <Dialog
+      open={followList !== null}
+      onOpenChange={(open) => !open && setFollowList(null)}
+      title={followList === "followers" ? fr.profile.followersTitle : fr.profile.followingTitle}
+    >
+      <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
+        {followListItems.length === 0 && followListHidden === 0 && !followListLoading ? (
+          <p className="text-sm text-subtle">
+            {followList === "followers" ? fr.profile.emptyFollowers : fr.profile.emptyFollowing}
+          </p>
+        ) : (
+          followListItems.map((item) => (
+            <a
+              key={item.id}
+              href={`/u/${item.handle}`}
+              className="flex items-center gap-2 rounded-control p-1 hover:bg-surface-2"
+            >
+              <Avatar
+                name={item.displayName}
+                src={item.avatarUrl ?? undefined}
+                size={32}
+                countryCode={item.country}
+                square={item.kind === "organization"}
+              />
+              <UserName name={item.displayName} organization={item.kind === "organization"} />
+            </a>
+          ))
+        )}
+        {followListLoading && <Skeleton className="h-10 w-full" />}
+        {!followListCursor && !followListLoading && followListHidden > 0 && (
+          <p className="px-1 text-sm text-text-2">
+            {fr.profile.hiddenFollows(
+              new Intl.NumberFormat("fr-FR").format(followListHidden),
+              followListItems.length > 0,
+            )}
+          </p>
+        )}
+        {followListCursor && !followListLoading && (
+          <Button variant="secondary" className="self-center text-xs" onClick={loadMoreFollowList}>
+            {fr.profile.loadMore}
+          </Button>
+        )}
+      </div>
+    </Dialog>
+  );
+
+  if (profile.kind === "organization") {
+    return (
+      <ReadingPage header={header} activeMobileTab="">
+        <OrganizationHeader
+          profile={profile}
+          stats={[
+            {
+              label: fr.profile.statFollowers(followerCount),
+              value: followerCount,
+              onClick: () => openFollowList("followers"),
+            },
+            {
+              label: fr.organizations.statOpportunities(data.opportunityCount),
+              value: data.opportunityCount,
+            },
+          ]}
+          actions={
+            <div className={PROFILE_ACTIONS_ROW_CLASS}>
+              {viewerProfile ? (
+                <Button
+                  variant={isFollowedByViewer ? "secondary" : "primary"}
+                  onClick={handleToggleFollow}
+                  disabled={followBusy}
+                >
+                  {isFollowedByViewer ? fr.organizations.unfollow : fr.organizations.follow}
+                </Button>
+              ) : (
+                <a
+                  href={SIGN_UP_PATH}
+                  className="inline-flex h-control items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover max-md:h-control-mobile"
+                >
+                  {fr.organizations.follow}
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => void handleShare()}
+                className={PROFILE_ACTION_CLASS}
+              >
+                <Share2 className="size-4 shrink-0" aria-hidden="true" />
+                {fr.organizations.share}
+              </button>
+            </div>
+          }
+        />
+        <OrganizationTabs handle={profile.handle} />
+        {followDialog}
+      </ReadingPage>
+    );
+  }
+
   return (
     <ReadingPage header={header} activeMobileTab={isOwnProfile ? "moi" : ""}>
       <div className="flex flex-col gap-3">
@@ -364,54 +465,7 @@ export function UserPage() {
         worksReloadKey={worksReloadKey}
       />
 
-      <Dialog
-        open={followList !== null}
-        onOpenChange={(open) => !open && setFollowList(null)}
-        title={followList === "followers" ? fr.profile.followersTitle : fr.profile.followingTitle}
-      >
-        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
-          {followListItems.length === 0 && followListHidden === 0 && !followListLoading ? (
-            <p className="text-sm text-subtle">
-              {followList === "followers" ? fr.profile.emptyFollowers : fr.profile.emptyFollowing}
-            </p>
-          ) : (
-            followListItems.map((item) => (
-              <a
-                key={item.id}
-                href={`/u/${item.handle}`}
-                className="flex items-center gap-2 rounded-control p-1 hover:bg-surface-2"
-              >
-                <Avatar
-                  name={item.displayName}
-                  src={item.avatarUrl ?? undefined}
-                  size={32}
-                  countryCode={item.country}
-                  square={item.kind === "organization"}
-                />
-                <UserName name={item.displayName} organization={item.kind === "organization"} />
-              </a>
-            ))
-          )}
-          {followListLoading && <Skeleton className="h-10 w-full" />}
-          {!followListCursor && !followListLoading && followListHidden > 0 && (
-            <p className="px-1 text-sm text-text-2">
-              {fr.profile.hiddenFollows(
-                new Intl.NumberFormat("fr-FR").format(followListHidden),
-                followListItems.length > 0,
-              )}
-            </p>
-          )}
-          {followListCursor && !followListLoading && (
-            <Button
-              variant="secondary"
-              className="self-center text-xs"
-              onClick={loadMoreFollowList}
-            >
-              {fr.profile.loadMore}
-            </Button>
-          )}
-        </div>
-      </Dialog>
+      {followDialog}
       <Dialog
         open={blockConfirmOpen}
         onOpenChange={setBlockConfirmOpen}

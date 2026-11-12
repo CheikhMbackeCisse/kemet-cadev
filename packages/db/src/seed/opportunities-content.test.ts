@@ -33,11 +33,19 @@ describe("offres de démonstration", () => {
   );
 
   it("couvre les trois types, plusieurs pays et une offre clôturée", () => {
-    expect(new Set(DEMO_OPPORTUNITIES.map((offer) => offer.kind))).toEqual(new Set(["job", "internship", "mission"]));
-    expect(DEMO_OPPORTUNITIES.filter((offer) => offer.kind === "mission")).toHaveLength(3);
-    expect(new Set(DEMO_OPPORTUNITIES.map((offer) => offer.countryCode).filter(Boolean)).size).toBeGreaterThanOrEqual(5);
-    expect(DEMO_OPPORTUNITIES.some((offer) => offer.deadlineInDays !== null && offer.deadlineInDays < 0)).toBe(true);
-    expect(new Set(DEMO_OPPORTUNITIES.map((offer) => offer.slug)).size).toBe(DEMO_OPPORTUNITIES.length);
+    expect(new Set(DEMO_OPPORTUNITIES.map((offer) => offer.kind))).toEqual(
+      new Set(["job", "internship", "mission"]),
+    );
+    expect(DEMO_OPPORTUNITIES.filter((offer) => offer.kind === "mission")).toHaveLength(4);
+    expect(
+      new Set(DEMO_OPPORTUNITIES.map((offer) => offer.countryCode).filter(Boolean)).size,
+    ).toBeGreaterThanOrEqual(5);
+    expect(
+      DEMO_OPPORTUNITIES.some((offer) => offer.deadlineInDays !== null && offer.deadlineInDays < 0),
+    ).toBe(true);
+    expect(new Set(DEMO_OPPORTUNITIES.map((offer) => offer.slug)).size).toBe(
+      DEMO_OPPORTUNITIES.length,
+    );
   });
 
   it("n'écrit aucune barre d'écriture inclusive", () => {

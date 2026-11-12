@@ -1,11 +1,13 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { DEMO_ORGANIZATION_HANDLES } from "@kemet/shared";
 import type { DbOrTx } from "../client.js";
 import { opportunities, profiles } from "../schema/index.js";
 import { demoUuid } from "./demo-uuid.js";
 import { DEMO_OPPORTUNITIES } from "./opportunities-content.js";
 import { daysAgo, daysFromNow } from "./time.js";
 
-export type OpportunitiesSeedResult = { status: "done"; created: number } | { status: "skipped"; reason: string };
+export type OpportunitiesSeedResult =
+  { status: "done"; created: number } | { status: "skipped"; reason: string };
 
 function isoDateInDays(days: number): string {
   return daysFromNow(days).toISOString().slice(0, 10);
@@ -22,13 +24,21 @@ export async function seedOpportunities(db: DbOrTx): Promise<OpportunitiesSeedRe
     .from(profiles)
     .where(and(inArray(profiles.handle, handles), eq(profiles.isDemo, true)));
   const authorIdByHandle = new Map(authors.map((author) => [author.handle, author.id]));
-  const missing = handles.filter((handle) => !authorIdByHandle.has(handle));
-  if (missing.length > 0) return { status: "skipped", reason: `comptes absents : ${missing.join(", ")}` };
+  // Une organisation sautée (identifiant pris par un vrai compte) retire
+  // seulement ses offres ; un compte de démonstration absent arrête tout.
+  const isOrganization = (handle: string) =>
+    (DEMO_ORGANIZATION_HANDLES as readonly string[]).includes(handle);
+  const missing = handles.filter(
+    (handle) => !authorIdByHandle.has(handle) && !isOrganization(handle),
+  );
+  if (missing.length > 0)
+    return { status: "skipped", reason: `comptes absents : ${missing.join(", ")}` };
+  const offers = DEMO_OPPORTUNITIES.filter((offer) => authorIdByHandle.has(offer.authorHandle));
 
   const created = await db
     .insert(opportunities)
     .values(
-      DEMO_OPPORTUNITIES.map((offer) => {
+      offers.map((offer) => {
         const postedAt = daysAgo(offer.postedDaysAgo);
         return {
           id: demoUuid(`opportunity:${offer.key}`),
@@ -56,5 +66,21 @@ export async function seedOpportunities(db: DbOrTx): Promise<OpportunitiesSeedRe
     )
     .onConflictDoNothing()
     .returning({ id: opportunities.id });
+
+  // Offres passées d'un compte de démonstration à une organisation :
+  // seulement si leur auteur actuel est un profil de démonstration.
+  for (const offer of offers.filter((entry) => isOrganization(entry.authorHandle))) {
+    const authorId = authorIdByHandle.get(offer.authorHandle)!;
+    await db
+      .update(opportunities)
+      .set({ authorId, organization: offer.organization, description: offer.description })
+      .where(
+        and(
+          eq(opportunities.id, demoUuid(`opportunity:${offer.key}`)),
+          ne(opportunities.authorId, authorId),
+          sql`${opportunities.authorId} in (select id from profiles where is_demo)`,
+        ),
+      );
+  }
   return { status: "done", created: created.length };
 }

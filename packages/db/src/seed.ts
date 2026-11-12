@@ -5,6 +5,7 @@ import { seedDemoMedia } from "./seed/demo-media.js";
 import { seedNewcomers } from "./seed/newcomers.js";
 import { seedShowcase } from "./seed/showcase.js";
 import { seedOpportunities } from "./seed/opportunities.js";
+import { seedDemoOrganizations } from "./seed/organizations.js";
 import { renameCadevSpace } from "./seed/chat-content.js";
 import { completeDemoRoleDetails } from "./seed/role-details.js";
 import { seedHackathonsSpace } from "./seed/hackathons.js";
@@ -58,6 +59,11 @@ async function main(): Promise<void> {
     hackathons.status === "done"
       ? `Espace Hackathons et concours : ${hackathons.messages} messages ajoutés.`
       : `Espace Hackathons et concours sauté : ${hackathons.reason}.`,
+  );
+  const organizations = await seedDemoOrganizations(db);
+  console.log(
+    `Organisations : ${organizations.organizations} en place, ${organizations.posts} posts ajoutés` +
+      (organizations.skipped.length > 0 ? `, sautées : ${organizations.skipped.join(", ")}.` : "."),
   );
   const offers = await seedOpportunities(db);
   console.log(

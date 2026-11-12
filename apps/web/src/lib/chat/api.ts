@@ -661,6 +661,11 @@ export function setPostRepost(postId: string, reposted: boolean) {
   });
 }
 
+export function listUserPosts(handle: string, cursor?: string): Promise<Page<PostSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/users/${encodeURIComponent(handle)}/posts${query}`);
+}
+
 export function listBookmarkedPosts(cursor?: string): Promise<Page<PostSummary>> {
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
   return request(`/api/me/bookmarks${query}`);
