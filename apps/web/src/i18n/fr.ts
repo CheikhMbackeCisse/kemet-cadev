@@ -826,6 +826,16 @@ export const fr = {
     removeVideo: "Retirer la vidéo",
     videoPreparing: "Préparation de la vidéo…",
     playVideo: (name: string) => `Lire la vidéo ${name}`,
+    openVideoViewer: "Voir en plein écran",
+    viewerTitle: "Vidéos",
+    viewerSlide: "vidéo",
+    viewerSlideLabel: (position: number, total: number, author: string) =>
+      `Vidéo ${position} sur ${total}, de ${author}`,
+    viewerPlay: "Lire",
+    viewerSound: "Son",
+    viewerClose: "Fermer les vidéos",
+    viewerLoading: "Chargement de la vidéo…",
+    viewerUnavailable: "Cette vidéo n'est plus disponible.",
     videoUnsupported: "Ton navigateur ne lit pas cette vidéo.",
     videoUploading: (percent: number) => `Envoi de la vidéo : ${percent} %`,
     videoWrongType: "Seules les vidéos MP4 ou WebM sont acceptées.",
@@ -833,7 +843,8 @@ export const fr = {
     videoTooLong: "La vidéo dépasse 60 secondes.",
     videoUnreadable: "Ce navigateur ne sait pas lire cette vidéo : essaie un fichier MP4 ou WebM.",
     videoUploadError: "L'envoi de la vidéo a échoué.",
-    videoDuration: (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`,
+    videoDuration: (seconds: number) =>
+      `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`,
     reply: "Répondre",
     replyAriaLabel: (count: number) =>
       count === 1 ? "Répondre, 1 réponse" : `Répondre, ${count} réponses`,

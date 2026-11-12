@@ -14,6 +14,8 @@ export interface PostImagesProps {
   linked?: boolean;
   /** Crédit d'un visuel repris d'un tiers, affiché sous les images. */
   credit?: { label: string; url: string | null } | null;
+  /** Post des pièces jointes : une vidéo s'ouvre alors en plein écran. */
+  postId?: string;
 }
 
 // Le cadre a ses proportions avant l'arrivée de l'image (dimensions lues à
@@ -57,7 +59,9 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
   function onScroll() {
     const element = scroller.current;
     if (!element || element.clientWidth === 0) return;
-    setIndex(Math.min(count - 1, Math.max(0, Math.round(element.scrollLeft / element.clientWidth))));
+    setIndex(
+      Math.min(count - 1, Math.max(0, Math.round(element.scrollLeft / element.clientWidth))),
+    );
   }
 
   function go(target: number) {
@@ -142,7 +146,12 @@ function Credit({ credit }: { credit: NonNullable<PostImagesProps["credit"]> }) 
     <p className="flex flex-wrap gap-x-2 border-t border-border bg-surface px-3 py-2 text-xs text-text-2">
       <span>{credit.label}</span>
       {credit.url && (
-        <a href={credit.url} target="_blank" rel="noopener noreferrer" className="text-link hover:underline">
+        <a
+          href={credit.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-link hover:underline"
+        >
           {fr.feed.creditLink}
         </a>
       )}
@@ -150,12 +159,20 @@ function Credit({ credit }: { credit: NonNullable<PostImagesProps["credit"]> }) 
   );
 }
 
-export function PostImages({ attachments: all, className, linked = true, credit }: PostImagesProps) {
+export function PostImages({
+  attachments: all,
+  className,
+  linked = true,
+  credit,
+  postId,
+}: PostImagesProps) {
   // Images effacées avec le compte de leur auteur : on le dit, sans cadre vide.
   const attachments = all.filter((attachment) => !attachment.removed);
   if (attachments.length === 0) {
     return all.length > 0 ? (
-      <p className={cn("mt-2 text-sm text-subtle", className)}>{fr.chat.imagesRemoved(all.length)}</p>
+      <p className={cn("mt-2 text-sm text-subtle", className)}>
+        {fr.chat.imagesRemoved(all.length)}
+      </p>
     ) : null;
   }
 
@@ -164,7 +181,7 @@ export function PostImages({ attachments: all, className, linked = true, credit 
   if (first.kind === "video") {
     return (
       <div className={className}>
-        <PostVideo attachment={first} playable={linked} />
+        <PostVideo attachment={first} playable={linked} postId={postId} />
         {credit && <Credit credit={credit} />}
       </div>
     );

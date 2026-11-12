@@ -31,6 +31,7 @@ export const PAGE_LOADERS = {
   newPost: page(() => import("../../pages/NewPostPage.js"), "NewPostPage"),
   feed: page(() => import("../../pages/FeedPage.js"), "FeedPage"),
   post: page(() => import("../../pages/PostPage.js"), "PostPage"),
+  videoViewer: page(() => import("../../pages/VideoViewerPage.js"), "VideoViewerPage"),
   newProject: page(() => import("../../pages/NewProjectPage.js"), "NewProjectPage"),
   projects: page(() => import("../../pages/ProjectsPage.js"), "ProjectsPage"),
   newHelpRequest: page(() => import("../../pages/NewHelpRequestPage.js"), "NewHelpRequestPage"),
@@ -123,6 +124,7 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
   if (pathname === "/fil" || pathname === "/fil/") return "feed";
   if (pathname === "/fil/nouveau") return "newPost";
   if (pathname.startsWith("/fil/")) return "post";
+  if (/^\/videos\/[^/]+\/?$/.test(pathname)) return "videoViewer";
   if (pathname === "/projets" || pathname === "/projets/") return "projects";
   if (pathname === "/projets/nouveau") return "newProject";
   if (/^\/projets\/[^/]+\/demandes\/nouvelle$/.test(pathname)) return "newHelpRequest";
@@ -136,7 +138,10 @@ export function pageFor(pathname: string): PageKey | SpecialPage {
   if (pathname === "/competitions/nouvelle") return "newCompetition";
   if (/^\/competitions\/[^/]+\/soumettre$/.test(pathname)) return "submitProject";
   if (pathname.startsWith("/competitions/")) return "competition";
-  if (pathname === "/opportunites/nouvelle" || /^\/opportunites\/[^/]+\/modifier\/?$/.test(pathname))
+  if (
+    pathname === "/opportunites/nouvelle" ||
+    /^\/opportunites\/[^/]+\/modifier\/?$/.test(pathname)
+  )
     return "opportunityForm";
   if (/^\/opportunites\/[^/]+\/?$/.test(pathname)) return "opportunity";
   if (pathname.startsWith("/u/")) return "user";

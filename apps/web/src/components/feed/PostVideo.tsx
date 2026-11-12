@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Play } from "lucide-react";
+import { Maximize2, Play } from "lucide-react";
 import type { Attachment } from "@kemet/shared";
 import { postAttachmentUrl, postVideoPosterUrl } from "../../lib/chat/api.js";
 import { frameRatio } from "../../lib/feed/frameRatio.js";
 import { isSlowConnection } from "../../lib/network.js";
+import { navigate } from "../../lib/navigation/navigate.js";
 import { fr } from "../../i18n/fr.js";
 
 // Une seule vidéo joue à la fois dans le fil : la suivante met en pause la précédente.
@@ -22,6 +23,8 @@ export interface PostVideoProps {
   attachment: Attachment;
   /** Faux dans l'aperçu d'un post partagé, déjà dans un lien : aperçu seul. */
   playable?: boolean;
+  /** Post de la vidéo : ouvre la vue plein écran. Absent, pas de bouton. */
+  postId?: string;
 }
 
 /**
@@ -29,7 +32,7 @@ export interface PostVideoProps {
  * visible aux trois cinquièmes ; en 3G, en économie de données ou en
  * mouvement réduit, seule l'image d'aperçu est chargée, jusqu'au clic.
  */
-export function PostVideo({ attachment, playable = true }: PostVideoProps) {
+export function PostVideo({ attachment, playable = true, postId }: PostVideoProps) {
   const frame = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -111,6 +114,20 @@ export function PostVideo({ attachment, playable = true }: PostVideoProps) {
             </span>
           )}
         </>
+      )}
+      {playable && postId && (
+        <button
+          type="button"
+          onClick={() => {
+            video.current?.pause();
+            navigate(`/videos/${postId}`);
+          }}
+          aria-label={fr.feed.openVideoViewer}
+          title={fr.feed.openVideoViewer}
+          className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-full bg-black/60 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        >
+          <Maximize2 className="size-5" aria-hidden="true" />
+        </button>
       )}
     </div>
   );
