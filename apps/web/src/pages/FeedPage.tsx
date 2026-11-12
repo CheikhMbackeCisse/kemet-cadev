@@ -423,6 +423,7 @@ export function FeedPage() {
       <ReadingPage
         activeSection="fil"
         width="feed"
+        tabSwipe
         header={header}
         className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
       >
@@ -432,6 +433,7 @@ export function FeedPage() {
 
         <Tabs
           layout="centered"
+          swipeable
           value={tab}
           onValueChange={(value) => {
             setTab(value as FeedTabValue);

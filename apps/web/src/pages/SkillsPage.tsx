@@ -35,7 +35,7 @@ export function SkillsPage() {
   }, [query]);
 
   return (
-    <RailPage activeSection="skills" className="gap-6 px-4 pt-3 lg:pt-6">
+    <RailPage activeSection="skills" className="gap-6 px-4 pt-3 lg:pt-6" tabSwipe>
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-lg font-bold text-text">{fr.skills.title}</h1>
         <HeaderActionLink href="/skills/nouveau" icon={Plus}>

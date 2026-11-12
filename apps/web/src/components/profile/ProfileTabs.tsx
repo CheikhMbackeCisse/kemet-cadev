@@ -143,7 +143,7 @@ export function ProfileTabs({
         />
       )}
       {active ? (
-        <Tabs value={active.value} onValueChange={selectTab} items={items} scrollable />
+        <Tabs value={active.value} onValueChange={selectTab} items={items} scrollable swipeable />
       ) : (
         !isOwnProfile && <p className="text-sm text-subtle">{fr.profile.nothingPublished}</p>
       )}

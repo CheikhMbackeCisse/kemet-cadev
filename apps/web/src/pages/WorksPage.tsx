@@ -112,7 +112,7 @@ export function WorksPage() {
   const filtered = q !== "" || type !== null || tag !== "";
 
   return (
-    <RailPage activeSection="travaux" className="gap-6 px-4 pt-3 lg:pt-6">
+    <RailPage activeSection="travaux" className="gap-6 px-4 pt-3 lg:pt-6" tabSwipe>
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <h1 className="text-lg font-bold text-text">{fr.works.title}</h1>
         {status !== "visitor" && (
@@ -158,7 +158,7 @@ export function WorksPage() {
         </a>
       </form>
 
-      <div className="flex flex-wrap items-center gap-2 max-md:hidden">
+      <div data-no-tab-swipe className="flex flex-wrap items-center gap-2 max-md:hidden">
         <Select
           value={type ?? ALL}
           onValueChange={(value) => setType(value === ALL ? null : (value as WorkType))}

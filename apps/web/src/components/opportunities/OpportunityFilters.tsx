@@ -47,6 +47,7 @@ export function OpportunityFilters({
     <div
       role="group"
       aria-label={fr.opportunities.filtersLabel}
+      data-no-tab-swipe
       className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0"
     >
       <Select

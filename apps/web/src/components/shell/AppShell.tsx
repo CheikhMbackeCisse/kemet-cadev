@@ -90,6 +90,7 @@ export function AppShell({
       activeSection="salons"
       activeMobileTab={activeMobileTabId}
       fixedHeight
+      tabSwipe={mobileView === "list"}
       sidePanel={{
         title: sectionLabel("salons"),
         content: (

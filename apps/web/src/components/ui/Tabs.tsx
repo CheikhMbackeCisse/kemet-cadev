@@ -1,6 +1,7 @@
 import * as RadixTabs from "@radix-ui/react-tabs";
-import { useId, type ReactNode } from "react";
+import { useId, useMemo, type ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
+import { useInnerTabSwipe } from "../../lib/navigation/tabSwipe.js";
 
 export interface TabItem {
   value: string;
@@ -20,6 +21,11 @@ export interface TabsProps {
   layout?: "start" | "centered";
   /** Onglets plus larges que l'écran : la rangée défile au doigt. */
   scrollable?: boolean;
+  /**
+   * Sur téléphone, un glissement passe à l'onglet voisin avant la barre du
+   * bas, qui ne reprend la main qu'au premier ou au dernier onglet.
+   */
+  swipeable?: boolean;
 }
 
 // Le panneau actif est rendu hors de RadixTabs.Content : son Presence lit
@@ -32,12 +38,15 @@ export function Tabs({
   className,
   layout = "start",
   scrollable = false,
+  swipeable = false,
 }: TabsProps) {
   const centered = layout === "centered";
   const baseId = useId();
   const triggerId = (itemValue: string) => `${baseId}-tab-${itemValue}`;
   const panelId = (itemValue: string) => `${baseId}-panel-${itemValue}`;
   const active = items.find((item) => item.value === value);
+  const values = useMemo(() => items.map((item) => item.value), [items]);
+  useInnerTabSwipe(swipeable, values, value, onValueChange);
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className={className}>
       <RadixTabs.List

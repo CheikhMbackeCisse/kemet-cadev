@@ -167,6 +167,7 @@ export function MessagesPage() {
       activeSection="messages"
       activeMobileTab="salons"
       fixedHeight
+      tabSwipe={!conversationId}
       // Sous lg, la liste vit dans la page : la monter aussi dans le panneau
       // masqué la chargerait deux fois.
       sidePanel={

@@ -324,7 +324,7 @@ export function WorkPage() {
 
       {work.gallery.length > 0 && (
         <AsideSection title={fr.works.galleryTitle}>
-          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <ul data-no-tab-swipe className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {work.gallery.map((image, index) => (
               <li key={image.id}>
                 <a

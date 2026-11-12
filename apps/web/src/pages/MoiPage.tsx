@@ -59,7 +59,7 @@ export function MoiPage() {
   if (status === "incomplete") return null;
 
   return (
-    <RailPage activeSection="moi" className="gap-4 pt-1 lg:pt-6">
+    <RailPage activeSection="moi" className="gap-4 pt-1 lg:pt-6" tabSwipe>
       <div className="-mb-2 flex justify-end lg:mb-0">
         <IconButton aria-label={fr.moi.menu} onClick={() => setMenuOpen(true)} className="-mr-2">
           <Menu className="size-6" aria-hidden="true" />

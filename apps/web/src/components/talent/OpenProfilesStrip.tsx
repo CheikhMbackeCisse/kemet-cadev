@@ -26,7 +26,7 @@ export function OpenProfilesStrip() {
       <h2 id={titleId} className="text-md font-semibold text-text">
         {fr.talent.openProfilesTitle}
       </h2>
-      <ul className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1">
+      <ul data-no-tab-swipe className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1">
         {profiles.map((profile) => (
           <li key={profile.id} className="w-40 shrink-0 snap-start">
             <a

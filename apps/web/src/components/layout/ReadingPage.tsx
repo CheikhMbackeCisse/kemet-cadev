@@ -21,6 +21,8 @@ export interface ReadingPageProps {
   /** "feed" : colonne d'environ 640 px du fil et de ses posts. */
   width?: "reading" | "feed";
   className?: string;
+  /** Voir `AppFrame` : page racine d'un onglet du bas. */
+  tabSwipe?: boolean;
   children?: ReactNode;
 }
 
@@ -37,12 +39,13 @@ export function ReadingPage({
   loadingSkeleton,
   width = "reading",
   className,
+  tabSwipe,
   children,
 }: ReadingPageProps) {
   const activeTab = activeMobileTab ?? mobileTabFor(activeSection ?? "");
 
   return (
-    <AppFrame activeSection={activeSection} activeMobileTab={activeTab}>
+    <AppFrame activeSection={activeSection} activeMobileTab={activeTab} tabSwipe={tabSwipe}>
       <main
         className={cn(
           "mx-auto flex w-full flex-col",
