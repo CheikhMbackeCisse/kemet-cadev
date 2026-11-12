@@ -151,8 +151,8 @@ test("republie le post d'une autre personne et la suit depuis le menu du post", 
   await page.getByRole("menuitem", { name: "S'abonner" }).click();
   await expect(page.getByText(`Tu suis ${authorHandle}.`, { exact: true })).toBeVisible();
 
+  // Plus d'onglet Abonnements : la republication se lit dans "Pour toi".
   await page.goto("/fil");
-  await page.getByRole("tab", { name: "Abonnements" }).click();
   const row = page.locator("li").filter({ hasText: body });
   await expect(row.getByText("Tu as republié")).toBeVisible();
 });

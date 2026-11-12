@@ -1,5 +1,5 @@
 import { Plus, Rss } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   prefersTalentFeed,
@@ -34,7 +34,6 @@ import {
   forgetPost,
   mergeFreshFirstPage,
   type FeedData,
-  type FeedView,
   type PostFeedView,
 } from "../lib/feed/feedQuery.js";
 import { OpportunitiesFeed } from "../components/opportunities/OpportunitiesFeed.js";
@@ -58,6 +57,8 @@ import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
+import { ProjectsFeed } from "../components/feed/ProjectsFeed.js";
+import { KemetWordmark } from "../components/ui/KemetWordmark.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 const postHeightKey = (postId: string) => `post:${postId}`;
@@ -81,17 +82,24 @@ function alternateSideCards(offers: OpportunitySummary[], projects: FeedProject[
   return cards;
 }
 
-function initialFeedView(): FeedView {
-  return new URLSearchParams(window.location.search).get("onglet") === "opportunites"
-    ? "opportunites"
-    : "pour-toi";
+// "Abonnements" n'est plus un onglet : les posts des personnes suivies
+// restent favorisés dans "Pour toi". La source reste dans l'API.
+type FeedTabValue = "pour-toi" | "projets" | "opportunites";
+
+function initialFeedView(): FeedTabValue {
+  const tab = new URLSearchParams(window.location.search).get("onglet");
+  return tab === "opportunites" || tab === "projets" ? tab : "pour-toi";
 }
 
-// L'onglet Opportunités s'écrit dans l'adresse : le retour depuis une offre y revient.
-function writeFeedViewToUrl(view: FeedView) {
-  const params = new URLSearchParams(withoutOpportunityParams(window.location.search));
-  if (view === "opportunites") params.set("onglet", "opportunites");
-  else params.delete("onglet");
+// L'onglet s'écrit dans l'adresse : le retour depuis une offre ou un projet y revient.
+function writeFeedViewToUrl(view: FeedTabValue) {
+  const params = new URLSearchParams(
+    view === "opportunites"
+      ? window.location.search
+      : withoutOpportunityParams(window.location.search),
+  );
+  if (view === "pour-toi") params.delete("onglet");
+  else params.set("onglet", view);
   const search = params.toString();
   window.history.replaceState(
     window.history.state,
@@ -168,15 +176,15 @@ export function FeedPage() {
   const talentFeed = profile !== null && prefersTalentFeed(profile.role);
   // "Pour toi" par defaut pour tout le monde : un nouveau compte ne suit
   // encore personne, et ouvrait donc le fil sur une page vide.
-  const [tab, setTab] = useState<FeedView>(initialFeedView);
-  const postView: PostFeedView = tab === "opportunites" ? "pour-toi" : tab;
+  const [tab, setTab] = useState<FeedTabValue>(initialFeedView);
+  const postView: PostFeedView = "pour-toi";
   const queryClient = useQueryClient();
   const queryKey = feedQueryKey(postView);
   const feed = useQuery({
     queryKey,
     queryFn: async () =>
       mergeFreshFirstPage(await fetchFeed(postView), queryClient.getQueryData<FeedData>(queryKey)),
-    enabled: tab !== "opportunites",
+    enabled: tab === "pour-toi",
   });
   const talentPourToi = talentFeed && tab === "pour-toi";
   const talentOffers = useQuery({
@@ -224,15 +232,10 @@ export function FeedPage() {
     void feed.refetch();
   }
 
-  useEffect(() => {
-    if (status === "visitor")
-      setTab((current) => (current === "abonnements" ? "pour-toi" : current));
-  }, [status]);
-
   async function loadMore() {
-    if (!nextCursor || tab === "opportunites") return;
+    if (!nextCursor || tab !== "pour-toi") return;
     try {
-      const page = await listPosts(tab, nextCursor);
+      const page = await listPosts(postView, nextCursor);
       updateFeed((data) => ({
         ...data,
         posts: [...data.posts, ...page.items],
@@ -386,13 +389,25 @@ export function FeedPage() {
   );
 
   const header = (
-    <div className="flex items-center justify-between">
-      <h1 className="text-lg font-bold text-text">{fr.feed.title}</h1>
-      <div className="flex items-center gap-2">
+    // Le mot-symbole au centre, à la place du titre : la page garde son titre
+    // "Fil" pour les lecteurs d'écran et le changement de page.
+    <div className="grid min-h-control grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <span aria-hidden="true" />
+      <h1 className="flex justify-center">
+        <span className="sr-only">{fr.feed.title}</span>
+        <span aria-hidden="true" className="flex">
+          <KemetWordmark className="h-[22px] w-auto" />
+        </span>
+      </h1>
+      <div className="flex items-center justify-end gap-2">
         {canInteract &&
           (tab === "opportunites" ? (
             <HeaderActionLink href="/opportunites/nouvelle" icon={Plus}>
               {fr.opportunities.publish}
+            </HeaderActionLink>
+          ) : tab === "projets" ? (
+            <HeaderActionLink href="/projets/nouveau" icon={Plus}>
+              {fr.projects.createTitle}
             </HeaderActionLink>
           ) : (
             <HeaderActionLink href="/fil/nouveau" icon={Plus}>
@@ -415,13 +430,12 @@ export function FeedPage() {
         {status === "ready" && <InstallBanner />}
         {isSuspended && <SuspendedBanner />}
 
-        {/* Un visiteur n'a pas d'abonnements : seulement "Pour toi" et "Opportunités". */}
         <Tabs
           layout="centered"
           value={tab}
           onValueChange={(value) => {
-            setTab(value as FeedView);
-            writeFeedViewToUrl(value as FeedView);
+            setTab(value as FeedTabValue);
+            writeFeedViewToUrl(value as FeedTabValue);
           }}
           items={[
             {
@@ -435,15 +449,12 @@ export function FeedPage() {
                   </div>
                 ) : null,
             },
-            ...(status === "visitor"
-              ? []
-              : [
-                  {
-                    value: "abonnements",
-                    label: fr.feed.tabAbonnements,
-                    content: tab === "abonnements" ? feedContent : null,
-                  },
-                ]),
+            {
+              value: "projets",
+              label: fr.feed.tabProjets,
+              content:
+                tab === "projets" ? <ProjectsFeed viewerProfileId={profile?.id ?? null} /> : null,
+            },
             {
               value: "opportunites",
               label: fr.opportunities.tab,

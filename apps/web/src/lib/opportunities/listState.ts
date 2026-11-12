@@ -2,14 +2,14 @@ import {
   AFRICAN_COUNTRY_CODES,
   INTERESTS,
   OPPORTUNITY_KINDS,
-  type OpportunityFilterKind,
+  type OpportunityKind,
 } from "@kemet/shared";
 
 // Radix refuse une valeur vide pour une option : "tout" a sa propre valeur.
 export const ALL = "all";
 
 export interface OpportunityFilterValues {
-  kind: OpportunityFilterKind | typeof ALL;
+  kind: OpportunityKind | typeof ALL;
   country: string;
   domain: string;
 }
@@ -21,7 +21,8 @@ export interface OpportunityListState {
 
 export const NO_FILTERS: OpportunityFilterValues = { kind: ALL, country: ALL, domain: ALL };
 
-const KINDS = new Set<string>([...OPPORTUNITY_KINDS, "project"]);
+// Les projets ont leur propre onglet : ils ne se filtrent plus ici.
+const KINDS = new Set<string>(OPPORTUNITY_KINDS);
 const COUNTRIES = new Set<string>(AFRICAN_COUNTRY_CODES);
 const DOMAINS = new Set<string>(INTERESTS.filter((interest) => interest !== "other"));
 

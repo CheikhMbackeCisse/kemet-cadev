@@ -1,18 +1,12 @@
 import { Briefcase } from "lucide-react";
 import { useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import {
-  listFeedProjects,
-  listOpportunities,
-  type OpportunityFilters as ApiFilters,
-} from "../../lib/chat/api.js";
-import { mergeOpportunities } from "../../lib/opportunities/mergeOpportunities.js";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { listOpportunities, type OpportunityFilters as ApiFilters } from "../../lib/chat/api.js";
 import { navigate } from "../../lib/navigation/navigate.js";
 import { fr } from "../../i18n/fr.js";
 import { Button } from "../ui/Button.js";
 import { EmptyState } from "../ui/EmptyState.js";
 import { ErrorState } from "../ui/ErrorState.js";
-import { ProjectFeedCard } from "../feed/ProjectFeedCard.js";
 import {
   ALL,
   NO_FILTERS,
@@ -25,11 +19,9 @@ import { SIGN_UP_PATH } from "../../session/signUpInvite.js";
 import { OpportunityFilters } from "./OpportunityFilters.js";
 import { OpportunityRow, OpportunityRowSkeleton } from "./OpportunityRow.js";
 
-const PROJECTS_IN_LIST = 20;
-
 function toApiFilters(filters: OpportunityFilterValues, includeClosed: boolean): ApiFilters {
   return {
-    kind: filters.kind === ALL || filters.kind === "project" ? undefined : filters.kind,
+    kind: filters.kind === ALL ? undefined : filters.kind,
     country: filters.country === ALL ? undefined : filters.country,
     domain: filters.domain === ALL ? undefined : filters.domain,
     includeClosed,
@@ -50,7 +42,7 @@ function InlineError({ message, onRetry }: { message: string; onRetry: () => voi
   );
 }
 
-/** Onglet Opportunités du fil : offres et projets qui cherchent des membres, filtrables. */
+/** Onglet Opportunités du fil : les offres (emploi, stage, mission), filtrables. Les projets ont leur onglet. */
 export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string | null }) {
   // Les filtres vivent dans l'adresse : le retour depuis une offre les retrouve.
   const [listState, setListState] = useState<OpportunityListState>(() =>
@@ -66,25 +58,16 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
   const setFilters = (next: OpportunityFilterValues) =>
     changeListState({ ...listState, filters: next });
   const apiFilters = toApiFilters(filters, includeClosed);
-  const offersOnlyProjects = filters.kind === "project";
 
   const offers = useInfiniteQuery({
     queryKey: ["opportunities", apiFilters],
     queryFn: ({ pageParam }) => listOpportunities(apiFilters, pageParam),
     initialPageParam: null as string | null,
     getNextPageParam: (page) => page.nextCursor,
-    enabled: !offersOnlyProjects,
-  });
-  const projects = useQuery({
-    queryKey: ["feed", "projects", PROJECTS_IN_LIST],
-    queryFn: () => listFeedProjects("pour-toi", PROJECTS_IN_LIST),
   });
 
-  const offerItems = offersOnlyProjects
-    ? []
-    : (offers.data?.pages.flatMap((page) => page.items) ?? []);
-  const entries = mergeOpportunities(offerItems, projects.data?.items ?? [], filters);
-  const loading = (!offersOnlyProjects && offers.isPending) || projects.isPending;
+  const entries = offers.data?.pages.flatMap((page) => page.items) ?? [];
+  const loading = offers.isPending;
   const filtered = filters.kind !== ALL || filters.country !== ALL || filters.domain !== ALL;
 
   let content;
@@ -96,17 +79,11 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
         <OpportunityRowSkeleton />
       </div>
     );
-  } else if ((offers.isError || projects.isError) && entries.length === 0) {
+  } else if (offers.isError && entries.length === 0) {
     content = (
       <ErrorState
         message={fr.opportunities.loadingError}
-        retry={{
-          label: fr.chat.retry,
-          onClick: () => {
-            if (offers.isError) void offers.refetch();
-            if (projects.isError) void projects.refetch();
-          },
-        }}
+        retry={{ label: fr.chat.retry, onClick: () => void offers.refetch() }}
       />
     );
   } else if (entries.length === 0) {
@@ -135,18 +112,9 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
   } else {
     content = (
       <ul className="flex flex-col divide-y divide-border">
-        {entries.map((entry) =>
-          entry.kind === "offer" ? (
-            <OpportunityRow key={`offer:${entry.item.id}`} opportunity={entry.item} />
-          ) : (
-            <ProjectFeedCard
-              key={`project:${entry.item.id}`}
-              project={entry.item}
-              variant="row"
-              viewerProfileId={viewerProfileId}
-            />
-          ),
-        )}
+        {entries.map((offer) => (
+          <OpportunityRow key={offer.id} opportunity={offer} />
+        ))}
       </ul>
     );
   }
@@ -156,12 +124,6 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
       <OpportunityFilters value={filters} onChange={setFilters} />
       {!loading && entries.length > 0 && offers.isError && !offers.isFetchNextPageError && (
         <InlineError message={fr.opportunities.offersError} onRetry={() => void offers.refetch()} />
-      )}
-      {!loading && entries.length > 0 && projects.isError && (
-        <InlineError
-          message={fr.opportunities.projectsError}
-          onRetry={() => void projects.refetch()}
-        />
       )}
       {content}
       {offers.isFetchNextPageError && (
@@ -181,14 +143,12 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
               {fr.opportunities.loadMore}
             </Button>
           )}
-          {!offersOnlyProjects && (
-            <Button
-              variant="ghost"
-              onClick={() => changeListState({ ...listState, includeClosed: !includeClosed })}
-            >
-              {includeClosed ? fr.opportunities.hideClosed : fr.opportunities.showClosed}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            onClick={() => changeListState({ ...listState, includeClosed: !includeClosed })}
+          >
+            {includeClosed ? fr.opportunities.hideClosed : fr.opportunities.showClosed}
+          </Button>
         </div>
       )}
     </div>

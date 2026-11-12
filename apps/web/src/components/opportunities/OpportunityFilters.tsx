@@ -13,7 +13,7 @@ const allLabel = (label: string) => `${label} : ${fr.opportunities.filterAll}`;
 
 const KIND_OPTIONS = [
   { value: ALL, label: allLabel(fr.opportunities.filterType) },
-  ...[...OPPORTUNITY_KINDS, "project" as const].map((kind) => ({
+  ...OPPORTUNITY_KINDS.map((kind) => ({
     value: kind,
     label: fr.opportunities.kinds[kind],
   })),
