@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
+import { createDb, postAttachments, type Db } from "@kemet/db";
+import { eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
 import { InMemoryStorage } from "../storage/file-storage.js";
+import { cleanupOrphanPostAttachments } from "../feed/post-attachments-cleanup.js";
 import { buildApp } from "./app.js";
 
 const databaseUrl = getTestDatabaseUrl();
@@ -14,7 +16,8 @@ const PNG_BYTES = Buffer.from(
   "base64",
 );
 const PDF_BYTES = Buffer.from("%PDF-1.4\n%%EOF");
-const fixture = (name: string) => readFileSync(new URL(`../storage/fixtures/${name}`, import.meta.url));
+const fixture = (name: string) =>
+  readFileSync(new URL(`../storage/fixtures/${name}`, import.meta.url));
 const CLIP_WEBM = fixture("clip.webm");
 const CLIP_MP4 = fixture("clip.mp4");
 const VOICE_WEBM = fixture("voice.webm");
@@ -62,9 +65,12 @@ function multipart(parts: Part[], boundary: string): Buffer {
 describe.skipIf(!databaseUrl)("Vidéos sur les posts (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
+  let db: Db;
+  let storage: InMemoryStorage;
 
   async function createApp(maxUserStorageBytes = 500 * 1024 * 1024) {
-    const db = createDb(databaseUrl!);
+    db = createDb(databaseUrl!);
+    storage = new InMemoryStorage();
     emailSender = new InMemoryEmailSender();
     const auth = createAuth({
       db,
@@ -77,7 +83,7 @@ describe.skipIf(!databaseUrl)("Vidéos sur les posts (base Postgres réelle)", (
     return buildApp({
       db,
       auth,
-      storage: new InMemoryStorage(),
+      storage,
       attachmentLimits: { maxAttachmentBytes: 25 * 1024 * 1024, maxUserStorageBytes },
     });
   }
@@ -112,10 +118,16 @@ describe.skipIf(!databaseUrl)("Vidéos sur les posts (base Postgres réelle)", (
     return cookie;
   }
 
-  async function uploadVideo(cookie: string, video: Buffer | null, poster: Buffer | null = PNG_BYTES) {
+  async function uploadVideo(
+    cookie: string,
+    video: Buffer | null,
+    poster: Buffer | null = PNG_BYTES,
+  ) {
     const boundary = "----kemetvideoboundary";
     const parts: Part[] = [
-      ...(poster ? [{ name: "poster", filename: "apercu.png", type: "image/png", data: poster }] : []),
+      ...(poster
+        ? [{ name: "poster", filename: "apercu.png", type: "image/png", data: poster }]
+        : []),
       ...(video ? [{ name: "video", filename: "clip.webm", type: "video/webm", data: video }] : []),
     ];
     return app.inject({
@@ -132,7 +144,10 @@ describe.skipIf(!databaseUrl)("Vidéos sur les posts (base Postgres réelle)", (
       method: "POST",
       url: "/api/posts/attachments",
       headers: { cookie, "content-type": `multipart/form-data; boundary=${boundary}` },
-      payload: multipart([{ name: "file", filename: "photo.png", type: "image/png", data: PNG_BYTES }], boundary),
+      payload: multipart(
+        [{ name: "file", filename: "photo.png", type: "image/png", data: PNG_BYTES }],
+        boundary,
+      ),
     });
   }
 
@@ -207,12 +222,19 @@ describe.skipIf(!databaseUrl)("Vidéos sur les posts (base Postgres réelle)", (
     const imageId = (await uploadImage(owner)).json().attachment.id as string;
     expect((await publish(owner, [videoId, imageId])).statusCode).toBe(400);
 
-    const notYet = await app.inject({ method: "GET", url: `/api/post-attachments/${videoId}/content` });
+    const notYet = await app.inject({
+      method: "GET",
+      url: `/api/post-attachments/${videoId}/content`,
+    });
     expect(notYet.statusCode).toBe(404);
 
     const created = await publish(owner, [videoId]);
     expect(created.statusCode).toBe(200);
-    expect(created.json().post.attachments[0]).toMatchObject({ id: videoId, kind: "video", mimeType: "video/webm" });
+    expect(created.json().post.attachments[0]).toMatchObject({
+      id: videoId,
+      kind: "video",
+      mimeType: "video/webm",
+    });
 
     const url = `/api/post-attachments/${videoId}/content`;
     const full = await app.inject({ method: "GET", url });
@@ -227,21 +249,143 @@ describe.skipIf(!databaseUrl)("Vidéos sur les posts (base Postgres réelle)", (
     expect(part.rawPayload.equals(CLIP_WEBM.subarray(100, 200))).toBe(true);
 
     // Lecture coupée puis reprise : le navigateur redemande la suite.
-    const resumed = await app.inject({ method: "GET", url, headers: { range: `bytes=${CLIP_WEBM.length - 50}-` } });
+    const resumed = await app.inject({
+      method: "GET",
+      url,
+      headers: { range: `bytes=${CLIP_WEBM.length - 50}-` },
+    });
     expect(resumed.statusCode).toBe(206);
     expect(resumed.rawPayload.equals(CLIP_WEBM.subarray(CLIP_WEBM.length - 50))).toBe(true);
 
-    const outside = await app.inject({ method: "GET", url, headers: { range: `bytes=${CLIP_WEBM.length + 10}-` } });
+    const outside = await app.inject({
+      method: "GET",
+      url,
+      headers: { range: `bytes=${CLIP_WEBM.length + 10}-` },
+    });
     expect(outside.statusCode).toBe(416);
 
-    const poster = await app.inject({ method: "GET", url: `/api/post-attachments/${videoId}/poster` });
+    const poster = await app.inject({
+      method: "GET",
+      url: `/api/post-attachments/${videoId}/poster`,
+    });
     expect(poster.statusCode).toBe(200);
     expect(poster.headers["content-type"]).toBe("image/png");
     expect(poster.headers["x-content-type-options"]).toBe("nosniff");
     expect(poster.headers["content-security-policy"]).toBe("default-src 'none'");
     expect(poster.rawPayload.equals(PNG_BYTES)).toBe(true);
 
-    const imagePoster = await app.inject({ method: "GET", url: `/api/post-attachments/${imageId}/poster` });
+    const imagePoster = await app.inject({
+      method: "GET",
+      url: `/api/post-attachments/${imageId}/poster`,
+    });
     expect(imagePoster.statusCode).toBe(404);
+  });
+
+  async function storedKeys(attachmentId: string) {
+    const [row] = await db
+      .select()
+      .from(postAttachments)
+      .where(eq(postAttachments.id, attachmentId));
+    return [row!.storageKey, row!.posterStorageKey!];
+  }
+
+  function isStored(key: string): boolean {
+    try {
+      storage.read(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  const posterUrl = (id: string) => `/api/post-attachments/${id}/poster`;
+
+  it("ne sert l'aperçu ni avant la publication, ni après la suppression du post", async () => {
+    const owner = await createMember("posterlife@test.kemet", "posterlife");
+    const videoId = (await uploadVideo(owner, CLIP_WEBM)).json().attachment.id as string;
+    expect((await app.inject({ method: "GET", url: posterUrl(videoId) })).statusCode).toBe(404);
+
+    const postId = (await publish(owner, [videoId])).json().post.id as string;
+    expect((await app.inject({ method: "GET", url: posterUrl(videoId) })).statusCode).toBe(200);
+
+    await app.inject({ method: "DELETE", url: `/api/posts/${postId}`, headers: { cookie: owner } });
+    expect((await app.inject({ method: "GET", url: posterUrl(videoId) })).statusCode).toBe(404);
+  });
+
+  it("efface la vidéo et son aperçu avec le compte de l'auteur", async () => {
+    const owner = await createMember("posterdel@test.kemet", "posterdel");
+    const videoId = (await uploadVideo(owner, CLIP_WEBM)).json().attachment.id as string;
+    await publish(owner, [videoId]);
+    const keys = await storedKeys(videoId);
+    expect(keys.every(isStored)).toBe(true);
+
+    const deleted = await app.inject({
+      method: "DELETE",
+      url: "/api/me",
+      headers: { cookie: owner },
+      payload: { password: "une-passphrase-solide" },
+    });
+    expect(deleted.statusCode, deleted.body).toBeLessThan(300);
+    expect(keys.some(isStored)).toBe(false);
+    expect((await app.inject({ method: "GET", url: posterUrl(videoId) })).statusCode).toBe(404);
+  });
+
+  it("efface une vidéo jamais publiée et son aperçu au nettoyage des orphelins", async () => {
+    const owner = await createMember("posterorphan@test.kemet", "posterorphan");
+    const videoId = (await uploadVideo(owner, CLIP_WEBM)).json().attachment.id as string;
+    const keys = await storedKeys(videoId);
+    await db
+      .update(postAttachments)
+      .set({ createdAt: sql`now() - interval '2 hours'` })
+      .where(eq(postAttachments.id, videoId));
+    expect(await cleanupOrphanPostAttachments(db, storage)).toBe(1);
+    expect(keys.some(isStored)).toBe(false);
+  });
+
+  it("refuse un aperçu de plus de 1 Mo, un champ en double et un identifiant mal formé", async () => {
+    const owner = await createMember("posterlimits@test.kemet", "posterlimits");
+    const heavy = Buffer.concat([PNG_BYTES, Buffer.alloc(1024 * 1024)]);
+    const tooHeavy = await uploadVideo(owner, CLIP_WEBM, heavy);
+    expect(tooHeavy.statusCode).toBe(400);
+    expect(tooHeavy.json().error.message).toContain("aperçu");
+
+    const boundary = "----kemetdoubleboundary";
+    const twice = await app.inject({
+      method: "POST",
+      url: "/api/posts/videos",
+      headers: { cookie: owner, "content-type": `multipart/form-data; boundary=${boundary}` },
+      payload: multipart(
+        [
+          { name: "video", filename: "a.webm", type: "video/webm", data: CLIP_WEBM },
+          { name: "video", filename: "b.webm", type: "video/webm", data: CLIP_WEBM },
+        ],
+        boundary,
+      ),
+    });
+    expect(twice.statusCode).toBe(400);
+
+    expect((await app.inject({ method: "GET", url: posterUrl("abc") })).statusCode).toBe(400);
+    expect(
+      (await app.inject({ method: "GET", url: "/api/post-attachments/abc/content" })).statusCode,
+    ).toBe(400);
+  });
+
+  it("garde le fichier compté quand une image annonce des dimensions démesurées", async () => {
+    const owner = await createMember("hugepng@test.kemet", "hugepng");
+    // Vrai PNG 1x1 dont l'en-tête IHDR annonce 2^31 pixels de large.
+    const huge = Buffer.from(PNG_BYTES);
+    huge.writeUInt32BE(0x80000000, 16);
+    const boundary = "----kemethugeboundary";
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/posts/attachments",
+      headers: { cookie: owner, "content-type": `multipart/form-data; boundary=${boundary}` },
+      payload: multipart(
+        [{ name: "file", filename: "huge.png", type: "image/png", data: huge }],
+        boundary,
+      ),
+    });
+    expect(response.statusCode, response.body).toBe(200);
+    expect(response.json().attachment).toMatchObject({ width: null, height: null });
   });
 });

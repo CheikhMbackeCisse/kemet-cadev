@@ -16,7 +16,12 @@ function u24le(data: Uint8Array, offset: number): number {
 }
 
 function u32be(data: Uint8Array, offset: number): number {
-  return ((data[offset]! << 24) >>> 0) + (data[offset + 1]! << 16) + (data[offset + 2]! << 8) + data[offset + 3]!;
+  return (
+    ((data[offset]! << 24) >>> 0) +
+    (data[offset + 1]! << 16) +
+    (data[offset + 2]! << 8) +
+    data[offset + 3]!
+  );
 }
 
 function ascii(data: Uint8Array, offset: number, length: number): string {
@@ -34,7 +39,9 @@ function gif(data: Uint8Array): ImageSize | null {
 }
 
 // Marqueurs SOF qui portent les dimensions (hors DHT, JPG et DAC).
-const JPEG_SOF = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+const JPEG_SOF = new Set([
+  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+]);
 
 function jpeg(data: Uint8Array): ImageSize | null {
   let offset = 2;
@@ -49,7 +56,8 @@ function jpeg(data: Uint8Array): ImageSize | null {
       offset += 2;
       continue;
     }
-    if (JPEG_SOF.has(marker)) return { height: u16be(data, offset + 5), width: u16be(data, offset + 7) };
+    if (JPEG_SOF.has(marker))
+      return { height: u16be(data, offset + 5), width: u16be(data, offset + 7) };
     if (marker === 0xd9 || marker === 0xda) return null;
     offset += 2 + u16be(data, offset + 2);
   }
@@ -60,7 +68,8 @@ function webp(data: Uint8Array): ImageSize | null {
   if (data.length < 30 || ascii(data, 8, 4) !== "WEBP") return null;
   const chunk = ascii(data, 12, 4);
   if (chunk === "VP8X") return { width: u24le(data, 24) + 1, height: u24le(data, 27) + 1 };
-  if (chunk === "VP8 ") return { width: u16le(data, 26) & 0x3fff, height: u16le(data, 28) & 0x3fff };
+  if (chunk === "VP8 ")
+    return { width: u16le(data, 26) & 0x3fff, height: u16le(data, 28) & 0x3fff };
   if (chunk === "VP8L") {
     const bits = data[21]! | (data[22]! << 8) | (data[23]! << 16) | (data[24]! << 24);
     return { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 };
@@ -69,9 +78,16 @@ function webp(data: Uint8Array): ImageSize | null {
 }
 
 /**
+ * Côté le plus grand accepté. Un PNG annonce ses dimensions sur 32 bits :
+ * au-delà, elles ne tiendraient plus dans une colonne `integer` et ne
+ * décrivent de toute façon aucune image réelle.
+ */
+export const MAX_IMAGE_SIDE = 65_535;
+
+/**
  * Largeur et hauteur d'une image PNG, JPEG, GIF ou WebP, lues dans son
- * en-tête sans la décoder. `null` si l'en-tête est illisible ou les
- * dimensions nulles.
+ * en-tête sans la décoder. `null` si l'en-tête est illisible, les
+ * dimensions nulles ou supérieures à `MAX_IMAGE_SIDE`.
  */
 export function readImageSize(data: Uint8Array, mimeType: string): ImageSize | null {
   const size =
@@ -85,5 +101,6 @@ export function readImageSize(data: Uint8Array, mimeType: string): ImageSize | n
             ? webp(data)
             : null;
   if (!size || size.width <= 0 || size.height <= 0) return null;
+  if (size.width > MAX_IMAGE_SIDE || size.height > MAX_IMAGE_SIDE) return null;
   return size;
 }

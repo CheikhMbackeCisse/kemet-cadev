@@ -61,4 +61,19 @@ describe("inspectVideo", () => {
       hasVideoTrack: false,
     });
   });
+
+  it("juge illisible un fichier fait d'innombrables éléments minuscules", () => {
+    const tinyBoxes = Buffer.concat(
+      Array.from({ length: 100_001 }, () => box("free", Buffer.alloc(0))),
+    );
+    const mp4 = Buffer.concat([tinyBoxes, syntheticMp4(1000, 5000)]);
+    expect(inspectVideo(mp4, "video/mp4")).toEqual({ durationMs: null, hasVideoTrack: false });
+    // Élément Void (0xEC) de taille nulle, répété : deux octets chacun.
+    const webm = Buffer.alloc(2 * 100_001);
+    for (let offset = 0; offset < webm.length; offset += 2) {
+      webm[offset] = 0xec;
+      webm[offset + 1] = 0x80;
+    }
+    expect(inspectVideo(webm, "video/webm")).toEqual({ durationMs: null, hasVideoTrack: false });
+  });
 });

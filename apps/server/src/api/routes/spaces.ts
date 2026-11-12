@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { z } from "zod";
 import { addSpaceMemberSchema, createSpaceSchema, paginationQuerySchema } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
@@ -122,10 +123,11 @@ export function registerSpaceRoutes(app: FastifyInstance, { db, auth, chat }: Ch
   });
 
   // Même visibilité que l'espace : un visiteur voit le post épinglé d'un espace public.
-  app.get<{ Params: { id: string } }>("/api/spaces/:id/pinned-post", async (request) => {
+  app.get("/api/spaces/:id/pinned-post", async (request) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(request.params);
     const userId = await getSessionUserId(auth, request);
     const profile = await findOwnProfile(db, userId);
-    const { space } = await requireVisibleSpace(db, request.params.id, profile?.id ?? null);
+    const { space } = await requireVisibleSpace(db, id, profile?.id ?? null);
     return { pinned: await findSpacePinnedPost(db, space.id) };
   });
 

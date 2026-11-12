@@ -19,6 +19,15 @@ function latin1(data: Uint8Array, start: number, end: number): string {
   return String.fromCharCode(...data.subarray(start, end));
 }
 
+// Un fichier hostile fait de millions de minuscules éléments bloquerait la
+// boucle d'événements : au-delà de ce nombre d'éléments parcourus, la vidéo
+// est jugée illisible. Une vraie vidéo de 60 s en compte quelques milliers.
+const MAX_ELEMENTS = 100_000;
+
+interface Budget {
+  left: number;
+}
+
 interface Box {
   type: string;
   start: number;
@@ -26,9 +35,10 @@ interface Box {
 }
 
 /** Boîtes ISO BMFF (MP4) entre `start` et `end` : taille sur 32 bits, 64 bits, ou jusqu'à la fin. */
-function* boxes(data: Uint8Array, start: number, end: number): Generator<Box> {
+function* boxes(data: Uint8Array, start: number, end: number, budget: Budget): Generator<Box> {
   let offset = start;
   while (offset + 8 <= end) {
+    if (budget.left-- <= 0) return;
     let size = u32(data, offset);
     const type = latin1(data, offset + 4, offset + 8);
     let header = 8;
@@ -45,8 +55,9 @@ function* boxes(data: Uint8Array, start: number, end: number): Generator<Box> {
   }
 }
 
-function child(data: Uint8Array, parent: Box, type: string): Box | undefined {
-  for (const box of boxes(data, parent.start, parent.end)) if (box.type === type) return box;
+function child(data: Uint8Array, parent: Box, type: string, budget: Budget): Box | undefined {
+  for (const box of boxes(data, parent.start, parent.end, budget))
+    if (box.type === type) return box;
   return undefined;
 }
 
@@ -71,11 +82,11 @@ function mehdDuration(data: Uint8Array, mehd: Box): number | null {
 }
 
 /** Vrai si une piste du MP4 est de la vidéo ('vide' dans hdlr), et pas seulement du son. */
-function mp4HasVideoTrack(data: Uint8Array, moov: Box): boolean {
-  for (const trak of boxes(data, moov.start, moov.end)) {
+function mp4HasVideoTrack(data: Uint8Array, moov: Box, budget: Budget): boolean {
+  for (const trak of boxes(data, moov.start, moov.end, budget)) {
     if (trak.type !== "trak") continue;
-    const mdia = child(data, trak, "mdia");
-    const hdlr = mdia && child(data, mdia, "hdlr");
+    const mdia = child(data, trak, "mdia", budget);
+    const hdlr = mdia && child(data, mdia, "hdlr", budget);
     if (
       hdlr &&
       hdlr.start + 12 <= hdlr.end &&
@@ -88,19 +99,30 @@ function mp4HasVideoTrack(data: Uint8Array, moov: Box): boolean {
 }
 
 function inspectMp4(data: Uint8Array): VideoInfo {
-  const moov = [...boxes(data, 0, data.length)].find((box) => box.type === "moov");
-  if (!moov) return { durationMs: null, hasVideoTrack: false };
-  return { durationMs: mp4DurationMs(data, moov), hasVideoTrack: mp4HasVideoTrack(data, moov) };
+  const budget: Budget = { left: MAX_ELEMENTS };
+  let moov: Box | undefined;
+  for (const box of boxes(data, 0, data.length, budget)) {
+    if (box.type === "moov") {
+      moov = box;
+      break;
+    }
+  }
+  if (!moov) return UNREADABLE;
+  const info = {
+    durationMs: mp4DurationMs(data, moov, budget),
+    hasVideoTrack: mp4HasVideoTrack(data, moov, budget),
+  };
+  return budget.left < 0 ? UNREADABLE : info;
 }
 
-function mp4DurationMs(data: Uint8Array, moov: Box): number | null {
-  const mvhd = child(data, moov, "mvhd");
+function mp4DurationMs(data: Uint8Array, moov: Box, budget: Budget): number | null {
+  const mvhd = child(data, moov, "mvhd", budget);
   const header = mvhd && mvhdDuration(data, mvhd);
   if (!header || header.timescale === 0) return null;
   let duration = header.duration;
   if (duration === 0 || duration === 0xffffffff) {
-    const mvex = child(data, moov, "mvex");
-    const mehd = mvex && child(data, mvex, "mehd");
+    const mvex = child(data, moov, "mvex", budget);
+    const mehd = mvex && child(data, mvex, "mehd", budget);
     duration = (mehd && mehdDuration(data, mehd)) ?? 0;
   }
   return duration > 0 ? Math.round((duration / header.timescale) * 1000) : null;
@@ -160,7 +182,10 @@ function inspectWebm(data: Uint8Array): VideoInfo {
   let lastBlock = -1;
   let offset = 0;
   let end = data.length;
+  let elements = 0;
   while (offset < end) {
+    elements += 1;
+    if (elements > MAX_ELEMENTS) return UNREADABLE;
     const id = readVint(data, offset, true);
     if (!id) break;
     const size = readVint(data, offset + id.length, false);
@@ -211,6 +236,8 @@ function inspectWebm(data: Uint8Array): VideoInfo {
     hasVideoTrack,
   };
 }
+
+const UNREADABLE: VideoInfo = { durationMs: null, hasVideoTrack: false };
 
 export interface VideoInfo {
   /** `null` si le conteneur ne donne pas la durée. */

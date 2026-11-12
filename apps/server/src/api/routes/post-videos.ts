@@ -31,6 +31,21 @@ function sanitizeFilename(name: string): string {
   return name.replace(/["\r\n\x00-\x1f]/g, "_").slice(0, 255);
 }
 
+async function readAtMost(
+  stream: AsyncIterable<Buffer>,
+  maxBytes: number,
+  message: string,
+): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const chunk of stream) {
+    total += chunk.length;
+    if (total > maxBytes) throw badRequest(message);
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
 async function readParts(request: FastifyRequest) {
   const files: Partial<Record<"video" | "poster", { buffer: Buffer; filename: string }>> = {};
   // Deux fichiers nommés, rien d'autre : la vidéo et son image d'aperçu.
@@ -42,7 +57,18 @@ async function readParts(request: FastifyRequest) {
       if (part.fieldname !== "video" && part.fieldname !== "poster") {
         throw badRequest("Champ inattendu dans l'envoi.");
       }
-      files[part.fieldname] = { buffer: await part.toBuffer(), filename: part.filename };
+      if (files[part.fieldname]) throw badRequest("Champ en double dans l'envoi.");
+      // L'aperçu est lu par morceaux et arrêté à 1 Mo : sans cela, la limite
+      // de 20 Mo de la vidéo s'appliquerait aussi à lui, en mémoire.
+      const buffer =
+        part.fieldname === "poster"
+          ? await readAtMost(
+              part.file,
+              POST_VIDEO_POSTER_MAX_BYTES,
+              "L'image d'aperçu est trop lourde.",
+            )
+          : await part.toBuffer();
+      files[part.fieldname] = { buffer, filename: part.filename };
     }
   } catch (error) {
     if ((error as { code?: string }).code === "FST_REQ_FILE_TOO_LARGE") {
@@ -91,13 +117,14 @@ export function registerPostVideoRoutes(
       const info = inspectVideo(video.buffer, mimeType);
       if (!info.hasVideoTrack) throw badRequest("Ce fichier ne contient pas d'image vidéo.");
       const durationMs = info.durationMs;
-      if (durationMs === null) throw badRequest("La durée de cette vidéo est illisible.");
+      // La durée est celle qu'annonce le conteneur : la vraie borne reste la
+      // taille du fichier. Une durée nulle n'annonce rien de crédible.
+      if (durationMs === null || durationMs < 1)
+        throw badRequest("La durée de cette vidéo est illisible.");
       if (durationMs > POST_VIDEO_MAX_DURATION_MS) {
         throw badRequest(`La vidéo dépasse ${POST_VIDEO_MAX_DURATION_MS / 1000} secondes.`);
       }
 
-      if (poster.buffer.length > POST_VIDEO_POSTER_MAX_BYTES)
-        throw badRequest("L'image d'aperçu est trop lourde.");
       const posterType = await fileTypeFromBuffer(poster.buffer);
       const size =
         posterType &&
