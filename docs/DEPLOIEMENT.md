@@ -307,7 +307,11 @@ argument. Dans l'ordre, le script :
    `pnpm --filter @kemet/web exec playwright install chromium`.
 
 Si l'étape 3 ou 4 échoue, le script revient au commit déployé juste avant,
-noté dans `.deploy-history` sur le serveur, et sort en erreur. Une
+noté dans `.deploy-history` sur le serveur (une ligne par déploiement
+devenu sain, `<commit>` pour GHCR, `<commit> server` pour une construction
+sur place), et sort en erreur. `.deploy-pending` marque une activation en
+cours : un commit qui n'est jamais devenu sain n'entre pas dans
+l'historique. Une
 migration n'est jamais annulée par ce retour arrière : les migrations
 restent additives pour que l'ancienne version tourne sur le nouveau schéma.
 
@@ -343,8 +347,13 @@ Différences avec le déploiement normal :
 - elles portent le préfixe `kemet-local` au lieu de
   `ghcr.io/cheikhmbackecisse/kemet`, écrit avec le commit dans
   `.env.deployed` ;
-- le commit n'est pas noté dans `.deploy-history`. En cas d'échec, le
-  retour arrière repart donc du dernier commit déployé depuis GHCR.
+- le commit, troisième argument, est obligatoire : sans lui le script
+  s'arrête avant toute connexion au serveur, plutôt que de construire
+  `origin/main` sans le dire ;
+- le commit est noté `<commit> server` dans `.deploy-history`. Un retour
+  arrière vers lui reconstruit ses images sur le serveur au lieu de les
+  chercher sur GHCR. Un déploiement en place avant cette règle est noté au
+  déploiement suivant, d'après `.env.deployed`.
 
 Le seed se lance ensuite comme d'habitude (commande de la section
 "Comptes de démonstration et administrateur", qui lit `.env.deployed`).
