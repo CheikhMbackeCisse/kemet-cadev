@@ -1,11 +1,14 @@
-# Séquence : un appel à @kemet
+# Séquence : un appel à Kocc
 
-Une personne écrit `@kemet` dans un salon d'espace. La route d'envoi répond
+Une personne écrit `@kocc` (ou l'ancien `@kemet`, gardé comme alias) dans
+un salon d'espace. Le code garde le nom interne `kemet` (classes, tables). La route d'envoi répond
 tout de suite avec le message enregistré ; la réponse de l'assistant arrive
 ensuite morceau par morceau par Socket.IO. Code :
 `apps/server/src/api/routes/messages.ts`,
 `apps/server/src/ai/assistant-orchestrator.ts`,
-`apps/server/src/ai/llm-chain.ts`.
+`apps/server/src/ai/assistant-answerer.ts`, `apps/server/src/ai/llm-chain.ts`.
+Un appel sous un post suit le même cœur (`AssistantAnswerer`) par
+`KemetPostAssistant` (`apps/server/src/ai/post-assistant.ts`).
 
 ```mermaid
 sequenceDiagram
@@ -19,7 +22,7 @@ sequenceDiagram
   participant O as KemetAssistantOrchestrator
   participant C as LlmChain
 
-  P->>W: écrit "@kemet ..." et envoie
+  P->>W: écrit "@kocc ..." et envoie
   W->>API: POST /api/channels/:id/messages
   API->>DB: insertMessage (transaction)
   API->>V: publish message:new
@@ -28,13 +31,15 @@ sequenceDiagram
   API-->>W: 200 { message }
   API->>O: handleMention (non attendu)
 
-  O->>DB: checkDailyQuota (selon le niveau)
+  O->>V: checkDailyQuota (selon le niveau, compteur atomique RedisQuotaCounter)
   alt quota atteint
     O->>V: publish assistant:failed (quota_exceeded)
     V-->>RT: relais
     RT-->>W: avis visible par la seule personne qui a demandé
   else quota disponible
-    O->>DB: insertInvocation, markInvocationStreaming
+    O->>DB: insertInvocation (pending)
+    O->>O: ConcurrencyLimiter : attend une place (3 réponses à la fois par défaut)
+    O->>DB: markInvocationStreaming
     O->>DB: FullTextRetriever : présélection plein texte des skills
     O->>C: choix du skill (nom et description seulement)
     O->>V: cache de réponse (clé : salon, question, skills)
