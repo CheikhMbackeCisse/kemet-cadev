@@ -44,12 +44,26 @@ export async function findManagedOrganization(
 }
 
 /**
+ * Vrai si la personne peut agir pour cet auteur : c'est elle, ou une
+ * organisation active dont elle gère la page.
+ */
+export async function canActForAuthor(
+  db: DbOrTx,
+  profileId: string,
+  authorId: string,
+): Promise<boolean> {
+  if (authorId === profileId) return true;
+  return (await findManagedOrganization(db, profileId, authorId)) !== null;
+}
+
+/**
  * Personne à qui écrire pour une offre d'organisation : la plus ancienne
  * des personnes qui gèrent sa page et peuvent recevoir un message.
  */
 export async function findOrganizationContact(
   db: DbOrTx,
   organizationId: string,
+  preferredManagerId: string | null = null,
 ): Promise<ProfileRow | null> {
   const [row] = await db
     .select({ manager: profiles })
@@ -58,12 +72,17 @@ export async function findOrganizationContact(
     .where(
       and(
         eq(organizationManagers.organizationId, organizationId),
+        sql`not exists (select 1 from profiles organization where organization.id = ${organizationId} and organization.suspended_at is not null)`,
         isNotNull(profiles.userId),
         isNull(profiles.deletedAt),
         isNull(profiles.suspendedAt),
       ),
     )
-    .orderBy(asc(organizationManagers.createdAt))
+    // La personne qui a publié l'offre d'abord, tant qu'elle gère la page.
+    .orderBy(
+      sql`${organizationManagers.managerId} = ${preferredManagerId ?? sql`null`} desc nulls last`,
+      asc(organizationManagers.createdAt),
+    )
     .limit(1);
   return row?.manager ?? null;
 }

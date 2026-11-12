@@ -25,6 +25,8 @@ import {
   profileBlocks,
   profiles,
   opportunities,
+  organizationManagers,
+  organizationRequests,
   projects,
   readStates,
   reports,
@@ -63,7 +65,11 @@ function omit<Columns extends object, Key extends keyof Columns>(
 // Détails internes (clé de stockage, index de recherche) et identité des
 // administrateurs qui ont traité une demande : jamais dans l'export.
 const messageAttachmentColumns = omit(getTableColumns(messageAttachments), "storageKey");
-const postAttachmentColumns = omit(getTableColumns(postAttachments), "storageKey", "posterStorageKey");
+const postAttachmentColumns = omit(
+  getTableColumns(postAttachments),
+  "storageKey",
+  "posterStorageKey",
+);
 const skillColumns = omit(getTableColumns(skills), "searchVector");
 const competitionColumns = omit(getTableColumns(competitions), "reviewedBy");
 const reportColumns = omit(getTableColumns(reports), "resolvedBy");
@@ -236,6 +242,8 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     workMatchRows,
     cvRows,
     opportunityRows,
+    organizationRequestRows,
+    managedOrganizationRows,
   ] = await Promise.all([
     workIds.length === 0
       ? []
@@ -252,6 +260,15 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     db.select().from(workMatchRequests).where(eq(workMatchRequests.requestedBy, profileId)),
     db.select(cvColumns).from(profileCvs).where(eq(profileCvs.profileId, profileId)),
     db.select().from(opportunities).where(eq(opportunities.authorId, profileId)),
+    db
+      .select(omit(getTableColumns(organizationRequests), "logoStorageKey", "decidedById"))
+      .from(organizationRequests)
+      .where(eq(organizationRequests.requesterId, profileId)),
+    db
+      .select({ handle: profiles.handle, since: organizationManagers.createdAt })
+      .from(organizationManagers)
+      .innerJoin(profiles, eq(profiles.id, organizationManagers.organizationId))
+      .where(eq(organizationManagers.managerId, profileId)),
   ]);
 
   return {
@@ -301,5 +318,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     conversations: conversationRows,
     blockedProfiles: blockRows,
     cv: cvRows[0] ?? null,
+    organizationRequests: organizationRequestRows,
+    managedOrganizations: managedOrganizationRows,
   };
 }

@@ -125,6 +125,8 @@ export const createOpportunitySchema = opportunityFieldsSchema
       .refine((slug) => !RESERVED_OPPORTUNITY_SLUGS.includes(slug), {
         message: "Cet identifiant est réservé.",
       }),
+    /** Publier au nom d'une organisation que la personne gère ; vérifié par le serveur. */
+    asOrganizationId: z.string().uuid().nullable().optional(),
   })
   .superRefine(checkKindRules);
 export type CreateOpportunityInput = z.infer<typeof createOpportunitySchema>;

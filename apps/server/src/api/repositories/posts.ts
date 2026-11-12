@@ -47,6 +47,7 @@ export async function insertPost(
     sharedPostId: string | null;
     workId?: string | null;
     isBeginner?: boolean;
+    publishedById?: string | null;
   },
 ) {
   const [post] = await db
@@ -60,6 +61,7 @@ export async function insertPost(
       sharedPostId: input.sharedPostId,
       workId: input.workId ?? null,
       isBeginner: input.isBeginner ?? false,
+      publishedById: input.publishedById ?? null,
     })
     .returning();
   return post!;

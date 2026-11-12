@@ -568,7 +568,7 @@ export async function findInviteByCode(db: Db, code: string) {
 export type InviteRedemptionResult =
   { status: "ok"; spaceId: string } | { status: "not_found" | "expired" | "revoked" | "exhausted" };
 
-export async function findProfileById(db: Db, profileId: string) {
+export async function findProfileById(db: DbOrTx, profileId: string) {
   const [profile] = await db.select().from(profiles).where(eq(profiles.id, profileId));
   return profile ?? null;
 }

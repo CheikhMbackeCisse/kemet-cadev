@@ -140,6 +140,11 @@ async function readRequestForm(request: FastifyRequest): Promise<ParsedRequestFo
   return { fields, logo };
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  const cause = error instanceof Error && "cause" in error ? error.cause : error;
+  return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "23505";
+}
+
 export function registerOrganizationRequestRoutes(
   app: FastifyInstance,
   { db, auth, storage, antiSpamConfig }: ChatAppDeps,
@@ -231,21 +236,38 @@ export function registerOrganizationRequestRoutes(
     const { decision } = decideOrganizationRequestSchema.parse(request.body);
 
     let logoToDelete: string | null = null;
-    const outcome = await db.transaction(async (tx) => {
-      const locked = await lockOrganizationRequest(tx, id);
-      if (!locked) throw notFound("Cette demande n'existe pas.");
-      if (locked.status !== "pending") throw conflict("Cette demande a déjà été traitée.");
-      if (decision === "refuse") {
-        logoToDelete = locked.logoStorageKey;
-        await refuseOrganizationRequest(tx, locked, admin.id);
-        return { status: "refused" as const, organizationHandle: null };
-      }
-      if (await isOrganizationNameTaken(tx, locked.name, locked.id)) {
-        throw conflict("Une organisation porte déjà ce nom sur Kemet.");
-      }
-      const organization = await acceptOrganizationRequest(tx, locked, admin.id);
-      return { status: "accepted" as const, organizationHandle: organization.handle };
-    });
+    const outcome = await db
+      .transaction(async (tx) => {
+        const locked = await lockOrganizationRequest(tx, id);
+        if (!locked) throw notFound("Cette demande n'existe pas.");
+        if (locked.status !== "pending") throw conflict("Cette demande a déjà été traitée.");
+        if (decision === "refuse") {
+          logoToDelete = locked.logoStorageKey;
+          await refuseOrganizationRequest(tx, locked, admin.id);
+          return { status: "refused" as const, organizationHandle: null };
+        }
+        if (locked.requesterId === admin.id) {
+          throw conflict("Une autre personne de l'administration doit accepter ta demande.");
+        }
+        const requester = await findProfileById(tx, locked.requesterId);
+        if (!requester || requester.suspendedAt || requester.deletedAt) {
+          throw conflict(
+            "Le compte qui a envoyé cette demande ne peut plus gérer une organisation.",
+          );
+        }
+        if (await isOrganizationNameTaken(tx, locked.name, locked.id)) {
+          throw conflict("Une organisation porte déjà ce nom sur Kemet.");
+        }
+        const organization = await acceptOrganizationRequest(tx, locked, admin.id);
+        return { status: "accepted" as const, organizationHandle: organization.handle };
+      })
+      .catch((error: unknown) => {
+        // Deux acceptations simultanées qui tirent le même identifiant : la
+        // seconde heurte l'index unique, l'administration réessaie.
+        if (isUniqueViolation(error))
+          throw conflict("Réessaie : cet identifiant vient d'être pris.");
+        throw error;
+      });
     if (logoToDelete) await storage.delete(logoToDelete);
     return outcome;
   });
@@ -262,7 +284,10 @@ export function registerOrganizationRequestRoutes(
     let isPublic = false;
     if (found.status === "accepted" && found.organizationId) {
       const organization = await findProfileById(db, found.organizationId);
-      isPublic = organization !== null && organization.deletedAt === null;
+      isPublic =
+        organization !== null &&
+        organization.deletedAt === null &&
+        organization.suspendedAt === null;
     }
     if (!isPublic) {
       const userId = await getSessionUserId(auth, request);

@@ -21,6 +21,11 @@ import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { FormPage } from "../components/layout/FormPage.js";
+import {
+  PublishAsField,
+  PUBLISH_AS_ME,
+  useManagedOrganizations,
+} from "../components/organizations/PublishAsField.js";
 import { DomainGrid } from "../components/onboarding/DomainGrid.js";
 import { Checkbox } from "../components/ui/Checkbox.js";
 import { CountrySelect } from "../components/ui/CountrySelect.js";
@@ -61,6 +66,13 @@ export function OpportunityFormPage() {
   const [errors, setErrors] = useState<FieldErrors<OfferField>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [publishAs, setPublishAs] = useState(PUBLISH_AS_ME);
+  const managed = useManagedOrganizations();
+  const managedItems = managed.data?.items ?? [];
+  const publishingOrganization = managedItems.find((item) => item.id === publishAs) ?? null;
+  // L'offre d'une organisation garde son nom référencé : le serveur ignore la saisie.
+  const organizationLocked =
+    publishingOrganization !== null || managedItems.some((item) => item.id === loadedAuthorId);
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -80,12 +92,20 @@ export function OpportunityFormPage() {
       );
   }, [slug, loadAttempt]);
 
-  // Seul l'auteur modifie : un autre compte retourne à l'offre avant d'avoir rien rempli.
+  // Seuls l'auteur et les gestionnaires de l'organisation auteure modifient :
+  // un autre compte retourne à l'offre avant d'avoir rien rempli.
   useEffect(() => {
-    if (slug && profile && loadedAuthorId && loadedAuthorId !== profile.id) {
-      navigate(`/opportunites/${slug}`, { replace: true });
-    }
-  }, [slug, profile, loadedAuthorId]);
+    if (!slug || !profile || !loadedAuthorId || loadedAuthorId === profile.id) return;
+    if (managed.isPending) return;
+    if (managed.data?.items.some((item) => item.id === loadedAuthorId)) return;
+    navigate(`/opportunites/${slug}`, { replace: true });
+  }, [slug, profile, loadedAuthorId, managed.isPending, managed.data]);
+
+  function choosePublishAs(value: string) {
+    setPublishAs(value);
+    const organization = managedItems.find((item) => item.id === value);
+    if (organization) update("organization", organization.displayName);
+  }
 
   function update<Key extends keyof OfferDraft>(key: Key, value: OfferDraft[Key]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -102,7 +122,11 @@ export function OpportunityFormPage() {
       const { opportunity } = slug
         ? await updateOpportunity(slug, input)
         : await createWithSlugFromTitle(input.title, "offre", (candidate) =>
-            createOpportunity({ ...input, slug: candidate }),
+            createOpportunity({
+              ...input,
+              slug: candidate,
+              asOrganizationId: publishingOrganization?.id ?? null,
+            }),
           );
       void queryClient.invalidateQueries({ queryKey: ["opportunities"] });
       queryClient.removeQueries({ queryKey: ["opportunity", opportunity.slug] });
@@ -147,6 +171,9 @@ export function OpportunityFormPage() {
         />
       ) : (
         <>
+          {!slug && (
+            <PublishAsField value={publishAs} onChange={choosePublishAs} disabled={isSuspended} />
+          )}
           <FormField label={fr.opportunities.kindLabel}>
             <Select
               value={draft.kind}
@@ -165,6 +192,7 @@ export function OpportunityFormPage() {
             <Input
               value={draft.organization}
               maxLength={80}
+              disabled={organizationLocked}
               onChange={(event) => update("organization", event.target.value)}
             />
           </FormField>

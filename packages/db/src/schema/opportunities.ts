@@ -31,6 +31,9 @@ export const opportunities = pgTable(
     budgetMaxFcfa: integer("budget_max_fcfa"),
     deadline: date("deadline", { mode: "string" }),
     criteria: text("criteria").array().notNull().default([]),
+    // Offre d'une organisation : la personne qui l'a publiée en son nom, qui
+    // reçoit les candidatures tant qu'elle gère la page.
+    publishedById: uuid("published_by_id").references(() => profiles.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

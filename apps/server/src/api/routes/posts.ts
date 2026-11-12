@@ -6,6 +6,7 @@ import {
   editPostSchema,
   feedQuerySchema,
   markPostReplySolutionSchema,
+  handleSchema,
   paginationQuerySchema,
   postBookmarkInputSchema,
   postRepostInputSchema,
@@ -55,6 +56,7 @@ import {
   listAttachmentsForPosts,
 } from "../repositories/post-attachments.js";
 import { findProfileByHandle, findProfileByUserId } from "../repositories/profiles.js";
+import { canActForAuthor, findManagedOrganization } from "../repositories/organization-accounts.js";
 import {
   awardPoints,
   computeLevels,
@@ -164,6 +166,10 @@ async function toSerializedReplies(
 
 const invocationIdParamsSchema = z.object({ id: z.string().uuid() });
 const postIdParamsSchema = z.object({ id: z.string().uuid() });
+const authorPostsParamsSchema = z.object({ handle: handleSchema });
+const authorPostsQuerySchema = paginationQuerySchema.extend({
+  cursor: z.string().datetime().optional(),
+});
 
 export function registerPostRoutes(
   app: FastifyInstance,
@@ -225,6 +231,11 @@ export function registerPostRoutes(
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const input = createPostSchema.parse(request.body);
+      const organization = input.asOrganizationId
+        ? await findManagedOrganization(db, profile.id, input.asOrganizationId)
+        : null;
+      if (input.asOrganizationId && !organization)
+        throw forbidden("Tu ne gères pas cette organisation.");
       // Transaction : une image qui n'est plus disponible annule le post.
       const post = await db.transaction(async (tx) => {
         const attachmentIds = input.attachmentIds ?? [];
@@ -237,7 +248,8 @@ export function registerPostRoutes(
           }
         }
         const created = await insertPost(tx, {
-          authorId: profile.id,
+          authorId: organization?.id ?? profile.id,
+          publishedById: organization ? profile.id : null,
           body: input.body.trim(),
           format: input.format ?? null,
           testUrl: input.testUrl ?? null,
@@ -256,11 +268,12 @@ export function registerPostRoutes(
     "/api/users/:handle/posts",
     { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
     async (request) => {
-      const author = await findProfileByHandle(db, request.params.handle);
+      const { handle } = authorPostsParamsSchema.parse(request.params);
+      const query = authorPostsQuerySchema.parse(request.query);
+      const author = await findProfileByHandle(db, handle);
       if (!author || author.deletedAt) throw notFound("Ce profil n'existe pas.");
       const userId = await getSessionUserId(auth, request);
       const profile = await findOwnProfile(db, userId);
-      const query = paginationQuerySchema.parse(request.query);
       const page = await listPostsByAuthor(
         db,
         author.id,
@@ -291,7 +304,8 @@ export function registerPostRoutes(
       const profile = await requireOwnProfile(db, userId);
       const post = await findPostById(db, request.params.id);
       if (!post || post.deletedAt) throw notFound("Ce post n'existe pas.");
-      if (post.authorId !== profile.id) throw forbidden("Seul l'auteur peut modifier ce post.");
+      if (!(await canActForAuthor(db, profile.id, post.authorId)))
+        throw forbidden("Seul l'auteur peut modifier ce post.");
       const input = editPostSchema.parse(request.body);
       const body = input.body.trim();
       if (body.length === 0 && !post.sharedPostId) {
@@ -312,7 +326,8 @@ export function registerPostRoutes(
       const profile = await requireOwnProfile(db, userId);
       const post = await findPostById(db, request.params.id);
       if (!post || post.deletedAt) throw notFound("Ce post n'existe pas.");
-      if (post.authorId !== profile.id) throw forbidden("Seul l'auteur peut supprimer ce post.");
+      if (!(await canActForAuthor(db, profile.id, post.authorId)))
+        throw forbidden("Seul l'auteur peut supprimer ce post.");
       await softDeletePost(db, post.id);
       return { deleted: true };
     },
@@ -391,7 +406,7 @@ export function registerPostRoutes(
       const input = postRepostInputSchema.parse(request.body);
       const post = await findPostById(db, id);
       if (!post || (post.deletedAt && input.reposted)) throw notFound("Ce post n'existe pas.");
-      if (post.authorId === profile.id)
+      if (await canActForAuthor(db, profile.id, post.authorId))
         throw badRequest("Impossible de republier son propre post.");
       return setPostRepost(db, post.id, profile.id, input.reposted);
     },
@@ -482,7 +497,7 @@ export function registerPostRoutes(
     const [invocation] = await listInvocationsByResponseReplyIds(db, [reply.id]);
     if (invocation?.requestedBy === profileId) return true;
     const post = await findPostById(db, reply.postId);
-    return post?.authorId === profileId;
+    return post !== null && (await canActForAuthor(db, profileId, post.authorId));
   }
 
   async function findOwnPostInvocation(profileId: string, rawId: unknown) {
@@ -578,7 +593,7 @@ export function registerPostRoutes(
       if (!reply || reply.deletedAt) throw notFound("Cette réponse n'existe pas.");
       const post = await findPostById(db, reply.postId);
       if (!post || post.deletedAt) throw notFound("Ce post n'existe pas.");
-      if (post.authorId !== profile.id) {
+      if (!(await canActForAuthor(db, profile.id, post.authorId))) {
         throw forbidden("Seul l'auteur du post peut marquer une réponse comme solution.");
       }
       if (post.format !== "question") {
@@ -613,7 +628,8 @@ export function registerPostRoutes(
       if (post.format !== "a_tester") {
         throw badRequest("Seuls les posts À tester reçoivent un retour structuré.");
       }
-      if (post.authorId === profile.id) {
+      // Un gestionnaire ne se donne pas de retour sur un post de son organisation non plus.
+      if (await canActForAuthor(db, profile.id, post.authorId)) {
         throw badRequest("L'auteur d'un post ne peut pas se donner son propre retour.");
       }
       if (await hasProfileGivenFeedback(db, post.id, profile.id)) {

@@ -18,7 +18,11 @@ import {
   type OpportunityWithAuthor,
 } from "../repositories/opportunities.js";
 import { computeLevels } from "../repositories/points.js";
-import { findOrganizationContact } from "../repositories/organization-accounts.js";
+import {
+  canActForAuthor,
+  findManagedOrganization,
+  findOrganizationContact,
+} from "../repositories/organization-accounts.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
 import {
   serializeOpportunityDetail,
@@ -48,7 +52,7 @@ export function registerOpportunityRoutes(
     const levels = await computeLevels(db, [row.author.id]);
     const contact =
       row.author.kind === "organization"
-        ? await findOrganizationContact(db, row.author.id)
+        ? await findOrganizationContact(db, row.author.id, row.opportunity.publishedById)
         : row.author.userId
           ? row.author
           : null;
@@ -64,7 +68,7 @@ export function registerOpportunityRoutes(
     const profile = await requireOwnProfile(db, userId);
     const found = await findOpportunityBySlug(db, slug);
     if (!found) throw notFound("Cette offre n'existe pas.");
-    if (found.opportunity.authorId !== profile.id)
+    if (!(await canActForAuthor(db, profile.id, found.opportunity.authorId)))
       throw forbidden("Seul l'auteur peut modifier cette offre.");
     return found;
   }
@@ -99,10 +103,22 @@ export function registerOpportunityRoutes(
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
-      const { slug, ...input } = createOpportunitySchema.parse(request.body);
-      const created = await insertOpportunity(db, profile.id, slug, input);
+      const { slug, asOrganizationId, ...input } = createOpportunitySchema.parse(request.body);
+      const organization = asOrganizationId
+        ? await findManagedOrganization(db, profile.id, asOrganizationId)
+        : null;
+      if (asOrganizationId && !organization) throw forbidden("Tu ne gères pas cette organisation.");
+      const author = organization ?? profile;
+      const created = await insertOpportunity(
+        db,
+        author.id,
+        slug,
+        // Au nom d'une organisation, l'offre porte son nom tel qu'il est référencé.
+        organization ? { ...input, organization: organization.displayName } : input,
+        organization ? profile.id : null,
+      );
       if (!created) throw conflict("Une offre avec cet identifiant existe déjà.");
-      return { opportunity: await presentDetail({ opportunity: created, author: profile }) };
+      return { opportunity: await presentDetail({ opportunity: created, author }) };
     },
   );
 
@@ -110,7 +126,9 @@ export function registerOpportunityRoutes(
     const userId = await requireSessionUserId(auth, request);
     const { slug } = slugParamsSchema.parse(request.params);
     const { opportunity, author } = await requireOwnOpportunity(userId, slug);
-    const input = opportunityInputSchema.parse(request.body);
+    const parsed = opportunityInputSchema.parse(request.body);
+    const input =
+      author.kind === "organization" ? { ...parsed, organization: author.displayName } : parsed;
     const updated = await updateOpportunity(db, opportunity.id, input);
     return { opportunity: await presentDetail({ opportunity: updated, author }) };
   });

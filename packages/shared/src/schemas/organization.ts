@@ -10,7 +10,11 @@ export const ORGANIZATION_LOGO_MIME_TYPES = ["image/png", "image/jpeg", "image/w
 
 /** Champs texte d'une demande de référencement, envoyés avec le logo dans un seul formulaire multipart. */
 export const organizationRequestInputSchema = z.object({
-  name: z.string().trim().min(2).max(ORGANIZATION_NAME_MAX_LENGTH),
+  // Espaces repliés et forme NFKC : "Lagune  Studio" et "Lagune Studio" sont un même nom.
+  name: z
+    .string()
+    .transform((value) => value.normalize("NFKC").replace(/\s+/g, " ").trim())
+    .pipe(z.string().min(2).max(ORGANIZATION_NAME_MAX_LENGTH)),
   organizationType: organizationTypeSchema,
   country: countryCodeSchema,
   websiteUrl: z
@@ -18,7 +22,13 @@ export const organizationRequestInputSchema = z.object({
     .trim()
     .max(300)
     .transform((value) => value || null)
-    .pipe(httpUrlSchema(300).nullable()),
+    .pipe(
+      httpUrlSchema(300)
+        .refine((url) => url.startsWith("https://"), {
+          message: "Le site doit commencer par https://.",
+        })
+        .nullable(),
+    ),
   description: z
     .string()
     .trim()

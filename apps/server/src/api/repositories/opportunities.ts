@@ -29,10 +29,16 @@ function editableColumns(input: OpportunityInput) {
   };
 }
 
-export async function insertOpportunity(db: Db, authorId: string, slug: string, input: OpportunityInput) {
+export async function insertOpportunity(
+  db: Db,
+  authorId: string,
+  slug: string,
+  input: OpportunityInput,
+  publishedById: string | null = null,
+) {
   const [row] = await db
     .insert(opportunities)
-    .values({ authorId, slug, ...editableColumns(input) })
+    .values({ authorId, slug, publishedById, ...editableColumns(input) })
     .onConflictDoNothing({ target: opportunities.slug })
     .returning();
   return row ?? null;

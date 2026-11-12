@@ -17,6 +17,11 @@ vi.mock("../components/content/CodeTextarea.js", () => ({
   CodeTextarea: ({ label }: { label: string }) => <textarea aria-label={label} />,
 }));
 
+vi.mock("../components/organizations/PublishAsField.js", () => ({
+  PUBLISH_AS_ME: "me",
+  PublishAsField: () => null,
+}));
+
 vi.mock("../components/ui/Toast.js", () => ({
   useToast: () => ({ show: vi.fn() }),
 }));

@@ -23,6 +23,8 @@ export const createPostSchema = z
     testAsk: z.string().min(1).max(MAX_POST_TEST_ASK_LENGTH).nullable().optional(),
     attachmentIds: z.array(z.string().uuid()).max(MAX_POST_ATTACHMENTS).optional(),
     isBeginner: z.boolean().optional(),
+    /** Publier au nom d'une organisation que la personne gère ; vérifié par le serveur. */
+    asOrganizationId: z.string().uuid().nullable().optional(),
   })
   .refine((input) => input.body.trim().length > 0 || (input.attachmentIds?.length ?? 0) > 0, {
     message: "Un post doit contenir du texte ou au moins une image.",

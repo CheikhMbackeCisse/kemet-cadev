@@ -4,12 +4,21 @@ import { assistantFeedbackSchema, type SkillCitation } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { findPostById } from "../repositories/posts.js";
-import { findInvocationById, findInvocationByResponseMessageId, setInvocationHelpful } from "../repositories/assistant.js";
+import {
+  findInvocationById,
+  findInvocationByResponseMessageId,
+  setInvocationHelpful,
+} from "../repositories/assistant.js";
 import { canViewSkill, findAuthorProfile, findSkillsByIds } from "../repositories/skills.js";
 import { serializeSkillCitation } from "../skill-serializers.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
-import { awardPoints, computeUtileAwardAmount, POINTS_ASSISTANT_SKILL_HELPFUL } from "../repositories/points.js";
+import {
+  awardPoints,
+  computeUtileAwardAmount,
+  POINTS_ASSISTANT_SKILL_HELPFUL,
+} from "../repositories/points.js";
 import type { ChatAppDeps } from "../app.js";
+import { canActForAuthor } from "../repositories/organization-accounts.js";
 import { requireChannelAccess, requireWritableSpace } from "./channels.js";
 
 const messageIdParamsSchema = z.object({ id: z.string().uuid() });
@@ -37,7 +46,12 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
     if (citedSkill && (await canViewSkill(db, citedSkill, profileId))) {
       skill = serializeSkillCitation(citedSkill, await findAuthorProfile(db, citedSkill.authorId));
     }
-    return { invocationId: invocation.id, skill, helpful: invocation.helpful, recorded: invocation.recorded };
+    return {
+      invocationId: invocation.id,
+      skill,
+      helpful: invocation.helpful,
+      recorded: invocation.recorded,
+    };
   });
 
   // Tout lecteur peut marquer la réponse Utile, ce qui rapporte des points à
@@ -51,7 +65,8 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
       const profile = await findProfileByUserId(db, userId);
       if (!profile) throw badRequest("Complétez votre profil avant de donner votre avis.");
       const invocation = await findInvocationById(db, request.params.id);
-      if (!invocation || invocation.status !== "done") throw notFound("Cette réponse n'existe pas.");
+      if (!invocation || invocation.status !== "done")
+        throw notFound("Cette réponse n'existe pas.");
       if (invocation.channelId) {
         const access = await requireChannelAccess(db, invocation.channelId, profile.id);
         if (access.kind !== "space") throw notFound("Cette réponse n'existe pas.");
@@ -63,14 +78,21 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
         if (profile.suspendedAt) throw forbidden("Ce compte est suspendu.");
         // Réponse lisible par tous : l'avis, qui rapporte des points à
         // l'auteur du skill, revient à qui a posé la question ou à l'auteur du post.
-        if (invocation.requestedBy !== profile.id && post.authorId !== profile.id) {
-          throw forbidden("Seuls la personne qui a posé la question et l'auteur du post donnent leur avis.");
+        if (
+          invocation.requestedBy !== profile.id &&
+          !(await canActForAuthor(db, profile.id, post.authorId))
+        ) {
+          throw forbidden(
+            "Seuls la personne qui a posé la question et l'auteur du post donnent leur avis.",
+          );
         }
       }
       const input = assistantFeedbackSchema.parse(request.body);
       if (input.helpful && invocation.helpful !== true) {
         const citedSkills = await findSkillsByIds(db, invocation.skillIds);
-        const authorIds = [...new Set(citedSkills.map((skill) => skill.authorId))].filter((id) => id !== profile.id);
+        const authorIds = [...new Set(citedSkills.map((skill) => skill.authorId))].filter(
+          (id) => id !== profile.id,
+        );
         if (authorIds.length > 0) {
           const amount = await computeUtileAwardAmount(db, POINTS_ASSISTANT_SKILL_HELPFUL, profile);
           for (const authorId of authorIds) {

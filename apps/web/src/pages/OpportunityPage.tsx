@@ -28,6 +28,7 @@ import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
 import { ReportDialog } from "../components/moderation/ReportMenu.js";
+import { useManagedOrganizations } from "../components/organizations/PublishAsField.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
 import { ProfileLink } from "../components/ui/ProfileLink.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
@@ -159,7 +160,11 @@ export function OpportunityPage() {
       !(error instanceof ChatApiError && error.statusCode === 404) && count < 2,
   });
   const offer = query.data?.opportunity;
-  const isAuthor = offer !== undefined && profile?.id === offer.authorId;
+  const managed = useManagedOrganizations();
+  const isAuthor =
+    offer !== undefined &&
+    (profile?.id === offer.authorId ||
+      (managed.data?.items.some((item) => item.id === offer.authorId) ?? false));
   const menuItems = isAuthor
     ? [
         { value: "edit", label: fr.opportunities.edit },

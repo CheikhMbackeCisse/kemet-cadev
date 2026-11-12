@@ -44,6 +44,11 @@ export const posts = pgTable(
     // Post d'espace : visible dans le fil des seuls membres de l'espace, et
     // dans l'espace lui-même. Posé par le seed seulement, jamais accepté en entrée.
     spaceId: uuid("space_id").references(() => spaces.id, { onDelete: "cascade" }),
+    // Post d'une organisation : la personne qui l'a publié en son nom, pour
+    // la modération. Jamais affichée.
+    publishedById: uuid("published_by_id").references((): AnyPgColumn => profiles.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     editedAt: timestamp("edited_at"),
     deletedAt: timestamp("deleted_at"),

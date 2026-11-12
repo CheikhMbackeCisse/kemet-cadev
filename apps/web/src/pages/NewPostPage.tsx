@@ -27,6 +27,7 @@ import { hasFieldErrors, requiredFieldErrors, type FieldErrors } from "../lib/fo
 import { FormField } from "../components/ui/FormField.js";
 import { BeginnerCheckbox } from "../components/beginners/BeginnerCheckbox.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
+import { PublishAsField, PUBLISH_AS_ME } from "../components/organizations/PublishAsField.js";
 
 export function NewPostPage() {
   const toast = useToast();
@@ -36,6 +37,7 @@ export function NewPostPage() {
   const [testUrl, setTestUrl] = useState("");
   const [testAsk, setTestAsk] = useState("");
   const [isBeginner, setIsBeginner] = useState(false);
+  const [publishAs, setPublishAs] = useState(PUBLISH_AS_ME);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,9 +49,12 @@ export function NewPostPage() {
   const [videoUpload, setVideoUpload] = useState<VideoUploadState>({ phase: "idle" });
   const videoLabel = videoUploadLabel(videoUpload);
 
-  useEffect(() => () => {
-    if (video) URL.revokeObjectURL(video.posterUrl);
-  }, [video]);
+  useEffect(
+    () => () => {
+      if (video) URL.revokeObjectURL(video.posterUrl);
+    },
+    [video],
+  );
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -90,7 +95,9 @@ export function NewPostPage() {
       setVideoUpload({ phase: "done" });
     } catch (err) {
       const message =
-        err instanceof VideoCheckError || err instanceof ChatApiError ? err.message : fr.feed.videoUploadError;
+        err instanceof VideoCheckError || err instanceof ChatApiError
+          ? err.message
+          : fr.feed.videoUploadError;
       toast.show(message, "danger");
       setVideoUpload({ phase: "idle" });
     } finally {
@@ -103,7 +110,9 @@ export function NewPostPage() {
     setError(null);
     const errors: FieldErrors<"body" | "testUrl"> = {
       ...(format === "a_tester" ? requiredFieldErrors({ testUrl }) : {}),
-      ...(!body.trim() && attachments.length === 0 && !video ? { body: fr.feed.bodyOrImageRequired } : {}),
+      ...(!body.trim() && attachments.length === 0 && !video
+        ? { body: fr.feed.bodyOrImageRequired }
+        : {}),
     };
     setFieldErrors(errors);
     if (hasFieldErrors(errors)) return;
@@ -114,8 +123,11 @@ export function NewPostPage() {
         format: format === "none" ? null : format,
         testUrl: format === "a_tester" ? testUrl.trim() : null,
         testAsk: format === "a_tester" ? testAsk.trim() : null,
-        attachmentIds: video ? [video.attachment.id] : attachments.map((attachment) => attachment.id),
+        attachmentIds: video
+          ? [video.attachment.id]
+          : attachments.map((attachment) => attachment.id),
         isBeginner,
+        asOrganizationId: publishAs === PUBLISH_AS_ME ? null : publishAs,
       });
       navigate("/fil");
     } catch (err) {
@@ -135,6 +147,7 @@ export function NewPostPage() {
       error={error}
       onSubmit={handleSubmit}
     >
+      <PublishAsField value={publishAs} onChange={setPublishAs} disabled={isSuspended} />
       <CodeTextarea
         label={fr.feed.newPostBodyLabel}
         placeholder={fr.feed.composerPlaceholder}
@@ -210,7 +223,12 @@ export function NewPostPage() {
             variant="secondary"
             onClick={() => imageInputRef.current?.click()}
             loading={uploading && videoLabel === null}
-            disabled={isSuspended || uploading || video !== null || attachments.length >= MAX_POST_ATTACHMENTS}
+            disabled={
+              isSuspended ||
+              uploading ||
+              video !== null ||
+              attachments.length >= MAX_POST_ATTACHMENTS
+            }
           >
             <ImageIcon className="size-4" aria-hidden="true" />
             {fr.feed.attachImage}
@@ -235,7 +253,6 @@ export function NewPostPage() {
         <p role="status" className="sr-only">
           {videoUploadAnnouncement(videoUpload)}
         </p>
-
       </div>
 
       <label className="flex flex-col gap-1 text-sm text-text-2">
