@@ -163,6 +163,38 @@ export const FEED_TOP_POSTS: {
       },
     ],
   },
+  // Deux posts vidéo (seedDemoMedia) assez haut dans le fil pour passer de
+  // l'un à l'autre dans la vue plein écran.
+  {
+    key: "video-index-commandes",
+    authorHandle: "lyna-bouzid",
+    bodyStart: "La liste des commandes d'une boutique mettait 4 secondes",
+    hearts: 16,
+    replies: [
+      {
+        key: "skander-explain",
+        authorHandle: "skander-jaziri",
+        minutesAfter: 25,
+        body:
+          "Le bon ordre des colonnes compte aussi : d'abord celle du filtre d'égalité, ensuite celle du " +
+          "tri. Dans l'autre sens, Postgres lit tout l'index.",
+      },
+    ],
+  },
+  {
+    key: "video-deployer-vendredi",
+    authorHandle: "dapo-oyelaran",
+    bodyStart: "Six vérifications vertes, une migration et un test de santé.",
+    hearts: 13,
+    replies: [
+      {
+        key: "kgomotso-rollback",
+        authorHandle: "kgomotso-mahlangu",
+        minutesAfter: 40,
+        body: "Et le retour arrière, il est automatique aussi ? C'est lui qui me fait dormir le week-end.",
+      },
+    ],
+  },
 ];
 
 export interface ShowcaseSubmission {

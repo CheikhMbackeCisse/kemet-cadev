@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
-import { readImageSize } from "@kemet/shared";
+import { inspectVideo, readImageSize } from "@kemet/shared";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { and, count, eq, inArray, isNotNull, isNull, like, sql } from "drizzle-orm";
@@ -97,6 +97,34 @@ export async function storePostImage(
   return { ...stored, width: size?.width ?? null, height: size?.height ?? null };
 }
 
+/**
+ * Vidéo d'un post et son aperçu, comme les déposerait le navigateur : le
+ * cadre prend les dimensions de l'aperçu, la durée est lue dans le conteneur.
+ */
+async function storePostVideo(uploadsDir: string, assetsDir: string, asset: string, usage: string) {
+  const video = await storeAsset(uploadsDir, assetsDir, asset, usage);
+  const { durationMs } = inspectVideo(
+    await readFile(join(uploadsDir, video.storageKey)),
+    "video/webm",
+  );
+  if (!durationMs) throw new Error(`Durée illisible pour la vidéo de démonstration ${asset}`);
+  const poster = await storePostImage(
+    uploadsDir,
+    assetsDir,
+    asset.replace(/\.webm$/, "-poster.jpg"),
+    usage,
+  );
+  return {
+    ...video,
+    durationMs,
+    width: poster.width,
+    height: poster.height,
+    posterStorageKey: poster.storageKey,
+    posterMimeType: poster.mimeType,
+    posterByteSize: poster.byteSize,
+  };
+}
+
 async function demoProfileIds(db: DbOrTx): Promise<Map<string, string>> {
   const rows = await db
     .select({ id: profiles.id, handle: profiles.handle })
@@ -136,7 +164,9 @@ async function createPosts(
   ids: Map<string, string>,
   files: { uploadsDir: string; assetsDir: string } | null,
 ): Promise<number> {
-  const wanted = DEMO_MEDIA_POSTS.filter((post) => files || (!post.image && !post.images));
+  const wanted = DEMO_MEDIA_POSTS.filter(
+    (post) => files || (!post.image && !post.images && !post.video),
+  );
   const existing = await db
     .select({ id: posts.id })
     .from(posts)
@@ -161,6 +191,15 @@ async function createPosts(
       createdAt: hoursAgo(post.hoursAgo),
     });
     const images = post.images ?? (post.image ? [post.image] : []);
+    if (files && post.video) {
+      const stored = await storePostVideo(
+        files.uploadsDir,
+        files.assetsDir,
+        post.video,
+        `post:${post.key}`,
+      );
+      await db.insert(postAttachments).values({ postId: id, authorId, ...stored });
+    }
     if (files) {
       for (const [position, image] of images.entries()) {
         // Clé d'usage inchangée pour une image seule : même fichier qu'avant G13.
@@ -217,11 +256,21 @@ async function addImagesToExistingPosts(
  * Dimensions des images de posts de démonstration posées avant G13 : lues
  * dans le fichier déjà copié, pour que leur cadre ne saute plus.
  */
-async function backfillPostImageSizes(db: DbOrTx, ids: Map<string, string>, uploadsDir: string): Promise<number> {
+async function backfillPostImageSizes(
+  db: DbOrTx,
+  ids: Map<string, string>,
+  uploadsDir: string,
+): Promise<number> {
   const rows = await db
-    .select({ id: postAttachments.id, storageKey: postAttachments.storageKey, mimeType: postAttachments.mimeType })
+    .select({
+      id: postAttachments.id,
+      storageKey: postAttachments.storageKey,
+      mimeType: postAttachments.mimeType,
+    })
     .from(postAttachments)
-    .where(and(inArray(postAttachments.authorId, [...ids.values()]), isNull(postAttachments.width)));
+    .where(
+      and(inArray(postAttachments.authorId, [...ids.values()]), isNull(postAttachments.width)),
+    );
   let filled = 0;
   for (const row of rows) {
     // Base sans les fichiers (tests, copie partielle) : rien à lire, la ligne garde son cadre par défaut.

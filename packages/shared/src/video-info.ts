@@ -1,12 +1,22 @@
 // Durée d'une vidéo lue dans son conteneur, sans décoder une seule image et
 // sans outil externe (aucune conversion sur le serveur, pas de ffmpeg).
 
-function u32(data: Buffer, offset: number): number {
-  return data.readUInt32BE(offset);
+// Uint8Array plutôt que Buffer : le même code tourne sur le serveur et dans
+// le seed. Un Buffer peut commencer au milieu de son ArrayBuffer, d'où byteOffset.
+function view(data: Uint8Array): DataView {
+  return new DataView(data.buffer, data.byteOffset, data.byteLength);
 }
 
-function u64(data: Buffer, offset: number): number {
-  return Number(data.readBigUInt64BE(offset));
+function u32(data: Uint8Array, offset: number): number {
+  return view(data).getUint32(offset);
+}
+
+function u64(data: Uint8Array, offset: number): number {
+  return Number(view(data).getBigUint64(offset));
+}
+
+function latin1(data: Uint8Array, start: number, end: number): string {
+  return String.fromCharCode(...data.subarray(start, end));
 }
 
 interface Box {
@@ -16,11 +26,11 @@ interface Box {
 }
 
 /** Boîtes ISO BMFF (MP4) entre `start` et `end` : taille sur 32 bits, 64 bits, ou jusqu'à la fin. */
-function* boxes(data: Buffer, start: number, end: number): Generator<Box> {
+function* boxes(data: Uint8Array, start: number, end: number): Generator<Box> {
   let offset = start;
   while (offset + 8 <= end) {
     let size = u32(data, offset);
-    const type = data.toString("latin1", offset + 4, offset + 8);
+    const type = latin1(data, offset + 4, offset + 8);
     let header = 8;
     if (size === 1) {
       if (offset + 16 > end) return;
@@ -35,13 +45,13 @@ function* boxes(data: Buffer, start: number, end: number): Generator<Box> {
   }
 }
 
-function child(data: Buffer, parent: Box, type: string): Box | undefined {
+function child(data: Uint8Array, parent: Box, type: string): Box | undefined {
   for (const box of boxes(data, parent.start, parent.end)) if (box.type === type) return box;
   return undefined;
 }
 
 /** `mvhd` : échelle de temps et durée de la présentation entière. */
-function mvhdDuration(data: Buffer, mvhd: Box): { timescale: number; duration: number } | null {
+function mvhdDuration(data: Uint8Array, mvhd: Box): { timescale: number; duration: number } | null {
   const version = data[mvhd.start];
   if (version === 1 && mvhd.start + 32 <= mvhd.end) {
     return { timescale: u32(data, mvhd.start + 20), duration: u64(data, mvhd.start + 24) };
@@ -53,7 +63,7 @@ function mvhdDuration(data: Buffer, mvhd: Box): { timescale: number; duration: n
 }
 
 /** `mehd` d'un MP4 fragmenté (enregistrement de navigateur) : durée totale des fragments. */
-function mehdDuration(data: Buffer, mehd: Box): number | null {
+function mehdDuration(data: Uint8Array, mehd: Box): number | null {
   const version = data[mehd.start];
   if (version === 1 && mehd.start + 12 <= mehd.end) return u64(data, mehd.start + 4);
   if (version === 0 && mehd.start + 8 <= mehd.end) return u32(data, mehd.start + 4);
@@ -61,25 +71,29 @@ function mehdDuration(data: Buffer, mehd: Box): number | null {
 }
 
 /** Vrai si une piste du MP4 est de la vidéo ('vide' dans hdlr), et pas seulement du son. */
-function mp4HasVideoTrack(data: Buffer, moov: Box): boolean {
+function mp4HasVideoTrack(data: Uint8Array, moov: Box): boolean {
   for (const trak of boxes(data, moov.start, moov.end)) {
     if (trak.type !== "trak") continue;
     const mdia = child(data, trak, "mdia");
     const hdlr = mdia && child(data, mdia, "hdlr");
-    if (hdlr && hdlr.start + 12 <= hdlr.end && data.toString("latin1", hdlr.start + 8, hdlr.start + 12) === "vide") {
+    if (
+      hdlr &&
+      hdlr.start + 12 <= hdlr.end &&
+      latin1(data, hdlr.start + 8, hdlr.start + 12) === "vide"
+    ) {
       return true;
     }
   }
   return false;
 }
 
-function inspectMp4(data: Buffer): VideoInfo {
+function inspectMp4(data: Uint8Array): VideoInfo {
   const moov = [...boxes(data, 0, data.length)].find((box) => box.type === "moov");
   if (!moov) return { durationMs: null, hasVideoTrack: false };
   return { durationMs: mp4DurationMs(data, moov), hasVideoTrack: mp4HasVideoTrack(data, moov) };
 }
 
-function mp4DurationMs(data: Buffer, moov: Box): number | null {
+function mp4DurationMs(data: Uint8Array, moov: Box): number | null {
   const mvhd = child(data, moov, "mvhd");
   const header = mvhd && mvhdDuration(data, mvhd);
   if (!header || header.timescale === 0) return null;
@@ -107,7 +121,11 @@ const SIMPLE_BLOCK = 0xa3;
 const BLOCK_GROUP = 0xa0;
 const BLOCK = 0xa1;
 
-function readVint(data: Buffer, offset: number, marker: boolean): { value: number; length: number; unknown: boolean } | null {
+function readVint(
+  data: Uint8Array,
+  offset: number,
+  marker: boolean,
+): { value: number; length: number; unknown: boolean } | null {
   const first = data[offset];
   if (first === undefined || first === 0) return null;
   let length = 1;
@@ -123,7 +141,7 @@ function readVint(data: Buffer, offset: number, marker: boolean): { value: numbe
   return { value, length, unknown: !marker && allOnes };
 }
 
-function readUint(data: Buffer, start: number, end: number): number {
+function readUint(data: Uint8Array, start: number, end: number): number {
   let value = 0;
   for (let index = start; index < end; index += 1) value = value * 256 + data[index]!;
   return value;
@@ -134,7 +152,7 @@ function readUint(data: Buffer, start: number, end: number): number {
  * enregistré par MediaRecorder ou par Playwright, qui ne l'écrivent pas) le
  * plus grand horodatage de bloc trouvé dans les clusters.
  */
-function inspectWebm(data: Buffer): VideoInfo {
+function inspectWebm(data: Uint8Array): VideoInfo {
   let hasVideoTrack = false;
   let timecodeScale = 1_000_000;
   let declared: number | null = null;
@@ -166,8 +184,8 @@ function inspectWebm(data: Buffer): VideoInfo {
         timecodeScale = readUint(data, bodyStart, bodyEnd) || timecodeScale;
         break;
       case DURATION:
-        if (bodyEnd - bodyStart === 4) declared = data.readFloatBE(bodyStart);
-        else if (bodyEnd - bodyStart === 8) declared = data.readDoubleBE(bodyStart);
+        if (bodyEnd - bodyStart === 4) declared = view(data).getFloat32(bodyStart);
+        else if (bodyEnd - bodyStart === 8) declared = view(data).getFloat64(bodyStart);
         break;
       case TRACK_TYPE:
         if (readUint(data, bodyStart, bodyEnd) === TRACK_TYPE_VIDEO) hasVideoTrack = true;
@@ -179,7 +197,7 @@ function inspectWebm(data: Buffer): VideoInfo {
       case BLOCK: {
         const track = readVint(data, bodyStart, false);
         if (track && bodyStart + track.length + 2 <= bodyEnd) {
-          const relative = data.readInt16BE(bodyStart + track.length);
+          const relative = view(data).getInt16(bodyStart + track.length);
           lastBlock = Math.max(lastBlock, clusterTimecode + relative);
         }
         break;
@@ -201,7 +219,7 @@ export interface VideoInfo {
   hasVideoTrack: boolean;
 }
 
-/** Durée et présence d'une piste vidéo d'un MP4 ou d'un WebM. */
-export function inspectVideo(data: Buffer, mimeType: "video/mp4" | "video/webm"): VideoInfo {
+/** Durée et présence d'une piste vidéo d'un MP4 ou d'un WebM, lues dans le conteneur. */
+export function inspectVideo(data: Uint8Array, mimeType: "video/mp4" | "video/webm"): VideoInfo {
   return mimeType === "video/mp4" ? inspectMp4(data) : inspectWebm(data);
 }

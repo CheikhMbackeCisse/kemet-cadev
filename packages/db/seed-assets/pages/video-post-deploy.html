@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="video-vertical.css">
+<style>
+/* Filmé 6 secondes : le push d'un vendredi soir, la CI ligne par ligne, l'horloge qui passe 18:00. */
+body { background: #101826; color: #e6edf6; }
+.clock { font-size: 120px; font-weight: 800; font-variant-numeric: tabular-nums; color: #f4c95d; }
+.clock { position: relative; height: 150px; }
+.clock .t { position: absolute; left: 0; top: 0; }
+.term { background: #0a0f18; border: 2px solid #22314a; border-radius: 20px; padding: 32px; font-size: 28px; line-height: 1.75; }
+.term div { opacity: 0; }
+.term div:nth-child(1) { animation: show 0s 0.4s forwards; }
+.term div:nth-child(2) { animation: show 0s 1.3s forwards; }
+.term div:nth-child(3) { animation: show 0s 2.0s forwards; }
+.term div:nth-child(4) { animation: show 0s 2.7s forwards; }
+.term div:nth-child(5) { animation: show 0s 3.4s forwards; }
+.term div:nth-child(6) { animation: show 0s 4.1s forwards; }
+.ok { color: #5fd38d; }
+.p { color: #7aa7ff; }
+.m59 { animation: hide 0s 4.1s forwards; }
+.m00 { opacity: 0; animation: show 0s 4.1s forwards; }
+.done { font-size: 44px; font-weight: 800; color: #5fd38d; animation: show 0s 4.6s forwards; }
+</style>
+</head>
+<body>
+  <h1>Déployer un vendredi soir</h1>
+  <div class="clock"><span class="t m59">17:59</span><span class="t m00">18:00</span></div>
+  <div class="term mono">
+    <div><span class="p">$</span> git push origin main</div>
+    <div><span class="ok">✓</span> lint</div>
+    <div><span class="ok">✓</span> tests (412)</div>
+    <div><span class="ok">✓</span> build</div>
+    <div><span class="ok">✓</span> migration</div>
+    <div><span class="ok">✓</span> santé : 200</div>
+  </div>
+  <div class="done late">Déployé. Bon week-end.</div>
+  <div class="sign">Vidéo d'exemple, Kemet</div>
+</body>
+</html>

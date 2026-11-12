@@ -12,14 +12,52 @@ export interface DemoMediaPost {
   image?: string;
   /** Carrousel : plusieurs images, dans l'ordre d'affichage. */
   images?: string[];
+  /**
+   * Vidéo verticale, seule dans son post. Son aperçu `<nom>-poster.jpg` est
+   * produit avec elle par render.ts.
+   */
+  video?: string;
   hoursAgo: number;
 }
 
 export const DEMO_MEDIA_POSTS: DemoMediaPost[] = [
   {
+    key: "video-deployer-vendredi",
+    authorHandle: "dapo-oyelaran",
+    video: "post-video-deploy.webm",
+    hoursAgo: 3,
+    body:
+      "Six vérifications vertes, une migration et un test de santé. Déployer un vendredi soir ne me " +
+      "fait plus peur depuis que la CI refuse tout ce qui n'est pas prouvé.",
+  },
+  {
+    key: "video-index-commandes",
+    authorHandle: "lyna-bouzid",
+    format: "astuce",
+    video: "post-video-index.webm",
+    hoursAgo: 7,
+    body:
+      "La liste des commandes d'une boutique mettait 4 secondes à s'afficher. Un index composé sur les deux " +
+      "colonnes du filtre et du tri, et on passe à 80 ms. Lisez le plan d'exécution avant d'ajouter du cache.",
+  },
+  {
+    key: "video-coupure-tests",
+    authorHandle: "ebo-quansah",
+    video: "post-video-coupure.webm",
+    hoursAgo: 20,
+    body:
+      "Course entre ma batterie et la suite de tests pendant la coupure de ce matin. Les tests ont gagné, " +
+      "de peu.",
+  },
+  {
     key: "carrousel-vie-d-un-bug",
     authorHandle: "kiprono-langat",
-    images: ["carousel-bug-1.jpg", "carousel-bug-2.jpg", "carousel-bug-3.jpg", "carousel-bug-4.jpg"],
+    images: [
+      "carousel-bug-1.jpg",
+      "carousel-bug-2.jpg",
+      "carousel-bug-3.jpg",
+      "carousel-bug-4.jpg",
+    ],
     hoursAgo: 5,
     body:
       "La vie d'un bug en quatre étapes. Toute ressemblance avec mon vendredi dernier est " +
@@ -305,6 +343,9 @@ export const DEMO_SKILL_TARGETS: {
  */
 export const DEMO_ASSET_NAMES: Record<string, string> = {
   "cadev-couverture.jpg": "Coupe d'Afrique des Développeurs, 5 millions de FCFA à gagner.jpg",
+  "post-video-deploy.webm": "Déployer un vendredi soir.webm",
+  "post-video-index.webm": "Une requête de 4,2 s ramenée à 80 ms.webm",
+  "post-video-coupure.webm": "Coupure de courant pendant les tests.webm",
   "carousel-bug-1.jpg": "Étape 1 : les tests passent sur ma machine.jpg",
   "carousel-bug-2.jpg": "Étape 2 : tout marche aussi en préprod.jpg",
   "carousel-bug-3.jpg": "Étape 3 : erreur 500 en production un vendredi soir.jpg",

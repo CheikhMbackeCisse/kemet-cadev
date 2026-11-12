@@ -7,12 +7,12 @@ import {
   POST_VIDEO_MIME_TYPES,
   POST_VIDEO_POSTER_MAX_BYTES,
   POST_VIDEO_POSTER_MAX_SIDE,
+  inspectVideo,
   readImageSize,
   type PostVideoMimeType,
 } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden } from "../../errors.js";
-import { inspectVideo } from "../../storage/inspect-video.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
 import { lockUserStorageQuota } from "../repositories/attachments.js";
 import { sumTotalUserStorageBytes } from "../repositories/storage-usage.js";
@@ -96,9 +96,13 @@ export function registerPostVideoRoutes(
         throw badRequest(`La vidéo dépasse ${POST_VIDEO_MAX_DURATION_MS / 1000} secondes.`);
       }
 
-      if (poster.buffer.length > POST_VIDEO_POSTER_MAX_BYTES) throw badRequest("L'image d'aperçu est trop lourde.");
+      if (poster.buffer.length > POST_VIDEO_POSTER_MAX_BYTES)
+        throw badRequest("L'image d'aperçu est trop lourde.");
       const posterType = await fileTypeFromBuffer(poster.buffer);
-      const size = posterType && POSTER_MIME_TYPES.includes(posterType.mime) && readImageSize(poster.buffer, posterType.mime);
+      const size =
+        posterType &&
+        POSTER_MIME_TYPES.includes(posterType.mime) &&
+        readImageSize(poster.buffer, posterType.mime);
       if (!posterType || !size) throw badRequest("L'image d'aperçu n'est pas une image valide.");
       if (Math.max(size.width, size.height) > POST_VIDEO_POSTER_MAX_SIDE) {
         throw badRequest("L'image d'aperçu est trop grande.");
@@ -111,7 +115,10 @@ export function registerPostVideoRoutes(
       const attachment = await db
         .transaction(async (tx) => {
           await lockUserStorageQuota(tx, profile.id);
-          if ((await sumTotalUserStorageBytes(tx, profile.id)) + total > attachmentLimits.maxUserStorageBytes) {
+          if (
+            (await sumTotalUserStorageBytes(tx, profile.id)) + total >
+            attachmentLimits.maxUserStorageBytes
+          ) {
             throw badRequest("Quota de stockage de fichiers atteint.");
           }
           await storage.save(storageKey, video.buffer);

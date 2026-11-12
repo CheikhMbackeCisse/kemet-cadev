@@ -31,3 +31,4 @@ export * from "./schemas/onboarding.js";
 export * from "./skill-code-excerpt.js";
 export * from "./schemas/search.js";
 export * from "./image-size.js";
+export * from "./video-info.js";

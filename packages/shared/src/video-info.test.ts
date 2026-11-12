@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { inspectVideo } from "./inspect-video.js";
+import { inspectVideo } from "./video-info.js";
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url));
 
@@ -19,7 +19,10 @@ function syntheticMp4(timescale: number, duration: number): Buffer {
   const hdlr = Buffer.alloc(24);
   hdlr.write("vide", 8, "latin1");
   const trak = box("trak", box("mdia", box("hdlr", hdlr)));
-  return Buffer.concat([box("ftyp", Buffer.from("isom\0\0\0\0isomiso2", "latin1")), box("moov", Buffer.concat([box("mvhd", mvhd), trak]))]);
+  return Buffer.concat([
+    box("ftyp", Buffer.from("isom\0\0\0\0isomiso2", "latin1")),
+    box("moov", Buffer.concat([box("mvhd", mvhd), trak])),
+  ]);
 }
 
 describe("inspectVideo", () => {
@@ -40,13 +43,22 @@ describe("inspectVideo", () => {
   });
 
   it("lit la durée déclarée dans mvhd", () => {
-    expect(inspectVideo(syntheticMp4(1000, 61_000), "video/mp4")).toEqual({ durationMs: 61_000, hasVideoTrack: true });
+    expect(inspectVideo(syntheticMp4(1000, 61_000), "video/mp4")).toEqual({
+      durationMs: 61_000,
+      hasVideoTrack: true,
+    });
     expect(inspectVideo(syntheticMp4(90_000, 90_000 * 12), "video/mp4").durationMs).toBe(12_000);
   });
 
   it("rend une durée nulle quand le conteneur ne la donne pas", () => {
     expect(inspectVideo(syntheticMp4(1000, 0), "video/mp4").durationMs).toBeNull();
-    expect(inspectVideo(Buffer.from("pas une video"), "video/mp4")).toEqual({ durationMs: null, hasVideoTrack: false });
-    expect(inspectVideo(Buffer.alloc(0), "video/webm")).toEqual({ durationMs: null, hasVideoTrack: false });
+    expect(inspectVideo(Buffer.from("pas une video"), "video/mp4")).toEqual({
+      durationMs: null,
+      hasVideoTrack: false,
+    });
+    expect(inspectVideo(Buffer.alloc(0), "video/webm")).toEqual({
+      durationMs: null,
+      hasVideoTrack: false,
+    });
   });
 });
