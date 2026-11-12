@@ -1,17 +1,7 @@
-import { AFRICAN_COUNTRY_CODES, COUNTRIES, INTERESTS, OPPORTUNITY_KINDS, type OpportunityFilterKind } from "@kemet/shared";
+import { AFRICAN_COUNTRY_CODES, COUNTRIES, INTERESTS, OPPORTUNITY_KINDS } from "@kemet/shared";
+import { ALL, type OpportunityFilterValues } from "../../lib/opportunities/listState.js";
 import { fr } from "../../i18n/fr.js";
 import { Select } from "../ui/Select.js";
-
-// Radix refuse une valeur vide pour une option : "tout" a sa propre valeur.
-export const ALL = "all";
-
-export interface OpportunityFilterValues {
-  kind: OpportunityFilterKind | typeof ALL;
-  country: string;
-  domain: string;
-}
-
-export const NO_FILTERS: OpportunityFilterValues = { kind: ALL, country: ALL, domain: ALL };
 
 const AFRICAN = new Set(AFRICAN_COUNTRY_CODES);
 
@@ -23,7 +13,10 @@ const allLabel = (label: string) => `${label} : ${fr.opportunities.filterAll}`;
 
 const KIND_OPTIONS = [
   { value: ALL, label: allLabel(fr.opportunities.filterType) },
-  ...[...OPPORTUNITY_KINDS, "project" as const].map((kind) => ({ value: kind, label: fr.opportunities.kinds[kind] })),
+  ...[...OPPORTUNITY_KINDS, "project" as const].map((kind) => ({
+    value: kind,
+    label: fr.opportunities.kinds[kind],
+  })),
 ];
 
 const COUNTRY_OPTIONS = [
@@ -53,13 +46,15 @@ export function OpportunityFilters({
   return (
     <div
       role="group"
-      aria-label={fr.opportunities.tab}
+      aria-label={fr.opportunities.filtersLabel}
       className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:px-0"
     >
       <Select
         aria-label={fr.opportunities.filterType}
         value={value.kind}
-        onValueChange={(kind) => onChange({ ...value, kind: kind as OpportunityFilterValues["kind"] })}
+        onValueChange={(kind) =>
+          onChange({ ...value, kind: kind as OpportunityFilterValues["kind"] })
+        }
         options={KIND_OPTIONS}
         className={FILTER_CLASS}
       />

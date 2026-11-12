@@ -2,7 +2,12 @@ import { Briefcase, GraduationCap, Handshake, type LucideIcon } from "lucide-rea
 import { useId } from "react";
 import type { OpportunityKind, OpportunitySummary } from "@kemet/shared";
 import { cn } from "../../lib/cn.js";
-import { deadlineLabel, kindLabel, locationLabel, moneyLabel } from "../../lib/opportunities/format.js";
+import {
+  deadlineLabel,
+  kindLabel,
+  locationLabel,
+  moneyLabel,
+} from "../../lib/opportunities/format.js";
 import { heightKeyProps } from "../../lib/navigation/rememberedHeights.js";
 import { fr } from "../../i18n/fr.js";
 import { Badge } from "../ui/Badge.js";
@@ -32,21 +37,21 @@ export function OpportunityRow({ opportunity, variant = "row", heightKey }: Oppo
   const href = `/opportunites/${opportunity.slug}`;
 
   return (
-    <li
-      {...heightKeyProps(heightKey, OPPORTUNITY_ROW_ESTIMATED_HEIGHT_PX)}
-      className="relative py-4"
-    >
+    <li {...heightKeyProps(heightKey, OPPORTUNITY_ROW_ESTIMATED_HEIGHT_PX)} className="py-4">
       <article
         aria-labelledby={titleId}
         className={cn(
-          "flex gap-3",
+          "relative flex gap-3",
           variant === "card" && "rounded-card border border-border bg-bg p-4",
-          opportunity.closed && "opacity-70",
         )}
       >
+        {/* Seule l'icône s'efface : le texte d'une offre clôturée garde un contraste de 4,5:1. */}
         <span
           aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-card bg-surface-2 text-text-2"
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-card bg-surface-2 text-text-2",
+            opportunity.closed && "opacity-70",
+          )}
         >
           <Icon className="size-5" />
         </span>
@@ -58,17 +63,25 @@ export function OpportunityRow({ opportunity, variant = "row", heightKey }: Oppo
           <a
             id={titleId}
             href={href}
-            className="break-words text-base font-semibold text-text after:absolute after:inset-0 hover:underline"
+            className={cn(
+              "break-words text-base font-semibold after:absolute after:inset-0 hover:underline",
+              opportunity.closed ? "text-subtle" : "text-text",
+            )}
           >
             {opportunity.title}
           </a>
-          <p className="text-sm text-text-2">
+          <p className={cn("text-sm", opportunity.closed ? "text-subtle" : "text-text-2")}>
             {opportunity.organization}
             <span aria-hidden="true"> · </span>
             {locationLabel(opportunity)}
           </p>
           {(money || deadline) && (
-            <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-muted">
+            <p
+              className={cn(
+                "flex flex-wrap gap-x-3 gap-y-0.5 text-sm",
+                opportunity.closed ? "text-subtle" : "text-muted",
+              )}
+            >
               {money && <span>{money}</span>}
               {deadline && <span>{deadline}</span>}
             </p>

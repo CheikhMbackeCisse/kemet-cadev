@@ -1,4 +1,9 @@
-import { isOpportunityClosed, type OpportunityDetail, type OpportunitySummary } from "@kemet/shared";
+import {
+  isOpportunityClosed,
+  type Level,
+  type OpportunityDetail,
+  type OpportunitySummary,
+} from "@kemet/shared";
 import type { OpportunityWithAuthor } from "./repositories/opportunities.js";
 
 export function serializeOpportunitySummary(
@@ -31,9 +36,14 @@ export function serializeOpportunitySummary(
   };
 }
 
-export function serializeOpportunityDetail(row: OpportunityWithAuthor, today: string): OpportunityDetail {
+export function serializeOpportunityDetail(
+  row: OpportunityWithAuthor,
+  authorLevel: Level,
+  today: string,
+): OpportunityDetail {
   return {
     ...serializeOpportunitySummary(row, today),
+    authorLevel,
     description: row.opportunity.description,
     criteria: row.opportunity.criteria,
     updatedAt: row.opportunity.updatedAt.toISOString(),

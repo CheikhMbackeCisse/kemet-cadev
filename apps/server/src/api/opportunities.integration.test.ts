@@ -123,6 +123,7 @@ describe.skipIf(!databaseUrl)("Opportunités (base Postgres réelle)", () => {
     const detail = await app.inject({ method: "GET", url: "/api/opportunities/erp-distribution-thies" });
     expect(detail.statusCode).toBe(200);
     expect(detail.json().opportunity.criteria).toHaveLength(2);
+    expect(detail.json().opportunity.authorLevel).toBe("apprenti");
   });
 
   it("refuse une publication sans compte, d'un compte suspendu, ou incohérente avec son type", async () => {

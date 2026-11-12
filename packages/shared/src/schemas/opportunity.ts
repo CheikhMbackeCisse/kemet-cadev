@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { levelSchema } from "./points.js";
 import { AFRICAN_COUNTRY_CODES } from "../data/countries.js";
 import { INTERESTS } from "../data/onboarding-values.js";
 
@@ -24,7 +25,9 @@ export type ContractType = z.infer<typeof contractTypeSchema>;
 
 const africanCountrySchema = z
   .string()
-  .refine((code) => AFRICAN_COUNTRY_CODES.includes(code), { message: "Choisis un pays d'Afrique." });
+  .refine((code) => AFRICAN_COUNTRY_CODES.includes(code), {
+    message: "Choisis un pays d'Afrique.",
+  });
 
 const isoDateSchema = z
   .string()
@@ -34,7 +37,12 @@ const isoDateSchema = z
     (value) => {
       const year = Number(value.slice(0, 4));
       const date = new Date(`${value}T00:00:00Z`);
-      return year >= 2000 && year <= 2100 && !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+      return (
+        year >= 2000 &&
+        year <= 2100 &&
+        !Number.isNaN(date.getTime()) &&
+        date.toISOString().slice(0, 10) === value
+      );
     },
     { message: "Date invalide." },
   );
@@ -70,26 +78,38 @@ function checkKindRules(input: OpportunityFields, context: z.RefinementCtx) {
   const issue = (path: keyof OpportunityFields, message: string) =>
     context.addIssue({ code: z.ZodIssueCode.custom, path: [path], message });
 
-  if (!input.remote && input.countryCode === null) issue("countryCode", "Choisis un pays, ou « À distance ».");
+  if (!input.remote && input.countryCode === null)
+    issue("countryCode", "Choisis un pays, ou « À distance ».");
   if (input.kind === "mission") {
     if (input.budgetMinFcfa === null) issue("budgetMinFcfa", "Indique un budget minimum.");
     if (input.budgetMaxFcfa === null) issue("budgetMaxFcfa", "Indique un budget maximum.");
-    if (input.budgetMinFcfa !== null && input.budgetMaxFcfa !== null && input.budgetMinFcfa > input.budgetMaxFcfa) {
+    if (
+      input.budgetMinFcfa !== null &&
+      input.budgetMaxFcfa !== null &&
+      input.budgetMinFcfa > input.budgetMaxFcfa
+    ) {
       issue("budgetMaxFcfa", "Le maximum doit dépasser le minimum.");
     }
     if (input.deadline === null) issue("deadline", "Indique une date limite de réponse.");
     if (input.criteria.length === 0) issue("criteria", "Indique au moins un critère.");
-    if (input.contractType !== null) issue("contractType", "Une mission n'a pas de type de contrat.");
+    if (input.contractType !== null)
+      issue("contractType", "Une mission n'a pas de type de contrat.");
     if (input.startDate !== null) issue("startDate", "Une mission n'a pas de date de début.");
-    if (input.compensationFcfa !== null) issue("compensationFcfa", "Une mission a un budget, pas une rémunération.");
+    if (input.compensationFcfa !== null)
+      issue("compensationFcfa", "Une mission a un budget, pas une rémunération.");
     return;
   }
   if (input.contractType === null) issue("contractType", "Choisis un type de contrat.");
-  if (input.kind === "internship" && input.contractType !== null && input.contractType !== "stage") {
+  if (
+    input.kind === "internship" &&
+    input.contractType !== null &&
+    input.contractType !== "stage"
+  ) {
     issue("contractType", "Un stage a un contrat de stage.");
   }
   if (input.startDate === null) issue("startDate", "Indique une date de début.");
-  if (input.budgetMinFcfa !== null || input.budgetMaxFcfa !== null) issue("budgetMinFcfa", "Le budget est réservé aux missions.");
+  if (input.budgetMinFcfa !== null || input.budgetMaxFcfa !== null)
+    issue("budgetMinFcfa", "Le budget est réservé aux missions.");
   if (input.criteria.length > 0) issue("criteria", "Les critères sont réservés aux missions.");
 }
 
@@ -103,7 +123,9 @@ export const createOpportunitySchema = opportunityFieldsSchema
       .min(3)
       .max(60)
       .regex(slugPattern, "Lettres minuscules, chiffres et tirets seulement.")
-      .refine((slug) => !RESERVED_OPPORTUNITY_SLUGS.includes(slug), { message: "Cet identifiant est réservé." }),
+      .refine((slug) => !RESERVED_OPPORTUNITY_SLUGS.includes(slug), {
+        message: "Cet identifiant est réservé.",
+      }),
   })
   .superRefine(checkKindRules);
 export type CreateOpportunityInput = z.infer<typeof createOpportunitySchema>;
@@ -153,6 +175,7 @@ export const opportunitySummarySchema = z.object({
 export type OpportunitySummary = z.infer<typeof opportunitySummarySchema>;
 
 export const opportunityDetailSchema = opportunitySummarySchema.extend({
+  authorLevel: levelSchema,
   description: z.string(),
   criteria: z.array(z.string()),
   updatedAt: z.string().datetime(),

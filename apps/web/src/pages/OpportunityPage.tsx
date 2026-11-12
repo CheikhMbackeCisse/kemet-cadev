@@ -2,11 +2,15 @@ import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isDeletedAccountHandle, type OpportunityDetail } from "@kemet/shared";
-import { ChatApiError, deleteOpportunity, getOpportunity, openConversation } from "../lib/chat/api.js";
+import {
+  ChatApiError,
+  deleteOpportunity,
+  getOpportunity,
+  openConversation,
+} from "../lib/chat/api.js";
 import { storeChannelDraft } from "../lib/chat/useChannelDraft.js";
 import { navigate } from "../lib/navigation/navigate.js";
 import {
-  countryName,
   deadlineLabel,
   formatFcfa,
   formatOfferDate,
@@ -38,7 +42,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div className="flex flex-col gap-0.5">
       <dt className="text-xs text-muted">{label}</dt>
-      <dd className="text-sm text-text">{children}</dd>
+      <dd className="text-base text-text">{children}</dd>
     </div>
   );
 }
@@ -46,31 +50,43 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 function OfferFacts({ offer }: { offer: OpportunityDetail }) {
   const deadline = offer.deadline ? formatOfferDate(offer.deadline) : null;
   return (
-    <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-card bg-surface-2 p-4 md:grid-cols-3">
-      <Fact label={fr.opportunities.locationLabel}>{locationLabel(offer)}</Fact>
-      {offer.contractType && (
-        <Fact label={fr.opportunities.contractLabel}>{fr.opportunities.contracts[offer.contractType]}</Fact>
-      )}
-      {offer.startDate && <Fact label={fr.opportunities.startLabel}>{formatOfferDate(offer.startDate)}</Fact>}
-      {offer.compensationFcfa !== null && (
-        <Fact label={fr.opportunities.compensationLabel}>
-          {fr.opportunities.perMonth(formatFcfa(offer.compensationFcfa))}
+    <section aria-labelledby="offer-facts" className="rounded-card bg-surface-2 p-4">
+      <h2 id="offer-facts" className="sr-only">
+        {fr.opportunities.detailsTitle}
+      </h2>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3">
+        <Fact label={fr.opportunities.locationLabel}>{locationLabel(offer)}</Fact>
+        {offer.contractType && (
+          <Fact label={fr.opportunities.contractLabel}>
+            {fr.opportunities.contracts[offer.contractType]}
+          </Fact>
+        )}
+        {offer.startDate && (
+          <Fact label={fr.opportunities.startLabel}>{formatOfferDate(offer.startDate)}</Fact>
+        )}
+        {offer.compensationFcfa !== null && (
+          <Fact label={fr.opportunities.compensationLabel}>
+            {fr.opportunities.perMonth(formatFcfa(offer.compensationFcfa))}
+          </Fact>
+        )}
+        {offer.budgetMinFcfa !== null && offer.budgetMaxFcfa !== null && (
+          <Fact label={fr.opportunities.budgetLabel}>
+            {offer.budgetMinFcfa === offer.budgetMaxFcfa
+              ? `${formatFcfa(offer.budgetMinFcfa)} FCFA`
+              : `${formatFcfa(offer.budgetMinFcfa)} à ${formatFcfa(offer.budgetMaxFcfa)} FCFA`}
+          </Fact>
+        )}
+        {deadline && <Fact label={fr.opportunities.deadlineLabel}>{deadline}</Fact>}
+        <Fact label={fr.opportunities.domainsLabel}>
+          {offer.domains
+            .map(
+              (domain) =>
+                fr.onboarding.interests[domain as keyof typeof fr.onboarding.interests] ?? domain,
+            )
+            .join(", ")}
         </Fact>
-      )}
-      {offer.budgetMinFcfa !== null && offer.budgetMaxFcfa !== null && (
-        <Fact label={fr.opportunities.budgetLabel}>
-          {offer.budgetMinFcfa === offer.budgetMaxFcfa
-            ? `${formatFcfa(offer.budgetMinFcfa)} FCFA`
-            : `${formatFcfa(offer.budgetMinFcfa)} à ${formatFcfa(offer.budgetMaxFcfa)} FCFA`}
-        </Fact>
-      )}
-      {deadline && <Fact label={fr.opportunities.deadlineLabel}>{deadline}</Fact>}
-      <Fact label={fr.opportunities.domainsLabel}>
-        {offer.domains
-          .map((domain) => fr.onboarding.interests[domain as keyof typeof fr.onboarding.interests] ?? domain)
-          .join(", ")}
-      </Fact>
-    </dl>
+      </dl>
+    </section>
   );
 }
 
@@ -93,7 +109,8 @@ function ApplyAction({ offer }: { offer: OpportunityDetail }) {
     );
   }
   if (!profile) return null;
-  if (profile.id === offer.authorId) return <p className="text-sm text-muted">{fr.opportunities.ownOffer}</p>;
+  if (profile.id === offer.authorId)
+    return <p className="text-base text-muted">{fr.opportunities.ownOffer}</p>;
 
   async function handleApply() {
     if (!profile) return;
@@ -108,7 +125,9 @@ function ApplyAction({ offer }: { offer: OpportunityDetail }) {
       navigate(`/messages/${conversation.id}`);
     } catch (error) {
       toast.show(
-        error instanceof ChatApiError && error.statusCode < 500 ? error.message : fr.opportunities.applyError,
+        error instanceof ChatApiError && error.statusCode < 500
+          ? error.message
+          : fr.opportunities.applyError,
         "danger",
       );
       setOpening(false);
@@ -132,7 +151,8 @@ export function OpportunityPage() {
   const query = useQuery({
     queryKey: ["opportunity", slug],
     queryFn: () => getOpportunity(slug),
-    retry: (count, error) => !(error instanceof ChatApiError && error.statusCode === 404) && count < 2,
+    retry: (count, error) =>
+      !(error instanceof ChatApiError && error.statusCode === 404) && count < 2,
   });
   const offer = query.data?.opportunity;
   const isAuthor = offer !== undefined && profile?.id === offer.authorId;
@@ -152,7 +172,10 @@ export function OpportunityPage() {
   }
 
   const header = (
-    <a href="/fil?onglet=opportunites" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
+    <a
+      href="/fil?onglet=opportunites"
+      className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
+    >
       <ArrowLeft className="size-4" aria-hidden="true" />
       {fr.opportunities.tab}
     </a>
@@ -212,9 +235,10 @@ export function OpportunityPage() {
                 {offer.closed && <Badge tone="danger">{fr.opportunities.closed}</Badge>}
               </div>
               <h1 className="break-words text-xl font-bold text-text">{offer.title}</h1>
-              <p className="text-sm text-text-2">
+              <p className="text-base text-text-2">
                 {offer.organization}
-                {offer.countryCode && !offer.remote ? ` · ${countryName(offer.countryCode)}` : ""}
+                <span aria-hidden="true"> · </span>
+                {locationLabel(offer)}
               </p>
             </div>
             {menuItems.length > 0 && <MoreActionsMenu items={menuItems} onSelect={onMenuSelect} />}
@@ -222,7 +246,7 @@ export function OpportunityPage() {
 
           <div className="flex flex-col gap-2">
             <ApplyAction offer={offer} />
-            {deadline && <p className="text-sm text-muted">{deadline}</p>}
+            {deadline && <p className="text-base text-muted">{deadline}</p>}
           </div>
 
           <OfferFacts offer={offer} />
@@ -241,7 +265,7 @@ export function OpportunityPage() {
           )}
 
           <section className="flex flex-col gap-2 border-t border-border pt-4">
-            <h2 className="text-sm text-muted">{fr.opportunities.publishedBy}</h2>
+            <h2 className="text-xs text-muted">{fr.opportunities.publishedBy}</h2>
             <ProfileLink handle={offer.authorHandle} className="flex w-fit items-center gap-2">
               <Avatar
                 deleted={isDeletedAccountHandle(offer.authorHandle)}
@@ -249,7 +273,7 @@ export function OpportunityPage() {
                 src={offer.authorAvatarUrl ?? undefined}
                 countryCode={offer.authorCountry}
               />
-              <UserName name={offer.authorDisplayName} />
+              <UserName name={offer.authorDisplayName} level={offer.authorLevel} />
             </ProfileLink>
           </section>
         </article>

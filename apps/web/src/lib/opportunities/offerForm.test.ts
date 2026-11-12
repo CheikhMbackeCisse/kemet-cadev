@@ -61,10 +61,17 @@ describe("formulaire d'offre", () => {
   });
 
   it("dit ce qui manque, champ par champ", () => {
-    const { input, errors } = buildOfferInput({ ...mission, budgetMin: "9 000 000", deadline: "", criteria: "" });
+    const { input, errors } = buildOfferInput({
+      ...mission,
+      budgetMin: "9 000 000",
+      deadline: "",
+      criteria: "",
+    });
     expect(input).toBeNull();
     expect(Object.keys(errors).sort()).toEqual(["budgetMax", "criteria", "deadline"]);
     expect(buildOfferInput({ ...job, countryCode: "" }).errors.countryCode).toBeDefined();
-    expect(buildOfferInput({ ...job, countryCode: "", remote: true }).errors.countryCode).toBeUndefined();
+    expect(
+      buildOfferInput({ ...job, countryCode: "", remote: true }).errors.countryCode,
+    ).toBeUndefined();
   });
 });

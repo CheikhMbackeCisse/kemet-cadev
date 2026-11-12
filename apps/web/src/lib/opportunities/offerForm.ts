@@ -106,7 +106,8 @@ export function buildOfferInput(draft: OfferDraft): {
   if (draft.title.trim().length < 5) errors.title = messages.title;
   if (draft.organization.trim().length < 2) errors.organization = messages.organization;
   if (!draft.remote && !draft.countryCode) errors.countryCode = messages.country;
-  if (draft.domains.length === 0 || draft.domains.length > MAX_OPPORTUNITY_DOMAINS) errors.domains = messages.domains;
+  if (draft.domains.length === 0 || draft.domains.length > MAX_OPPORTUNITY_DOMAINS)
+    errors.domains = messages.domains;
   if (draft.description.trim().length < 20) errors.description = messages.description;
 
   const isMission = draft.kind === "mission";

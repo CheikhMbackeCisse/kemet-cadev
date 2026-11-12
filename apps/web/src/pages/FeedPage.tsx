@@ -38,6 +38,7 @@ import {
   type PostFeedView,
 } from "../lib/feed/feedQuery.js";
 import { OpportunitiesFeed } from "../components/opportunities/OpportunitiesFeed.js";
+import { withoutOpportunityParams } from "../lib/opportunities/listState.js";
 import {
   OPPORTUNITY_ROW_ESTIMATED_HEIGHT_PX,
   OpportunityRow,
@@ -66,8 +67,7 @@ const offerHeightKey = (offerId: string) => `offer:${offerId}`;
 // Cartes glissées entre les posts : des projets, et des offres pour les RH et
 // les entrepreneurs.
 type SideCard =
-  | { type: "project"; project: FeedProject }
-  | { type: "offer"; offer: OpportunitySummary };
+  { type: "project"; project: FeedProject } | { type: "offer"; offer: OpportunitySummary };
 
 /** Une offre, puis un projet, puis une offre... tant qu'il en reste. */
 function alternateSideCards(offers: OpportunitySummary[], projects: FeedProject[]): SideCard[] {
@@ -85,6 +85,19 @@ function initialFeedView(): FeedView {
   return new URLSearchParams(window.location.search).get("onglet") === "opportunites"
     ? "opportunites"
     : "pour-toi";
+}
+
+// L'onglet Opportunités s'écrit dans l'adresse : le retour depuis une offre y revient.
+function writeFeedViewToUrl(view: FeedView) {
+  const params = new URLSearchParams(withoutOpportunityParams(window.location.search));
+  if (view === "opportunites") params.set("onglet", "opportunites");
+  else params.delete("onglet");
+  const search = params.toString();
+  window.history.replaceState(
+    window.history.state,
+    "",
+    window.location.pathname + (search ? `?${search}` : ""),
+  );
 }
 
 function RowPlaceholder({
@@ -406,7 +419,10 @@ export function FeedPage() {
         <Tabs
           layout="centered"
           value={tab}
-          onValueChange={(value) => setTab(value as FeedView)}
+          onValueChange={(value) => {
+            setTab(value as FeedView);
+            writeFeedViewToUrl(value as FeedView);
+          }}
           items={[
             {
               value: "pour-toi",

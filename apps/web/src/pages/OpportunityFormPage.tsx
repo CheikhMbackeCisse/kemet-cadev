@@ -1,7 +1,12 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CONTRACT_TYPES, OPPORTUNITY_KINDS, type OpportunityKind } from "@kemet/shared";
-import { ChatApiError, createOpportunity, getOpportunity, updateOpportunity } from "../lib/chat/api.js";
+import {
+  ChatApiError,
+  createOpportunity,
+  getOpportunity,
+  updateOpportunity,
+} from "../lib/chat/api.js";
 import { navigate } from "../lib/navigation/navigate.js";
 import { createWithSlugFromTitle } from "../lib/slugify.js";
 import {
@@ -26,7 +31,10 @@ import { Select } from "../components/ui/Select.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
 
-const KIND_OPTIONS = OPPORTUNITY_KINDS.map((kind) => ({ value: kind, label: fr.opportunities.kinds[kind] }));
+const KIND_OPTIONS = OPPORTUNITY_KINDS.map((kind) => ({
+  value: kind,
+  label: fr.opportunities.kinds[kind],
+}));
 // Le contrat de stage va de soi pour un stage : il ne se choisit que pour un emploi.
 const JOB_CONTRACT_OPTIONS = CONTRACT_TYPES.filter((type) => type !== "stage").map((type) => ({
   value: type,
@@ -40,11 +48,16 @@ function editedSlug(): string | null {
 }
 
 export function OpportunityFormPage() {
-  const { status, isSuspended } = useSession();
+  const { status, isSuspended, profile } = useSession();
   const queryClient = useQueryClient();
+  const domainsErrorId = useId();
   const [slug] = useState(editedSlug);
   const [draft, setDraft] = useState<OfferDraft>(EMPTY_OFFER_DRAFT);
-  const [loadState, setLoadState] = useState<"ready" | "loading" | "error">(slug ? "loading" : "ready");
+  const [loadState, setLoadState] = useState<"ready" | "loading" | "notFound" | "error">(
+    slug ? "loading" : "ready",
+  );
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [loadedAuthorId, setLoadedAuthorId] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors<OfferField>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,13 +68,24 @@ export function OpportunityFormPage() {
 
   useEffect(() => {
     if (!slug) return;
+    setLoadState("loading");
     getOpportunity(slug)
       .then(({ opportunity }) => {
         setDraft(draftFromOffer(opportunity));
+        setLoadedAuthorId(opportunity.authorId);
         setLoadState("ready");
       })
-      .catch(() => setLoadState("error"));
-  }, [slug]);
+      .catch((err: unknown) =>
+        setLoadState(err instanceof ChatApiError && err.statusCode === 404 ? "notFound" : "error"),
+      );
+  }, [slug, loadAttempt]);
+
+  // Seul l'auteur modifie : un autre compte retourne à l'offre avant d'avoir rien rempli.
+  useEffect(() => {
+    if (slug && profile && loadedAuthorId && loadedAuthorId !== profile.id) {
+      navigate(`/opportunites/${slug}`, { replace: true });
+    }
+  }, [slug, profile, loadedAuthorId]);
 
   function update<Key extends keyof OfferDraft>(key: Key, value: OfferDraft[Key]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -84,7 +108,11 @@ export function OpportunityFormPage() {
       queryClient.removeQueries({ queryKey: ["opportunity", opportunity.slug] });
       navigate(`/opportunites/${opportunity.slug}`);
     } catch (err) {
-      setError(err instanceof ChatApiError && err.statusCode === 400 ? err.message : fr.opportunities.saveError);
+      setError(
+        err instanceof ChatApiError && err.statusCode === 400
+          ? err.message
+          : fr.opportunities.saveError,
+      );
       setSubmitting(false);
     }
   }
@@ -110,8 +138,13 @@ export function OpportunityFormPage() {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-32 w-full" />
         </div>
-      ) : loadState === "error" ? (
+      ) : loadState === "notFound" ? (
         <ErrorState message={fr.opportunities.notFound} />
+      ) : loadState === "error" ? (
+        <ErrorState
+          message={fr.opportunities.editLoadingError}
+          retry={{ label: fr.chat.retry, onClick: () => setLoadAttempt((attempt) => attempt + 1) }}
+        />
       ) : (
         <>
           <FormField label={fr.opportunities.kindLabel}>
@@ -122,7 +155,11 @@ export function OpportunityFormPage() {
             />
           </FormField>
           <FormField label={fr.opportunities.titleLabel} error={errors.title}>
-            <Input value={draft.title} maxLength={120} onChange={(event) => update("title", event.target.value)} />
+            <Input
+              value={draft.title}
+              maxLength={120}
+              onChange={(event) => update("title", event.target.value)}
+            />
           </FormField>
           <FormField label={fr.opportunities.organizationLabel} error={errors.organization}>
             <Input
@@ -132,28 +169,40 @@ export function OpportunityFormPage() {
             />
           </FormField>
 
-          <label className="flex items-center gap-2 text-sm text-text">
-            <Checkbox checked={draft.remote} onCheckedChange={(checked) => update("remote", checked)} />
+          <label className="flex items-center gap-2 text-sm text-text max-md:min-h-11">
+            <Checkbox
+              checked={draft.remote}
+              onCheckedChange={(checked) => update("remote", checked)}
+            />
             {fr.opportunities.remoteLabel}
           </label>
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField label={fr.opportunities.countryLabel} error={errors.countryCode}>
-              <CountrySelect
-                value={draft.countryCode}
-                onValueChange={(countryCode) => update("countryCode", countryCode)}
-                placeholder={fr.opportunities.countryPlaceholder}
-              />
-            </FormField>
-            <FormField label={fr.opportunities.cityLabel}>
-              <Input value={draft.city} maxLength={60} onChange={(event) => update("city", event.target.value)} />
-            </FormField>
-          </div>
+          <FormField label={fr.opportunities.countryLabel} error={errors.countryCode}>
+            <CountrySelect
+              value={draft.countryCode}
+              onValueChange={(countryCode) => update("countryCode", countryCode)}
+              placeholder={fr.opportunities.countryPlaceholder}
+            />
+          </FormField>
+          <FormField label={fr.opportunities.cityLabel}>
+            <Input
+              value={draft.city}
+              maxLength={60}
+              onChange={(event) => update("city", event.target.value)}
+            />
+          </FormField>
 
           <fieldset className="flex flex-col gap-1">
-            <legend className="mb-1 text-sm text-text-2">{fr.opportunities.domainsFieldLabel}</legend>
-            <DomainGrid value={draft.domains} onChange={(domains) => update("domains", domains)} />
+            <legend className="mb-1 text-sm text-text-2">
+              {fr.opportunities.domainsFieldLabel}
+            </legend>
+            <DomainGrid
+              value={draft.domains}
+              onChange={(domains) => update("domains", domains)}
+              exclude={["other"]}
+              errorId={errors.domains ? domainsErrorId : undefined}
+            />
             {errors.domains && (
-              <p className="text-sm text-danger" role="alert">
+              <p id={domainsErrorId} className="text-sm text-danger" role="alert">
                 {errors.domains}
               </p>
             )}
@@ -168,28 +217,31 @@ export function OpportunityFormPage() {
 
           {isMission ? (
             <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField label={fr.opportunities.budgetMinLabel} error={errors.budgetMin}>
-                  <Input
-                    inputMode="numeric"
-                    value={draft.budgetMin}
-                    onChange={(event) => update("budgetMin", event.target.value)}
-                  />
-                </FormField>
-                <FormField label={fr.opportunities.budgetMaxLabel} error={errors.budgetMax}>
-                  <Input
-                    inputMode="numeric"
-                    value={draft.budgetMax}
-                    onChange={(event) => update("budgetMax", event.target.value)}
-                  />
-                </FormField>
-              </div>
+              <FormField label={fr.opportunities.budgetMinLabel} error={errors.budgetMin}>
+                <Input
+                  inputMode="numeric"
+                  value={draft.budgetMin}
+                  onChange={(event) => update("budgetMin", event.target.value)}
+                />
+              </FormField>
+              <FormField label={fr.opportunities.budgetMaxLabel} error={errors.budgetMax}>
+                <Input
+                  inputMode="numeric"
+                  value={draft.budgetMax}
+                  onChange={(event) => update("budgetMax", event.target.value)}
+                />
+              </FormField>
               <FormField label={fr.opportunities.deadlineFieldLabel} error={errors.deadline}>
-                <Input type="date" value={draft.deadline} onChange={(event) => update("deadline", event.target.value)} />
+                <Input
+                  type="date"
+                  value={draft.deadline}
+                  onChange={(event) => update("deadline", event.target.value)}
+                />
               </FormField>
               <FormField label={fr.opportunities.criteriaLabel} error={errors.criteria}>
                 <Textarea
                   variant="form"
+                  placeholder={fr.opportunities.criteriaPlaceholder}
                   value={draft.criteria}
                   onChange={(event) => update("criteria", event.target.value)}
                 />
@@ -209,23 +261,24 @@ export function OpportunityFormPage() {
                   />
                 </FormField>
               )}
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField label={fr.opportunities.startDateLabel} error={errors.startDate}>
-                  <Input
-                    type="date"
-                    value={draft.startDate}
-                    onChange={(event) => update("startDate", event.target.value)}
-                  />
-                </FormField>
-                <FormField label={fr.opportunities.jobDeadlineFieldLabel}>
-                  <Input
-                    type="date"
-                    value={draft.deadline}
-                    onChange={(event) => update("deadline", event.target.value)}
-                  />
-                </FormField>
-              </div>
-              <FormField label={fr.opportunities.compensationFieldLabel} error={errors.compensation}>
+              <FormField label={fr.opportunities.startDateLabel} error={errors.startDate}>
+                <Input
+                  type="date"
+                  value={draft.startDate}
+                  onChange={(event) => update("startDate", event.target.value)}
+                />
+              </FormField>
+              <FormField label={fr.opportunities.jobDeadlineFieldLabel}>
+                <Input
+                  type="date"
+                  value={draft.deadline}
+                  onChange={(event) => update("deadline", event.target.value)}
+                />
+              </FormField>
+              <FormField
+                label={fr.opportunities.compensationFieldLabel}
+                error={errors.compensation}
+              >
                 <Input
                   inputMode="numeric"
                   value={draft.compensation}

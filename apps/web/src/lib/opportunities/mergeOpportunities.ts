@@ -1,8 +1,7 @@
 import type { FeedProject, OpportunitySummary } from "@kemet/shared";
 
 export type OpportunityEntry =
-  | { kind: "offer"; item: OpportunitySummary }
-  | { kind: "project"; item: FeedProject };
+  { kind: "offer"; item: OpportunitySummary } | { kind: "project"; item: FeedProject };
 
 export interface MergeFilters {
   kind: string;
@@ -23,7 +22,8 @@ export function mergeOpportunities(
   filters: MergeFilters,
 ): OpportunityEntry[] {
   const showOffers = filters.kind !== "project";
-  const showProjects = (filters.kind === ALL || filters.kind === "project") && filters.domain === ALL;
+  const showProjects =
+    (filters.kind === ALL || filters.kind === "project") && filters.domain === ALL;
   const entries: OpportunityEntry[] = [
     ...(showOffers ? offers.map((item) => ({ kind: "offer" as const, item })) : []),
     ...(showProjects

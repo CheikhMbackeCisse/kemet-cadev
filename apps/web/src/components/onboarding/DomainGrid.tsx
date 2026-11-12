@@ -14,6 +14,10 @@ export interface DomainGridProps {
   value: Interest[];
   onChange: (value: Interest[]) => void;
   tone?: ChoiceTone;
+  /** Domaines à ne pas proposer, comme "Autre" quand rien ne permet de le préciser. */
+  exclude?: Interest[];
+  /** Identifiant du message d'erreur : la première case le porte et reçoit le focus. */
+  errorId?: string;
 }
 
 /**
@@ -22,7 +26,13 @@ export interface DomainGridProps {
  * à gauche, remplacée par une coche une fois choisie) pour que "Continuer"
  * reste visible sans défiler en 390 x 844.
  */
-export function DomainGrid({ value, onChange, tone = "page" }: DomainGridProps) {
+export function DomainGrid({
+  value,
+  onChange,
+  tone = "page",
+  exclude = [],
+  errorId,
+}: DomainGridProps) {
   function toggle(interest: Interest) {
     onChange(
       value.includes(interest) ? value.filter((item) => item !== interest) : [...value, interest],
@@ -33,7 +43,7 @@ export function DomainGrid({ value, onChange, tone = "page" }: DomainGridProps) 
     <fieldset>
       <legend className="sr-only">{fr.onboarding.interestsListLabel}</legend>
       <div className="grid auto-rows-fr grid-cols-2 gap-2 md:grid-cols-4">
-        {INTERESTS.map((interest) => {
+        {INTERESTS.filter((interest) => !exclude.includes(interest)).map((interest, index) => {
           const Icon = INTEREST_ICONS[interest];
           const checked = value.includes(interest);
           return (
@@ -42,6 +52,8 @@ export function DomainGrid({ value, onChange, tone = "page" }: DomainGridProps) 
                 type="checkbox"
                 checked={checked}
                 onChange={() => toggle(interest)}
+                aria-invalid={errorId && index === 0 ? true : undefined}
+                aria-describedby={errorId && index === 0 ? errorId : undefined}
                 className="peer sr-only"
               />
               <span
