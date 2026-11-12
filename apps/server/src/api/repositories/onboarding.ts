@@ -55,7 +55,8 @@ export function knownInterests(values: readonly string[]): Interest[] {
   });
 }
 
-function normalize(text: string): string {
+/** Minuscules sans accent : "Sécurité" et "securite" se comparent égaux. */
+export function normalize(text: string): string {
   return text
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
@@ -81,6 +82,11 @@ const KEYWORD_PATTERNS = Object.fromEntries(
 export function countMatchedInterests(text: string, interests: readonly Interest[]): number {
   const haystack = normalize(text);
   return interests.filter((interest) => KEYWORD_PATTERNS[interest]?.test(haystack)).length;
+}
+
+/** Vrai si un mot d'un des sujets apparaît dans un texte déjà passé par `normalize`. */
+export function mentionsAnyInterest(normalizedText: string, interests: readonly Interest[]): boolean {
+  return interests.some((interest) => KEYWORD_PATTERNS[interest]?.test(normalizedText));
 }
 
 /**

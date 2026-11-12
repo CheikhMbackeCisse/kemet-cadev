@@ -1,14 +1,11 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { profiles, type Db } from "@kemet/db";
+import { containsPattern } from "./like-pattern.js";
 
 const ROLES_BY_KIND = {
   school: ["student"],
   company: ["developer", "hr", "entrepreneur"],
 } as const;
-
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (character) => `\\${character}`);
-}
 
 /**
  * Noms déjà saisis par d'autres, les plus fréquents d'abord. Deux écritures
@@ -33,7 +30,7 @@ export async function listOrganizationSuggestions(
         isNull(profiles.deletedAt),
         isNull(profiles.suspendedAt),
         eq(profiles.isFiller, false),
-        ...(query ? [sql`${profiles.organization} ilike ${`%${escapeLike(query)}%`}`] : []),
+        ...(query ? [sql`${profiles.organization} ilike ${containsPattern(query)}`] : []),
       ),
     )
     .groupBy(key)

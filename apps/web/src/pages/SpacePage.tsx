@@ -184,6 +184,21 @@ export function SpacePage() {
     composer.setSelectionRange(composer.value.length, composer.value.length);
   }, [activeChannelId, canWrite]);
 
+  // Un espace trouvé par la recherche n'est pas toujours dans la page chargée de la liste.
+  function openSearchedSpace(found: Space) {
+    setSpaces((current) =>
+      current.some((space) => space.id === found.id)
+        ? current.map((space) =>
+            space.id === found.id
+              ? { ...space, role: found.role, memberCount: found.memberCount }
+              : space,
+          )
+        : [found, ...current],
+    );
+    setActiveSpaceId(found.id);
+    setActiveChannelId(null);
+  }
+
   function switchChannel(channelId: string) {
     // Une pièce jointe appartient à son salon (le serveur la refuserait
     // ailleurs) ; le brouillon de texte, lui, reste gardé par salon.
@@ -485,6 +500,7 @@ export function SpacePage() {
           channelsError,
           onRetryChannels: () => activeSpaceId && void refreshChannels(activeSpaceId),
           canCreateSpace: canWrite,
+          search: { canJoin: canInteract, onOpen: openSearchedSpace },
         }}
         channelList={{
           // Le nombre de membres est déjà dans le titre du panneau de droite.

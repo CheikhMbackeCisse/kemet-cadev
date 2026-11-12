@@ -8,6 +8,7 @@ import {
   ConversationListSkeleton,
 } from "../components/messaging/ConversationList.js";
 import { ConversationView } from "../components/messaging/ConversationView.js";
+import { PeopleSearch } from "../components/messaging/PeopleSearch.js";
 import { SalonsSegment } from "../components/shell/SalonsSegment.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { Tabs } from "../components/ui/Tabs.js";
@@ -172,7 +173,11 @@ export function MessagesPage() {
         isDesktop
           ? {
               title: fr.messages.title,
-              content: <ConversationBoxes activeConversationId={conversationId} />,
+              content: (
+                <PeopleSearch layout="panel">
+                  <ConversationBoxes activeConversationId={conversationId} />
+                </PeopleSearch>
+              ),
               footer: <NewConversationLink />,
             }
           : undefined
@@ -190,10 +195,12 @@ export function MessagesPage() {
           <>
             <SalonsSegment active="messages" />
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <ConversationBoxes activeConversationId={null} />
-              <div className="border-t border-border px-2 py-3">
-                <NewConversationLink />
-              </div>
+              <PeopleSearch layout="page">
+                <ConversationBoxes activeConversationId={null} />
+                <div className="border-t border-border px-2 py-3">
+                  <NewConversationLink />
+                </div>
+              </PeopleSearch>
             </div>
           </>
         )}

@@ -1,6 +1,7 @@
 export const fr = {
   common: {
     back: "Retour",
+    clearSearch: "Effacer la recherche",
     cancel: "Annuler",
     moreActions: "Plus d'actions",
     requiredField: "Champ obligatoire.",
@@ -675,6 +676,16 @@ export const fr = {
     assistantCitedAuthor: "de",
   },
   spaces: {
+    searchLabel: "Chercher un espace",
+    searchPlaceholder: "Chercher un espace",
+    searchResults: "Espaces trouvés",
+    searchEmpty: (query: string) => `Aucun espace public pour « ${query} ».`,
+    searchError: "La recherche n'a pas abouti.",
+    join: "Rejoindre",
+    joinLabel: (name: string) => `Rejoindre ${name}`,
+    joined: "Membre",
+    joinError: "Impossible de rejoindre cet espace.",
+    memberCount: (count: number) => (count > 1 ? `${count} membres` : `${count} membre`),
     spaceWithUnread: (name: string) => `${name}, messages non lus`,
     channelWithUnread: (name: string, count: number) =>
       `${name}, ${count} ${count > 1 ? "messages non lus" : "message non lu"}`,
@@ -1291,6 +1302,12 @@ export const fr = {
   },
   messages: {
     title: "Messages",
+    searchLabel: "Chercher une personne",
+    searchPlaceholder: "Chercher une personne",
+    searchResults: "Personnes trouvées",
+    searchEmpty: (query: string) => `Personne ne correspond à « ${query} ».`,
+    searchError: "La recherche n'a pas abouti.",
+    writeTo: (name: string) => `Écrire à ${name}`,
     segmentLabel: "Salons ou messages privés",
     segmentSalons: "Salons",
     segmentMessages: "Messages",

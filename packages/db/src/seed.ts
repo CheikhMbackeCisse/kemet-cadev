@@ -7,6 +7,7 @@ import { seedShowcase } from "./seed/showcase.js";
 import { seedOpportunities } from "./seed/opportunities.js";
 import { renameCadevSpace } from "./seed/chat-content.js";
 import { completeDemoRoleDetails } from "./seed/role-details.js";
+import { seedHackathonsSpace } from "./seed/hackathons.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -52,6 +53,12 @@ async function main(): Promise<void> {
   const roleDetails = await completeDemoRoleDetails(db);
   if (roleDetails > 0)
     console.log(`Précision du rôle posée sur ${roleDetails} profils de démonstration.`);
+  const hackathons = await seedHackathonsSpace(db);
+  console.log(
+    hackathons.status === "done"
+      ? `Espace Hackathons et concours : ${hackathons.messages} messages ajoutés.`
+      : `Espace Hackathons et concours sauté : ${hackathons.reason}.`,
+  );
   const offers = await seedOpportunities(db);
   console.log(
     offers.status === "done"

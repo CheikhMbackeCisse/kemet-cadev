@@ -29,3 +29,4 @@ export * from "./data/audience.js";
 export * from "./demo-email.js";
 export * from "./schemas/onboarding.js";
 export * from "./skill-code-excerpt.js";
+export * from "./schemas/search.js";

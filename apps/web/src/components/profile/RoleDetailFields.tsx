@@ -1,23 +1,13 @@
-import { useEffect, useId, useState } from "react";
+import { useId } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ORGANIZATION_MAX_LENGTH, type ProfileRole, type ProfileWorkMode } from "@kemet/shared";
 import { listOrganizationSuggestions } from "../../lib/chat/api.js";
 import { cn } from "../../lib/cn.js";
+import { useDebounced } from "../../lib/useDebounced.js";
 import { fr } from "../../i18n/fr.js";
 import { RadioList } from "../onboarding/RadioList.js";
 import type { ChoiceTone } from "../onboarding/choiceTone.js";
 import { Input } from "../ui/Input.js";
-
-const SUGGESTION_DELAY_MS = 200;
-
-function useDebounced(value: string): string {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebounced(value), SUGGESTION_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [value]);
-  return debounced;
-}
 
 /** Saisie libre, avec en suggestion les noms déjà saisis par d'autres. */
 function OrganizationInput({

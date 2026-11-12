@@ -190,6 +190,16 @@ export function addSpaceMember(spaceId: string, handle: string) {
   });
 }
 
+export function searchSpaces(query: string) {
+  const params = new URLSearchParams({ q: query });
+  return request<{ items: Space[] }>(`/api/spaces/search?${params.toString()}`);
+}
+
+export function searchPeople(query: string) {
+  const params = new URLSearchParams({ q: query });
+  return request<{ items: ProfileSummary[] }>(`/api/people/search?${params.toString()}`);
+}
+
 export function joinSpace(spaceId: string) {
   return request<{ joined: boolean }>(`/api/spaces/${spaceId}/join`, { method: "POST" });
 }

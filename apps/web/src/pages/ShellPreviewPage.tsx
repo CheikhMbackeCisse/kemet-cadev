@@ -44,6 +44,7 @@ export function ShellPreviewPage() {
         channelsError: false,
         onRetryChannels: () => {},
         canCreateSpace: true,
+        search: { canJoin: true, onOpen: (space) => setActiveSpaceId(space.id) },
       }}
       channelList={{
         spaceName: "Accueil",

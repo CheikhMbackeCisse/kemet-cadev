@@ -8,11 +8,13 @@ import { getTestDatabaseUrl, resetTestDatabase } from "../testing.js";
 import {
   assistantInvocations,
   BEGINNERS_SPACE_ID,
+  channels,
   messages,
   posts,
   profileCvs,
   profiles,
   spaceMembers,
+  spaces,
 } from "../schema/index.js";
 import { DEMO_ACCOUNTS } from "./accounts.js";
 import { seedDemoDataset } from "./demo-dataset.js";
@@ -20,6 +22,7 @@ import { seedDemoMedia } from "./demo-media.js";
 import { DEMO_CVS, NEWCOMER_ACCOUNTS, NEWCOMER_POSTS } from "./newcomers-content.js";
 import { seedNewcomers } from "./newcomers.js";
 import { completeDemoRoleDetails, DEMO_ROLE_DETAILS } from "./role-details.js";
+import { HACKATHON_MESSAGES, seedHackathonsSpace } from "./hackathons.js";
 
 const databaseUrl = getTestDatabaseUrl();
 const passwordHash = () => Promise.resolve("hash-de-test");
@@ -137,5 +140,21 @@ describe.skipIf(!databaseUrl)("débutants, recruteurs et bibliothèques de démo
     });
     expect(byHandle.get("ahou-kouadio")).toMatchObject({ role: "student" });
     expect(byHandle.get("ebo-quansah")).toMatchObject({ role: null, organization: null });
+    await db.update(profiles).set({ isDemo: true }).where(eq(profiles.handle, "ebo-quansah"));
+  });
+
+  it("crée l'espace Hackathons et concours une seule fois, public et animé", async () => {
+    expect(await seedHackathonsSpace(db)).toEqual({
+      status: "done",
+      messages: HACKATHON_MESSAGES.length,
+    });
+    expect(await seedHackathonsSpace(db)).toEqual({ status: "done", messages: 0 });
+    const [space] = await db
+      .select({ id: spaces.id, visibility: spaces.visibility })
+      .from(spaces)
+      .where(eq(spaces.slug, "hackathons-concours"));
+    expect(space?.visibility).toBe("public");
+    expect(await db.$count(spaceMembers, eq(spaceMembers.spaceId, space!.id))).toBeGreaterThan(100);
+    expect(await db.$count(channels, eq(channels.spaceId, space!.id))).toBe(3);
   });
 });

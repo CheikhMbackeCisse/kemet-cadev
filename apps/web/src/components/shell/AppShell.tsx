@@ -1,5 +1,7 @@
 import { ArrowLeft, PanelRight, Plus, Users } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { Space } from "@kemet/shared";
+import { SpaceSearch } from "../spaces/SpaceSearch.js";
 import { useMobileChatView } from "../../lib/chat/useMobileChatView.js";
 import { useEdgeSwipe } from "../../lib/useEdgeSwipe.js";
 import { MobileSpaceNavigator } from "./MobileSpaceNavigator.js";
@@ -28,6 +30,8 @@ export interface AppShellSpaces {
   onRetryChannels: () => void;
   /** Faux pour un visiteur ou un compte suspendu : le lien n'est pas rendu. */
   canCreateSpace: boolean;
+  /** Recherche des espaces publics, en tête de la liste. */
+  search: { canJoin: boolean; onOpen: (space: Space) => void };
 }
 
 export interface AppShellProps {
@@ -89,18 +93,20 @@ export function AppShell({
       sidePanel={{
         title: sectionLabel("salons"),
         content: (
-          <SpaceTree
-            title={spaces.title}
-            status={spaces.status}
-            onRetry={spaces.onRetry}
-            spaces={spaces.items}
-            activeSpaceId={spaces.activeSpaceId}
-            onSelectSpace={spaces.onSelect}
-            channels={channelList.channels}
-            channelsLoading={spaces.channelsLoading}
-            activeChannelId={channelList.activeChannelId}
-            onSelectChannel={channelList.onSelect}
-          />
+          <SpaceSearch layout="panel" canJoin={spaces.search.canJoin} onOpen={spaces.search.onOpen}>
+            <SpaceTree
+              title={spaces.title}
+              status={spaces.status}
+              onRetry={spaces.onRetry}
+              spaces={spaces.items}
+              activeSpaceId={spaces.activeSpaceId}
+              onSelectSpace={spaces.onSelect}
+              channels={channelList.channels}
+              channelsLoading={spaces.channelsLoading}
+              activeChannelId={channelList.activeChannelId}
+              onSelectChannel={channelList.onSelect}
+            />
+          </SpaceSearch>
         ),
         footer: spaces.canCreateSpace ? <CreateSpaceLink /> : undefined,
       }}
@@ -112,26 +118,32 @@ export function AppShell({
             className="flex min-h-0 flex-1 flex-col pb-[calc(44px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:hidden"
           >
             <SalonsSegment active="salons" />
-            <MobileSpaceNavigator
-              title={spaces.title}
-              status={spaces.status}
-              onRetry={spaces.onRetry}
-              spaces={spaces.items}
-              activeSpaceId={spaces.activeSpaceId}
-              onSelectSpace={spaces.onSelect}
-              spaceName={channelList.spaceName}
-              channels={channelList.channels}
-              channelsLoading={spaces.channelsLoading}
-              channelsError={spaces.channelsError}
-              onRetryChannels={spaces.onRetryChannels}
-              activeChannelId={channelList.activeChannelId}
-              onSelectChannel={(id) => {
-                channelList.onSelect(id);
-                openChat();
-              }}
+            <SpaceSearch
+              layout="page"
+              canJoin={spaces.search.canJoin}
+              onOpen={spaces.search.onOpen}
+            >
+              <MobileSpaceNavigator
+                title={spaces.title}
+                status={spaces.status}
+                onRetry={spaces.onRetry}
+                spaces={spaces.items}
+                activeSpaceId={spaces.activeSpaceId}
+                onSelectSpace={spaces.onSelect}
+                spaceName={channelList.spaceName}
+                channels={channelList.channels}
+                channelsLoading={spaces.channelsLoading}
+                channelsError={spaces.channelsError}
+                onRetryChannels={spaces.onRetryChannels}
+                activeChannelId={channelList.activeChannelId}
+                onSelectChannel={(id) => {
+                  channelList.onSelect(id);
+                  openChat();
+                }}
 
-              canCreateSpace={spaces.canCreateSpace}
-            />
+                canCreateSpace={spaces.canCreateSpace}
+              />
+            </SpaceSearch>
           </div>
         )}
         <div
