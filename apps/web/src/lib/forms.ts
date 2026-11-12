@@ -18,16 +18,17 @@ export function requiredFieldErrors<Name extends string>(
   return errors;
 }
 
-/** Champ obligatoire avec une longueur minimale, comme le schéma du serveur. */
+/** Champ obligatoire avec des bornes de longueur, comme le schéma du serveur. */
 export function validateFields<Name extends string>(
-  fields: Record<Name, { value: string | null | undefined; min?: number }>,
+  fields: Record<Name, { value: string | null | undefined; min?: number; max?: number }>,
 ): FieldErrors<Name> {
   const errors: FieldErrors<Name> = {};
   for (const name of Object.keys(fields) as Name[]) {
-    const { value, min } = fields[name];
+    const { value, min, max } = fields[name];
     const length = value?.trim().length ?? 0;
     if (length === 0) errors[name] = fr.common.requiredField;
     else if (min && length < min) errors[name] = fr.common.tooShort(min);
+    else if (max && length > max) errors[name] = fr.common.tooLong(max);
   }
   return errors;
 }

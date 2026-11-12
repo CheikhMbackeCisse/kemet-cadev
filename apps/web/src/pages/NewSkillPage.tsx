@@ -62,8 +62,8 @@ export function NewSkillPage() {
     event.preventDefault();
     setError(null);
     const errors = validateFields({
-      name: { value: name, min: 3 },
-      description: { value: description, min: 10 },
+      name: { value: name, min: 3, max: 60 },
+      description: { value: description, min: 10, max: 200 },
       content: { value: content },
     });
     setFieldErrors(errors);
