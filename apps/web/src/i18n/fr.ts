@@ -825,6 +825,8 @@ export const fr = {
     attachVideo: "Ajouter une vidéo",
     removeVideo: "Retirer la vidéo",
     videoPreparing: "Préparation de la vidéo…",
+    playVideo: (name: string) => `Lire la vidéo ${name}`,
+    videoUnsupported: "Ton navigateur ne lit pas cette vidéo.",
     videoUploading: (percent: number) => `Envoi de la vidéo : ${percent} %`,
     videoWrongType: "Seules les vidéos MP4 ou WebM sont acceptées.",
     videoTooBig: "La vidéo dépasse 20 Mo.",

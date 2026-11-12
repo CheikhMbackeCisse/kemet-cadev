@@ -5,6 +5,7 @@ import { postAttachmentUrl } from "../../lib/chat/api.js";
 import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
 import { frameRatio } from "../../lib/feed/frameRatio.js";
+import { PostVideo } from "./PostVideo.js";
 
 export interface PostImagesProps {
   attachments: Attachment[];
@@ -158,7 +159,18 @@ export function PostImages({ attachments: all, className, linked = true, credit 
     ) : null;
   }
 
-  const ratio = frameRatio(attachments[0]!, attachments.length > 1);
+  // Une vidéo se publie seule (règle du serveur).
+  const first = attachments[0]!;
+  if (first.kind === "video") {
+    return (
+      <div className={className}>
+        <PostVideo attachment={first} playable={linked} />
+        {credit && <Credit credit={credit} />}
+      </div>
+    );
+  }
+
+  const ratio = frameRatio(first, attachments.length > 1);
   // Dans un lien (aperçu d'un post partagé), pas de bouton : la première
   // image et le nombre d'images.
   const single = attachments.length === 1 || !linked;
