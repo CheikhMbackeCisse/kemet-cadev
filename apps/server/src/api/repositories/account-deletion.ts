@@ -195,10 +195,15 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .select({ storageKey: messageAttachments.storageKey })
     .from(messageAttachments)
     .where(eq(messageAttachments.authorId, profileId));
-  const postFiles = await tx
-    .select({ storageKey: postAttachments.storageKey })
+  const postRows = await tx
+    .select({ storageKey: postAttachments.storageKey, posterStorageKey: postAttachments.posterStorageKey })
     .from(postAttachments)
     .where(eq(postAttachments.authorId, profileId));
+  // L'image d'aperçu d'une vidéo est un second fichier sur le disque.
+  const postFiles = postRows.flatMap((row) => [
+    { storageKey: row.storageKey },
+    ...(row.posterStorageKey ? [{ storageKey: row.posterStorageKey }] : []),
+  ]);
   // Le PDF d'un travail porte en général le nom de son auteur : il part avec
   // le compte, comme les images de post. Le travail reste, sans pièce jointe.
   const workFiles = await tx

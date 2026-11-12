@@ -45,11 +45,13 @@
 	# font-src accepte data: : Vite insère en base64 les plus petits fichiers
 	# de police de @fontsource, bloqués sinon.
 	# img-src blob: : aperçu local d'une image choisie, avant son envoi.
-	# media-src : vidéos des travaux, servies par l'API sur la même origine.
+	# media-src : vidéos des travaux et des posts, servies par l'API sur la même
+	# origine ; blob: pour lire dans le navigateur une vidéo choisie avant son
+	# envoi, le temps d'en tirer l'image d'aperçu.
 	# frame-src : seul le lecteur YouTube sans cookie, chargé au clic.
 	# L'API pose sa propre politique, plus stricte.
 	handle {
-		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self'; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 		reverse_proxy web:8080
 	}
 }

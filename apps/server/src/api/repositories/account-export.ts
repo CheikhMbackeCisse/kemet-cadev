@@ -63,7 +63,7 @@ function omit<Columns extends object, Key extends keyof Columns>(
 // Détails internes (clé de stockage, index de recherche) et identité des
 // administrateurs qui ont traité une demande : jamais dans l'export.
 const messageAttachmentColumns = omit(getTableColumns(messageAttachments), "storageKey");
-const postAttachmentColumns = omit(getTableColumns(postAttachments), "storageKey");
+const postAttachmentColumns = omit(getTableColumns(postAttachments), "storageKey", "posterStorageKey");
 const skillColumns = omit(getTableColumns(skills), "searchVector");
 const competitionColumns = omit(getTableColumns(competitions), "reviewedBy");
 const reportColumns = omit(getTableColumns(reports), "resolvedBy");

@@ -340,6 +340,47 @@ export function postAttachmentUrl(attachmentId: string): string {
   return `/api/post-attachments/${attachmentId}/content`;
 }
 
+export function postVideoPosterUrl(attachmentId: string): string {
+  return `/api/post-attachments/${attachmentId}/poster`;
+}
+
+/**
+ * Vidéo d'un post et son image d'aperçu, en un envoi. XMLHttpRequest plutôt
+ * que fetch : seul lui donne l'avancement de l'envoi, utile en 3G.
+ */
+export function uploadPostVideo(
+  video: File,
+  poster: Blob,
+  onProgress: (fraction: number) => void,
+): Promise<Attachment> {
+  const formData = new FormData();
+  formData.append("poster", poster, "apercu.jpg");
+  formData.append("video", video);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/posts/videos");
+    xhr.withCredentials = true;
+    xhr.responseType = "json";
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      const body = xhr.response as { attachment?: Attachment; error?: { code?: string; message?: string } } | null;
+      if (xhr.status >= 200 && xhr.status < 300 && body?.attachment) resolve(body.attachment);
+      else
+        reject(
+          new ChatApiError(
+            body?.error?.code ?? "unknown_error",
+            body?.error?.message ?? "Une erreur est survenue.",
+            xhr.status,
+          ),
+        );
+    };
+    xhr.onerror = () => reject(new ChatApiError("network_error", "La connexion a été coupée pendant l'envoi.", 0));
+    xhr.send(formData);
+  });
+}
+
 export function editMessage(messageId: string, body: string) {
   return request<{ message: Message }>(`/api/messages/${messageId}`, {
     method: "PATCH",

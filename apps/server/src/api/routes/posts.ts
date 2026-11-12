@@ -230,6 +230,10 @@ export function registerPostRoutes(
         for (const attachmentId of attachmentIds) {
           const pending = await findPendingPostAttachment(tx, attachmentId, profile.id);
           if (!pending) throw badRequest("Une image envoyée n'est plus disponible pour ce post.");
+          // Une vidéo est seule sur son post : ni deux vidéos, ni vidéo et images.
+          if (pending.mimeType.startsWith("video/") && attachmentIds.length > 1) {
+            throw badRequest("Une vidéo se publie seule, sans autre image ni vidéo.");
+          }
         }
         const created = await insertPost(tx, {
           authorId: profile.id,

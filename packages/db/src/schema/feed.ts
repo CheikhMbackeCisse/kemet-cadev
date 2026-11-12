@@ -81,6 +81,12 @@ export const postAttachments = pgTable(
     // avant l'arrivée de l'image. Nulles pour les images d'avant G13.
     width: integer("width"),
     height: integer("height"),
+    // Vidéo (type video/*) : durée lue dans le conteneur, et image d'aperçu
+    // extraite par le navigateur à l'envoi. Nulles pour une image.
+    durationMs: integer("duration_ms"),
+    posterStorageKey: text("poster_storage_key").unique(),
+    posterMimeType: text("poster_mime_type"),
+    posterByteSize: bigint("poster_byte_size", { mode: "number" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

@@ -36,6 +36,7 @@ import { registerSkillRoutes } from "./routes/skills.js";
 import { registerAssistantRoutes } from "./routes/assistant.js";
 import { registerPostRoutes } from "./routes/posts.js";
 import { registerPostAttachmentRoutes } from "./routes/post-attachments.js";
+import { registerPostVideoRoutes } from "./routes/post-videos.js";
 import { registerProjectRoutes } from "./routes/projects.js";
 import { registerOpportunityRoutes } from "./routes/opportunities.js";
 import { registerCompetitionRoutes } from "./routes/competitions.js";
@@ -224,6 +225,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerAssistantRoutes(app, chatDeps);
     registerPostRoutes(app, chatDeps);
     registerPostAttachmentRoutes(app, chatDeps);
+    registerPostVideoRoutes(app, chatDeps);
     registerProjectRoutes(app, chatDeps);
     registerOpportunityRoutes(app, chatDeps);
     registerCompetitionRoutes(app, chatDeps);

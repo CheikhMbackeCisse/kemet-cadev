@@ -3,7 +3,9 @@ import { postAttachments, type Db, type DbOrTx } from "@kemet/db";
 
 export async function sumUserPostAttachmentBytes(db: DbOrTx, authorId: string): Promise<number> {
   const [row] = await db
-    .select({ total: sql<string>`coalesce(sum(${postAttachments.byteSize}), 0)` })
+    .select({
+      total: sql<string>`coalesce(sum(${postAttachments.byteSize} + coalesce(${postAttachments.posterByteSize}, 0)), 0)`,
+    })
     .from(postAttachments)
     .where(eq(postAttachments.authorId, authorId));
   return Number(row?.total ?? 0);
@@ -19,6 +21,10 @@ export async function insertPendingPostAttachment(
     byteSize: number;
     width: number | null;
     height: number | null;
+    durationMs?: number;
+    posterStorageKey?: string;
+    posterMimeType?: string;
+    posterByteSize?: number;
   },
 ) {
   const [attachment] = await db.insert(postAttachments).values(input).returning();

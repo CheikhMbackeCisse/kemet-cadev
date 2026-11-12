@@ -4,11 +4,12 @@ import { deletePostAttachmentRow, listOrphanPostAttachments } from "../api/repos
 
 const GRACE_PERIOD_MS = 60 * 60 * 1000;
 
-/** Supprime les images restées sans post (composeur abandonné) depuis plus d'une heure. */
+/** Supprime les images et vidéos (avec leur aperçu) restées sans post (composeur abandonné) depuis plus d'une heure. */
 export async function cleanupOrphanPostAttachments(db: Db, storage: FileStorage): Promise<number> {
   const orphans = await listOrphanPostAttachments(db, new Date(Date.now() - GRACE_PERIOD_MS));
   for (const attachment of orphans) {
     await storage.delete(attachment.storageKey);
+    if (attachment.posterStorageKey) await storage.delete(attachment.posterStorageKey);
     await deletePostAttachmentRow(db, attachment.id);
   }
   return orphans.length;

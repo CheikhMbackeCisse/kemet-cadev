@@ -1,5 +1,5 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { Image as ImageIcon, X } from "lucide-react";
+import { Clapperboard, Image as ImageIcon, X } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { MAX_POST_ATTACHMENTS, type Attachment, type PostFormat } from "@kemet/shared";
 import { Button } from "../components/ui/Button.js";
@@ -13,7 +13,9 @@ import {
   createPost,
   postAttachmentUrl,
   uploadPostAttachment,
+  uploadPostVideo,
 } from "../lib/chat/api.js";
+import { prepareVideo, VideoCheckError } from "../lib/feed/videoPoster.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { hasFieldErrors, requiredFieldErrors, type FieldErrors } from "../lib/forms.js";
@@ -35,6 +37,13 @@ export function NewPostPage() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors<"body" | "testUrl">>({});
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [video, setVideo] = useState<{ attachment: Attachment; posterUrl: string } | null>(null);
+  const [videoStatus, setVideoStatus] = useState<string | null>(null);
+
+  useEffect(() => () => {
+    if (video) URL.revokeObjectURL(video.posterUrl);
+  }, [video]);
 
   useEffect(() => {
     if (status === "visitor") navigate("/connexion");
@@ -59,12 +68,35 @@ export function NewPostPage() {
     }
   }
 
+  async function handleVideoSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    setVideoStatus(fr.feed.videoPreparing);
+    try {
+      const prepared = await prepareVideo(file);
+      setVideoStatus(fr.feed.videoUploading(0));
+      const attachment = await uploadPostVideo(file, prepared.poster, (fraction) =>
+        setVideoStatus(fr.feed.videoUploading(Math.round(fraction * 100))),
+      );
+      setVideo({ attachment, posterUrl: URL.createObjectURL(prepared.poster) });
+    } catch (err) {
+      const message =
+        err instanceof VideoCheckError || err instanceof ChatApiError ? err.message : fr.feed.videoUploadError;
+      toast.show(message, "danger");
+    } finally {
+      setUploading(false);
+      setVideoStatus(null);
+    }
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
     const errors: FieldErrors<"body" | "testUrl"> = {
       ...(format === "a_tester" ? requiredFieldErrors({ testUrl }) : {}),
-      ...(!body.trim() && attachments.length === 0 ? { body: fr.feed.bodyOrImageRequired } : {}),
+      ...(!body.trim() && attachments.length === 0 && !video ? { body: fr.feed.bodyOrImageRequired } : {}),
     };
     setFieldErrors(errors);
     if (hasFieldErrors(errors)) return;
@@ -75,7 +107,7 @@ export function NewPostPage() {
         format: format === "none" ? null : format,
         testUrl: format === "a_tester" ? testUrl.trim() : null,
         testAsk: format === "a_tester" ? testAsk.trim() : null,
-        attachmentIds: attachments.map((attachment) => attachment.id),
+        attachmentIds: video ? [video.attachment.id] : attachments.map((attachment) => attachment.id),
         isBeginner,
       });
       navigate("/fil");
@@ -129,6 +161,25 @@ export function NewPostPage() {
             ))}
           </div>
         )}
+        {video && (
+          <div className="relative w-40">
+            <img
+              src={video.posterUrl}
+              alt={video.attachment.originalName}
+              className="aspect-[9/16] w-full rounded-card border border-border bg-black object-contain"
+            />
+            <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-xs tabular-nums text-white">
+              {fr.feed.videoDuration(Math.round((video.attachment.durationMs ?? 0) / 1000))}
+            </span>
+            <IconButton
+              aria-label={fr.feed.removeVideo}
+              onClick={() => setVideo(null)}
+              className="absolute -right-2 -top-2 size-control-compact max-md:size-control-mobile bg-surface"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </IconButton>
+          </div>
+        )}
         <input
           ref={imageInputRef}
           type="file"
@@ -136,17 +187,41 @@ export function NewPostPage() {
           className="hidden"
           onChange={handleImageSelected}
         />
-        <Button
-          type="button"
-          variant="secondary"
-          className="self-start"
-          onClick={() => imageInputRef.current?.click()}
-          loading={uploading}
-          disabled={isSuspended || attachments.length >= MAX_POST_ATTACHMENTS}
-        >
-          <ImageIcon className="size-4" aria-hidden="true" />
-          {fr.feed.attachImage}
-        </Button>
+        <input
+          ref={videoInputRef}
+          type="file"
+          accept="video/mp4,video/webm"
+          className="hidden"
+          onChange={handleVideoSelected}
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => imageInputRef.current?.click()}
+            loading={uploading && !videoStatus}
+            disabled={isSuspended || uploading || video !== null || attachments.length >= MAX_POST_ATTACHMENTS}
+          >
+            <ImageIcon className="size-4" aria-hidden="true" />
+            {fr.feed.attachImage}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => videoInputRef.current?.click()}
+            loading={videoStatus !== null}
+            disabled={isSuspended || uploading || video !== null || attachments.length > 0}
+          >
+            <Clapperboard className="size-4" aria-hidden="true" />
+            {fr.feed.attachVideo}
+          </Button>
+        </div>
+        {videoStatus && (
+          <p role="status" className="text-sm text-text-2">
+            {videoStatus}
+          </p>
+        )}
+
       </div>
 
       <label className="flex flex-col gap-1 text-sm text-text-2">

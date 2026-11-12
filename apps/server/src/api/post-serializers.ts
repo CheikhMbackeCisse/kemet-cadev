@@ -20,11 +20,11 @@ type PostAttachmentRow = typeof postAttachments.$inferSelect;
 export function serializePostAttachment(row: PostAttachmentRow, removed = false): Attachment {
   return {
     id: row.id,
-    kind: "image",
+    kind: row.mimeType.startsWith("video/") ? "video" : "image",
     mimeType: row.mimeType,
     originalName: row.originalName,
     byteSize: row.byteSize,
-    durationMs: null,
+    durationMs: row.durationMs,
     width: row.width,
     height: row.height,
     createdAt: row.createdAt.toISOString(),

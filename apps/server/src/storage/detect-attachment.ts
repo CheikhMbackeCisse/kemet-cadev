@@ -7,8 +7,8 @@ import {
 } from "@kemet/shared";
 
 export interface DetectedAttachment {
-  // Un message vocal passe par sa propre route (detectVoice), jamais par celle-ci.
-  kind: Exclude<Attachment["kind"], "voice">;
+  // Un message vocal (detectVoice) et une vidéo de post ont leur propre route.
+  kind: Exclude<Attachment["kind"], "voice" | "video">;
   mimeType: string;
 }
 
