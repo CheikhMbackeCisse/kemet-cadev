@@ -289,7 +289,7 @@ export function ProjectPage() {
               href={project.datacloudDeployUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-control max-md:h-control-mobile items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+              className="inline-flex h-control max-md:h-control-mobile items-center justify-center gap-2 rounded-control bg-action-strong px-4 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover"
             >
               <Rocket className="size-4" aria-hidden="true" />
               {fr.projects.deployOnDatacloud}
@@ -306,7 +306,7 @@ export function ProjectPage() {
           {isOwner && (
             <a
               href={`/projets/${slug}/demandes/nouvelle`}
-              className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+              className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center rounded-control bg-action-strong px-4 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover"
             >
               {fr.projects.createHelpRequestTitle}
             </a>

@@ -334,7 +334,7 @@ export function CompetitionPage() {
                 {myTeam && !myTeam.hasSubmission && competition.phase === "submission" && (
                   <a
                     href={`/competitions/${slug}/soumettre`}
-                    className="inline-flex h-control max-md:h-control-mobile w-fit items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+                    className="inline-flex h-control max-md:h-control-mobile w-fit items-center justify-center rounded-control bg-action-strong px-4 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover"
                   >
                     {fr.competitions.submitProjectTitle}
                   </a>

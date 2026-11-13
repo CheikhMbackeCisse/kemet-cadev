@@ -48,7 +48,7 @@ export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarPro
             </a>
             <a
               href="/inscription"
-              className="inline-flex h-control-mobile items-center justify-center whitespace-nowrap rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+              className="inline-flex h-control-mobile items-center justify-center whitespace-nowrap rounded-control bg-action-strong px-4 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover"
             >
               {fr.auth.visitorBarSignup}
             </a>

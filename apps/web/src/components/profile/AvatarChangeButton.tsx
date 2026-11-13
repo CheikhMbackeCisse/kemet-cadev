@@ -103,7 +103,7 @@ export function AvatarChangeButton({
         onClick={() => inputRef.current?.click()}
         className={cn(
           // Zone de toucher de 44 px autour d'une pastille de 28.
-          "relative inline-flex size-7 items-center justify-center rounded-full border-2 border-bg bg-primary text-white hover:bg-primary-hover disabled:opacity-60",
+          "relative inline-flex size-7 items-center justify-center rounded-full border-2 border-bg bg-action-strong text-on-action-strong hover:bg-action-strong-hover disabled:opacity-60",
           "after:absolute after:-inset-2 after:content-['']",
           busy && "animate-pulse",
         )}

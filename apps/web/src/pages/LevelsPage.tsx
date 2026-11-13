@@ -195,7 +195,7 @@ export function LevelsPage() {
                 <p className="text-base text-text-2">{fr.levels.visitorPosition}</p>
                 <a
                   href={SIGN_UP_PATH}
-                  className="inline-flex h-control items-center rounded-control bg-primary px-3 text-sm font-medium text-white hover:bg-primary-hover"
+                  className="inline-flex h-control items-center rounded-control bg-action-strong px-3 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover"
                 >
                   {fr.levels.visitorCta}
                 </a>

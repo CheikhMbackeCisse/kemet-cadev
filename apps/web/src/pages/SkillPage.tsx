@@ -179,7 +179,7 @@ export function SkillPage() {
       {status === "visitor" ? (
         <a
           href="/connexion"
-          className="inline-flex h-control max-md:h-control-mobile items-center justify-center self-start rounded-control bg-primary px-4 text-base font-medium text-white hover:bg-primary-hover"
+          className="inline-flex h-control max-md:h-control-mobile items-center justify-center self-start rounded-control bg-action-strong px-4 text-base font-medium text-on-action-strong hover:bg-action-strong-hover"
         >
           {fr.skills.askKemetSignIn}
         </a>

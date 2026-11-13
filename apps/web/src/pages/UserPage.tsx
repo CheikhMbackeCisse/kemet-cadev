@@ -323,7 +323,7 @@ export function UserPage() {
               ) : (
                 <a
                   href={SIGN_UP_PATH}
-                  className="inline-flex h-control items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover max-md:h-control-mobile"
+                  className="inline-flex h-control items-center justify-center rounded-control bg-action-strong px-4 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover max-md:h-control-mobile"
                 >
                   {fr.organizations.follow}
                 </a>

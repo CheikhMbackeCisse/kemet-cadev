@@ -113,7 +113,7 @@ export function ProjectFeedCard({
           {firstRole && !isOwner && (
             <a
               href={viewerProfileId ? `${href}?aider=${firstRole.id}` : SIGN_UP_PATH}
-              className={`${LINK_BUTTON_CLASS} bg-primary text-white hover:bg-primary-hover`}
+              className={`${LINK_BUTTON_CLASS} bg-action-strong text-on-action-strong hover:bg-action-strong-hover`}
             >
               {viewerProfileId ? fr.feed.offerHelp : fr.feed.offerHelpVisitor}
             </a>
