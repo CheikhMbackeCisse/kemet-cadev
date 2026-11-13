@@ -345,7 +345,11 @@ export function UserPage() {
   }
 
   return (
-    <ReadingPage header={header} activeMobileTab={isOwnProfile ? "moi" : ""}>
+    <ReadingPage
+      header={header}
+      activeSection={isOwnProfile ? "moi" : undefined}
+      activeMobileTab={isOwnProfile ? "moi" : ""}
+    >
       <div className="flex flex-col gap-3">
         <ProfileHeader
           profile={profile}

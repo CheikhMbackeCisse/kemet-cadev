@@ -176,14 +176,14 @@ export function ModerationPage() {
 
   if (!isPlatformAdmin) {
     return (
-      <RailPage className="items-center justify-center gap-4 px-4 py-8">
+      <RailPage activeSection="moderation" className="items-center justify-center gap-4 px-4 py-8">
         <EmptyState icon={ShieldAlert} message={fr.moderation.forbidden} />
       </RailPage>
     );
   }
 
   return (
-    <RailPage className="gap-6 px-4 pt-3 lg:pt-6">
+    <RailPage activeSection="moderation" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <h1 className="text-lg font-bold text-text">{fr.moderation.title}</h1>
       </div>

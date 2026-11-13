@@ -1,8 +1,10 @@
 import { Award, User } from "lucide-react";
 import {
   MOBILE_TAB_ORDER,
+  MODERATION_NAV,
   NAV_SECTIONS,
   RAIL_FOOTER_NAV,
+  SAVED_NAV,
   SECURITY_NAV,
   SETTINGS_NAV,
   type RailNavItem,
@@ -34,7 +36,16 @@ export function mobileTabFor(sectionId: string): string {
   const section = NAV_SECTIONS.find((candidate) => candidate.id === sectionId);
   if (section?.mobile === "moi") return "";
   if (section?.mobile === "salons") return "salons";
-  if ([SETTINGS_NAV.id, RAIL_FOOTER_NAV.id, SECURITY_NAV.id].includes(sectionId)) return MOI_TAB_ID;
+  if (
+    [
+      SETTINGS_NAV.id,
+      RAIL_FOOTER_NAV.id,
+      SECURITY_NAV.id,
+      SAVED_NAV.id,
+      MODERATION_NAV.id,
+    ].includes(sectionId)
+  )
+    return MOI_TAB_ID;
   return sectionId;
 }
 

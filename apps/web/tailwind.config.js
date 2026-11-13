@@ -44,6 +44,7 @@ export default {
         "auth-glass-border": "var(--auth-glass-border)",
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
+        "nav-active": "var(--nav-active)",
         "level-badge-text": "var(--level-badge-text)",
         "level-apprenti": "var(--level-apprenti)",
         "level-artisan": "var(--level-artisan)",
@@ -84,6 +85,7 @@ export default {
       },
       width: {
         "activity-bar": "56px",
+        sidebar: "232px",
         "side-panel": "264px",
         panel: "300px",
       },

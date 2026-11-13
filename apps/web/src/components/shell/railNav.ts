@@ -1,5 +1,7 @@
 import {
+  Bookmark,
   BookOpen,
+  Flag,
   FolderGit2,
   House,
   LockKeyhole,
@@ -72,6 +74,22 @@ export const SETTINGS_NAV: RailNavItem = {
   icon: Settings,
 };
 
+/** Sur bureau, sous les sections, pour un compte connecté ; dans la page Moi sur mobile. */
+export const SAVED_NAV: RailNavItem = {
+  id: "enregistres",
+  label: "Enregistrés",
+  href: "/enregistres",
+  icon: Bookmark,
+};
+
+/** Au pied de la barre sur bureau, pour un administrateur seulement. */
+export const MODERATION_NAV: RailNavItem = {
+  id: "moderation",
+  label: "Modération",
+  href: "/moderation",
+  icon: Flag,
+};
+
 export function sectionLabel(id: string): string {
   return NAV_SECTIONS.find((section) => section.id === id)?.label ?? "";
 }
@@ -87,5 +105,7 @@ export function activeRailSection(pathname: string): string {
   if (pathname.startsWith("/messages")) return "messages";
   if (pathname === "/confidentialite") return "confidentialite";
   if (pathname === "/securite") return "securite";
+  if (pathname === "/enregistres") return "enregistres";
+  if (pathname === "/moderation") return "moderation";
   return "";
 }

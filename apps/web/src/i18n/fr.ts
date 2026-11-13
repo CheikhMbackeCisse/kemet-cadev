@@ -139,7 +139,7 @@ export const fr = {
     visitorBannerCta: "Se connecter pour participer",
     visitorBarLabel: "Compte",
     visitorBarSignup: "Créer un compte",
-    accountMenuLabel: (name: string) => `Menu du compte de ${name}`,
+    accountLinkLabel: (name: string, handle: string) => `Mon profil, ${name}, @${handle}`,
     backToApp: "Retour",
   },
   onboarding: {

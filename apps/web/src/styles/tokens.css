@@ -25,6 +25,8 @@
   --link: #1265dd;
   --accent-soft: #ecf3ff;
   --accent-soft-2: #dbe9fd;
+  /* Section ouverte de la barre latérale : plus sombre que le survol (surface-2). */
+  --nav-active: #e1e7ef;
   --level-badge-text: #0f56bd;
   --level-apprenti: #2e7d32;
   --level-artisan: #a14f00;
@@ -69,6 +71,7 @@
     --link: #7fb0f7;
     --accent-soft: #16233d;
     --accent-soft-2: #1d2e50;
+    --nav-active: #283553;
     --level-badge-text: #7fb0f7;
     --level-apprenti: #5cc46b;
     --level-artisan: #e8a33c;
@@ -145,6 +148,7 @@
   --link: #7fb0f7;
   --accent-soft: #16233d;
   --accent-soft-2: #1d2e50;
+  --nav-active: #283553;
   --level-badge-text: #7fb0f7;
   --level-apprenti: #5cc46b;
   --level-artisan: #e8a33c;

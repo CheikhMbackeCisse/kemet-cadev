@@ -16,7 +16,8 @@ export function SavedPostsPage() {
 
   return (
     <ReadingPage
-      activeSection="moi"
+      activeSection="enregistres"
+      activeMobileTab="moi"
       header={<h1 className="text-lg font-bold text-text">{fr.saved.title}</h1>}
       className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
     >
