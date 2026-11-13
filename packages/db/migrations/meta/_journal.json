@@ -295,6 +295,13 @@
       "when": 1794537047442,
       "tag": "0041_profile_avatars",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794557223809,
+      "tag": "0042_feed_pinned_posts",
+      "breakpoints": true
     }
   ]
 }

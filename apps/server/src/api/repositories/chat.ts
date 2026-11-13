@@ -1,6 +1,7 @@
 import { customAlphabet } from "nanoid";
-import { and, asc, count, desc, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import {
+  BEGINNERS_SPACE_ID,
   channels,
   messageMentions,
   messageReactions,
@@ -85,6 +86,14 @@ export async function findSpaceMembership(db: Db, spaceId: string, profileId: st
   return member ?? null;
 }
 
+// En tête de la liste, pour tout le monde, visiteurs compris : le premier pas,
+// puis la compétition du moment.
+const CADEV_SPACE_SLUG = "cadev-2026";
+
+function featuredRank(space: { id: string }): number {
+  return space.id === BEGINNERS_SPACE_ID ? 0 : 1;
+}
+
 // `profileId` est `null` pour un visiteur : seuls les espaces publics sont visibles.
 export async function listSpacesForViewer(
   db: Db,
@@ -106,31 +115,48 @@ export async function listSpacesForViewer(
       : eq(spaces.visibility, "public");
   // L'espace système des discussions de travaux ne figure jamais dans la liste.
   const listed = and(visibility, isNull(spaces.archivedAt), eq(spaces.kind, "community"));
-  const condition = cursor ? and(listed, lt(spaces.createdAt, new Date(cursor))) : listed;
-  const rows = profileId
-    ? await db
-        .select({ space: spaces, role: spaceMembers.role })
-        .from(spaces)
-        .leftJoin(
-          spaceMembers,
-          and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.profileId, profileId)),
-        )
-        .where(condition)
-        .orderBy(desc(spaces.createdAt))
-        .limit(limit + 1)
-    : (
-        await db
+  const featured = or(eq(spaces.id, BEGINNERS_SPACE_ID), eq(spaces.slug, CADEV_SPACE_SLUG));
+  const notFeatured = and(ne(spaces.id, BEGINNERS_SPACE_ID), ne(spaces.slug, CADEV_SPACE_SLUG));
+  const select = (where: ReturnType<typeof and>, max: number) =>
+    profileId
+      ? db
+          .select({ space: spaces, role: spaceMembers.role })
+          .from(spaces)
+          .leftJoin(
+            spaceMembers,
+            and(eq(spaceMembers.spaceId, spaces.id), eq(spaceMembers.profileId, profileId)),
+          )
+          .where(where)
+          .orderBy(desc(spaces.createdAt))
+          .limit(max)
+      : db
           .select({ space: spaces })
           .from(spaces)
-          .where(condition)
+          .where(where)
           .orderBy(desc(spaces.createdAt))
-          .limit(limit + 1)
-      ).map((row) => ({ ...row, role: null }));
+          .limit(max)
+          .then((rows) => rows.map((row) => ({ ...row, role: null })));
+  // Les espaces mis en avant ouvrent la première page et ne reviennent pas
+  // dans les suivantes : le curseur ne porte que sur les autres.
+  const head = cursor
+    ? []
+    : (await select(and(listed, featured), 2)).sort(
+        (first, second) => featuredRank(first.space) - featuredRank(second.space),
+      );
+  const condition = and(
+    listed,
+    notFeatured,
+    cursor ? lt(spaces.createdAt, new Date(cursor)) : undefined,
+  );
+  const rows = await select(condition, limit + 1);
   const page = toPage(
     rows.map((row) => ({ ...row.space, role: row.role })),
     limit,
   );
-  return page;
+  return {
+    ...page,
+    items: [...head.map((row) => ({ ...row.space, role: row.role })), ...page.items],
+  };
 }
 
 /** Espace public le plus actif sur la période, pour ouvrir les salons d'un visiteur. */

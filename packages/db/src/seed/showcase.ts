@@ -62,7 +62,7 @@ async function profileIdsByHandle(db: DbOrTx, handles: string[]): Promise<Map<st
  * Complète les cœurs d'un post jusqu'à `target` avec des figurants (ADR 0032) :
  * comptés, jamais montrés. N'en retire jamais.
  */
-async function topUpHearts(db: DbOrTx, postId: string, target: number): Promise<void> {
+export async function topUpHearts(db: DbOrTx, postId: string, target: number): Promise<void> {
   const reactions = await db
     .select({ profileId: postReactions.profileId })
     .from(postReactions)

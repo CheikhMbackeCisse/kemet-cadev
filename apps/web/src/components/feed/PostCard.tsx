@@ -1,7 +1,7 @@
 import { navigate } from "../../lib/navigation/navigate.js";
 import { heightKeyProps } from "../../lib/navigation/rememberedHeights.js";
 import { useEffect, useState, type MouseEvent } from "react";
-import { Bookmark, CheckCircle2, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
+import { Bookmark, CheckCircle2, Heart, MessageCircle, Pin, Repeat2, Share2 } from "lucide-react";
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
@@ -40,10 +40,7 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
     );
   }
   return (
-    <a
-      href={`/fil/${post.id}`}
-      className="mt-2 block rounded-card bg-surface-2 p-3"
-    >
+    <a href={`/fil/${post.id}`} className="mt-2 block rounded-card bg-surface-2 p-3">
       <div className="flex items-center gap-2">
         <Avatar
           name={post.authorDisplayName}
@@ -74,10 +71,7 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
 function WorkPreview({ work }: { work: PostSummary["work"] }) {
   if (!work) return null;
   return (
-    <a
-      href={`/travaux/${work.slug}`}
-      className="mt-2 block rounded-card bg-surface-2 p-3"
-    >
+    <a href={`/travaux/${work.slug}`} className="mt-2 block rounded-card bg-surface-2 p-3">
       <p className="text-xs text-muted">{WORK_TYPE_LABELS[work.type]}</p>
       <p className="mt-0.5 text-sm font-medium text-text">{work.title}</p>
       <p className="mt-1 line-clamp-3 text-sm text-text-2">{work.excerpt}</p>
@@ -253,8 +247,16 @@ export function PostCard({
         POST_ROW_CLASS,
         bodyHref && OFFSCREEN_SKIP_CLASS,
         bodyHref && !heightKey && "[contain-intrinsic-size:auto_220px]",
-              )}
+      )}
     >
+      {post.pinned && !reposter && (
+        <p className="mb-1 flex items-center gap-3 text-xs font-medium text-muted">
+          <span className="flex w-8 shrink-0 justify-end">
+            <Pin className="size-4" aria-hidden="true" />
+          </span>
+          {fr.feed.pinned}
+        </p>
+      )}
       {reposter && (
         <p className="mb-1 flex items-center gap-3 text-xs font-medium text-muted">
           <span className="flex w-8 shrink-0 justify-end">
@@ -472,6 +474,7 @@ export function PostCard({
                   : undefined
               }
               recorded={post.kemetAnswer.assistant?.recorded ?? false}
+              defaultExpanded={post.pinned ?? false}
               hideFeedback
             />
           )}

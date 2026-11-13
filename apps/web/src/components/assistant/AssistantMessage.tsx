@@ -38,6 +38,8 @@ export interface AssistantMessageProps {
   recorded?: boolean;
   /** Réponse en train d'arriver : jamais repliée, on la lit pendant qu'elle s'écrit. */
   streaming?: boolean;
+  /** Réponse montrée dépliée d'emblée, pour un post épinglé qu'on vient lire. */
+  defaultExpanded?: boolean;
   className?: string;
 }
 
@@ -74,10 +76,11 @@ export function AssistantMessage({
   initialFeedback = null,
   recorded = false,
   streaming = false,
+  defaultExpanded = false,
   className,
 }: AssistantMessageProps) {
   const [feedback, setFeedback] = useState<"helpful" | "not-helpful" | null>(initialFeedback);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const body = useLongContent(!streaming);
   const contentId = useId();
   const collapsed = body.long && !expanded;

@@ -50,6 +50,7 @@ export function ChatSearch({
   const trimmed = useDebounced(query.trim().slice(0, SEARCH_QUERY_MAX_LENGTH));
   const searching = query.trim().length > 0;
   const label = signedIn ? fr.chatSearch.label : fr.chatSearch.visitorLabel;
+  const placeholder = signedIn ? fr.chatSearch.placeholder : fr.chatSearch.visitorLabel;
 
   function openSearch() {
     // Le focus dans le même geste que le toucher : sans lui, Safari n'ouvre
@@ -82,7 +83,7 @@ export function ChatSearch({
       <div className="flex h-full min-h-0 flex-col">
         <SearchField
           label={label}
-          placeholder={label}
+          placeholder={placeholder}
           value={query}
           onChange={setQuery}
           className="mx-2 mb-1 mt-3 shrink-0"
@@ -119,7 +120,7 @@ export function ChatSearch({
           <div className="chat-search-reveal absolute inset-x-0 -bottom-px top-0 z-10 flex items-center gap-1 border-b border-border bg-bg pl-3 pr-1">
             <SearchField
               label={label}
-              placeholder={label}
+              placeholder={placeholder}
               value={query}
               onChange={setQuery}
               inputRef={inputRef}

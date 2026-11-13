@@ -9,6 +9,7 @@ import { seedDemoOrganizations } from "./seed/organizations.js";
 import { renameCadevSpace } from "./seed/chat-content.js";
 import { completeDemoRoleDetails } from "./seed/role-details.js";
 import { seedHackathonsSpace } from "./seed/hackathons.js";
+import { seedCadevSpace } from "./seed/cadev-space.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -76,6 +77,12 @@ async function main(): Promise<void> {
     showcase.status === "done"
       ? "Vitrine du fil (question Wave et réponse de Kocc) en place."
       : `Vitrine du fil sautée : ${showcase.reason}.`,
+  );
+  const cadevSpace = await seedCadevSpace(db);
+  console.log(
+    cadevSpace.status === "done"
+      ? `Espace CADEV 2026 : ${cadevSpace.messages} messages et ${cadevSpace.replies} réponses au post de Systalink ajoutés.`
+      : `Espace CADEV 2026 sauté : ${cadevSpace.reason}.`,
   );
   console.log(
     `Médias de démonstration : ${media.posts} posts, ${media.postImages} images sur des posts existants, ` +

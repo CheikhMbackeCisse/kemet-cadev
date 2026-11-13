@@ -28,7 +28,9 @@ export const posts = pgTable(
       .references(() => profiles.id, { onDelete: "cascade" }),
     // Un partage est un post ordinaire qui pointe vers l'original, sans table
     // dédiée. Il disparaît avec son auteur ou avec l'original.
-    sharedPostId: uuid("shared_post_id").references((): AnyPgColumn => posts.id, { onDelete: "cascade" }),
+    sharedPostId: uuid("shared_post_id").references((): AnyPgColumn => posts.id, {
+      onDelete: "cascade",
+    }),
     body: text("body").notNull().default(""),
     format: postFormatEnum("format"),
     testUrl: text("test_url"),
@@ -115,6 +117,19 @@ export const spacePinnedPosts = pgTable("space_pinned_posts", {
   postId: uuid("post_id")
     .notNull()
     .references(() => posts.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Posts épinglés en tête du fil "Pour toi", pour tout le monde, visiteurs
+ * compris, dans l'ordre de `position`. Posés par le seed seulement : le post
+ * "La CADEV 2026 en bref" puis la question Wave et la réponse de Kocc.
+ */
+export const feedPinnedPosts = pgTable("feed_pinned_posts", {
+  postId: uuid("post_id")
+    .primaryKey()
+    .references(() => posts.id, { onDelete: "cascade" }),
+  position: integer("position").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

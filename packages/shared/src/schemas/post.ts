@@ -151,6 +151,8 @@ export const postSummarySchema = z.object({
   repostedBy: postRepostedBySchema.nullable().optional(),
   /** Fil seulement : première réponse terminée de @kocc, affichée dépliée sous le post. */
   kemetAnswer: z.lazy(() => postReplySchema.nullable()).optional(),
+  /** Fil "Pour toi" seulement : épinglé en tête pour tout le monde (réponse de Kocc dépliée). */
+  pinned: z.boolean().optional(),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
   deletedAt: z.string().datetime().nullable(),

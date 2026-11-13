@@ -183,15 +183,19 @@ export function registerPostRoutes(
       const query = feedQuerySchema.parse(request.query);
       // Un visiteur n'a pas d'abonnements : "Pour toi" lui est servi à la
       // place de l'onglet Abonnements. "Pour débuter" lui reste ouvert.
+      const pourToi =
+        query.tab !== "debuter" && (query.tab === "pour-toi" || !profile)
+          ? await listPourToiFeed(db, profile?.id ?? null, query.limit, {
+              talent: prefersTalentFeed(profile?.role ?? null),
+              beginner: profile !== null && isBeginnerAudience(profile),
+            })
+          : null;
       const page =
-        query.tab === "debuter"
+        pourToi ??
+        (query.tab === "debuter" || !profile
           ? await listBeginnerFeed(db, profile?.id ?? null, query.cursor, query.limit)
-          : query.tab === "pour-toi" || !profile
-            ? await listPourToiFeed(db, profile?.id ?? null, query.limit, {
-                talent: prefersTalentFeed(profile?.role ?? null),
-                beginner: profile !== null && isBeginnerAudience(profile),
-              })
-            : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit);
+          : await listAbonnementsFeed(db, profile.id, query.cursor, query.limit));
+      const pinnedIds = pourToi?.pinnedIds ?? new Set<string>();
       const viewerProfileId = profile?.id ?? null;
       const postIds = page.items.map((post) => post.id);
       const [items, kemetAnswers, reposters] = await Promise.all([
@@ -211,6 +215,7 @@ export function registerPostRoutes(
           ...item,
           kemetAnswer: answerByPostId.get(item.id) ?? null,
           repostedBy: reposters.get(item.id) ?? null,
+          pinned: pinnedIds.has(item.id),
         })),
         nextCursor: page.nextCursor,
       };

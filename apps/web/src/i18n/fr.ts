@@ -688,7 +688,7 @@ export const fr = {
   },
   chatSearch: {
     label: "Chercher un espace ou une personne",
-    placeholder: "Chercher un espace ou une personne",
+    placeholder: "Espace ou personne",
     visitorLabel: "Chercher un espace",
     open: "Rechercher",
     close: "Fermer",
@@ -911,6 +911,7 @@ export const fr = {
     repostError: "La republication n'a pas pu être modifiée.",
     repostedBy: (name: string) => `${name} a republié`,
     repostedByMe: "Tu as republié",
+    pinned: "Épinglé",
     menuFollow: "S'abonner",
     menuUnfollow: "Se désabonner",
     menuViewProfile: "Voir son profil",

@@ -35,6 +35,16 @@ describe("AssistantMessage, réponse longue", () => {
     );
   });
 
+  it("montre dépliée la réponse d'un post épinglé, qui peut encore se replier", () => {
+    setContentHeight(600);
+    render(<AssistantMessage content={<p>Longue réponse</p>} hideFeedback defaultExpanded />);
+
+    const toggle = screen.getByRole("button", { name: "Voir moins" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Voir plus" })).toBeInTheDocument();
+  });
+
   it("se déplie au toucher de la réponse, mais pas d'un lien qu'elle contient", () => {
     setContentHeight(600);
     render(

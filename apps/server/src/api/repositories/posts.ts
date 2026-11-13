@@ -1,5 +1,6 @@
-import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, notInArray, sql } from "drizzle-orm";
 import {
+  feedPinnedPosts,
   follows,
   postBookmarks,
   postFeedback,
@@ -9,6 +10,7 @@ import {
   posts,
   profiles,
   spaceMembers,
+  spaces,
   works,
   type Db,
   type DbOrTx,
@@ -267,8 +269,31 @@ export async function listPostsByAuthor(
 }
 
 /**
+ * Posts épinglés en tête de "Pour toi" (table posée par le seed), pour tout le
+ * monde. Un post d'espace n'y entre que si son espace est public : l'épingle
+ * le montre à qui n'en est pas membre, jamais le contenu d'un espace privé.
+ */
+export async function listFeedPinnedPosts(db: Db) {
+  const rows = await db
+    .select({ post: posts })
+    .from(feedPinnedPosts)
+    .innerJoin(posts, eq(posts.id, feedPinnedPosts.postId))
+    .leftJoin(spaces, eq(spaces.id, posts.spaceId))
+    .where(
+      and(
+        isNull(posts.deletedAt),
+        notWrittenByFiller(posts.authorId),
+        sql`(${posts.spaceId} is null or (${spaces.visibility} = 'public' and ${spaces.archivedAt} is null))`,
+      ),
+    )
+    .orderBy(asc(feedPinnedPosts.position));
+  return rows.map((row) => row.post);
+}
+
+/**
  * Liste bornée, sans curseur : le score n'est pas monotone avec la date, un
- * curseur stable demanderait de figer le score au premier chargement.
+ * curseur stable demanderait de figer le score au premier chargement. Les
+ * posts épinglés passent devant et ne reviennent pas plus bas.
  */
 export async function listPourToiFeed(
   db: Db,
@@ -297,6 +322,8 @@ export async function listPourToiFeed(
   // Le score reste hors du select : dans une requête sur une seule table,
   // Drizzle y écrit les colonnes sans leur table et la sous-requête compterait
   // `post_reactions.post_id = post_reactions.id`. Dans le tri, il les qualifie.
+  const pinned = await listFeedPinnedPosts(db);
+  const pinnedIds = pinned.map((post) => post.id);
   const rows = await db
     .select({ post: posts })
     .from(posts)
@@ -306,11 +333,16 @@ export async function listPourToiFeed(
         gt(posts.createdAt, since),
         notWrittenByFiller(posts.authorId),
         inFeedOf(viewerProfileId),
+        pinnedIds.length > 0 ? notInArray(posts.id, pinnedIds) : undefined,
       ),
     )
     .orderBy(desc(score), desc(posts.createdAt))
-    .limit(limit);
-  return { items: rows.map((row) => row.post), nextCursor: null as string | null };
+    .limit(Math.max(limit - pinned.length, 0));
+  return {
+    items: [...pinned, ...rows.map((row) => row.post)].slice(0, limit),
+    pinnedIds: new Set(pinnedIds),
+    nextCursor: null as string | null,
+  };
 }
 
 export async function countPostReactions(db: DbOrTx, postId: string) {
