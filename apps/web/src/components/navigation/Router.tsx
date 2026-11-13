@@ -156,9 +156,12 @@ function useDocumentTitle() {
 export function Router({
   render,
   fallback,
+  backdrop,
 }: {
   render: (pathname: string) => ReactNode;
   fallback: ReactNode;
+  /** Posé sous la page, hors d'elle : il ne se démonte pas d'une page à l'autre. */
+  backdrop?: (pathname: string) => ReactNode;
 }) {
   const [location, setLocation] = useState(() => readLocation(0, "initial"));
   const [pending, startTransition] = useTransition();
@@ -220,9 +223,13 @@ export function Router({
     <>
       {pending && <div className="navigation-progress" role="presentation" />}
       <div ref={announcer} className="sr-only" aria-live="polite" />
-      <PageErrorBoundary key={location.id}>
-        <Suspense fallback={fallback}>{render(location.pathname)}</Suspense>
-      </PageErrorBoundary>
+      {backdrop?.(location.pathname)}
+      {/* La frontière d'attente reste hors de la clé : déjà affichée, elle
+          garde la page précédente pendant que la suivante se charge, au lieu
+          de montrer son squelette (écran blanc entre deux pages). */}
+      <Suspense fallback={fallback}>
+        <PageErrorBoundary key={location.id}>{render(location.pathname)}</PageErrorBoundary>
+      </Suspense>
     </>
   );
 }

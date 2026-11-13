@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { Router } from "./components/navigation/Router.js";
+import { ArrivalBackdrop } from "./components/arrival/ArrivalBackdrop.js";
+import { arrivalMotionFor } from "./lib/navigation/arrival.js";
 import { UpdateBanner } from "./components/shell/UpdateBanner.js";
 import { recoverFromMissingCode } from "./pwa/updatePrompt.js";
 import { navigate } from "./lib/navigation/navigate.js";
@@ -84,6 +86,9 @@ function StatusPage() {
 
 /** Le temps que la page arrive : la forme commune des écrans plutôt qu'une page blanche. */
 function PageFallback() {
+  // Le parcours d'arrivée garde son fond (ArrivalBackdrop) : rien par-dessus.
+  if (arrivalMotionFor(window.location.pathname) !== null)
+    return <div className="min-h-viewport" aria-busy="true" />;
   return (
     <div className="flex min-h-viewport w-full bg-bg" aria-busy="true">
       <div className="hidden w-activity-bar shrink-0 border-r border-border-strong bg-surface lg:block" />
@@ -130,6 +135,10 @@ function RootPage() {
   return <Redirect to={destination} />;
 }
 
+function renderBackdrop(pathname: string): ReactNode {
+  return <ArrivalBackdrop pathname={pathname} />;
+}
+
 function renderPage(pathname: string): ReactNode {
   const key = pageFor(pathname);
   switch (key) {
@@ -157,7 +166,7 @@ export function App() {
         <TooltipProvider>
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
-              <Router fallback={<PageFallback />} render={renderPage} />
+              <Router fallback={<PageFallback />} render={renderPage} backdrop={renderBackdrop} />
               <UpdateBanner />
             </SessionProvider>
           </QueryClientProvider>

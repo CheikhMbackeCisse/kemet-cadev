@@ -1,10 +1,11 @@
+import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { Input } from "../components/ui/Input.js";
 import { ChatApiError, updateMyProfile } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
-import { landingPath, onboardingPath } from "../lib/onboarding/steps.js";
+import { landingPath } from "../lib/onboarding/steps.js";
 import { fr } from "../i18n/fr.js";
 import { handleError, requiredFieldErrors } from "../lib/forms.js";
 import { FormField } from "../components/ui/FormField.js";
@@ -13,7 +14,8 @@ import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
 
 export function CompleteProfilePage() {
-  const { status, onboarding } = useSession();
+  usePreloadNext("/bienvenue", "/fil");
+  const { status, onboarding, refresh } = useSession();
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,9 @@ export function CompleteProfilePage() {
     setSubmitting(true);
     try {
       await updateMyProfile({ handle: handle.toLowerCase(), displayName });
-      window.location.href = onboardingPath("country");
+      // Sans rechargement : la session relue, l'effet du haut mène à
+      // l'onboarding, sur le même fond.
+      await refresh();
     } catch (err) {
       if (err instanceof ChatApiError && err.statusCode === 409)
         setError(fr.auth.handleAlreadyTakenError);

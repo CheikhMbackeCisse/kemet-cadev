@@ -118,9 +118,19 @@ describe("ArrivalLayout", () => {
     )!;
   }
 
+  // Le fond est posé hors de la page, par le routeur (ArrivalBackdrop).
+  function renderHome() {
+    return render(
+      <>
+        <ArrivalBackground motion="rich" />
+        <ArrivalLayout motion="rich">contenu</ArrivalLayout>
+      </>,
+    );
+  }
+
   it("atténue les capitales et les lueurs que la carte couvre, garde les autres", () => {
     mockLayout();
-    const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
+    const { container } = renderHome();
     expect(dot(container, "khartoum").hasAttribute("data-covered")).toBe(true);
     expect(dot(container, "dakar").hasAttribute("data-covered")).toBe(false);
     expect(dot(container, "pretoria").hasAttribute("data-covered")).toBe(false);
@@ -136,7 +146,7 @@ describe("ArrivalLayout", () => {
 
   it("cache un élément du décor posé sur le réseau", () => {
     mockLayout();
-    const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
+    const { container } = renderHome();
     const clashing = [...container.querySelectorAll("[data-clash]")];
     expect(clashing).toHaveLength(1);
     expect(clashing[0]!.querySelector('img[src*="python"]')).not.toBeNull();

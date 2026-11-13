@@ -26,6 +26,7 @@ import {
   saveIntroAnswers,
   type IntroAnswers,
 } from "../lib/intro/introStorage.js";
+import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import { fr } from "../i18n/fr.js";
 
@@ -71,6 +72,7 @@ function withoutStaleOther(answers: IntroAnswers): IntroAnswers {
  * créé (OnboardingPage).
  */
 export function IntroQuestionsPage() {
+  usePreloadNext(SIGN_UP_PATH, "/connexion");
   const [question, setQuestion] = useState<IntroQuestion>(
     () => questionFromPath(window.location.pathname) ?? "who",
   );

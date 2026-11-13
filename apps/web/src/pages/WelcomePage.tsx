@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { ArrivalLayout } from "../components/arrival/ArrivalLayout.js";
 import { KemetWordmark } from "../components/ui/KemetWordmark.js";
 import { introQuestionPath } from "../lib/intro/introSteps.js";
+import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { markIntroSeen } from "../lib/intro/introStorage.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
@@ -24,6 +25,7 @@ function PoweredBy() {
  */
 export function WelcomePage() {
   const { status } = useSession();
+  usePreloadNext(introQuestionPath("who"), "/inscription", "/fil");
   const signedIn = status === "ready" || status === "incomplete";
 
   useEffect(() => {

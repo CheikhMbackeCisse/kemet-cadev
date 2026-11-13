@@ -1,16 +1,9 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
 import { cn } from "../../lib/cn.js";
-import { isSlowConnection } from "../../lib/network.js";
 import { KemetWordmark } from "../ui/KemetWordmark.js";
 import { markIntroSeen } from "../../lib/intro/introStorage.js";
-import { ArrivalBackground, type ArrivalMotion } from "./ArrivalBackground.js";
+import type { ArrivalMotion } from "./ArrivalBackground.js";
+import { usePageVisible, useStillBackground } from "./ArrivalBackdrop.js";
 import { ArrivalDecorBand } from "./ArrivalDecor.js";
 import { AFRICA_OUTLINE_WIDTH } from "./africaOutline.js";
 import { NETWORK_COVERED_ZONE_CLASS } from "./AfricaNetwork.js";
@@ -33,26 +26,6 @@ export interface ArrivalLayoutProps {
   showLogo?: boolean;
   busy?: boolean;
   children: ReactNode;
-}
-
-// public/theme-init.js pose ce fond sombre avant le premier affichage ; il
-// doit suivre le parcours quand on en sort sans recharger le document.
-function useArrivalDocumentBackground() {
-  useLayoutEffect(() => {
-    document.documentElement.setAttribute("data-arrival", "");
-    return () => document.documentElement.removeAttribute("data-arrival");
-  }, []);
-}
-
-/** Vrai tant que l'onglet est visible : un fond animé caché ne doit rien coûter. */
-function usePageVisible(): boolean {
-  const [visible, setVisible] = useState(() => document.visibilityState !== "hidden");
-  useEffect(() => {
-    const update = () => setVisible(document.visibilityState !== "hidden");
-    document.addEventListener("visibilitychange", update);
-    return () => document.removeEventListener("visibilitychange", update);
-  }, []);
-  return visible;
 }
 
 // Marge autour de la carte : le halo d'un point qui la touche passerait
@@ -94,14 +67,15 @@ function useNetworkAroundCard(
     const cardElement = card.current;
     if (!enabled || !rootElement || !cardElement) return;
     function update() {
-      const watermark = rootElement!.querySelector(".africa-watermark-network");
+      // Le fond vit hors de la page (ArrivalBackdrop, monté par le routeur).
+      const watermark = document.querySelector(".africa-watermark-network");
       if (!watermark) return;
       const box = cardElement!.getBoundingClientRect();
       const area = watermark.getBoundingClientRect();
       const scale = area.width / AFRICA_OUTLINE_WIDTH;
       const visible: Array<{ x: number; y: number }> = [];
 
-      rootElement!.querySelectorAll<HTMLElement>(".network-dot").forEach((dot) => {
+      document.querySelectorAll<HTMLElement>(".network-dot").forEach((dot) => {
         const { left, top, width, height } = dot.getBoundingClientRect();
         const x = left + width / 2;
         const y = top + height / 2;
@@ -110,7 +84,7 @@ function useNetworkAroundCard(
         if (!covered) visible.push({ x, y });
       });
 
-      const zone = rootElement!.querySelector(`.${NETWORK_COVERED_ZONE_CLASS}`);
+      const zone = document.querySelector(`.${NETWORK_COVERED_ZONE_CLASS}`);
       if (zone && scale > 0) {
         zone.setAttribute("x", String((box.left - area.left) / scale));
         zone.setAttribute("y", String((box.top - area.top) / scale));
@@ -153,10 +127,12 @@ function useNetworkAroundCard(
 }
 
 /**
- * Gabarit du parcours d'arrivée : fond de marque, logo en haut, contenu sur
+ * Gabarit du parcours d'arrivée : logo en haut, contenu sur
  * une carte en verre dépoli au centre, entre deux bandes de décor. Le texte
  * de la carte est blanc dans les deux thèmes, le fond restant sombre ; les
- * champs gardent leurs couleurs ordinaires.
+ * champs gardent leurs couleurs ordinaires. Le fond lui-même (dégradé,
+ * continent, réseau) est posé par ArrivalBackdrop, hors de la page, pour ne
+ * pas se démonter d'un écran à l'autre.
  * Sur connexion lente ou en économie de données, rien ne bouge : le
  * téléphone a déjà assez à faire avec le téléchargement de la page.
  */
@@ -170,9 +146,8 @@ export function ArrivalLayout({
   busy,
   children,
 }: ArrivalLayoutProps) {
-  useArrivalDocumentBackground();
   const visible = usePageVisible();
-  const [still] = useState(isSlowConnection);
+  const still = useStillBackground();
   const hasHeader = showLogo || headerEnd !== undefined;
   const root = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
@@ -186,8 +161,6 @@ export function ArrivalLayout({
       data-still={still ? "" : undefined}
       aria-busy={busy || undefined}
     >
-      <ArrivalBackground motion={motion} />
-
       {hasHeader ? (
         <header className="auth-on-dark relative z-10 flex w-full items-center justify-between gap-4 px-4 pt-4 sm:px-8 sm:pt-6">
           {showLogo ? (

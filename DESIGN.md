@@ -242,6 +242,13 @@ bas de l'écran, "Propulsé par" en petit et en blanc atténué, puis
 "Systalink" en blanc, graisse moyenne, S majuscule, sur la même ligne : ni
 pastille, ni leur symbole, ni leur police.
 
+Le fond (dégradé, grille, continent, réseau) est posé une seule fois, sous
+la page, par le routeur (`ArrivalBackdrop`) : il ne se démonte pas d'un
+écran du parcours à l'autre, seule la carte change, et le décor reprend sa
+dérive là où il en était. Pendant le chargement d'une étape, la précédente
+reste affichée avec la barre fine du haut, jamais un écran blanc ; le code
+de l'étape suivante se télécharge pendant qu'on lit la page en cours.
+
 Le contenu de chaque écran est posé sur une carte en verre dépoli (teinte du
 fond à 60 %, flou de 3 px, bord blanc à 20 %), demandée explicitement le
 08/11/2026. Le texte de la carte est blanc dans les deux thèmes (`--auth-*`),

@@ -1,3 +1,4 @@
+import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
@@ -15,6 +16,7 @@ import { SubmitButton } from "../components/ui/SubmitButton.js";
 import { PrivacyLine } from "../components/auth/PrivacyLine.js";
 
 export function LoginPage() {
+  usePreloadNext("/fil", "/completer-profil", "/bienvenue");
   const { status, onboarding, refresh } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -1,3 +1,4 @@
+import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { DEMO_EMAIL_REJECTED_CODE, isDemoEmailAddress } from "@kemet/shared";
@@ -18,6 +19,7 @@ import { SubmitButton } from "../components/ui/SubmitButton.js";
 import { PrivacyLine } from "../components/auth/PrivacyLine.js";
 
 export function SignupPage() {
+  usePreloadNext("/completer-profil", "/connexion");
   const toast = useToast();
   const { status, onboarding, refresh } = useSession();
   const [name, setName] = useState("");

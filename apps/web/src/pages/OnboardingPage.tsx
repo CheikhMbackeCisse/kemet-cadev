@@ -1,3 +1,4 @@
+import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState } from "react";
 import {
@@ -70,7 +71,8 @@ async function applyIntroAnswers(answers: IntroAnswers): Promise<void> {
  * le dernier marque le parcours terminé, et on n'y revient plus.
  */
 export function OnboardingPage() {
-  const { status, profile, onboarding } = useSession();
+  usePreloadNext("/fil");
+  const { status, profile, onboarding, refresh } = useSession();
   const [step, setStep] = useState<OnboardingStep | null>(() =>
     stepFromPath(window.location.pathname),
   );
@@ -164,7 +166,8 @@ export function OnboardingPage() {
         window.scrollTo(0, 0);
       } else {
         await updateOnboarding({ completed: true });
-        window.location.href = FEED_PATH;
+        await refresh();
+        navigate(FEED_PATH);
       }
     } catch {
       setError(fr.onboarding.saveError);
