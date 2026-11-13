@@ -154,7 +154,9 @@ describe("recherche des salons et messages", () => {
     renderSearch("panel");
     type("hackathon");
     fireEvent.click(
-      await screen.findByRole("button", { name: fr.spaces.joinLabel("Hackathons et concours") }),
+      await screen.findByRole("button", {
+        name: fr.chatSearch.signInToJoin("Hackathons et concours"),
+      }),
     );
     expect(navigate).toHaveBeenCalledWith("/connexion");
     expect(joinSpace).not.toHaveBeenCalled();
@@ -180,9 +182,12 @@ describe("recherche des salons et messages", () => {
     fireEvent.click(loupe);
     expect(screen.getByRole("searchbox")).toHaveFocus();
     expect(loupe).toHaveAttribute("aria-expanded", "true");
+    // Onglets et loupe, cachés sous la barre, sortent du parcours au clavier.
+    expect(loupe.closest("[inert]")).not.toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: fr.chatSearch.close }));
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    expect(loupe.closest("[inert]")).toBeNull();
     expect(loupe).toHaveFocus();
   });
 

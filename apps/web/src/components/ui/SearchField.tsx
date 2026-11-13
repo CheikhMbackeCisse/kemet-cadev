@@ -71,7 +71,8 @@ export function SearchField({
             onChange("");
             inputRef.current?.focus();
           }}
-          className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-surface-2 hover:text-text"
+          // 32 px à l'œil, 44 px au doigt.
+          className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-muted after:absolute after:-inset-1.5 hover:bg-surface-2 hover:text-text"
         >
           <X className="size-4" aria-hidden="true" />
         </button>

@@ -198,7 +198,11 @@ function SpaceResults({
                 <Button
                   type="button"
                   variant="secondary"
-                  aria-label={fr.spaces.joinLabel(space.name)}
+                  aria-label={
+                    canJoin
+                      ? fr.spaces.joinLabel(space.name)
+                      : fr.chatSearch.signInToJoin(space.name)
+                  }
                   loading={joiningId === space.id}
                   onClick={() => void join(space)}
                   // 32 px à l'œil, 44 px au doigt.

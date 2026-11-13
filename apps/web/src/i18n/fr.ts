@@ -694,6 +694,7 @@ export const fr = {
     close: "Fermer",
     spacesGroup: "Espaces",
     peopleGroup: "Personnes",
+    signInToJoin: (name: string) => `Se connecter pour rejoindre ${name}`,
   },
 
   spaces: {
@@ -728,7 +729,7 @@ export const fr = {
     removeMember: "Retirer ce membre",
     leaveSpace: "Quitter l'espace",
     noMembers: "Aucun membre pour l'instant. Ajoute-en un ci-dessous.",
-    noSpaces: "Aucun espace pour l'instant.",
+    noSpaces: "Aucun espace pour l'instant. Cherche un espace public ou crée le tien.",
     loadingSpacesError: "Impossible de charger les espaces.",
     loadingChannelsError: "Impossible de charger les salons.",
     noChannels: "Aucun salon pour l'instant.",

@@ -1,5 +1,5 @@
 import { Search } from "lucide-react";
-import { useRef, useState, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { SEARCH_QUERY_MAX_LENGTH, type Space } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
@@ -47,9 +47,19 @@ export function ChatSearch({
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const openButtonRef = useRef<HTMLButtonElement>(null);
+  const behindRef = useRef<HTMLDivElement>(null);
+  const barId = useId();
   const trimmed = useDebounced(query.trim().slice(0, SEARCH_QUERY_MAX_LENGTH));
   const searching = query.trim().length > 0;
   const label = signedIn ? fr.chatSearch.label : fr.chatSearch.visitorLabel;
+
+  // Sous la barre ouverte, onglets et loupe sortent du parcours au clavier :
+  // Maj+Tab depuis le champ ne doit pas tomber sur un bouton caché.
+  useLayoutEffect(() => {
+    // L'attribut plutôt que la propriété : React 18 ne connaît pas `inert`.
+    if (open) behindRef.current?.setAttribute("inert", "");
+    else behindRef.current?.removeAttribute("inert");
+  }, [open]);
   const placeholder = signedIn ? fr.chatSearch.placeholder : fr.chatSearch.visitorLabel;
 
   function openSearch() {
@@ -60,8 +70,10 @@ export function ChatSearch({
   }
 
   function closeSearch() {
-    setQuery("");
-    setOpen(false);
+    flushSync(() => {
+      setQuery("");
+      setOpen(false);
+    });
     openButtonRef.current?.focus();
   }
 
@@ -71,8 +83,8 @@ export function ChatSearch({
       layout={layout}
       signedIn={signedIn}
       onOpenSpace={(space) => {
-        setQuery("");
-        setOpen(false);
+        if (layout === "page") closeSearch();
+        else setQuery("");
         onOpenSpace(space);
       }}
     />
@@ -98,26 +110,32 @@ export function ChatSearch({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="relative flex h-control-mobile shrink-0 items-stretch border-b border-border">
-        <div className="min-w-0 flex-1">
-          {signedIn ? (
-            <SalonsSegment active={section} />
-          ) : (
-            <h1 className="flex h-full items-center px-4 text-md font-semibold text-text">
-              {visitorTitle}
-            </h1>
-          )}
+        <div ref={behindRef} className="flex min-w-0 flex-1 items-stretch">
+          <div className="min-w-0 flex-1">
+            {signedIn ? (
+              <SalonsSegment active={section} />
+            ) : (
+              <h1 className="flex h-full items-center px-4 text-md font-semibold text-text">
+                {visitorTitle}
+              </h1>
+            )}
+          </div>
+          <IconButton
+            ref={openButtonRef}
+            aria-label={fr.chatSearch.open}
+            aria-expanded={open}
+            aria-controls={barId}
+            onClick={openSearch}
+            className="mr-1 shrink-0"
+          >
+            <Search className="size-5" aria-hidden="true" />
+          </IconButton>
         </div>
-        <IconButton
-          ref={openButtonRef}
-          aria-label={fr.chatSearch.open}
-          aria-expanded={open}
-          onClick={openSearch}
-          className="mr-1 shrink-0"
-        >
-          <Search className="size-5" aria-hidden="true" />
-        </IconButton>
         {open && (
-          <div className="chat-search-reveal absolute inset-x-0 -bottom-px top-0 z-10 flex items-center gap-1 border-b border-border bg-bg pl-3 pr-1">
+          <div
+            id={barId}
+            className="chat-search-reveal absolute inset-x-0 -bottom-px top-0 z-10 flex items-center gap-1 border-b border-border bg-bg pl-3 pr-1"
+          >
             <SearchField
               label={label}
               placeholder={placeholder}
@@ -125,7 +143,7 @@ export function ChatSearch({
               onChange={setQuery}
               inputRef={inputRef}
               onEscapeEmpty={closeSearch}
-              className="min-w-0 flex-1 [&_input]:h-10"
+              className="min-w-0 flex-1"
             />
             <button
               type="button"

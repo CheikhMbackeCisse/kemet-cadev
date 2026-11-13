@@ -193,7 +193,9 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
       <nav
         aria-label={fr.shell.activityBarLabel}
         onKeyDown={handleKeyDown}
-        className="-mx-1 flex min-h-0 flex-1 flex-col self-stretch px-1 py-0.5"
+        // Tout tient dès 600 px de haut ; le défilement ne sert qu'au zoom
+        // du navigateur ou à un compte administrateur sur un très petit écran.
+        className="-mx-1 flex min-h-0 flex-1 flex-col self-stretch overflow-y-auto px-1 py-0.5"
       >
         <ul className={cn("flex w-full flex-col gap-1", !expanded && "items-center")}>
           {topItems.map((item, index) => renderItem(item, index))}

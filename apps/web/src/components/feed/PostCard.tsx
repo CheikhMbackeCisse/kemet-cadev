@@ -40,7 +40,10 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
     );
   }
   return (
-    <a href={`/fil/${post.id}`} className="mt-2 block rounded-card bg-surface-2 p-3">
+    <a
+      href={`/fil/${post.id}`}
+      className="mt-2 block rounded-card bg-surface-2 p-3 hover:bg-nav-active"
+    >
       <div className="flex items-center gap-2">
         <Avatar
           name={post.authorDisplayName}
@@ -71,7 +74,10 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
 function WorkPreview({ work }: { work: PostSummary["work"] }) {
   if (!work) return null;
   return (
-    <a href={`/travaux/${work.slug}`} className="mt-2 block rounded-card bg-surface-2 p-3">
+    <a
+      href={`/travaux/${work.slug}`}
+      className="mt-2 block rounded-card bg-surface-2 p-3 hover:bg-nav-active"
+    >
       <p className="text-xs text-muted">{WORK_TYPE_LABELS[work.type]}</p>
       <p className="mt-0.5 text-sm font-medium text-text">{work.title}</p>
       <p className="mt-1 line-clamp-3 text-sm text-text-2">{work.excerpt}</p>

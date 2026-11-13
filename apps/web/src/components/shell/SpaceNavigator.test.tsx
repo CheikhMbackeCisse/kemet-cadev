@@ -80,7 +80,9 @@ describe("navigation des espaces", () => {
 
   it("dit qu'il n'y a aucun espace", () => {
     renderNavigator({ spaces: [] });
-    expect(screen.getByText("Aucun espace pour l'instant.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Aucun espace pour l'instant. Cherche un espace public ou crée le tien."),
+    ).toBeInTheDocument();
   });
 
   it("charge les salons de l'espace choisi sans le montrer vide", () => {

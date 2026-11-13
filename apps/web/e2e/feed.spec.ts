@@ -126,7 +126,7 @@ test("enregistre un post, le retrouve dans Enregistrés et copie son lien", asyn
   await expect(page.getByText("Enregistré.", { exact: true }).first()).toBeVisible();
 
   await page.goto("/enregistres");
-  await expect(page).toHaveURL(/\/moi\?onglet=enregistres$/);
+  await expect(page).toHaveURL(/\/(moi|u\/[^/?]+)\?onglet=enregistres$/);
   await expect(page.getByText(body)).toBeVisible();
 
   // Sans feuille de partage (navigateur de bureau), le lien est copié.

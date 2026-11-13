@@ -13,8 +13,8 @@ export interface SidebarAccountProps {
 
 /**
  * Pied de la barre latérale sur bureau : le compte mène tout droit au
- * profil. Se déconnecter vit dans Paramètres, Enregistrés et Modération
- * dans la barre elle-même. Sous lg, l'onglet "Moi" joue ce rôle.
+ * profil, où vit l'onglet Enregistrés. Se déconnecter vit dans Paramètres.
+ * Sous lg, l'onglet "Moi" joue ce rôle.
  */
 export function SidebarAccount({ expanded, active }: SidebarAccountProps) {
   const { status, profile } = useSession();
