@@ -61,8 +61,12 @@ export function ProfileSettingsPage() {
     if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
+  // Rempli une seule fois : une session relue (photo envoyée) ne doit pas
+  // effacer ce qui est en cours de saisie.
+  const [initializedFor, setInitializedFor] = useState<string | null>(null);
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || initializedFor === profile.id) return;
+    setInitializedFor(profile.id);
     setHandle(profile.handle);
     setDisplayName(profile.displayName);
     setCountry(profile.country);
@@ -77,7 +81,7 @@ export function ProfileSettingsPage() {
     setPortfolioUrl(profile.portfolioUrl ?? "");
     setWebsiteUrl(profile.websiteUrl ?? "");
     setHelpsBeginners(profile.helpsBeginners);
-  }, [profile]);
+  }, [profile, initializedFor]);
 
   if (status !== "ready" || !profile) return null;
 

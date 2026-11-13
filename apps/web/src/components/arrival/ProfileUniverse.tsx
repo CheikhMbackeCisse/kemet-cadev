@@ -30,8 +30,10 @@ const DEPTHS: readonly UniverseDepth[] = ["back", "middle", "front"];
 // Écart de la flottaison, en pixels : le premier plan bouge plus que le fond.
 const DRIFT: Record<UniverseDepth, number> = { back: 3, middle: 4, front: 6 };
 
-// Marge entre un élément du premier plan et la carte.
-const CARD_CLEARANCE = 16;
+// Marge entre un élément du premier plan ou du milieu et la carte : plus
+// grande que le plus grand mouvement (parallaxe de 18 px et flottaison de 6),
+// le test n'étant refait qu'au redimensionnement et au défilement.
+const CARD_CLEARANCE = 24;
 
 const DESKTOP_QUERY = "(min-width: 768px)";
 
@@ -155,7 +157,7 @@ function useFrontClearOfCard(
     if (!element || !cardElement) return;
     function update() {
       const box = cardElement!.getBoundingClientRect();
-      element!.querySelectorAll<HTMLElement>('.universe-item[data-depth="front"]').forEach((item) => {
+      element!.querySelectorAll<HTMLElement>('.universe-item[data-depth="front"], .universe-item[data-depth="middle"]').forEach((item) => {
         const itemBox = item.getBoundingClientRect();
         const clash =
           itemBox.right > box.left - CARD_CLEARANCE &&

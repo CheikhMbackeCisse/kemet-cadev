@@ -31,8 +31,10 @@ function unreadBadgeText(count: number): string {
   return count > 9 ? "9+" : String(count);
 }
 
-// Assez large pour les libellés à côté de la page et de la colonne de droite.
-const WIDE_QUERY = "(min-width: 1280px)";
+// Assez large pour les libellés à côté de la page et de la colonne de droite,
+// et assez haut pour la liste entière : un portable de 768 px ne laisse
+// qu'environ 650 px au navigateur, la barre y reste resserrée.
+const WIDE_QUERY = "(min-width: 1280px) and (min-height: 760px)";
 
 const SHORTCUT_LABEL =
   typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
@@ -59,7 +61,11 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
   ];
   const allItems = [...topItems, ...bottomItems];
   const activeIndex = allItems.findIndex((item) => item.id === activeSection);
-  const [rovingIndex, setRovingIndex] = useState(Math.max(activeIndex, 0));
+  // Suivi par identifiant : la liste s'allonge quand la session arrive
+  // (Enregistrés, Modération), un index gardé tomberait sur la mauvaise ligne.
+  const [rovingId, setRovingId] = useState<string | null>(null);
+  const rovingFound = rovingId ? allItems.findIndex((item) => item.id === rovingId) : -1;
+  const rovingIndex = rovingFound >= 0 ? rovingFound : Math.max(activeIndex, 0);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
@@ -73,7 +79,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
     const next = moves[event.key];
     if (next === undefined) return;
     event.preventDefault();
-    setRovingIndex(next);
+    setRovingId(allItems[next]!.id);
     itemRefs.current[next]?.focus();
   }
 
@@ -97,7 +103,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
         itemRefs.current[index] = element;
       },
       tabIndex: index === rovingIndex ? 0 : -1,
-      onFocus: () => setRovingIndex(index),
+      onFocus: () => setRovingId(item.id),
       "aria-label": expanded && unread === 0 ? undefined : name,
       "aria-current": active ? ("page" as const) : undefined,
       "data-activity-current": active ? "" : undefined,
@@ -106,8 +112,12 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
     const content = (
       <>
         <span className="relative flex">
-          {/* Section ouverte : icône pleine, comme sur téléphone. */}
-          <item.icon className={cn("size-6", active && "fill-current")} aria-hidden="true" />
+          {/* Section ouverte : icône pleine comme sur téléphone, ou trait épaissi. */}
+          <item.icon
+            className={cn("size-6", active && item.fillWhenActive && "fill-current")}
+            strokeWidth={active && !item.fillWhenActive ? 2.25 : undefined}
+            aria-hidden="true"
+          />
           {unread > 0 && (
             <span
               aria-hidden="true"
@@ -185,7 +195,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
       <nav
         aria-label={fr.shell.activityBarLabel}
         onKeyDown={handleKeyDown}
-        className="flex w-full min-h-0 flex-1 flex-col"
+        className="-mx-1 flex min-h-0 flex-1 flex-col self-stretch overflow-y-auto px-1 py-0.5"
       >
         <ul className={cn("flex w-full flex-col gap-1", !expanded && "items-center")}>
           {topItems.map((item, index) => renderItem(item, index))}
@@ -195,7 +205,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
         </ul>
       </nav>
 
-      <ActivityBarDemoNotice />
+      <ActivityBarDemoNotice expanded={expanded} />
       <div className={cn("mt-2 flex w-full", !expanded && "justify-center")}>
         <SidebarAccount expanded={expanded} active={activeSection === "moi"} />
       </div>

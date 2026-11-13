@@ -55,6 +55,25 @@ describe("barre latérale", () => {
     expect(screen.getByRole("link", { name: "Salons" })).toHaveTextContent("");
   });
 
+  it("remplit l'icône d'une section ouverte qui s'y prête, épaissit le trait des autres", () => {
+    const { unmount } = renderBar(undefined, { activeSection: "fil" });
+    const filIcon = screen.getByRole("link", { name: "Fil" }).querySelector("svg")!;
+    expect(filIcon).toHaveClass("fill-current");
+    unmount();
+
+    renderBar(undefined, { activeSection: "parametres" });
+    const settingsIcon = screen.getByRole("link", { name: "Paramètres" }).querySelector("svg")!;
+    expect(settingsIcon).not.toHaveClass("fill-current");
+    expect(settingsIcon).toHaveAttribute("stroke-width", "2.25");
+  });
+
+  it("garde un seul arrêt de tabulation, sur la section ouverte", () => {
+    renderBar(undefined, { activeSection: "parametres" });
+    const focusable = screen.getAllByRole("link").filter((link) => link.tabIndex === 0);
+    expect(focusable.map((link) => link.getAttribute("href"))).toContain("/parametres");
+    expect(screen.getByRole("link", { name: "Fil" }).tabIndex).toBe(-1);
+  });
+
   it("sur grand écran, montre les libellés, Enregistrés et le compte, sans Se déconnecter", () => {
     wide = true;
     renderBar();

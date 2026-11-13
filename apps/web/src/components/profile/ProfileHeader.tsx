@@ -136,7 +136,7 @@ export function ProfileHeader({
         {nameIsHandle && addNameHref && (
           <a
             href={addNameHref}
-            className="self-start text-sm font-medium text-link hover:underline"
+            className="inline-flex min-h-control-mobile items-center self-start text-sm font-medium text-link hover:underline md:min-h-0"
           >
             {fr.profile.addName}
           </a>

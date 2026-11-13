@@ -35,23 +35,26 @@ function HandlePreview({ id, handle, status }: { id: string; handle: string; sta
       <span className="min-w-0 truncate font-mono text-xs">
         {window.location.host}/u/{handle || fr.auth.handleExample}
       </span>
-      {label && (
-        <span
-          aria-live="polite"
-          className={
-            status === "available"
-              ? "flex shrink-0 items-center gap-1 font-medium text-auth-success"
-              : "flex shrink-0 items-center gap-1 font-medium text-auth-danger"
-          }
-        >
-          {status === "available" ? (
-            <Check className="size-4" aria-hidden="true" />
-          ) : (
-            <X className="size-4" aria-hidden="true" />
-          )}
-          {label}
-        </span>
-      )}
+      {/* Zone toujours présente : seul son contenu change, pour être annoncée. */}
+      <span
+        aria-live="polite"
+        className={
+          status === "available"
+            ? "flex shrink-0 items-center gap-1 font-medium text-auth-success"
+            : "flex shrink-0 items-center gap-1 font-medium text-auth-danger"
+        }
+      >
+        {label && (
+          <>
+            {status === "available" ? (
+              <Check className="size-4" aria-hidden="true" />
+            ) : (
+              <X className="size-4" aria-hidden="true" />
+            )}
+            {label}
+          </>
+        )}
+      </span>
     </p>
   );
 }

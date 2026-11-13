@@ -50,7 +50,7 @@ export function AvatarChangeButton({
       const avatarUrl = await uploadMyAvatar(file);
       await refresh();
       onChanged?.(avatarUrl);
-      toast.show(fr.profile.photoUploaded, "success");
+      toast.show(hasPhoto ? fr.profile.photoChanged : fr.profile.photoAdded, "success");
     } catch (err) {
       toast.show(
         err instanceof ChatApiError && err.statusCode === 400

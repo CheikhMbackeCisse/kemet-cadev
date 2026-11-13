@@ -58,7 +58,7 @@ export function SidebarAccount({ expanded, active }: SidebarAccountProps) {
       {expanded && (
         <span className="flex min-w-0 flex-col" aria-hidden="true">
           <span className="truncate text-base font-semibold">{profile.displayName}</span>
-          <span className="truncate text-sm text-muted">@{profile.handle}</span>
+          <span className="truncate text-base text-muted">@{profile.handle}</span>
         </span>
       )}
     </a>

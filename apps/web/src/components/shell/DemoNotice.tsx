@@ -5,10 +5,25 @@ import { Tooltip } from "../ui/Tooltip.js";
 
 export const DEMO_DATA_PATH = "/donnees-de-demo";
 
-/** Pied de la barre d'activité : une icône et un mot, la phrase entière au survol. */
-export function ActivityBarDemoNotice() {
+/**
+ * Pied de la barre d'activité. Large : une ligne comme les sections. Resserrée :
+ * une icône et un mot, la phrase entière au survol.
+ */
+export function ActivityBarDemoNotice({ expanded = false }: { expanded?: boolean }) {
   const config = useSiteConfig();
   if (!config?.demoContentNotice) return null;
+  if (expanded) {
+    return (
+      <a
+        href={DEMO_DATA_PATH}
+        aria-label={fr.demo.notice}
+        className="mt-2 flex h-11 items-center gap-4 rounded-full px-3 text-md text-subtle hover:bg-surface-2 hover:text-text"
+      >
+        <FlaskConical className="size-6" aria-hidden="true" />
+        <span aria-hidden="true">{fr.demo.shortLabel}</span>
+      </a>
+    );
+  }
   return (
     <Tooltip label={fr.demo.notice} side="right">
       <a
