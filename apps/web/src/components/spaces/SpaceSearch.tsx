@@ -33,7 +33,7 @@ export function SpaceSearch({ canJoin, onOpen, layout, children }: SpaceSearchPr
   const searching = query.trim().length > 0;
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", layout === "panel" && "pt-3")}>
+    <div className={cn("flex min-h-0 flex-1 flex-col", layout === "panel" && "h-full pt-3")}>
       <SearchField
         label={fr.spaces.searchLabel}
         placeholder={fr.spaces.searchPlaceholder}

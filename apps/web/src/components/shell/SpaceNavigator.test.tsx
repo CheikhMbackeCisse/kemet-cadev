@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { SpaceTree, type SpaceTreeProps } from "./SpaceTree.js";
+import { TooltipProvider } from "../ui/Tooltip.js";
+import { SpaceNavigator, type SpaceNavigatorProps } from "./SpaceNavigator.js";
 
-function renderTree(overrides: Partial<SpaceTreeProps> = {}) {
-  const props: SpaceTreeProps = {
+function renderNavigator(overrides: Partial<SpaceNavigatorProps> = {}) {
+  const props: SpaceNavigatorProps = {
+    layout: "panel",
     title: "Mes espaces",
     status: "ready",
     onRetry: vi.fn(),
@@ -13,22 +15,30 @@ function renderTree(overrides: Partial<SpaceTreeProps> = {}) {
     ],
     activeSpaceId: "cadev",
     onSelectSpace: vi.fn(),
+    spaceName: "CADEV 2026",
     channels: [
       { id: "general", name: "général", unreadCount: 3 },
       { id: "memes", name: "mèmes" },
     ],
     channelsLoading: false,
+    channelsError: false,
+    onRetryChannels: vi.fn(),
     activeChannelId: "general",
     onSelectChannel: vi.fn(),
+    canCreateSpace: false,
     ...overrides,
   };
-  render(<SpaceTree {...props} />);
+  render(
+    <TooltipProvider>
+      <SpaceNavigator {...props} />
+    </TooltipProvider>,
+  );
   return props;
 }
 
-describe("arbre des espaces", () => {
-  it("nomme chaque espace sans son monogramme et montre les salons de l'espace ouvert", () => {
-    renderTree();
+describe("navigation des espaces", () => {
+  it("montre les logos de tous les espaces et seulement les salons de l'espace choisi, sous son nom", () => {
+    renderNavigator();
     expect(screen.getByRole("button", { name: "CADEV 2026" })).toHaveAttribute(
       "aria-current",
       "true",
@@ -36,6 +46,7 @@ describe("arbre des espaces", () => {
     expect(
       screen.getByRole("button", { name: "Flutter Dakar, messages non lus" }),
     ).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("heading", { name: "CADEV 2026" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "général, 3 messages non lus" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -44,7 +55,7 @@ describe("arbre des espaces", () => {
   });
 
   it("transmet le choix d'un espace et d'un salon", () => {
-    const props = renderTree();
+    const props = renderNavigator();
     fireEvent.click(screen.getByRole("button", { name: "Flutter Dakar, messages non lus" }));
     fireEvent.click(screen.getByRole("button", { name: "mèmes" }));
     expect(props.onSelectSpace).toHaveBeenCalledWith("flutter");
@@ -52,7 +63,7 @@ describe("arbre des espaces", () => {
   });
 
   it("montre un squelette pendant le chargement des espaces", () => {
-    renderTree({ status: "loading" });
+    renderNavigator({ status: "loading" });
     expect(screen.getByRole("navigation", { name: "Mes espaces" })).toHaveAttribute(
       "aria-busy",
       "true",
@@ -61,20 +72,28 @@ describe("arbre des espaces", () => {
   });
 
   it("propose de réessayer après une erreur", () => {
-    const props = renderTree({ status: "error" });
+    const props = renderNavigator({ status: "error" });
     expect(screen.getByText("Impossible de charger les espaces.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Réessayer" }));
     expect(props.onRetry).toHaveBeenCalled();
   });
 
   it("dit qu'il n'y a aucun espace", () => {
-    renderTree({ spaces: [] });
+    renderNavigator({ spaces: [] });
     expect(screen.getByText("Aucun espace pour l'instant.")).toBeInTheDocument();
   });
 
-  it("charge les salons de l'espace ouvert sans le montrer vide", () => {
-    renderTree({ channelsLoading: true });
+  it("charge les salons de l'espace choisi sans le montrer vide", () => {
+    renderNavigator({ channelsLoading: true });
     expect(screen.queryByRole("button", { name: "mèmes" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CADEV 2026" })).toBeInTheDocument();
+  });
+
+  it("propose de créer un espace en bas de la liste sur téléphone", () => {
+    renderNavigator({ layout: "page", canCreateSpace: true });
+    expect(screen.getByRole("link", { name: "Créer un espace" })).toHaveAttribute(
+      "href",
+      "/salons/nouveau",
+    );
   });
 });

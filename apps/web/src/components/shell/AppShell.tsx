@@ -4,7 +4,6 @@ import type { Space } from "@kemet/shared";
 import { SpaceSearch } from "../spaces/SpaceSearch.js";
 import { useMobileChatView } from "../../lib/chat/useMobileChatView.js";
 import { useEdgeSwipe } from "../../lib/useEdgeSwipe.js";
-import { MobileSpaceNavigator } from "./MobileSpaceNavigator.js";
 import { fr } from "../../i18n/fr.js";
 import { AppFrame } from "../layout/AppFrame.js";
 import { Button } from "../ui/Button.js";
@@ -14,7 +13,7 @@ import type { ChannelListProps } from "./ChannelList.js";
 import { RightPanel } from "./RightPanel.js";
 import { SalonsSegment } from "./SalonsSegment.js";
 import { sectionLabel } from "./railNav.js";
-import { SpaceTree, type SpaceTreeStatus } from "./SpaceTree.js";
+import { SpaceNavigator, type SpaceNavigatorStatus } from "./SpaceNavigator.js";
 import type { SpaceItem } from "./types.js";
 
 export interface AppShellSpaces {
@@ -23,7 +22,7 @@ export interface AppShellSpaces {
   items: SpaceItem[];
   activeSpaceId: string;
   onSelect: (id: string) => void;
-  status: SpaceTreeStatus;
+  status: SpaceNavigatorStatus;
   onRetry: () => void;
   channelsLoading: boolean;
   channelsError: boolean;
@@ -95,17 +94,22 @@ export function AppShell({
         title: sectionLabel("salons"),
         content: (
           <SpaceSearch layout="panel" canJoin={spaces.search.canJoin} onOpen={spaces.search.onOpen}>
-            <SpaceTree
+            <SpaceNavigator
+              layout="panel"
               title={spaces.title}
               status={spaces.status}
               onRetry={spaces.onRetry}
               spaces={spaces.items}
               activeSpaceId={spaces.activeSpaceId}
               onSelectSpace={spaces.onSelect}
+              spaceName={channelList.spaceName}
               channels={channelList.channels}
               channelsLoading={spaces.channelsLoading}
+              channelsError={spaces.channelsError}
+              onRetryChannels={spaces.onRetryChannels}
               activeChannelId={channelList.activeChannelId}
               onSelectChannel={channelList.onSelect}
+              canCreateSpace={false}
             />
           </SpaceSearch>
         ),
@@ -124,7 +128,8 @@ export function AppShell({
               canJoin={spaces.search.canJoin}
               onOpen={spaces.search.onOpen}
             >
-              <MobileSpaceNavigator
+              <SpaceNavigator
+                layout="page"
                 title={spaces.title}
                 status={spaces.status}
                 onRetry={spaces.onRetry}
@@ -141,7 +146,6 @@ export function AppShell({
                   channelList.onSelect(id);
                   openChat();
                 }}
-
                 canCreateSpace={spaces.canCreateSpace}
               />
             </SpaceSearch>
