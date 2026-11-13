@@ -40,7 +40,7 @@ export function SalonsSegment({ active }: SalonsSegmentProps) {
               href={item.href}
               aria-current={item.id === active ? "page" : undefined}
               className={cn(
-                "relative flex h-control-mobile items-center justify-center gap-2 text-sm font-medium transition-colors duration-150",
+                "relative flex h-14 items-center justify-center gap-2 text-sm font-medium transition-colors duration-150",
                 "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary",
                 item.id === active
                   ? "text-text after:opacity-100"

@@ -98,7 +98,7 @@ export function ChatSearch({
           placeholder={placeholder}
           value={query}
           onChange={setQuery}
-          className="mx-2 mb-1 mt-3 shrink-0"
+          className="mx-4 mb-2 mt-3 shrink-0"
         />
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {searching ? results : children}
@@ -109,7 +109,9 @@ export function ChatSearch({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative flex h-control-mobile shrink-0 items-stretch border-b border-border">
+      {/* 56 px : la barre de recherche ouverte y pose un champ de 44 px (minimum
+          tactile) avec la même marge en haut et en bas que les onglets. */}
+      <div className="relative flex h-14 shrink-0 items-stretch border-b border-border">
         <div ref={behindRef} className="flex min-w-0 flex-1 items-stretch">
           <div className="min-w-0 flex-1">
             {signedIn ? (
@@ -126,7 +128,7 @@ export function ChatSearch({
             aria-expanded={open}
             aria-controls={barId}
             onClick={openSearch}
-            className="mr-1 shrink-0"
+            className="mr-2 shrink-0 self-center"
           >
             <Search className="size-5" aria-hidden="true" />
           </IconButton>
@@ -134,7 +136,7 @@ export function ChatSearch({
         {open && (
           <div
             id={barId}
-            className="chat-search-reveal absolute inset-x-0 -bottom-px top-0 z-10 flex items-center gap-1 border-b border-border bg-bg pl-3 pr-1"
+            className="chat-search-reveal absolute inset-x-0 -bottom-px top-0 z-10 flex items-center gap-3 border-b border-border bg-bg px-4"
           >
             <SearchField
               label={label}
@@ -148,7 +150,7 @@ export function ChatSearch({
             <button
               type="button"
               onClick={closeSearch}
-              className="h-control-mobile shrink-0 rounded-control px-3 text-base font-medium text-link"
+              className="h-control-mobile min-w-11 shrink-0 rounded-control text-base font-medium text-link"
             >
               {fr.chatSearch.close}
             </button>
