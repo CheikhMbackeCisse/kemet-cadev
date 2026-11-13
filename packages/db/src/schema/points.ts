@@ -3,8 +3,8 @@ import { index, integer, pgEnum, pgTable, timestamp, uniqueIndex, uuid } from "d
 import { profiles } from "./profiles.js";
 
 // Une valeur par source réellement câblée. "demonstration" n'est écrite que
-// par le script de préparation d'un compte présenté au jury
-// (prepare-cheikh-account.ts) : elle reste visible comme telle au registre.
+// par le script qui prépare un compte réel pour la démonstration
+// (src/prepare-account.ts) : elle reste visible comme telle au registre.
 export const pointsSourceEnum = pgEnum("points_source", [
   "credential_verified",
   "post_reply_solution",

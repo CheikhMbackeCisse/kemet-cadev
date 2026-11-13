@@ -20,7 +20,8 @@ function printReport(report: PreparationReport): void {
     `Skills déjà présents : ${report.skillsSkipped.join(", ") || "aucun"}`,
     `Points visés : ${report.targetPoints}, ligne "demonstration" : ${report.demonstrationPoints}`,
     `Total ${report.outcome === "dry_run" ? "actuel" : "après"} : ${report.totalPoints} points, niveau ${report.level}`,
-    'Autres profils dont le nom contient "kaiser" (non modifiés) :',
+    `Images ajoutées : ${(report.imageBytes / 1024 / 1024).toFixed(1)} Mo (hors quota du compte)`,
+    "Autres profils au nom proche (non modifiés) :",
     ...(report.similarProfiles.length === 0
       ? ["  aucun"]
       : report.similarProfiles.map(

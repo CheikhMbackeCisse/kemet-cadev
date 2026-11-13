@@ -90,9 +90,9 @@ export function createAuth(config: AuthConfig) {
       },
     },
     // Écrit en clair plutôt que laissé aux valeurs par défaut : une connexion
-    // GitHub, Google ou LinkedIn rejoint le compte de même adresse seulement
-    // si le fournisseur confirme l'adresse et si le compte l'a déjà vérifiée
-    // (google-account-linking.integration.test.ts).
+    // sociale rejoint le compte de même adresse seulement si le fournisseur
+    // confirme l'adresse et si le compte l'a déjà vérifiée. Vérifié pour
+    // Google par google-account-linking.integration.test.ts.
     account: {
       accountLinking: { enabled: true, requireLocalEmailVerified: true, trustedProviders: [] },
     },

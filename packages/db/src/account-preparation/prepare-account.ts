@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { and, eq, ilike, ne, or, sql } from "drizzle-orm";
 import { LEVEL_THRESHOLDS, levelForPoints, type Level } from "@kemet/shared";
@@ -18,7 +18,7 @@ import {
   works,
 } from "../schema/index.js";
 import { demoUuid } from "../seed/demo-uuid.js";
-import type { AccountPlan, PlannedSkill, PlannedWork } from "./plan.js";
+import { readBoundedFile, type AccountPlan, type PlannedSkill, type PlannedWork } from "./plan.js";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -43,12 +43,14 @@ export interface PreparationReport {
   emailVerified: boolean;
   previousHandle: string | null;
   previousDisplayName: string | null;
-  /** Autres profils dont le nom ou l'identifiant contient "kaiser", jamais modifiés. */
+  /** Autres profils dont le nom ou l'identifiant contient le motif du fichier, jamais modifiés. */
   similarProfiles: { handle: string; displayName: string; isDemo: boolean }[];
   worksCreated: string[];
   worksSkipped: string[];
   skillsCreated: string[];
   skillsSkipped: string[];
+  /** Octets des images ajoutées, hors quota de stockage du compte. */
+  imageBytes: number;
   targetPoints: number;
   demonstrationPoints: number;
   totalPoints: number | null;
@@ -76,20 +78,17 @@ interface WorkImage {
   mimeType: string;
 }
 
-async function loadWorkImages(work: PlannedWork): Promise<WorkImage[]> {
+async function loadWorkImages(baseDir: string, work: PlannedWork): Promise<WorkImage[]> {
   const entries = [
     { path: work.coverPath, role: "cover" as const },
     ...work.galleryPaths.map((path) => ({ path, role: "gallery" as const })),
   ];
   const images: WorkImage[] = [];
   for (const entry of entries) {
-    const data = await readFile(entry.path);
+    const data = await readBoundedFile(baseDir, entry.path, MAX_IMAGE_BYTES);
     const mimeType = imageMimeType(data);
     if (!mimeType)
       throw new PreparationRefusedError(`Image PNG, JPEG ou WebP attendue : ${entry.path}`);
-    if (data.byteLength > MAX_IMAGE_BYTES) {
-      throw new PreparationRefusedError(`Image de plus de 5 Mo : ${entry.path}`);
-    }
     images.push({ ...entry, data, mimeType });
   }
   return images;
@@ -113,14 +112,16 @@ async function findTargetProfile(db: DbOrTx, email: string) {
   };
 }
 
-async function findSimilarProfiles(db: DbOrTx, profileId: string) {
+async function findSimilarProfiles(db: DbOrTx, profileId: string, pattern: string | null) {
+  if (!pattern) return [];
+  const like = `%${pattern.replace(/[\\%_]/g, (char) => `\\${char}`)}%`;
   return db
     .select({ handle: profiles.handle, displayName: profiles.displayName, isDemo: profiles.isDemo })
     .from(profiles)
     .where(
       and(
         ne(profiles.id, profileId),
-        or(ilike(profiles.displayName, "%kaiser%"), ilike(profiles.handle, "%kaiser%")),
+        or(ilike(profiles.displayName, like), ilike(profiles.handle, like)),
       ),
     )
     .orderBy(profiles.handle);
@@ -263,6 +264,7 @@ export async function prepareAccount(
     worksSkipped: [],
     skillsCreated: [],
     skillsSkipped: [],
+    imageBytes: 0,
     targetPoints,
     demonstrationPoints: 0,
     totalPoints: null,
@@ -282,9 +284,14 @@ export async function prepareAccount(
   if (profile.deletedAt || profile.suspendedAt) {
     throw new PreparationRefusedError("Ce compte est supprimé ou suspendu.");
   }
+  // Un compte à l'adresse jamais vérifiée peut avoir été créé par quelqu'un
+  // d'autre que la personne visée : rien ne lui est donné.
+  if (!target.owner.emailVerified) {
+    throw new PreparationRefusedError("L'adresse de ce compte n'a jamais été vérifiée.");
+  }
   report.previousHandle = profile.handle;
   report.previousDisplayName = profile.displayName;
-  report.similarProfiles = await findSimilarProfiles(db, profile.id);
+  report.similarProfiles = await findSimilarProfiles(db, profile.id, plan.similarNamePattern);
 
   const [handleTaken] = await db
     .select({ id: profiles.id })
@@ -315,7 +322,11 @@ export async function prepareAccount(
     else skillsToCreate.push(skill);
   }
   const imagesByWork = new Map<string, WorkImage[]>();
-  for (const work of worksToCreate) imagesByWork.set(work.slug, await loadWorkImages(work));
+  for (const work of worksToCreate)
+    imagesByWork.set(work.slug, await loadWorkImages(plan.baseDir, work));
+  report.imageBytes = [...imagesByWork.values()]
+    .flat()
+    .reduce((total, image) => total + image.data.byteLength, 0);
 
   if (options.dryRun) {
     const { totalPoints, level } = await computeProfilePoints(db, profile.id);
@@ -328,8 +339,7 @@ export async function prepareAccount(
     return report;
   }
 
-  // Clés dérivées du profil et du travail : une transaction qui échoue laisse
-  // des fichiers que le passage suivant réécrit au même nom.
+  // Clés dérivées du profil et du travail : relancer réécrit les mêmes fichiers.
   const storageKeysByWork = new Map<string, string[]>();
   await mkdir(options.uploadsDir, { recursive: true });
   for (const work of worksToCreate) {
@@ -342,45 +352,55 @@ export async function prepareAccount(
     storageKeysByWork.set(work.slug, keys);
   }
 
-  await db.transaction(async (tx) => {
-    await tx
-      .update(profiles)
-      .set({
-        displayName: plan.profile.displayName,
-        handle: plan.profile.handle,
-        role: plan.profile.role,
-        organization: plan.profile.organization,
-        country: plan.profile.country,
-        onboardingCompletedAt: profile.onboardingCompletedAt ?? new Date(),
-      })
-      .where(eq(profiles.id, profile.id));
+  const writtenKeys = [...storageKeysByWork.values()].flat();
+  await db
+    .transaction(async (tx) => {
+      await tx
+        .update(profiles)
+        .set({
+          displayName: plan.profile.displayName,
+          handle: plan.profile.handle,
+          role: plan.profile.role,
+          organization: plan.profile.organization,
+          country: plan.profile.country,
+          onboardingCompletedAt: profile.onboardingCompletedAt ?? new Date(),
+        })
+        .where(eq(profiles.id, profile.id));
 
-    // Le premier travail du fichier est le plus récent, donc le premier affiché.
-    const now = Date.now();
-    for (const [index, work] of worksToCreate.entries()) {
-      const createdAt = new Date(now - index * 60_000);
-      await insertWork(
-        tx,
-        profile.id,
-        work,
-        imagesByWork.get(work.slug)!,
-        storageKeysByWork.get(work.slug)!,
-        createdAt,
+      // Le premier travail du fichier est le plus récent, donc le premier affiché.
+      const now = Date.now();
+      for (const [index, work] of worksToCreate.entries()) {
+        const createdAt = new Date(now - index * 60_000);
+        await insertWork(
+          tx,
+          profile.id,
+          work,
+          imagesByWork.get(work.slug)!,
+          storageKeysByWork.get(work.slug)!,
+          createdAt,
+        );
+      }
+      for (const skill of skillsToCreate) {
+        await tx.insert(skills).values({
+          authorId: profile.id,
+          slug: skill.slug,
+          name: skill.name,
+          description: skill.description,
+          content: skill.content,
+          tags: skill.tags,
+          visibility: "public",
+        });
+      }
+      report.demonstrationPoints = await settleDemonstrationPoints(tx, profile.id, targetPoints);
+    })
+    .catch(async (error: unknown) => {
+      // Aucune ligne ne cite ces fichiers : le nettoyage horaire, qui part de la
+      // base, ne les retrouverait jamais.
+      await Promise.all(
+        writtenKeys.map((key) => rm(join(options.uploadsDir, key), { force: true })),
       );
-    }
-    for (const skill of skillsToCreate) {
-      await tx.insert(skills).values({
-        authorId: profile.id,
-        slug: skill.slug,
-        name: skill.name,
-        description: skill.description,
-        content: skill.content,
-        tags: skill.tags,
-        visibility: "public",
-      });
-    }
-    report.demonstrationPoints = await settleDemonstrationPoints(tx, profile.id, targetPoints);
-  });
+      throw error;
+    });
 
   const { totalPoints } = await computeProfilePoints(db, profile.id);
   report.outcome = "done";

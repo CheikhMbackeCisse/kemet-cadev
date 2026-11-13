@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { dirname, isAbsolute, join, normalize, sep } from "node:path";
 import {
   createSkillSchema,
@@ -16,6 +16,8 @@ import {
 // il porte l'adresse du compte et des contenus que seule la personne valide.
 interface PlanFile {
   email?: unknown;
+  /** Motif cherché dans les noms des autres profils, pour les signaler sans les toucher. */
+  profilsSimilaires?: unknown;
   profil?: {
     nom?: unknown;
     identifiant?: unknown;
@@ -48,6 +50,9 @@ export interface PlannedSkill extends CreateSkillInput {
 
 export interface AccountPlan {
   email: string;
+  /** Dossier du fichier, liens symboliques résolus : tout fichier lu doit s'y trouver. */
+  baseDir: string;
+  similarNamePattern: string | null;
   profile: {
     displayName: string;
     handle: string;
@@ -66,6 +71,25 @@ function requireString(value: unknown, field: string): string {
     throw new InvalidPlanError(`Champ manquant ou vide : ${field}`);
   }
   return value.trim();
+}
+
+const MAX_SKILL_FILE_BYTES = 256 * 1024;
+
+/**
+ * Lit un fichier cité par le plan : un fichier ordinaire, sous `baseDir` une
+ * fois les liens symboliques résolus, et pas plus gros que `maxBytes`.
+ */
+export async function readBoundedFile(baseDir: string, path: string, maxBytes: number) {
+  const real = await realpath(path);
+  if (!real.startsWith(baseDir + sep)) {
+    throw new InvalidPlanError(`Fichier hors du dossier du plan : ${path}`);
+  }
+  const info = await stat(real);
+  if (!info.isFile()) throw new InvalidPlanError(`Pas un fichier ordinaire : ${path}`);
+  if (info.size > maxBytes) {
+    throw new InvalidPlanError(`Fichier de plus de ${Math.round(maxBytes / 1024)} Ko : ${path}`);
+  }
+  return readFile(real);
 }
 
 // Un chemin du fichier ne doit jamais sortir de son dossier.
@@ -157,7 +181,9 @@ async function parseSkill(
     requireString(entry.contenu, `${field}.contenu`),
     `${field}.contenu`,
   );
-  const content = await readFile(contentPath, "utf8");
+  const content = (await readBoundedFile(baseDir, contentPath, MAX_SKILL_FILE_BYTES)).toString(
+    "utf8",
+  );
   const parsed = createSkillSchema.parse({
     slug: entry.identifiant,
     name: entry.titre,
@@ -171,7 +197,7 @@ async function parseSkill(
 
 /** Lit et valide le fichier de préparation ; les chemins qu'il cite sont relatifs à son dossier. */
 export async function readAccountPlan(planPath: string): Promise<AccountPlan> {
-  const baseDir = dirname(planPath);
+  const baseDir = await realpath(dirname(planPath));
   const file = JSON.parse(await readFile(planPath, "utf8")) as PlanFile;
   const email = requireString(file.email, "email").toLowerCase();
   const profile = parseProfile(file);
@@ -190,5 +216,9 @@ export async function readAccountPlan(planPath: string): Promise<AccountPlan> {
       throw new InvalidPlanError(`Deux ${label} portent le même identifiant.`);
     }
   }
-  return { email, profile, works, skills };
+  const similarNamePattern =
+    typeof file.profilsSimilaires === "string" && file.profilsSimilaires.trim()
+      ? file.profilsSimilaires.trim()
+      : null;
+  return { email, baseDir, similarNamePattern, profile, works, skills };
 }

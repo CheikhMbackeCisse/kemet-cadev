@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { copyFile, mkdtemp, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createDb } from "../client.js";
 import { computeProfilePoints } from "../points-total.js";
@@ -14,6 +14,7 @@ import {
   skills,
   user,
   workLinks,
+  WORK_DISCUSSIONS_SPACE_ID,
   workMedia,
   works,
 } from "../schema/index.js";
@@ -31,6 +32,7 @@ async function writePlan(overrides: Record<string, unknown> = {}) {
   await writeFile(join(dir, "skill.md"), "# Déployer\n\nÉtape par étape.\n");
   const plan = {
     email: EMAIL.toUpperCase(),
+    profilsSimilaires: "pseudo",
     profil: {
       nom: "Awa Ndiaye",
       identifiant: "awa-10dev",
@@ -76,15 +78,15 @@ describe.skipIf(!databaseUrl)("préparation d'un compte réel", () => {
     await resetTestDatabase(databaseUrl!);
   });
 
-  async function createAccount(email: string, handle: string) {
+  async function createAccount(email: string, handle: string, emailVerified = true) {
     const userId = randomUUID();
-    await db.insert(user).values({ id: userId, name: handle, email, emailVerified: true });
+    await db.insert(user).values({ id: userId, name: handle, email, emailVerified });
     await db
       .insert(account)
       .values({ id: randomUUID(), accountId: userId, providerId: "google", userId });
     const [profile] = await db
       .insert(profiles)
-      .values({ userId, handle, displayName: "Kaiser_dev", country: "SN", role: "student" })
+      .values({ userId, handle, displayName: "Pseudo_dev", country: "SN", role: "student" })
       .returning();
     return profile!;
   }
@@ -100,16 +102,16 @@ describe.skipIf(!databaseUrl)("préparation d'un compte réel", () => {
   });
 
   it("prépare le profil, les travaux, les skills et les points, une seule fois", async () => {
-    const profile = await createAccount(EMAIL, "0906scmc");
-    const other = await createAccount("autre@test.kemet", "kaisersn");
+    const profile = await createAccount(EMAIL, "ancien-pseudo");
+    const other = await createAccount("autre@test.kemet", "pseudosn");
     const { path, uploadsDir } = await writePlan();
     const plan = await readAccountPlan(path);
 
     const report = await prepareAccount(db, plan, { uploadsDir, dryRun: false });
     expect(report.outcome).toBe("done");
     expect(report.providers).toEqual(["google"]);
-    expect(report.previousHandle).toBe("0906scmc");
-    expect(report.similarProfiles.map((row) => row.handle)).toEqual(["kaisersn"]);
+    expect(report.previousHandle).toBe("ancien-pseudo");
+    expect(report.similarProfiles.map((row) => row.handle)).toEqual(["pseudosn"]);
     expect(report.targetPoints).toBe(1600);
     expect(report.totalPoints).toBe(1600);
     expect(report.level).toBe("scribe");
@@ -145,12 +147,12 @@ describe.skipIf(!databaseUrl)("préparation d'un compte réel", () => {
     expect(demoRows).toHaveLength(1);
 
     const [untouched] = await db.select().from(profiles).where(eq(profiles.id, other.id));
-    expect(untouched).toMatchObject({ handle: "kaisersn", displayName: "Kaiser_dev" });
+    expect(untouched).toMatchObject({ handle: "pseudosn", displayName: "Pseudo_dev" });
     expect((await computeProfilePoints(db, other.id)).totalPoints).toBe(0);
   });
 
   it("ajuste la ligne de démonstration aux points déjà gagnés", async () => {
-    const profile = await createAccount(EMAIL, "0906scmc");
+    const profile = await createAccount(EMAIL, "ancien-pseudo");
     await db.insert(pointsLedger).values({
       profileId: profile.id,
       source: "credential_verified",
@@ -167,7 +169,7 @@ describe.skipIf(!databaseUrl)("préparation d'un compte réel", () => {
   });
 
   it("n'écrit rien en essai", async () => {
-    const profile = await createAccount(EMAIL, "0906scmc");
+    const profile = await createAccount(EMAIL, "ancien-pseudo");
     const { path, uploadsDir } = await writePlan();
     const report = await prepareAccount(db, await readAccountPlan(path), {
       uploadsDir,
@@ -175,20 +177,20 @@ describe.skipIf(!databaseUrl)("préparation d'un compte réel", () => {
     });
     expect(report).toMatchObject({ outcome: "dry_run", demonstrationPoints: 1600, totalPoints: 0 });
     const [unchanged] = await db.select().from(profiles).where(eq(profiles.id, profile.id));
-    expect(unchanged!.handle).toBe("0906scmc");
+    expect(unchanged!.handle).toBe("ancien-pseudo");
     expect(await db.select().from(works)).toHaveLength(0);
     expect(await db.select().from(pointsLedger)).toHaveLength(0);
   });
 
   it("refuse sans rien écrire quand l'identifiant est déjà pris", async () => {
-    const profile = await createAccount(EMAIL, "0906scmc");
+    const profile = await createAccount(EMAIL, "ancien-pseudo");
     await createAccount("autre@test.kemet", "awa-10dev");
     const { path, uploadsDir } = await writePlan();
     await expect(
       prepareAccount(db, await readAccountPlan(path), { uploadsDir, dryRun: false }),
     ).rejects.toBeInstanceOf(PreparationRefusedError);
     const [unchanged] = await db.select().from(profiles).where(eq(profiles.id, profile.id));
-    expect(unchanged!.displayName).toBe("Kaiser_dev");
+    expect(unchanged!.displayName).toBe("Pseudo_dev");
     expect(await db.select().from(works)).toHaveLength(0);
   });
 
@@ -204,5 +206,35 @@ describe.skipIf(!databaseUrl)("préparation d'un compte réel", () => {
       ],
     });
     await expect(readAccountPlan(path)).rejects.toThrow(/hors du dossier/);
+  });
+
+  it("refuse un compte dont l'adresse n'a jamais été vérifiée", async () => {
+    await createAccount(EMAIL, "ancien-pseudo", false);
+    const { path, uploadsDir } = await writePlan();
+    await expect(
+      prepareAccount(db, await readAccountPlan(path), { uploadsDir, dryRun: false }),
+    ).rejects.toThrow(/jamais été vérifiée/);
+    expect(await db.select().from(works)).toHaveLength(0);
+  });
+
+  it("ne laisse aucun fichier quand la transaction échoue", async () => {
+    await createAccount(EMAIL, "ancien-pseudo");
+    // Un salon du même identifiant dans l'espace des travaux fait échouer la
+    // publication après l'écriture des images.
+    await db.execute(
+      sql`insert into channels (space_id, name, slug) values (${WORK_DISCUSSIONS_SPACE_ID}, 'pris', 'plateforme-test')`,
+    );
+    const { path, uploadsDir } = await writePlan();
+    await expect(
+      prepareAccount(db, await readAccountPlan(path), { uploadsDir, dryRun: false }),
+    ).rejects.toThrow();
+    expect(await readdir(uploadsDir)).toHaveLength(0);
+    const [unchanged] = await db
+      .select()
+      .from(profiles)
+      .where(
+        eq(profiles.userId, (await db.select().from(user).where(eq(user.email, EMAIL)))[0]!.id),
+      );
+    expect(unchanged!.handle).toBe("ancien-pseudo");
   });
 });
