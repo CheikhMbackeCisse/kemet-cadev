@@ -23,7 +23,7 @@ export function SidebarAccount({ expanded, active }: SidebarAccountProps) {
 
   const rowClass = cn(
     "flex items-center rounded-full text-text hover:bg-surface-2",
-    expanded ? "w-full gap-3 px-2 py-1.5" : "size-11 justify-center",
+    expanded ? "w-full gap-3 px-2 py-1" : "size-10 justify-center",
     active && "bg-action-strong text-on-action-strong hover:bg-action-strong",
   );
 
@@ -34,7 +34,7 @@ export function SidebarAccount({ expanded, active }: SidebarAccountProps) {
         aria-label={expanded ? undefined : fr.auth.signInCta}
         className={rowClass}
       >
-        <LogIn className="size-6 text-link" aria-hidden="true" />
+        <LogIn className="size-[22px] text-link" aria-hidden="true" />
         {expanded && <span className="text-md font-medium text-link">{fr.auth.signInCta}</span>}
       </a>
     );

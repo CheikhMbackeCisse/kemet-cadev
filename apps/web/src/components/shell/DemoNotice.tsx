@@ -17,9 +17,9 @@ export function ActivityBarDemoNotice({ expanded = false }: { expanded?: boolean
       <a
         href={DEMO_DATA_PATH}
         aria-label={fr.demo.notice}
-        className="mt-2 flex h-11 items-center gap-4 rounded-full px-3 text-md text-subtle hover:bg-surface-2 hover:text-text"
+        className="flex h-10 w-full items-center gap-3 rounded-full px-3 text-md text-subtle hover:bg-surface-2 hover:text-text"
       >
-        <FlaskConical className="size-6" aria-hidden="true" />
+        <FlaskConical className="size-[22px]" aria-hidden="true" />
         <span aria-hidden="true">{fr.demo.shortLabel}</span>
       </a>
     );
@@ -29,7 +29,7 @@ export function ActivityBarDemoNotice({ expanded = false }: { expanded?: boolean
       <a
         href={DEMO_DATA_PATH}
         aria-label={fr.demo.notice}
-        className="mt-2 inline-flex w-12 flex-col items-center gap-0.5 rounded-control py-1 text-xs text-subtle hover:bg-surface-2 hover:text-text"
+        className="inline-flex h-10 w-12 flex-col items-center justify-center rounded-control text-xs text-subtle hover:bg-surface-2 hover:text-text"
       >
         <FlaskConical className="size-4" aria-hidden="true" />
         <span aria-hidden="true">{fr.demo.shortLabel}</span>

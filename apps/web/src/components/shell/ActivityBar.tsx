@@ -11,8 +11,6 @@ import {
   MODERATION_NAV,
   RAIL_FOOTER_NAV,
   RAIL_NAV,
-  SAVED_NAV,
-  SECURITY_NAV,
   SETTINGS_NAV,
   type RailNavItem,
 } from "./railNav.js";
@@ -50,19 +48,16 @@ const SHORTCUT_LABEL =
  */
 export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: ActivityBarProps) {
   const { open, toggle } = useSidePanel();
-  const { status, isPlatformAdmin } = useSession();
+  const { isPlatformAdmin } = useSession();
   const expanded = useMediaQuery(WIDE_QUERY) && !hasSidePanel;
-  const topItems = status === "ready" ? [...RAIL_NAV, SAVED_NAV] : RAIL_NAV;
-  const bottomItems = [
-    RAIL_FOOTER_NAV,
-    SECURITY_NAV,
-    SETTINGS_NAV,
-    ...(isPlatformAdmin ? [MODERATION_NAV] : []),
-  ];
+  // Enregistrés vit sur son propre profil, Sécurité dans Paramètres > Aide :
+  // la colonne tient sans défiler sur un écran de 768 px de haut.
+  const topItems = RAIL_NAV;
+  const bottomItems = [RAIL_FOOTER_NAV, SETTINGS_NAV, ...(isPlatformAdmin ? [MODERATION_NAV] : [])];
   const allItems = [...topItems, ...bottomItems];
   const activeIndex = allItems.findIndex((item) => item.id === activeSection);
   // Suivi par identifiant : la liste s'allonge quand la session arrive
-  // (Enregistrés, Modération), un index gardé tomberait sur la mauvaise ligne.
+  // (Modération), un index gardé tomberait sur la mauvaise ligne.
   const [rovingId, setRovingId] = useState<string | null>(null);
   const rovingFound = rovingId ? allItems.findIndex((item) => item.id === rovingId) : -1;
   const rovingIndex = rovingFound >= 0 ? rovingFound : Math.max(activeIndex, 0);
@@ -90,7 +85,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
     const name = unread > 0 ? fr.shell.sectionWithUnread(item.label, unread) : item.label;
     const className = cn(
       "relative flex items-center rounded-full",
-      expanded ? "h-11 w-full gap-4 px-3" : "size-11 justify-center",
+      expanded ? "h-10 w-full gap-3 px-3" : "size-10 justify-center",
       active
         ? // Panneau replié : la section reste marquée, sans le fond plein.
           togglesPanel && !open
@@ -114,7 +109,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
         <span className="relative flex">
           {/* Section ouverte : icône pleine comme sur téléphone, ou trait épaissi. */}
           <item.icon
-            className={cn("size-6", active && item.fillWhenActive && "fill-current")}
+            className={cn("size-[22px]", active && item.fillWhenActive && "fill-current")}
             strokeWidth={active && !item.fillWhenActive ? 2.25 : undefined}
             aria-hidden="true"
           />
@@ -171,9 +166,12 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
     <a
       href="/fil"
       aria-label={fr.shell.home}
-      className={cn("mb-3 flex items-center rounded-full", expanded ? "h-11 px-3" : "")}
+      className={cn(
+        "mb-2 flex h-10 items-center rounded-full",
+        expanded ? "px-3" : "w-10 justify-center",
+      )}
     >
-      {expanded ? <KemetWordmark className="h-6 w-auto" /> : <KemetSymbol className="size-8" />}
+      {expanded ? <KemetWordmark className="h-6 w-auto" /> : <KemetSymbol className="size-7" />}
     </a>
   );
 
@@ -195,18 +193,21 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
       <nav
         aria-label={fr.shell.activityBarLabel}
         onKeyDown={handleKeyDown}
-        className="-mx-1 flex min-h-0 flex-1 flex-col self-stretch overflow-y-auto px-1 py-0.5"
+        className="-mx-1 flex min-h-0 flex-1 flex-col self-stretch px-1 py-0.5"
       >
         <ul className={cn("flex w-full flex-col gap-1", !expanded && "items-center")}>
           {topItems.map((item, index) => renderItem(item, index))}
         </ul>
-        <ul className={cn("mt-auto flex w-full flex-col gap-1 pt-3", !expanded && "items-center")}>
-          {bottomItems.map((item, index) => renderItem(item, topItems.length + index))}
-        </ul>
+        {/* L'espace vide pousse le second groupe en bas. */}
+        <div className={cn("mt-auto flex w-full flex-col gap-1 pt-3", !expanded && "items-center")}>
+          <ActivityBarDemoNotice expanded={expanded} />
+          <ul className={cn("flex w-full flex-col gap-1", !expanded && "items-center")}>
+            {bottomItems.map((item, index) => renderItem(item, topItems.length + index))}
+          </ul>
+        </div>
       </nav>
 
-      <ActivityBarDemoNotice expanded={expanded} />
-      <div className={cn("mt-2 flex w-full", !expanded && "justify-center")}>
+      <div className={cn("mt-1 flex w-full", !expanded && "justify-center")}>
         <SidebarAccount expanded={expanded} active={activeSection === "moi"} />
       </div>
     </div>

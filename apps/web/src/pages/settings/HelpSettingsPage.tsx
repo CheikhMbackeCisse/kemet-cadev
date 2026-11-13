@@ -64,6 +64,9 @@ export function HelpSettingsPage() {
       <a href="/confidentialite" className="w-fit text-base text-link hover:underline">
         {fr.settings.privacyLink}
       </a>
+      <a href="/securite" className="w-fit text-base text-link hover:underline">
+        {fr.settings.securityLink}
+      </a>
     </SettingsSubPage>
   );
 }

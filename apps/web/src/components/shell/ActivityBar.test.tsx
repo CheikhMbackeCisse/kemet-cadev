@@ -74,15 +74,13 @@ describe("barre latérale", () => {
     expect(screen.getByRole("link", { name: "Fil" }).tabIndex).toBe(-1);
   });
 
-  it("sur grand écran, montre les libellés, Enregistrés et le compte, sans Se déconnecter", () => {
+  it("sur grand écran, montre les libellés et le compte, sans Enregistrés, Sécurité ni Se déconnecter", () => {
     wide = true;
     renderBar();
     expect(screen.getByRole("link", { name: "Fil" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Fil" })).toHaveTextContent("Fil");
-    expect(screen.getByRole("link", { name: "Enregistrés" })).toHaveAttribute(
-      "href",
-      "/enregistres",
-    );
+    expect(screen.queryByRole("link", { name: "Enregistrés" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sécurité" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Mon profil, Awa Ndiaye, @awa" })).toHaveAttribute(
       "href",
       "/u/awa",
@@ -95,5 +93,25 @@ describe("barre latérale", () => {
     renderBar(undefined, { activeSection: "salons", hasSidePanel: true });
     expect(screen.getByRole("link", { name: "Fil" })).toHaveTextContent("");
     expect(screen.getByRole("button", { name: "Salons" })).toHaveAttribute("aria-expanded");
+  });
+});
+
+describe("ordre de la barre latérale", () => {
+  it("met les sections en haut, puis Confidentialité et Paramètres en bas, sans doublon", () => {
+    renderBar();
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toEqual([
+      "/fil",
+      "/fil",
+      "/travaux",
+      "/salons",
+      "/messages",
+      "/skills",
+      "/projets",
+      "/competitions",
+      "/confidentialite",
+      "/parametres",
+      "/u/awa",
+    ]);
   });
 });

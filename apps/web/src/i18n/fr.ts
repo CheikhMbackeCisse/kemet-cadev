@@ -328,6 +328,7 @@ export const fr = {
     exportError: "Le téléchargement a échoué. Réessaie dans un instant.",
     exportRateLimited: "Trois exports par heure au plus. Réessaie dans une heure.",
     privacyLink: "Lire la politique de confidentialité",
+    securityLink: "Comment Kemet protège ton compte",
     deleteSection: "Fermer ton compte",
     deleteLink: "Supprimer mon compte…",
     searchLabel: "Chercher un réglage",
