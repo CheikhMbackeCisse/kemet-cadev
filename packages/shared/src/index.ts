@@ -2,6 +2,7 @@ export * from "./schemas/healthcheck.js";
 export * from "./schemas/profile.js";
 export * from "./schemas/profile-link.js";
 export * from "./schemas/library.js";
+export * from "./schemas/avatar.js";
 export * from "./schemas/credential.js";
 export * from "./schemas/pagination.js";
 export * from "./schemas/me.js";

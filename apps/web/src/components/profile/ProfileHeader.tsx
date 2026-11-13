@@ -32,6 +32,10 @@ export interface ProfileHeaderProps {
   /** Moi n'en montre que deux lignes : le profil public la donne en entier. */
   clampBio?: boolean;
   actions?: ReactNode;
+  /** Sur Moi et son propre profil : le "+" posé sur la photo. */
+  avatarAction?: ReactNode;
+  /** Sur son propre profil, quand le nom manque : où l'ajouter. */
+  addNameHref?: string;
 }
 
 const exactNumber = new Intl.NumberFormat("fr-FR");
@@ -66,8 +70,13 @@ export function ProfileHeader({
   subtitle,
   clampBio = false,
   actions,
+  avatarAction,
+  addNameHref,
 }: ProfileHeaderProps) {
   const countryName = COUNTRIES.find((country) => country.code === profile.country)?.name;
+  // Un nom vide ou recopié de l'identifiant : l'identifiant n'est écrit qu'une fois.
+  const nameIsHandle =
+    profile.displayName.trim() === "" || profile.displayName.trim() === profile.handle;
 
   return (
     <header className="flex flex-col gap-3">
@@ -83,8 +92,11 @@ export function ProfileHeader({
           <div aria-hidden="true" className="h-24 rounded-card bg-accent-soft" />
         )}
         <div className="flex items-start gap-3 pl-3">
-          <span className="-mt-11 shrink-0 rounded-full bg-bg p-1">
+          <span className="relative -mt-11 shrink-0 rounded-full bg-bg p-1">
             <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={88} />
+            {avatarAction && (
+              <span className="absolute bottom-0.5 right-0.5 flex">{avatarAction}</span>
+            )}
           </span>
           <ul
             aria-label={fr.profile.statsLabel}
@@ -115,22 +127,34 @@ export function ProfileHeader({
 
       <div className="flex flex-col gap-1">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <h1 className="min-w-0 break-words text-xl font-bold text-text">{profile.displayName}</h1>
+          <h1 className="min-w-0 break-words text-xl font-bold text-text">
+            {nameIsHandle ? `@${profile.handle}` : profile.displayName}
+          </h1>
           {profile.level && <LevelBadge level={profile.level} showLabel link />}
         </div>
         {subtitle && <p className="text-sm text-text-2">{subtitle}</p>}
-        <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-subtle">
-          <span>@{profile.handle}</span>
-          {countryName && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="inline-flex items-center gap-1.5">
-                <Flag countryCode={profile.country} decorative />
-                {countryName}
-              </span>
-            </>
-          )}
-        </p>
+        {nameIsHandle && addNameHref && (
+          <a
+            href={addNameHref}
+            className="self-start text-sm font-medium text-link hover:underline"
+          >
+            {fr.profile.addName}
+          </a>
+        )}
+        {(!nameIsHandle || countryName) && (
+          <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-subtle">
+            {!nameIsHandle && <span>@{profile.handle}</span>}
+            {countryName && (
+              <>
+                {!nameIsHandle && <span aria-hidden="true">·</span>}
+                <span className="inline-flex items-center gap-1.5">
+                  <Flag countryCode={profile.country} decorative />
+                  {countryName}
+                </span>
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       {profile.bio && (

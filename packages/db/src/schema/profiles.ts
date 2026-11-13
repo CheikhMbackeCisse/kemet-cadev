@@ -134,6 +134,18 @@ export const profileCvs = pgTable("profile_cvs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Photo envoyée par la personne. `profiles.avatar_url` pointe vers sa route
+// de service ; le fichier est remplacé à chaque envoi.
+export const profileAvatars = pgTable("profile_avatars", {
+  profileId: uuid("profile_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  storageKey: text("storage_key").notNull().unique(),
+  mimeType: text("mime_type").notNull(),
+  byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const profilesRelations = relations(profiles, ({ one }) => ({
   user: one(user, {
     fields: [profiles.userId],

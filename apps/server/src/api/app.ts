@@ -25,6 +25,7 @@ import { registerSearchRoutes } from "./routes/search.js";
 import { registerAccountDeletionRoutes } from "./routes/account-deletion.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerLibraryRoutes } from "./routes/library.js";
+import { registerAvatarRoutes } from "./routes/avatars.js";
 import { registerLevelRoutes } from "./routes/levels.js";
 import { registerSpaceRoutes } from "./routes/spaces.js";
 import { registerChannelRoutes } from "./routes/channels.js";
@@ -234,6 +235,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     registerAccountDeletionRoutes(app, chatDeps);
     registerWorkRoutes(app, chatDeps);
     registerLibraryRoutes(app, chatDeps);
+    registerAvatarRoutes(app, chatDeps);
     registerWorkMediaRoutes(app, chatDeps);
     registerWorkMatchRoutes(app, chatDeps);
     registerRelatedPeopleRoutes(app, chatDeps);

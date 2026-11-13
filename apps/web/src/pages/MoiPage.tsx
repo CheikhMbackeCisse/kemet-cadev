@@ -6,6 +6,7 @@ import { RailPage } from "../components/layout/RailPage.js";
 import { LevelProgressBar } from "../components/profile/LevelProgressBar.js";
 import { MoiMenu } from "../components/profile/MoiMenu.js";
 import { ProfileHeader } from "../components/profile/ProfileHeader.js";
+import { AvatarChangeButton } from "../components/profile/AvatarChangeButton.js";
 import { ProfileTabs } from "../components/profile/ProfileTabs.js";
 import {
   PROFILE_ACTION_CLASS,
@@ -30,7 +31,7 @@ import { fr } from "../i18n/fr.js";
  * menu ouvert par l'icône en haut à droite.
  */
 export function MoiPage() {
-  const { status, profile, points } = useSession();
+  const { status, profile, points, isSuspended } = useSession();
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [worksReloadKey, setWorksReloadKey] = useState(0);
@@ -93,6 +94,14 @@ export function MoiPage() {
             ]}
             belowStats={<LevelProgressBar points={points} />}
             clampBio
+            addNameHref="/parametres/profil"
+            avatarAction={
+              <AvatarChangeButton
+                variant="badge"
+                hasPhoto={Boolean(profile.avatarUrl)}
+                disabled={isSuspended}
+              />
+            }
             actions={
               <div className={PROFILE_ACTIONS_ROW_CLASS}>
                 <a href="/parametres/profil" className={PROFILE_ACTION_CLASS}>

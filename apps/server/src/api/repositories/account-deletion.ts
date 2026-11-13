@@ -27,6 +27,7 @@ import {
   workAttachments,
   workMedia,
   profileCvs,
+  profileAvatars,
   organizationManagers,
   organizationRequests,
   workAuthors,
@@ -225,6 +226,10 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .delete(profileCvs)
     .where(eq(profileCvs.profileId, profileId))
     .returning({ storageKey: profileCvs.storageKey });
+  const avatarFiles = await tx
+    .delete(profileAvatars)
+    .where(eq(profileAvatars.profileId, profileId))
+    .returning({ storageKey: profileAvatars.storageKey });
   await tx
     .delete(workAuthors)
     .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "pending")));
@@ -242,7 +247,9 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .returning({ storageKey: organizationRequests.logoStorageKey });
   await tx.delete(organizationManagers).where(eq(organizationManagers.managerId, profileId));
   return [
-    ...[...messageFiles, ...postFiles, ...workFiles, ...cvFiles].map((file) => file.storageKey),
+    ...[...messageFiles, ...postFiles, ...workFiles, ...cvFiles, ...avatarFiles].map(
+      (file) => file.storageKey,
+    ),
     ...requestLogos.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
     ...mediaFiles.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
   ];

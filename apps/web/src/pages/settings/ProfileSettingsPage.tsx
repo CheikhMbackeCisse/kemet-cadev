@@ -13,6 +13,8 @@ import { Input } from "../../components/ui/Input.js";
 import { Select } from "../../components/ui/Select.js";
 import { Switch } from "../../components/ui/Switch.js";
 import { CvSettings } from "../../components/settings/CvSettings.js";
+import { AvatarChangeButton } from "../../components/profile/AvatarChangeButton.js";
+import { Avatar } from "../../components/ui/Avatar.js";
 import { SubmitButton } from "../../components/ui/SubmitButton.js";
 import { Textarea } from "../../components/ui/Textarea.js";
 import { useToast } from "../../components/ui/Toast.js";
@@ -185,6 +187,19 @@ export function ProfileSettingsPage() {
   return (
     <SettingsSubPage title={fr.settings.profileSection}>
       {isSuspended && <SuspendedBanner />}
+      <section aria-labelledby="photo-title" className="flex max-w-sm flex-col gap-3">
+        <h2 id="photo-title" className="text-md font-semibold text-text">
+          {fr.settings.photoTitle}
+        </h2>
+        <div className="flex items-center gap-4">
+          <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={88} />
+          <AvatarChangeButton
+            variant="button"
+            hasPhoto={Boolean(profile.avatarUrl)}
+            disabled={isSuspended}
+          />
+        </div>
+      </section>
       <form
         ref={formRef}
         noValidate

@@ -288,6 +288,13 @@
       "when": 1794519789510,
       "tag": "0040_publish_as_organization",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794537047442,
+      "tag": "0041_profile_avatars",
+      "breakpoints": true
     }
   ]
 }

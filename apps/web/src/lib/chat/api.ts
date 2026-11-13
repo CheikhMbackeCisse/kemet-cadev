@@ -578,8 +578,7 @@ export function updateMyProfile(input: UpdateProfileInput) {
 }
 
 export type HandleAvailability =
-  | { available: true }
-  | { available: false; reason: "invalid" | "reserved" | "taken" };
+  { available: true } | { available: false; reason: "invalid" | "reserved" | "taken" };
 
 export function checkHandleAvailability(handle: string, signal?: AbortSignal) {
   const params = new URLSearchParams({ handle });
@@ -1187,6 +1186,27 @@ export function getUserLibrary(handle: string) {
 /** Adresse du PDF, lue par l'aperçu et par le lien de téléchargement. */
 export function cvContentUrl(handle: string): string {
   return `/api/users/${encodeURIComponent(handle)}/cv/content`;
+}
+
+/** Envoie la photo de profil ; renvoie sa nouvelle adresse. */
+export async function uploadMyAvatar(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/me/avatar", {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { avatarUrl } = (await response.json()) as { avatarUrl: string };
+  return avatarUrl;
 }
 
 export async function uploadCv(file: File): Promise<Cv> {

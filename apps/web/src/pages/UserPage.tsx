@@ -34,6 +34,7 @@ import { profileSubtitle } from "../lib/profileIdentity.js";
 import { useSession } from "../session/SessionProvider.js";
 import { shareLink } from "../lib/shareLink.js";
 import { ProfileHeader } from "../components/profile/ProfileHeader.js";
+import { AvatarChangeButton } from "../components/profile/AvatarChangeButton.js";
 import { OrganizationHeader } from "../components/organizations/OrganizationHeader.js";
 import { OrganizationTabs } from "../components/organizations/OrganizationTabs.js";
 import { SIGN_UP_PATH } from "../session/signUpInvite.js";
@@ -354,6 +355,21 @@ export function UserPage() {
         <ProfileHeader
           profile={profile}
           subtitle={profileSubtitle(profile)}
+          addNameHref={isOwnProfile ? "/parametres/profil" : undefined}
+          avatarAction={
+            isOwnProfile ? (
+              <AvatarChangeButton
+                variant="badge"
+                hasPhoto={Boolean(profile.avatarUrl)}
+                disabled={isSuspended}
+                onChanged={(avatarUrl) =>
+                  setData((current) =>
+                    current ? { ...current, profile: { ...current.profile, avatarUrl } } : current,
+                  )
+                }
+              />
+            ) : undefined
+          }
           stats={[
             { label: fr.profile.statWorks(data.workCount), value: data.workCount },
             {
