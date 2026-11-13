@@ -201,16 +201,24 @@ La carte est au centre de l'écran, entre deux bandes de décor : au-dessus et
 au-dessous sur téléphone, à gauche et à droite à partir de 768 px. Le décor
 ne passe donc jamais sous la carte, ne touche ni elle ni le bord de l'écran
 (16 px au moins, dérive comprise) et deux éléments ne se chevauchent jamais
-(`decorLayout.test.ts`) ; une bande trop petite reste vide, un formulaire
-long sur un petit écran n'a aucun décor. Dix éléments au plus sur ordinateur,
-six sur téléphone : quatre logos de langages (Python, JavaScript,
-TypeScript, Flutter ; Kotlin retiré le 11/11, son K violet se confondait
-avec le k de Kemet), trois icônes Lucide (terminal, base de données, réseau,
-26 ou 30 px, trait de 1,5 px : à cette taille, il pèse autant que le trait de
-2 px des icônes de 20 px) et trois bouts de code en Geist Mono.
+(`decorLayout.test.ts`). Une bande trop petite reste vide : moins de 110 px
+de haut sur téléphone, moins de 280 x 420 px sur ordinateur (avant le
+13/11/2026, 150 et 560 px : la hauteur réelle d'un navigateur, barres
+comprises, les dépassait rarement et le décor avait disparu). Onze éléments
+sur ordinateur, six sur téléphone, plus petits (pastille de 38 px) : cinq
+logos de langages (Python, JavaScript, TypeScript, React, Flutter ; Kotlin
+retiré le 11/11, son K violet se confondait avec le k de Kemet), trois
+icônes Lucide (terminal, base de données, réseau, 26 ou 30 px, trait de
+1,5 px : à cette taille, il pèse autant que le trait de 2 px des icônes de
+20 px) et trois bouts de code en Geist Mono (`print("Hello, World!")`,
+`git push origin main`, `const kemet = new Communaute()`) ; trois logos,
+une icône et deux bouts de code sur téléphone.
 
-Sur l'accueil, les logos sont dans leurs vraies couleurs (Simple Icons) sur
-une pastille blanche pleine, sans flou ni ombre, et le continent, plus
+Sur l'accueil, les logos sont dans leurs vraies couleurs (Devicon, variantes
+« original » : Python bleu et jaune) sur une pastille blanche pleine, sans
+flou ni ombre ; ailleurs, la silhouette blanche de Simple Icons, qui garde
+les lettres de JS et TS. Ils peuvent passer près d'un arc pâle, jamais sur
+une capitale ou une ville, et le continent, plus
 grand, porte un réseau vu comme de nuit : quatorze capitales du pourtour
 du continent en points lumineux à petit halo, chacune reliée à deux ou
 trois voisines par un arc fin et légèrement courbe, du Maghreb au Cap et de
@@ -227,8 +235,8 @@ entier autour d'elle à partir de 1440 x 900 ; plus bas (1280 x 720), l'est
 passe sous la carte. Ce que la carte couvre s'atténue à 25 % (points,
 lueurs) ; les arcs gardent leur intensité, déjà sous celle du contour, et se
 devinent à travers le verre. Un élément du décor
-posé sur une capitale, une ville ou un arc visible est caché ; les places
-du décor sont choisies pour que ça n'arrive pas aux tailles courantes. La
+posé sur une capitale ou une ville visible est caché ; les places du décor
+sont choisies pour que ça n'arrive pas aux tailles courantes. La
 carte de l'accueil est plus claire (teinte à 50 %, flou de 1 px). Tout en
 bas de l'écran, "Propulsé par" en petit et en blanc atténué, puis
 "Systalink" en blanc, graisse moyenne, S majuscule, sur la même ligne : ni
@@ -267,10 +275,11 @@ sûre de l'iPhone, avec l'erreur d'envoi juste au-dessus de lui, sur un fond
 de verre plus dense qui prend toute la largeur de la carte ; il retrouve sa
 place à la fin du défilement, sans que rien d'autre ne bouge.
 
-Les logos de Simple Icons sont la seule exception au « jamais le logo d'un
-autre produit » du principe 6 : décor qui dit de quoi on parle, jamais
-cliquable, en blanc sur les écrans calmes et dans leurs vraies couleurs sur
-l'accueil seulement (demandé le 08/11/2026). Aucun autre écran
+Les logos de Simple Icons et de Devicon sont la seule exception au « jamais
+le logo d'un autre produit » du principe 6 : décor qui dit de quoi on parle,
+jamais cliquable, en blanc sur les écrans calmes et dans leurs vraies
+couleurs sur l'accueil et derrière « Complète ton profil » (demandé le
+08/11/2026, puis le 13/11/2026 pour Devicon). Aucun autre écran
 n'hérite de ces exceptions.
 
 ## Mouvement

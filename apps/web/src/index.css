@@ -237,7 +237,7 @@
 }
 
 @media (max-width: 767.98px) {
-  @container arrival-band (min-width: 320px) and (min-height: 150px) {
+  @container arrival-band (min-width: 320px) and (min-height: 110px) {
     .arrival-band-items[data-screen="mobile"] {
       display: block;
     }
@@ -245,7 +245,7 @@
 }
 
 @media (min-width: 768px) {
-  @container arrival-band (min-width: 240px) and (min-height: 560px) {
+  @container arrival-band (min-width: 280px) and (min-height: 420px) {
     .arrival-band-items[data-screen="desktop"] {
       display: block;
     }

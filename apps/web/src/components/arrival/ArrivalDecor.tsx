@@ -1,5 +1,5 @@
 import { Database, Network, SquareTerminal, type LucideIcon } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { cn } from "../../lib/cn.js";
 import {
   DECOR,
@@ -11,8 +11,17 @@ import {
   type DecorItem,
   type DecorScreen,
 } from "./decorLayout.js";
-import { TECH_LOGOS } from "../ui/techLogos.js";
+import { deviconUrl, type DeviconName } from "./deviconLogos.js";
+import { TECH_LOGOS as SIMPLE_ICONS, type TechLogoName } from "../ui/techLogos.js";
 import type { ArrivalMotion } from "./ArrivalBackground.js";
+
+const TECH_LOGOS: Partial<Record<DeviconName, (typeof SIMPLE_ICONS)[TechLogoName]>> = {
+  python: SIMPLE_ICONS.python,
+  javascript: SIMPLE_ICONS.javascript,
+  typescript: SIMPLE_ICONS.typescript,
+  react: SIMPLE_ICONS.react,
+  flutter: SIMPLE_ICONS.flutter,
+};
 
 const ICONS: Record<DecorIcon, LucideIcon> = {
   terminal: SquareTerminal,
@@ -32,28 +41,35 @@ function DecorView({
   const sizes = DECOR_SIZES[screen];
   switch (content.kind) {
     case "logo": {
-      const logo = TECH_LOGOS[content.name];
-      const glyph = Math.round(sizes.tile * 0.54);
-      const icon = (
-        <svg
-          viewBox="0 0 24 24"
-          width={glyph}
-          height={glyph}
-          fill={vivid ? logo.color : "currentColor"}
-        >
-          <path d={logo.path} />
-        </svg>
-      );
-      return vivid ? (
+      // Écrans calmes : la silhouette blanche de Simple Icons, qui garde les
+      // lettres de JS et TS (celle d'un logo Devicon en couleurs serait un
+      // carré plein).
+      const silhouette = vivid ? null : TECH_LOGOS[content.name];
+      if (silhouette) {
+        const glyph = Math.round(sizes.tile * 0.54);
+        return (
+          <span
+            className="flex items-center justify-center"
+            style={{ width: sizes.tile, height: sizes.tile }}
+          >
+            <svg viewBox="0 0 24 24" width={glyph} height={glyph} fill="currentColor">
+              <path d={silhouette.path} />
+            </svg>
+          </span>
+        );
+      }
+      const glyph = Math.round(sizes.tile * 0.62);
+      return (
         <span className="arrival-tile" style={{ width: sizes.tile, height: sizes.tile }}>
-          {icon}
-        </span>
-      ) : (
-        <span
-          className="flex items-center justify-center"
-          style={{ width: sizes.tile, height: sizes.tile }}
-        >
-          {icon}
+          <img
+            src={deviconUrl(content.name)}
+            alt=""
+            width={glyph}
+            height={glyph}
+            decoding="async"
+            draggable={false}
+            className="block"
+          />
         </span>
       );
     }
@@ -73,15 +89,19 @@ function DecorView({
   }
 }
 
+// Début commun de toutes les dérives : passer d'un écran du parcours à
+// l'autre reprend chaque élément là où il en était, sans saut.
+const DRIFT_EPOCH = performance.now();
+
 // Chaque élément dérive dans une direction différente de son voisin.
-function itemStyle(item: DecorItem, index: number): CSSProperties {
+function itemStyle(item: DecorItem, index: number, elapsed: number): CSSProperties {
   return {
     "--drift-x": `${index % 2 === 0 ? DECOR_DRIFT : -DECOR_DRIFT}px`,
     "--drift-y": `${index % 3 === 0 ? -DECOR_DRIFT : DECOR_DRIFT}px`,
     left: `${item.x}%`,
     top: `${item.y}%`,
     "--drift-duration": `${item.duration}s`,
-    "--drift-delay": `${item.delay}s`,
+    "--drift-delay": `${(item.delay - elapsed).toFixed(2)}s`,
   } as CSSProperties;
 }
 
@@ -94,13 +114,14 @@ function BandItems({
   side: DecorBandSide;
   vivid: boolean;
 }) {
+  const [elapsed] = useState(() => (performance.now() - DRIFT_EPOCH) / 1000);
   return (
     <div className="arrival-band-items absolute inset-0" data-screen={screen}>
       {DECOR[screen][side].map((item, index) => (
         <span
           key={index}
           className="arrival-decor-item absolute -translate-x-1/2 -translate-y-1/2"
-          style={itemStyle(item, index)}
+          style={itemStyle(item, index, elapsed)}
         >
           <span
             className={cn(

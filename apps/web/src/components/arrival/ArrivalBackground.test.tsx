@@ -100,7 +100,7 @@ describe("ArrivalLayout", () => {
         return rect(x - 3, y - 3, 6, 6);
       }
       if (this.classList.contains("arrival-decor-item")) {
-        return style.left === "16%" && style.top === "40%"
+        return style.left === "16%" && style.top === "45%"
           ? rect(dakar.x - 20, dakar.y - 20, 40, 40)
           : rect(5000, 5000, 40, 40);
       }
@@ -139,7 +139,7 @@ describe("ArrivalLayout", () => {
     const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
     const clashing = [...container.querySelectorAll("[data-clash]")];
     expect(clashing).toHaveLength(1);
-    expect(clashing[0]!.querySelector('svg[fill="#3776AB"]')).not.toBeNull();
+    expect(clashing[0]!.querySelector('img[src*="python"]')).not.toBeNull();
   });
 
   function root(container: HTMLElement) {
@@ -148,13 +148,14 @@ describe("ArrivalLayout", () => {
 
   it("pose les logos en couleur sur l'accueil, en blanc ailleurs", () => {
     const rich = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
-    expect(rich.container.querySelector('svg[fill="#3776AB"]')).not.toBeNull();
+    expect(rich.container.querySelector('.arrival-tile img[src*="python"]')).not.toBeNull();
     expect(rich.container.querySelector(".arrival-tile")).not.toBeNull();
     rich.unmount();
 
     const calm = render(<ArrivalLayout motion="calm">contenu</ArrivalLayout>);
     expect(calm.container.querySelector(".arrival-tile")).toBeNull();
     expect(calm.container.querySelector(".arrival-decor-calm")).not.toBeNull();
+    expect(calm.container.querySelector(".arrival-decor-calm img")).toBeNull();
   });
 
   it("cache le décor aux lecteurs d'écran", () => {

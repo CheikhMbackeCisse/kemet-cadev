@@ -47,9 +47,18 @@ const SCREENS: DecorScreen[] = ["mobile", "desktop"];
 const SIDES: DecorBandSide[] = ["start", "end"];
 
 describe("décor du parcours d'arrivée", () => {
-  it("compte dix éléments au plus sur ordinateur, six sur téléphone", () => {
-    expect(DECOR.desktop.start.length + DECOR.desktop.end.length).toBeLessThanOrEqual(10);
-    expect(DECOR.mobile.start.length + DECOR.mobile.end.length).toBeLessThanOrEqual(6);
+  it("compte onze éléments sur ordinateur, quatre à six sur téléphone", () => {
+    expect(DECOR.desktop.start.length + DECOR.desktop.end.length).toBe(11);
+    const mobile = DECOR.mobile.start.length + DECOR.mobile.end.length;
+    expect(mobile).toBeGreaterThanOrEqual(4);
+    expect(mobile).toBeLessThanOrEqual(6);
+  });
+
+  it("montre sur ordinateur cinq logos, trois icônes et trois bouts de code", () => {
+    const items = [...DECOR.desktop.start, ...DECOR.desktop.end];
+    expect(items.filter((item) => item.content.kind === "logo")).toHaveLength(5);
+    expect(items.filter((item) => item.content.kind === "icon")).toHaveLength(3);
+    expect(items.filter((item) => item.content.kind === "code")).toHaveLength(3);
   });
 
   it("garde trois à cinq logos et deux ou trois bouts de code", () => {

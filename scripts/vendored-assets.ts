@@ -18,6 +18,12 @@ export const VENDORED_ASSETS: readonly VendoredAsset[] = [
     usedIn: "apps/web/src/components/ui/techLogos.ts",
   },
   {
+    name: "Devicon 2.17.0 (16 logos de technologies en couleurs, variantes original), copiés par scripts/build-devicon.ts. Les logos appartiennent à leurs propriétaires et servent seulement à désigner les technologies",
+    source: "https://devicon.dev, https://github.com/devicons/devicon",
+    license: "MIT",
+    usedIn: "apps/web/src/components/arrival/devicon/",
+  },
+  {
     name: "Contour de l'Afrique, Natural Earth via world-atlas 2.0.2 (countries-50m), généré par scripts/build-africa-outline.ts",
     source: "https://www.naturalearthdata.com, https://github.com/topojson/world-atlas",
     license: "Domaine public (Natural Earth), ISC (world-atlas)",

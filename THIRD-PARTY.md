@@ -107,6 +107,7 @@ trois paquets.
 | --- | --- | --- | --- |
 | Icônes de l'interface | Lucide (lucide-react) | ISC | Toute l'interface |
 | Logos de technologies | Simple Icons 16.37.0, 34 logos copiés par `scripts/build-tech-logos.ts` | CC0-1.0 | Décor de l'accueil, couvertures de skills, logos d'espace (`apps/web/src/components/ui/techLogos.ts`) |
+| Logos de technologies en couleurs | Devicon 2.17.0, variantes « original », 16 fichiers SVG copiés par `scripts/build-devicon.ts` | MIT | Décor de l'accueil et de « Complète ton profil » (`apps/web/src/components/arrival/devicon/`). Les logos appartiennent à leurs propriétaires et servent seulement à désigner les technologies |
 | Drapeaux des pays | flag-icons 7.5.0, fichiers SVG servis comme images | MIT | Avatars et listes de pays (`apps/web/src/components/ui/Flag.tsx`) |
 | Contour de l'Afrique | Natural Earth (countries-50m) via world-atlas 2.0.2, généré par `scripts/build-africa-outline.ts` | Domaine public (Natural Earth), ISC (world-atlas) | Parcours d'arrivée (`apps/web/src/components/arrival/africaOutline.ts`) |
 

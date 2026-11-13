@@ -1,9 +1,9 @@
-import type { TechLogoName } from "../ui/techLogos.js";
+import type { DeviconName } from "./deviconLogos.js";
 
 export type DecorIcon = "terminal" | "database" | "network";
 
 export type DecorContent =
-  | { kind: "logo"; name: TechLogoName }
+  | { kind: "logo"; name: DeviconName }
   | { kind: "icon"; name: DecorIcon }
   | { kind: "code"; text: string };
 
@@ -25,8 +25,8 @@ export interface DecorItem {
  * code, en pixels. Lus par le rendu et par le test qui vérifie les places.
  */
 export const DECOR_SIZES: Record<DecorScreen, { tile: number; icon: number; codeFont: number }> = {
-  mobile: { tile: 44, icon: 26, codeFont: 12 },
-  desktop: { tile: 52, icon: 30, codeFont: 13 },
+  mobile: { tile: 38, icon: 22, codeFont: 11 },
+  desktop: { tile: 52, icon: 30, codeFont: 12 },
 };
 
 /** Écart de la dérive autour de la place de chaque élément, en pixels. */
@@ -39,51 +39,55 @@ export const DECOR_DRIFT = 6;
  * un formulaire long sur un petit écran n'a aucun décor.
  */
 export const DECOR_MIN_BAND: Record<DecorScreen, { width: number; height: number }> = {
-  mobile: { width: 320, height: 150 },
-  desktop: { width: 240, height: 560 },
+  mobile: { width: 320, height: 110 },
+  desktop: { width: 280, height: 420 },
 };
 
 const python = { kind: "logo", name: "python" } as const;
 const javascript = { kind: "logo", name: "javascript" } as const;
 const typescript = { kind: "logo", name: "typescript" } as const;
+const react = { kind: "logo", name: "react" } as const;
 const flutter = { kind: "logo", name: "flutter" } as const;
 const terminal = { kind: "icon", name: "terminal" } as const;
 const database = { kind: "icon", name: "database" } as const;
 const network = { kind: "icon", name: "network" } as const;
 const hello = { kind: "code", text: 'print("Hello, World!")' } as const;
-const gitPush = { kind: "code", text: "git push" } as const;
-const npmRun = { kind: "code", text: "npm run dev" } as const;
+const gitPush = { kind: "code", text: "git push origin main" } as const;
+const gitPushShort = { kind: "code", text: "git push" } as const;
+const kemet = { kind: "code", text: "const kemet = new Communaute()" } as const;
 
-// Places fixes plutôt qu'aléatoires : le même écran à chaque visite. Dix
-// éléments sur ordinateur, six sur téléphone, vérifiés par decorLayout.test.ts
-// : jamais l'un sur l'autre, jamais contre le bord de leur bande.
+// Places fixes plutôt qu'aléatoires : le même écran à chaque visite. Onze
+// éléments sur ordinateur (cinq logos, trois icônes, trois bouts de code),
+// six sur téléphone, vérifiés par decorLayout.test.ts : jamais l'un sur
+// l'autre, jamais contre le bord de leur bande.
 export const DECOR: Record<DecorScreen, Record<DecorBandSide, readonly DecorItem[]>> = {
   desktop: {
     start: [
-      { content: python, x: 30, y: 13, duration: 19, delay: -3 },
-      { content: hello, x: 50, y: 44, duration: 23, delay: -11 },
-      { content: terminal, x: 22, y: 56, duration: 17, delay: -6 },
-      { content: javascript, x: 66, y: 68, duration: 21, delay: -14 },
-      { content: npmRun, x: 38, y: 87, duration: 25, delay: -2 },
+      { content: python, x: 30, y: 12, duration: 19, delay: -3 },
+      { content: hello, x: 50, y: 28, duration: 23, delay: -11 },
+      { content: terminal, x: 22, y: 44, duration: 17, delay: -6 },
+      { content: javascript, x: 68, y: 56, duration: 21, delay: -14 },
+      { content: kemet, x: 50, y: 73, duration: 25, delay: -2 },
+      { content: react, x: 32, y: 88, duration: 20, delay: -9 },
     ],
     end: [
-      { content: typescript, x: 70, y: 15, duration: 20, delay: -8 },
-      { content: database, x: 46, y: 33, duration: 18, delay: -12 },
-      { content: gitPush, x: 62, y: 50, duration: 24, delay: -5 },
-      { content: flutter, x: 48, y: 69, duration: 22, delay: -16 },
-      { content: network, x: 74, y: 86, duration: 16, delay: -9 },
+      { content: typescript, x: 70, y: 13, duration: 20, delay: -8 },
+      { content: database, x: 40, y: 31, duration: 18, delay: -12 },
+      { content: gitPush, x: 56, y: 50, duration: 24, delay: -5 },
+      { content: flutter, x: 36, y: 70, duration: 22, delay: -16 },
+      { content: network, x: 74, y: 87, duration: 16, delay: -9 },
     ],
   },
   mobile: {
     start: [
-      { content: python, x: 16, y: 40, duration: 19, delay: -3 },
-      { content: gitPush, x: 52, y: 28, duration: 24, delay: -5 },
-      { content: typescript, x: 84, y: 36, duration: 20, delay: -8 },
+      { content: python, x: 16, y: 45, duration: 19, delay: -3 },
+      { content: gitPushShort, x: 50, y: 45, duration: 24, delay: -5 },
+      { content: typescript, x: 84, y: 45, duration: 20, delay: -8 },
     ],
     end: [
-      { content: terminal, x: 15, y: 30, duration: 17, delay: -6 },
-      { content: hello, x: 45, y: 66, duration: 23, delay: -11 },
-      { content: javascript, x: 85, y: 32, duration: 21, delay: -14 },
+      { content: terminal, x: 12, y: 55, duration: 17, delay: -6 },
+      { content: hello, x: 46, y: 55, duration: 23, delay: -11 },
+      { content: javascript, x: 86, y: 55, duration: 21, delay: -14 },
     ],
   },
 };

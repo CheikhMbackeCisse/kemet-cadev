@@ -13,7 +13,6 @@ import { markIntroSeen } from "../../lib/intro/introStorage.js";
 import { ArrivalBackground, type ArrivalMotion } from "./ArrivalBackground.js";
 import { ArrivalDecorBand } from "./ArrivalDecor.js";
 import { AFRICA_OUTLINE_WIDTH } from "./africaOutline.js";
-import { NETWORK_ARCS, arcSamples } from "./networkLayout.js";
 import { NETWORK_COVERED_ZONE_CLASS } from "./AfricaNetwork.js";
 import { DECOR_DRIFT } from "./decorLayout.js";
 
@@ -61,8 +60,6 @@ function usePageVisible(): boolean {
 const DOT_CLEARANCE = 12;
 // Marge autour d'un élément du décor, dérive comprise.
 const DECOR_CLEARANCE = DECOR_DRIFT + 10;
-// Points pris sur chaque arc pour savoir si le décor le croise.
-const ARC_SAMPLES = 24;
 
 interface Box {
   left: number;
@@ -84,8 +81,8 @@ function inside(box: Box, x: number, y: number, margin: number): boolean {
  * Réseau de l'accueil autour de la carte, recalculé à chaque changement de
  * taille de l'écran ou de la carte. Un point ou une lueur que la carte
  * couvre s'atténue : à pleine intensité, il se lirait comme une poussière
- * derrière le texte. Un élément du décor posé sur une capitale, une ville
- * ou un arc visible est caché.
+ * derrière le texte. Un élément du décor posé sur une capitale ou une ville
+ * visible est caché ; il peut passer près d'un arc, plus pâle que le contour.
  */
 function useNetworkAroundCard(
   root: RefObject<HTMLElement>,
@@ -112,13 +109,6 @@ function useNetworkAroundCard(
         dot.toggleAttribute("data-covered", covered);
         if (!covered) visible.push({ x, y });
       });
-      for (const arc of NETWORK_ARCS) {
-        for (const point of arcSamples(arc, ARC_SAMPLES)) {
-          const x = area.left + point.x * scale;
-          const y = area.top + point.y * scale;
-          if (!inside(box, x, y, 0)) visible.push({ x, y });
-        }
-      }
 
       const zone = rootElement!.querySelector(`.${NETWORK_COVERED_ZONE_CLASS}`);
       if (zone && scale > 0) {
