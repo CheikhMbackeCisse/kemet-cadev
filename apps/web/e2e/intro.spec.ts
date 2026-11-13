@@ -65,7 +65,7 @@ test("les réponses de l'accueil rejoignent le profil après l'inscription", asy
 
   await expect(page.getByRole("heading", { name: "Dans quel pays es-tu ?" })).toBeVisible();
   await page.getByRole("button", { name: "Passer" }).click();
-  await expect(page.getByRole("heading", { name: "Quelle est ta spécialité ?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Où étudies-tu ?" })).toBeVisible();
 
   const me = await (await page.request.get("/api/me")).json();
   expect(me.profile.role).toBe("student");

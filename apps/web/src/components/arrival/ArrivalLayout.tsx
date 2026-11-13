@@ -30,6 +30,11 @@ export interface ArrivalLayoutProps {
    * l'univers à trois profondeurs de "Complète ton profil", tout autour.
    */
   decor?: "bands" | "universe";
+  /**
+   * La carte tient dans la hauteur de l'écran : son contenu gère lui-même
+   * son défilement (une liste longue entre un titre et un bouton fixes).
+   */
+  fitViewport?: boolean;
   busy?: boolean;
   children: ReactNode;
 }
@@ -150,6 +155,7 @@ export function ArrivalLayout({
   pageFooter,
   showLogo = true,
   decor = "bands",
+  fitViewport = false,
   busy,
   children,
 }: ArrivalLayoutProps) {
@@ -163,7 +169,10 @@ export function ArrivalLayout({
   return (
     <div
       ref={root}
-      className="arrival-root relative flex min-h-viewport w-full flex-col"
+      className={cn(
+        "arrival-root relative flex w-full flex-col",
+        fitViewport ? "h-viewport" : "min-h-viewport",
+      )}
       data-paused={visible ? undefined : ""}
       data-still={still ? "" : undefined}
       aria-busy={busy || undefined}
@@ -192,14 +201,20 @@ export function ArrivalLayout({
       )}
 
       {!busy && (
-        <div className={cn("arrival-stage relative z-10 flex-1", `arrival-stage-${width}`)}>
+        <div
+          className={cn(
+            "arrival-stage relative z-10 flex-1",
+            `arrival-stage-${width}`,
+            fitViewport && "arrival-stage-fit",
+          )}
+        >
           {decor === "bands" ? <ArrivalDecorBand side="start" motion={motion} /> : <div />}
-          <main className="flex min-w-0 flex-col items-center justify-center px-4 py-4 sm:py-8">
-            <div className="flex w-full flex-col gap-3">
+          <main className="flex min-h-0 min-w-0 flex-col items-center justify-center px-4 py-4 sm:py-8">
+            <div className="flex max-h-full min-h-0 w-full flex-col gap-3">
               <div
                 ref={card}
                 className={cn(
-                  "arrival-glass auth-on-dark flex flex-col gap-4 rounded-panel p-5 text-auth-text sm:p-8",
+                  "arrival-glass auth-on-dark flex min-h-0 flex-col gap-4 rounded-panel p-5 text-auth-text sm:p-8",
                   motion === "rich" && "arrival-glass-clear",
                 )}
               >

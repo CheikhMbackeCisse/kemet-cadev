@@ -222,6 +222,18 @@
   }
 }
 
+/* La carte tient dans l'écran : la rangée du milieu ne dépasse jamais. */
+.arrival-stage-fit {
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .arrival-stage-fit {
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
 .arrival-footer-space {
   flex-shrink: 0;
   height: 3rem;

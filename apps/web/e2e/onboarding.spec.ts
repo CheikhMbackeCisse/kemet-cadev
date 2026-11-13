@@ -2,8 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { signUpVerifyAndSignIn, uniqueHandle } from "./support/accounts.js";
 import { createPublicSpace } from "./support/spaces.js";
 
-async function expectStep(page: Page, step: number, title: string) {
-  await expect(page.getByRole("progressbar", { name: `Étape ${step} sur 6` })).toBeAttached();
+async function expectStep(page: Page, step: number, title: string, total = 6) {
+  await expect(
+    page.getByRole("progressbar", { name: `Étape ${step} sur ${total}` }),
+  ).toBeAttached();
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
 }
 
@@ -13,12 +15,20 @@ async function newAccount(page: Page, prefix: string, projectName: string) {
   return handle;
 }
 
-test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ page, request }, testInfo) => {
+test("le parcours complet enregistre chaque choix et ouvre le fil", async ({
+  page,
+  request,
+}, testInfo) => {
   // L'hôte de l'espace a sa propre session, séparée de celle du navigateur.
   const owner = uniqueHandle("e2eonbhote", testInfo.project.name);
   const spaceName = `Mobile ${owner}`;
   await signUpVerifyAndSignIn(request, `${owner}@test.kemet`, owner);
-  await createPublicSpace(request, spaceName, `mobile-${owner}`, "Applications mobiles et paiement");
+  await createPublicSpace(
+    request,
+    spaceName,
+    `mobile-${owner}`,
+    "Applications mobiles et paiement",
+  );
   await request.patch("/api/me/onboarding", { data: { completed: true } });
 
   const handle = await newAccount(page, "e2eonb", testInfo.project.name);
@@ -35,22 +45,28 @@ test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ pag
   await page.getByText("Je code", { exact: true }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
-  await expectStep(page, 3, "Quelle est ta spécialité ?");
+  // Choisir "Je code" ajoute l'écran de précision : sept écrans en tout.
+  await expectStep(page, 3, "Tu codes en freelance ou en entreprise ?", 7);
+  await page.getByRole("button", { name: "Passer" }).click();
+
+  await expectStep(page, 4, "Quelle est ta spécialité ?", 7);
   await page.getByRole("textbox", { name: "Ta spécialité" }).fill("Développeuse Flutter");
   await page.getByRole("button", { name: "Continuer" }).click();
 
-  await expectStep(page, 4, "Quels sujets t'intéressent ?");
+  await expectStep(page, 5, "Quels sujets t'intéressent ?", 7);
   await expect(page.getByRole("button", { name: "Continuer" })).toBeDisabled();
   await page.getByText("Mobile", { exact: true }).click();
   await page.getByText("Fintech et paiement", { exact: true }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
 
-  await expectStep(page, 5, "Rejoins des espaces");
+  await expectStep(page, 6, "Rejoins des espaces", 7);
   await page.getByRole("button", { name: `Rejoindre ${spaceName}`, pressed: false }).click();
-  await expect(page.getByRole("button", { name: `Rejoindre ${spaceName}`, pressed: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: `Rejoindre ${spaceName}`, pressed: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Continuer" }).click();
 
-  await expectStep(page, 6, "Suis quelques personnes");
+  await expectStep(page, 7, "Suis quelques personnes", 7);
   const follow = page.getByRole("button", { name: /^Suivre /, pressed: false }).first();
   await expect(follow).toBeVisible();
   await follow.click();
@@ -59,11 +75,18 @@ test("le parcours complet enregistre chaque choix et ouvre le fil", async ({ pag
 
   await expect(page).toHaveURL(/\/fil$/);
   const me = await (await page.request.get("/api/me")).json();
-  expect(me.profile).toMatchObject({ country: "SN", role: "developer", title: "Développeuse Flutter", handle });
+  expect(me.profile).toMatchObject({
+    country: "SN",
+    role: "developer",
+    title: "Développeuse Flutter",
+    handle,
+  });
   expect(me.onboarding).toMatchObject({ completed: true, interests: ["mobile", "payments"] });
 });
 
-test("un compte qui revient reprend l'écran où il s'était arrêté, Retour compris", async ({ page }, testInfo) => {
+test("un compte qui revient reprend l'écran où il s'était arrêté, Retour compris", async ({
+  page,
+}, testInfo) => {
   await newAccount(page, "e2eonbrep", testInfo.project.name);
   await page.goto("/bienvenue/pays");
   await page.getByRole("button", { name: "Passer" }).click();
@@ -78,7 +101,9 @@ test("un compte qui revient reprend l'écran où il s'était arrêté, Retour co
   await expectStep(page, 2, "Que fais-tu ?");
 });
 
-test("Passer sur chaque écran termine le parcours sans rien imposer", async ({ page }, testInfo) => {
+test("Passer sur chaque écran termine le parcours sans rien imposer", async ({
+  page,
+}, testInfo) => {
   await newAccount(page, "e2eonbpass", testInfo.project.name);
   await page.goto("/");
   for (let step = 1; step <= 6; step += 1) {
@@ -93,7 +118,9 @@ test("Passer sur chaque écran termine le parcours sans rien imposer", async ({ 
   expect(me.onboarding.completed).toBe(true);
 });
 
-test("un compte qui a terminé n'est jamais renvoyé dans l'onboarding", async ({ page }, testInfo) => {
+test("un compte qui a terminé n'est jamais renvoyé dans l'onboarding", async ({
+  page,
+}, testInfo) => {
   await newAccount(page, "e2eonbfini", testInfo.project.name);
   await page.request.patch("/api/me/onboarding", { data: { completed: true } });
 

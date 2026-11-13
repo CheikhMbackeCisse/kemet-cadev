@@ -22,6 +22,11 @@ export interface IntroStepLayoutProps {
   /** Enregistrement en cours : boutons bloqués, bouton principal en attente. */
   submitting?: boolean;
   error?: string | null;
+  /**
+   * Seuls les choix défilent : la navigation, le titre et le bouton
+   * principal restent à l'écran (liste longue d'espaces ou de personnes).
+   */
+  scrollChoices?: boolean;
   children: ReactNode;
 }
 
@@ -42,6 +47,7 @@ export function IntroStepLayout({
   width = "md",
   submitting = false,
   error,
+  scrollChoices = false,
   children,
 }: IntroStepLayoutProps) {
   const titleId = useId();
@@ -68,11 +74,11 @@ export function IntroStepLayout({
     "-mx-2 inline-flex min-h-control-mobile items-center rounded-control px-2 text-sm font-medium text-auth-text-muted hover:text-auth-text md:min-h-control";
 
   return (
-    <ArrivalLayout motion="calm" width={width}>
+    <ArrivalLayout motion="calm" width={width} fitViewport={scrollChoices}>
       <form
         aria-labelledby={titleId}
         onSubmit={handleSubmit}
-        className="relative flex flex-col gap-4"
+        className="relative flex min-h-0 flex-col gap-4"
       >
         <div className="-my-2 flex items-center justify-between">
           {onBack ? (
@@ -109,7 +115,14 @@ export function IntroStepLayout({
           {title}
         </h1>
 
-        <div className="flex flex-col gap-3">{children}</div>
+        {scrollChoices ? (
+          // Marge intérieure : le contour de focus d'un choix n'est pas rogné.
+          <div className="-mx-2 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-2 py-1">
+            {children}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">{children}</div>
+        )}
 
         <ArrivalAction>
           {error && (

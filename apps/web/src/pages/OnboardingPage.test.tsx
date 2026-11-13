@@ -122,8 +122,58 @@ describe("OnboardingPage", () => {
     fireEvent.click(screen.getByRole("radio", { name: fr.auth.roleDesigner }));
     fireEvent.click(submit);
 
-    await waitFor(() => expect(updateOnboarding).toHaveBeenCalledWith({ step: "specialty" }));
+    await waitFor(() => expect(updateOnboarding).toHaveBeenCalledWith({ step: "interests" }));
     expect(updateMyProfile).toHaveBeenCalledWith({ role: "designer" });
+  });
+
+  it("ne demande jamais la spécialité à qui recrute ou dirige une entreprise", async () => {
+    start("/bienvenue/role", {
+      step: "role",
+      completed: false,
+      interests: [],
+      interestOther: null,
+      intents: [],
+      roleOther: null,
+    });
+    fireEvent.click(screen.getByRole("radio", { name: fr.auth.roleHr }));
+    fireEvent.click(screen.getByRole("button", { name: fr.onboarding.continue }));
+
+    expect(await screen.findByRole("heading", { name: fr.roleDetail.hrTitle })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: fr.onboarding.skip }));
+
+    expect(
+      await screen.findByRole("heading", { name: fr.onboarding.interestsTitle }),
+    ).toBeInTheDocument();
+    expect(updateOnboarding).not.toHaveBeenCalledWith({ step: "specialty" });
+    expect(
+      screen.getByRole("progressbar", { name: fr.onboarding.progress(4, 6) }),
+    ).toBeInTheDocument();
+  });
+
+  it("une reprise sur la spécialité passe à l'écran suivant pour un entrepreneur", async () => {
+    window.history.replaceState(null, "", "/bienvenue/specialite");
+    session = {
+      status: "ready",
+      profile: { ...PROFILE, role: "entrepreneur" },
+      onboarding: {
+        step: "specialty",
+        completed: false,
+        interests: [],
+        interestOther: null,
+        intents: [],
+        roleOther: null,
+      },
+    };
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <OnboardingPage />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: fr.onboarding.interestsTitle }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/bienvenue/interets");
   });
 
   it("Retour revient à l'écran précédent ; le premier écran n'en a pas", async () => {

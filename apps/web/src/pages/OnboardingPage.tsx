@@ -36,6 +36,22 @@ function hasRoleDetail(role: string): boolean {
   return (ROLES_WITH_DETAIL as readonly string[]).includes(role);
 }
 
+/**
+ * La spécialité ne se demande qu'à qui code ou étudie l'informatique. Sans
+ * rôle donné, l'écran reste, comme les domaines avant l'inscription.
+ */
+function hasSpecialty(role: string): boolean {
+  return role === "" || role === "developer" || role === "student";
+}
+
+/** Écrans qui n'existent pas pour ce rôle. */
+function stepsWithoutQuestion(role: string): OnboardingStep[] {
+  return [
+    ...(hasRoleDetail(role) ? [] : (["role_detail"] as const)),
+    ...(hasSpecialty(role) ? [] : (["specialty"] as const)),
+  ];
+}
+
 /** Écrans déjà répondus avant l'inscription, sur l'écran d'accueil. */
 function stepsAnsweredByIntro(answers: IntroAnswers): Set<OnboardingStep> {
   const answered = new Set<OnboardingStep>();
@@ -103,10 +119,8 @@ export function OnboardingPage() {
     function start(answeredByIntro: Set<OnboardingStep>) {
       if (cancelled || !profile || !onboarding) return;
       const startRole = intro.role ?? profile.role ?? "";
-      // Sans rôle à préciser, l'écran de précision ne doit jamais servir de reprise.
-      const answered = hasRoleDetail(startRole)
-        ? answeredByIntro
-        : new Set([...answeredByIntro, "role_detail" as const]);
+      // Un écran sans question pour ce rôle ne doit jamais servir de reprise.
+      const answered = new Set([...answeredByIntro, ...stepsWithoutQuestion(startRole)]);
       setSkipped(answeredByIntro);
       setCountry(intro.country ?? profile.country);
       setRole(startRole);
@@ -177,11 +191,10 @@ export function OnboardingPage() {
   }
 
   const current = step;
-  // La précision n'a de question que pour quatre rôles : sinon l'écran n'existe pas.
+  const withoutQuestion = stepsWithoutQuestion(role);
   const visibleSteps = ONBOARDING_STEPS.filter(
     (candidate) =>
-      (!skipped.has(candidate) || candidate === current) &&
-      (candidate !== "role_detail" || hasRoleDetail(role)),
+      (!skipped.has(candidate) || candidate === current) && !withoutQuestion.includes(candidate),
   );
   const position = visibleSteps.indexOf(current);
   const next = visibleSteps[position + 1] ?? null;
@@ -302,6 +315,7 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.spacesTitle}
+          scrollChoices
           onSubmit={() => void goTo(next)}
         >
           <SpaceSuggestions profileId={profile.id} onError={setError} />
@@ -312,6 +326,7 @@ export function OnboardingPage() {
         <OnboardingLayout
           {...common}
           title={fr.onboarding.peopleTitle}
+          scrollChoices
           onSubmit={() => void goTo(next)}
         >
           <PeopleSuggestions onError={setError} />
