@@ -5,12 +5,14 @@ import { App } from "./App.js";
 import "./index.css";
 import { listenForInstallPrompt } from "./pwa/installPrompt.js";
 import { watchForUpdate } from "./pwa/updatePrompt.js";
+import { trackInputModality } from "./lib/inputModality.js";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("élément racine introuvable");
 
 listenForInstallPrompt();
 watchForUpdate();
+trackInputModality();
 
 createRoot(root).render(
   <StrictMode>

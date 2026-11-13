@@ -113,6 +113,21 @@
     outline: none;
   }
 
+  /* Pas d'attente du double toucher sur un contrôle. Le zoom à deux doigts
+     reste permis : la balise viewport ne le bloque pas. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="link"] {
+    touch-action: manipulation;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -693,4 +708,13 @@
     transform: translateX(-24px);
     opacity: 0.4;
   }
+}
+
+/* Après un clic ou un toucher, aucun contour de focus, même donné par le
+   code (lib/inputModality.ts) : il ne revient qu'avec le clavier. Hors des
+   couches, pour passer devant les utilitaires focus-visible:ring-*. */
+:root[data-input="pointer"] :focus-visible {
+  outline: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
 }

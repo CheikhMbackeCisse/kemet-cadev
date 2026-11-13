@@ -323,7 +323,7 @@ n'hérite de ces exceptions.
 ## Accessibilité
 
 - Vrais éléments : `<button>`, `<a href>`, `<input>` avec `<label>`. Jamais de `div` cliquable.
-- Focus visible au clavier (`:focus-visible`) : contour de 2 px `--primary`, décalé de 2 px, sur les boutons, liens, onglets, interrupteurs, éléments de menu et lignes cliquables. Jamais au clic ni au toucher.
+- Focus visible au clavier (`:focus-visible`) : contour de 2 px `--primary`, décalé de 2 px, sur les boutons, liens, onglets, interrupteurs, éléments de menu et lignes cliquables. Jamais au clic ni au toucher, ni sur un focus donné par le code après un clic (titre d'une nouvelle page) : `data-input` sur `<html>` (`lib/inputModality.ts`) suit la dernière action, clavier ou pointeur. Champs de saisie à 16 px au moins sur téléphone (pas de zoom à la saisie), `touch-action: manipulation` sur les contrôles, zoom à deux doigts jamais bloqué.
 - Un champ de saisie (`Input`, `Textarea`, `Select`, composeur) n'a jamais de contour autour de lui : au focus, sa bordure de 1 px passe de `--border-strong` à `--primary`.
 - À l'ouverture d'un dialogue ou d'une feuille, le focus va sur son contenu, pas sur le bouton de fermeture. Dans une autocomplétion ou un menu, l'élément actif se montre par un fond `--accent-soft`, sans bordure.
 - `aria-label` sur chaque bouton qui n'a qu'une icône.
