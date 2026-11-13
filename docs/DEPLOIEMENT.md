@@ -282,6 +282,41 @@ adresse non vérifiée, un compte suspendu et un compte de démonstration. En lo
 `pnpm db:seed:demo` (ou `pnpm db:seed`, identique) et
 `pnpm db:promote-admin <email>`.
 
+## Préparer un compte réel pour la démonstration
+
+`packages/db/src/prepare-account.ts` prépare, une seule fois, un compte réel
+déjà inscrit : nom, identifiant, rôle, établissement et pays, travaux avec
+leurs images, skills publics, et une ligne de points de source
+`demonstration` qui amène le total du compte à 40 % du chemin entre Scribe
+et Architecte (1600 points avec les seuils actuels). Ce n'est pas une étape
+du seed : le seed ne touche qu'aux comptes de démonstration.
+
+Le script lit un fichier JSON qui n'est jamais versionné (adresse du compte,
+profil, travaux, skills, chemins des images et des fichiers Markdown,
+relatifs à son dossier). Il ne modifie que le compte de cette adresse et
+s'arrête sans rien écrire s'il ne la trouve pas. Il refuse un compte dont
+l'adresse n'a pas été vérifiée, un compte de démonstration, un figurant, un
+compte suspendu ou supprimé, un identifiant ou un slug déjà pris par un
+autre profil, un chemin qui sort du dossier du fichier et une image qui
+n'est pas un PNG, un JPEG ou un WebP de 5 Mo au plus. Il ne crée ni abonné
+ni cœur. Il affiche les moyens de connexion du compte et les autres profils
+dont le nom ressemble à celui qu'on prépare, sans les toucher. Relancé, il
+ne recrée rien et remet la ligne `demonstration` au montant qui garde la
+cible. Les images ne sont pas comptées dans le quota du compte ; le script
+affiche leur poids.
+
+Après une sauvegarde, copier le dossier du fichier JSON sur le serveur, par
+exemple dans `~/compte-demo`, puis, depuis le dossier de déploiement :
+
+```
+docker compose -f infra/docker-compose.yml --env-file .env --env-file .env.deployed   run --rm --no-deps -v "$HOME/compte-demo:/compte:ro" api   node node_modules/@kemet/db/dist/prepare-account.js /compte/<fichier>.json --essai
+```
+
+`--essai` affiche ce qui serait fait sans rien écrire. La même commande sans
+`--essai` écrit tout dans une seule transaction (les images copiées sont
+effacées si elle échoue). En local : `pnpm --filter @kemet/db prepare-account
+<fichier>.json [--essai]`, avec `DATABASE_URL` et `UPLOADS_DIR`.
+
 ## Déploiements suivants
 
 Depuis le poste de l'administrateur, à la racine du dépôt, une fois le workflow
