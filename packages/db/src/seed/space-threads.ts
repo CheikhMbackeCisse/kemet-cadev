@@ -333,7 +333,7 @@ async function ensureMembers(db: DbOrTx, spaceId: string, profileIds: string[]):
 
 /**
  * Remplit trois espaces communautaires : questions de tous les jours, fils de
- * réponses et un échange enregistré avec @kemet qui cite un skill.
+ * réponses et un échange enregistré avec @kocc qui cite un skill.
  */
 export async function createSpaceThreads(
   db: DbOrTx,
@@ -413,7 +413,7 @@ export async function createSpaceThreads(
           channelId,
           authorId: ids[exchange.askedBy],
           clientId: randomUUID(),
-          body: `@kemet ${exchange.question}`,
+          body: `@kocc ${exchange.question}`,
           createdAt: askedAt,
         })
         .returning({ id: messages.id });

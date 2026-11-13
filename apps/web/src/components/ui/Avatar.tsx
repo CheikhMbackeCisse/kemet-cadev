@@ -5,11 +5,13 @@ import { Flag } from "./Flag.js";
 export interface AvatarProps {
   name: string;
   src?: string;
-  size?: 24 | 32 | 40;
-  /** Drapeau du pays, affiché en badge sur la photo. Réservé aux tailles 32 et 40 : à 24 px, le badge ne laisse plus voir la photo. */
+  size?: 20 | 24 | 32 | 40 | 88;
+  /** Drapeau du pays, affiché en badge sur la photo. Réservé aux tailles 32 et 40 : à 24 px, le badge ne laisse plus voir la photo ; à 88 px, le pays est écrit à côté. */
   countryCode?: string;
   /** Compte supprimé : icône neutre, sans initiales ni drapeau (ADR 0023). */
   deleted?: boolean;
+  /** Logo d'une organisation : carré arrondi, jamais un rond comme une personne. */
+  square?: boolean;
   className?: string;
 }
 
@@ -21,19 +23,44 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
+// Teintes des espaces, testées en contraste contre le blanc (tokens.test.ts).
+// Pas les couleurs des niveaux : un avatar couleur Légende à côté d'un
+// insigne Apprenti laissait croire à un niveau.
+const GENERATED_BACKGROUNDS = [1, 2, 3, 4, 5, 6].map((tint) => `var(--space-tint-${tint})`);
+
+/** Couleur stable pour un même nom, d'un écran à l'autre. */
+export function generatedAvatarColor(name: string): string {
+  let hash = 0;
+  for (const character of name) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return GENERATED_BACKGROUNDS[hash % GENERATED_BACKGROUNDS.length]!;
+}
+
 const SIZE_CLASSES: Record<NonNullable<AvatarProps["size"]>, string> = {
+  20: "size-5 text-[8px]",
   24: "size-6 text-[10px]",
   32: "size-8 text-xs",
   40: "size-10 text-sm",
+  88: "size-[88px] text-xl",
 };
 
 const ICON_SIZES: Record<NonNullable<AvatarProps["size"]>, string> = {
+  20: "size-3",
   24: "size-3.5",
   32: "size-4",
   40: "size-5",
+  88: "size-10",
 };
 
-export function Avatar({ name, src, size = 32, countryCode, deleted = false, className }: AvatarProps) {
+export function Avatar({
+  name,
+  src,
+  size = 32,
+  countryCode,
+  deleted = false,
+  square = false,
+  className,
+}: AvatarProps) {
+  const shape = square ? "rounded-[22%]" : "rounded-full";
   if (deleted) {
     return (
       <span
@@ -50,13 +77,16 @@ export function Avatar({ name, src, size = 32, countryCode, deleted = false, cla
     );
   }
   const photo = src ? (
-    <img src={src} alt="" className={cn("rounded-full object-cover", SIZE_CLASSES[size], className)} />
+    <img src={src} alt="" className={cn(shape, "object-cover", SIZE_CLASSES[size], className)} />
   ) : (
+    // Décoratif comme la photo : le nom est toujours écrit à côté ou porté
+    // par le lien qui l'entoure, sinon il était lu deux fois.
     <span
-      role="img"
-      aria-label={name}
+      aria-hidden="true"
+      style={{ backgroundColor: generatedAvatarColor(name) }}
       className={cn(
-        "inline-flex items-center justify-center rounded-full bg-accent-soft font-semibold text-primary",
+        "inline-flex shrink-0 select-none items-center justify-center font-semibold text-white",
+        shape,
         SIZE_CLASSES[size],
         className,
       )}
@@ -65,12 +95,15 @@ export function Avatar({ name, src, size = 32, countryCode, deleted = false, cla
     </span>
   );
 
-  if (!countryCode || size === 24) return photo;
+  if (!countryCode || size === 20 || size === 24 || size === 88) return photo;
 
   return (
     <span className="relative inline-flex shrink-0">
       {photo}
-      <Flag countryCode={countryCode} className="absolute -bottom-0.5 -right-1 ring-2 ring-surface" />
+      <Flag
+        countryCode={countryCode}
+        className="absolute -bottom-0.5 -right-1 ring-2 ring-surface"
+      />
     </span>
   );
 }

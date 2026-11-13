@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { completeProfile } from "./support/accounts.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -37,9 +38,7 @@ async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", {
-    data: { handle, displayName: handle, country: "SN" },
-  });
+  await completeProfile(request, handle);
 }
 
 async function signInBrowser(page: Page, email: string): Promise<void> {
@@ -49,7 +48,6 @@ async function signInBrowser(page: Page, email: string): Promise<void> {
 test("envoie un message dans un salon et le voit apparaître", async ({
   page,
   request,
-  isMobile,
 }) => {
   const email = `e2e-${test.info().project.name}-${Date.now()}@test.kemet`;
   // Pas de troncature : couper les derniers chiffres de Date.now() ferait
@@ -62,10 +60,9 @@ test("envoie un message dans un salon et le voit apparaître", async ({
   await signInBrowser(page, email);
 
   await page.goto("/salons");
-  // « Créer un espace » est dans le rail sur grand écran, et dans le tiroir
-  // de la liste des salons sous lg. Le raccourci de l'état vide ne convient
-  // pas, la base de démonstration de la CI fournit déjà des espaces publics.
-  if (isMobile) await page.getByRole("button", { name: "Ouvrir la liste des salons" }).click();
+  // « Créer un espace » est dans le panneau latéral sur grand écran, et en
+  // bas de la colonne des espaces sous lg. Le raccourci de l'état vide ne
+  // convient pas, la base de démonstration de la CI fournit déjà des espaces publics.
   await page
     .getByRole("button", { name: "Créer un espace" })
     .or(page.getByRole("link", { name: "Créer un espace" }))

@@ -16,7 +16,7 @@ import { daysAgo } from "./time.js";
 type WorkType = (typeof works.$inferInsert)["type"];
 type LinkType = (typeof workLinks.$inferInsert)["type"];
 
-interface DemoWork {
+export interface DemoWork {
   publisher: keyof DemoAccountIds;
   slug: string;
   title: string;
@@ -37,7 +37,7 @@ interface DemoWork {
 
 // Les tags se recoupent volontairement (hors-ligne, mobile, paiements,
 // agriculture) : "Qui a travaillé sur ce sujet ?" doit trouver des voisins.
-const DEMO_WORKS: DemoWork[] = [
+export const DEMO_WORKS: DemoWork[] = [
   {
     publisher: "eboQuansah",
     slug: "synchronisation-hors-ligne-banque-mobile",
@@ -265,6 +265,23 @@ const DEMO_WORKS: DemoWork[] = [
   {
     publisher: "kgomotsoMahlangu",
     slug: "pipeline-meteo-cooperatives-agricoles",
+    discussion: [
+      {
+        author: "ghizlaneAmrani",
+        body: "Les 120 stations envoient leurs relevés à heure fixe ? Une station en retard, le DAG l'attend ou la saute ?",
+        hoursAgo: 70,
+      },
+      {
+        author: "kgomotsoMahlangu",
+        body: "Elle est sautée puis rattrapée au passage suivant : un capteur muet ne doit jamais bloquer l'alerte de gel des 119 autres. Le relevé manquant est signalé à la coopérative.",
+        hoursAgo: 66,
+      },
+      {
+        author: "coumbaThiam",
+        body: "Vous avez eu des workers Airflow tués par manque de mémoire pendant le stage ? Le skill airflow-workers-oom parle de ce cas.",
+        hoursAgo: 12,
+      },
+    ],
     title: "Pipeline de données météo pour des coopératives agricoles",
     type: "internship",
     summary: [
@@ -289,6 +306,23 @@ const DEMO_WORKS: DemoWork[] = [
   {
     publisher: "dapoOyelaran",
     slug: "formulaires-paiement-accessibles-react",
+    discussion: [
+      {
+        author: "ahouKouadio",
+        body: "La saisie du code secret, vous l'annoncez comment au lecteur d'écran sans lire les chiffres à voix haute ?",
+        hoursAgo: 50,
+      },
+      {
+        author: "dapoOyelaran",
+        body: "Le champ annonce seulement le nombre de chiffres saisis, jamais leur valeur, et chaque erreur est reliée au champ par aria-describedby. Avant, TalkBack lisait le code en entier.",
+        hoursAgo: 47,
+      },
+      {
+        author: "heritierKabeya",
+        body: "Nous avons le même parcours de paiement à Kinshasa, je vais reprendre vos trois corrections. Le message d'erreur en haut du formulaire, vous l'avez gardé ?",
+        hoursAgo: 9,
+      },
+    ],
     title: "Rendre accessibles les formulaires de paiement mobile en React",
     type: "article",
     summary: [
@@ -312,6 +346,23 @@ const DEMO_WORKS: DemoWork[] = [
   {
     publisher: "lynaBouzid",
     slug: "ci-docker-runners-partages",
+    discussion: [
+      {
+        author: "kipronoLangat",
+        body: "Vos 300 builds tournaient sur des runners hébergés par GitHub ou auto-hébergés ? Chez nous le problème ne se voit que sur les runners partagés de l'entreprise.",
+        hoursAgo: 40,
+      },
+      {
+        author: "lynaBouzid",
+        body: "Hébergés par GitHub. Le gain vient surtout de la limite de mémoire posée sur le conteneur de test : sans elle, il prenait toute la machine et le build voisin expirait.",
+        hoursAgo: 37,
+      },
+      {
+        author: "skanderJaziri",
+        body: "Le cache de couches, vous le gardez d'une pipeline à l'autre ? Je n'ai jamais réussi à le faire tenir sous la limite de 10 Go.",
+        hoursAgo: 6,
+      },
+    ],
     status: "in_progress",
     title: "Des builds Docker fiables sur des runners de CI partagés",
     type: "article",
@@ -338,6 +389,11 @@ const DEMO_WORKS: DemoWork[] = [
     daysAgo: 3,
   },
 ];
+
+/** Fixe : le seed relancé retrouve un message déjà posé au lieu de le doubler. */
+export function demoWorkMessageClientId(slug: string, index: number): string {
+  return `demo-work-${slug}-${index}`;
+}
 
 export async function createDemoWorks(db: DbOrTx, ids: DemoAccountIds): Promise<void> {
   const spaceId = WORK_DISCUSSIONS_SPACE_ID;
@@ -373,7 +429,7 @@ export async function createDemoWorks(db: DbOrTx, ids: DemoAccountIds): Promise<
         demo.discussion.map((entry, index) => ({
           channelId: channel!.id,
           authorId: ids[entry.author],
-          clientId: `demo-work-${demo.slug}-${index}`,
+          clientId: demoWorkMessageClientId(demo.slug, index),
           body: entry.body,
           createdAt: new Date(Date.now() - entry.hoursAgo * 60 * 60 * 1000),
         })),

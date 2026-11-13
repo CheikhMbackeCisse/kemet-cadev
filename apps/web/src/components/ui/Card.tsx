@@ -33,7 +33,9 @@ export function Card({
 }: CardProps) {
   const Tag = as;
   return (
-    <Tag className={cn("rounded-card", VARIANT_CLASSES[variant], PADDING_CLASSES[padding], className)}>
+    <Tag
+      className={cn("rounded-card", VARIANT_CLASSES[variant], PADDING_CLASSES[padding], className)}
+    >
       {children}
     </Tag>
   );

@@ -11,7 +11,7 @@ export type TextareaVariant = "composer" | "form";
 
 /** Lignes visibles au départ et avant que le champ ne défile, par variante. */
 export const TEXTAREA_ROWS: Record<TextareaVariant, { min: number; max: number }> = {
-  composer: { min: 1, max: 6 },
+  composer: { min: 1, max: 5 },
   form: { min: 3, max: 10 },
 };
 
@@ -88,7 +88,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         "w-full resize-none rounded-control border border-border-strong bg-bg px-3 py-2 text-sm max-md:text-md text-text placeholder:text-subtle",
         "focus:border-primary",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        variant === "composer" && "py-[7px] leading-5",
+        // Dans la pilule de ComposerBar : c'est elle qui porte la bordure et
+        // le focus. 24 + 2 x 9 px + 2 px de bordure de la pilule = 44 px, le
+        // texte d'attente tombe au milieu.
+        variant === "composer" &&
+          "min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-[9px] leading-6 max-md:text-md",
         className,
       )}
       {...props}

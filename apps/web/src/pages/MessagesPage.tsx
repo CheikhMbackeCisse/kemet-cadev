@@ -1,10 +1,14 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { MessagesSquare, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ConversationBox } from "@kemet/shared";
 import { AppFrame } from "../components/layout/AppFrame.js";
-import { ConversationList, ConversationListSkeleton } from "../components/messaging/ConversationList.js";
+import {
+  ConversationList,
+  ConversationListSkeleton,
+} from "../components/messaging/ConversationList.js";
 import { ConversationView } from "../components/messaging/ConversationView.js";
-import { SalonsSegment } from "../components/shell/SalonsSegment.js";
+import { ChatSearch } from "../components/search/ChatSearch.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { Tabs } from "../components/ui/Tabs.js";
 import { useConversationUnread } from "../lib/messaging/conversationUnread.js";
@@ -58,13 +62,19 @@ function ConversationBoxes({ activeConversationId }: { activeConversationId: str
       value={box}
       onValueChange={changeBox}
       className="px-3 pt-1"
+      swipeable
       items={[
         {
           value: "inbox",
           label: fr.messages.inbox,
           content: (
             <div className="-mx-3 -mt-2">
-              <ConversationList box="inbox" list={inbox} activeConversationId={activeConversationId} viewerId={profile?.id ?? null} />
+              <ConversationList
+                box="inbox"
+                list={inbox}
+                activeConversationId={activeConversationId}
+                viewerId={profile?.id ?? null}
+              />
             </div>
           ),
         },
@@ -99,7 +109,9 @@ function ConversationBoxes({ activeConversationId }: { activeConversationId: str
 export function MessagesPage() {
   const { status } = useSession();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const [conversationId, setConversationId] = useState(() => readConversationId(window.location.pathname));
+  const [conversationId, setConversationId] = useState(() =>
+    readConversationId(window.location.pathname),
+  );
 
   useEffect(() => {
     const onPopState = () => setConversationId(readConversationId(window.location.pathname));
@@ -115,7 +127,7 @@ export function MessagesPage() {
   }
 
   useEffect(() => {
-    if (status === "incomplete") window.location.href = "/completer-profil";
+    if (status === "incomplete") navigate("/completer-profil");
   }, [status]);
 
   if (status === "loading" || status === "incomplete") {
@@ -135,7 +147,7 @@ export function MessagesPage() {
           <EmptyState
             icon={MessagesSquare}
             message={fr.messages.signInRequired}
-            action={{ label: fr.messages.signIn, onClick: () => (window.location.href = "/connexion") }}
+            action={{ label: fr.messages.signIn, onClick: () => navigate("/connexion") }}
           />
         </main>
       </AppFrame>
@@ -155,13 +167,18 @@ export function MessagesPage() {
       activeSection="messages"
       activeMobileTab="salons"
       fixedHeight
+      tabSwipe={!conversationId}
       // Sous lg, la liste vit dans la page : la monter aussi dans le panneau
       // masqué la chargerait deux fois.
       sidePanel={
         isDesktop
           ? {
               title: fr.messages.title,
-              content: <ConversationBoxes activeConversationId={conversationId} />,
+              content: (
+                <ChatSearch layout="panel" section="messages">
+                  <ConversationBoxes activeConversationId={conversationId} />
+                </ChatSearch>
+              ),
               footer: <NewConversationLink />,
             }
           : undefined
@@ -176,15 +193,14 @@ export function MessagesPage() {
         ) : conversationId ? (
           conversation
         ) : (
-          <>
-            <SalonsSegment active="messages" />
+          <ChatSearch layout="page" section="messages">
             <div className="min-h-0 flex-1 overflow-y-auto">
               <ConversationBoxes activeConversationId={null} />
               <div className="border-t border-border px-2 py-3">
                 <NewConversationLink />
               </div>
             </div>
-          </>
+          </ChatSearch>
         )}
       </main>
     </AppFrame>

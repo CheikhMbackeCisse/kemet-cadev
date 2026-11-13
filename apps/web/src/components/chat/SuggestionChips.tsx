@@ -1,7 +1,13 @@
 import { fr } from "../../i18n/fr.js";
 
 /** Débuts de message en pastilles : un appui remplit le composeur, rien ne part tout seul. */
-export function SuggestionChips({ suggestions, onPick }: { suggestions: string[]; onPick: (text: string) => void }) {
+export function SuggestionChips({
+  suggestions,
+  onPick,
+}: {
+  suggestions: string[];
+  onPick: (text: string) => void;
+}) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-xs text-subtle">{fr.chat.suggestionsLabel}</p>

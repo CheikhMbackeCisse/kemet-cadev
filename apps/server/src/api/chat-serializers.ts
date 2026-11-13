@@ -1,5 +1,23 @@
-import type { channels, messageAttachments, messages, profiles, spaceInvites, spaceMembers, spaces } from "@kemet/db";
-import type { Attachment, Channel, Invite, Level, Message, Reaction, Space, SpaceMember } from "@kemet/shared";
+import type {
+  channels,
+  messageAttachments,
+  messages,
+  profiles,
+  spaceInvites,
+  spaceMembers,
+  spaces,
+} from "@kemet/db";
+import { shownLevel } from "./serializers.js";
+import type {
+  Attachment,
+  Channel,
+  Invite,
+  Level,
+  Message,
+  Reaction,
+  Space,
+  SpaceMember,
+} from "@kemet/shared";
 
 type SpaceRow = typeof spaces.$inferSelect;
 type ChannelRow = typeof channels.$inferSelect;
@@ -28,7 +46,11 @@ export function serializeSpace(
   };
 }
 
-export function serializeSpaceMember(row: { profile: ProfileRow; role: SpaceMemberRole; joinedAt: Date }): SpaceMember {
+export function serializeSpaceMember(row: {
+  profile: ProfileRow;
+  role: SpaceMemberRole;
+  joinedAt: Date;
+}): SpaceMember {
   return {
     profileId: row.profile.id,
     handle: row.profile.handle,
@@ -60,6 +82,7 @@ export function serializeAttachment(row: AttachmentRow, removed = false): Attach
     mimeType: row.mimeType,
     originalName: row.originalName,
     byteSize: row.byteSize,
+    durationMs: row.durationMs,
     createdAt: row.createdAt.toISOString(),
     removed,
   };
@@ -85,7 +108,7 @@ export function serializeMessage(
     authorDisplayName: author.displayName,
     authorAvatarUrl: author.avatarUrl,
     authorCountry: author.country,
-    authorLevel,
+    authorLevel: shownLevel(author, authorLevel),
     body: deleted ? "" : row.body,
     mentionedHandles: deleted ? [] : mentionedHandles,
     reactions,

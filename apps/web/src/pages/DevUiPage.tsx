@@ -16,6 +16,7 @@ import { Menu } from "../components/ui/Menu.js";
 import { Select } from "../components/ui/Select.js";
 import { Sheet } from "../components/ui/Sheet.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
+import { SpaceIcon, spaceTints } from "../components/ui/SpaceIcon.js";
 import { Switch } from "../components/ui/Switch.js";
 import { Tabs } from "../components/ui/Tabs.js";
 import { Textarea } from "../components/ui/Textarea.js";
@@ -24,6 +25,27 @@ import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 
 const LEVELS: Level[] = ["apprenti", "artisan", "scribe", "architecte", "legende"];
+
+// Noms des espaces du seed et deux espaces de technologie, pour juger toutes
+// les icônes d'un coup.
+const SPACE_BOARD = [
+  "Data & Intelligence Artificielle",
+  "Backend & API",
+  "DevOps & Cloud Afrique",
+  "Cybersécurité",
+  "Jeux Vidéo Afrique",
+  "Frontend & Design Systems",
+  "Carrière & Freelance Tech",
+  "Débuter en informatique",
+  "Hackathons et concours",
+  "CADEV 2026",
+  "Startups et produit",
+  "Développeurs de Lomé",
+  "Discussions générales",
+  "Flutter Afrique",
+  "Python Dakar",
+  "React Abidjan",
+].map((name) => ({ id: name, name }));
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -243,6 +265,30 @@ export function DevUiPage() {
             selectedValue="recent"
             onSelect={() => undefined}
           />
+        </Section>
+
+        <Section title="Icônes des espaces">
+          <div id="space-icons" className="grid grid-cols-3 gap-4 sm:grid-cols-5">
+            {SPACE_BOARD.map((space) => (
+              <div key={space.id} className="flex flex-col items-center gap-2 text-center">
+                <div className="flex items-end gap-2">
+                  <SpaceIcon
+                    id={space.id}
+                    name={space.name}
+                    tint={spaceTints(SPACE_BOARD).get(space.id)}
+                    className="size-12 rounded-card"
+                  />
+                  <SpaceIcon
+                    id={space.id}
+                    name={space.name}
+                    tint={spaceTints(SPACE_BOARD).get(space.id)}
+                    className="size-6 rounded-[6px]"
+                  />
+                </div>
+                <span className="text-xs text-text-2">{space.name}</span>
+              </div>
+            ))}
+          </div>
         </Section>
 
         <Section title="Bloc de réponse de l'assistant">

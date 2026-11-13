@@ -17,6 +17,7 @@ export const createSkillSchema = z
     tags: z.array(z.string().min(1).max(30)).max(MAX_SKILL_TAGS).default([]),
     visibility: skillVisibilitySchema.default("public"),
     spaceId: z.string().uuid().nullable().optional(),
+    isBeginner: z.boolean().default(false),
   })
   .refine((input) => input.visibility !== "space" || !!input.spaceId, {
     message: "Un skill limité à un espace doit préciser cet espace.",
@@ -42,12 +43,27 @@ export const skillSummarySchema = z.object({
   description: z.string(),
   tags: z.array(z.string()),
   visibility: skillVisibilitySchema,
+  isBeginner: z.boolean(),
   authorId: z.string().uuid(),
   authorHandle: z.string(),
   authorDisplayName: z.string(),
+  authorAvatarUrl: z.string().nullable(),
+  /** Début du premier bloc de code, en texte brut : couverture de la carte. */
+  codeExcerpt: z.object({
+    language: z.string().max(20).nullable(),
+    lines: z.array(z.string().max(80)).max(6),
+  }),
   averageStars: z.number().min(0).max(5).nullable(),
   ratingCount: z.number().int().nonnegative(),
+  /** Réponses de @kocc qui ont retenu ce skill. */
+  usageCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
+});
+
+export const skillListQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  /** "1" : seulement les skills marqués "Débutant". */
+  beginner: z.literal("1").optional(),
 });
 
 export type SkillSummary = z.infer<typeof skillSummarySchema>;
@@ -58,3 +74,11 @@ export const skillDetailSchema = skillSummarySchema.extend({
 });
 
 export type SkillDetail = z.infer<typeof skillDetailSchema>;
+
+/** Échange enregistré montré sur la page d'un skill de démonstration, sans appel au modèle. */
+export const skillExampleAnswerSchema = z.object({
+  question: z.string(),
+  answer: z.string(),
+});
+
+export type SkillExampleAnswer = z.infer<typeof skillExampleAnswerSchema>;

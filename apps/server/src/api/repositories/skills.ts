@@ -1,5 +1,5 @@
-import { and, avg, count, desc, eq, inArray, or } from "drizzle-orm";
-import { profiles, skillRatings, skills, spaceMembers, type Db, type DbOrTx } from "@kemet/db";
+import { and, avg, count, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { assistantInvocations, profiles, skillRatings, skills, spaceMembers, type Db, type DbOrTx } from "@kemet/db";
 import type { CreateSkillInput, UpdateSkillInput } from "@kemet/shared";
 
 export async function findSkillBySlug(db: Db, slug: string) {
@@ -35,7 +35,11 @@ export async function canViewSkill(
   return member != null;
 }
 
-export async function createSkill(db: Db, authorId: string, input: CreateSkillInput) {
+export async function createSkill(
+  db: Db,
+  authorId: string,
+  input: Omit<CreateSkillInput, "isBeginner"> & { isBeginner?: boolean },
+) {
   const [skill] = await db
     .insert(skills)
     .values({
@@ -46,7 +50,10 @@ export async function createSkill(db: Db, authorId: string, input: CreateSkillIn
       content: input.content,
       tags: input.tags,
       visibility: input.visibility,
-      spaceId: input.spaceId ?? null,
+      isBeginner: input.isBeginner ?? false,
+      // Un skill qui n'est pas limité à un espace n'en garde aucun : sinon la
+      // liste le montrerait aux membres de cet espace.
+      spaceId: input.visibility === "space" ? (input.spaceId ?? null) : null,
     })
     .returning();
   return skill!;
@@ -62,6 +69,8 @@ export async function updateSkill(db: Db, skillId: string, input: UpdateSkillInp
       ...(input.tags !== undefined ? { tags: input.tags } : {}),
       ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
       ...(input.spaceId !== undefined ? { spaceId: input.spaceId } : {}),
+      ...(input.isBeginner !== undefined ? { isBeginner: input.isBeginner } : {}),
+      ...(input.visibility !== undefined && input.visibility !== "space" ? { spaceId: null } : {}),
     })
     .where(eq(skills.id, skillId))
     .returning();
@@ -72,14 +81,54 @@ export async function deleteSkill(db: Db, skillId: string) {
   await db.delete(skills).where(eq(skills.id, skillId));
 }
 
-/** `profileId` nul pour un visiteur : seuls les skills publics. */
-export async function listSkillsForViewer(db: Db, profileId: string | null, memberSpaceIds: string[]) {
+function escapeLike(value: string) {
+  return value.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
+
+/**
+ * `profileId` nul pour un visiteur : seuls les skills publics. Avec une
+ * recherche : plein texte sur `search_vector` (comme pour @kemet), plus un
+ * morceau du nom, que le plein texte ne trouve pas ("wav" pour "wave").
+ */
+export async function listSkillsForViewer(
+  db: Db,
+  profileId: string | null,
+  memberSpaceIds: string[],
+  query?: string,
+  beginnerOnly = false,
+) {
   const visibility = !profileId
     ? eq(skills.visibility, "public")
     : memberSpaceIds.length > 0
-      ? or(eq(skills.visibility, "public"), eq(skills.authorId, profileId), inArray(skills.spaceId, memberSpaceIds))
+      ? or(eq(skills.visibility, "public"), eq(skills.authorId, profileId), and(eq(skills.visibility, "space"), inArray(skills.spaceId, memberSpaceIds)))
       : or(eq(skills.visibility, "public"), eq(skills.authorId, profileId));
-  return db.select().from(skills).where(visibility).orderBy(desc(skills.createdAt));
+  const trimmed = query?.trim();
+  const matches = trimmed
+    ? or(
+        sql`plainto_tsquery('french', ${trimmed}) @@ ${skills.searchVector}`,
+        sql`plainto_tsquery('english', ${trimmed}) @@ ${skills.searchVector}`,
+        ilike(skills.name, `%${escapeLike(trimmed)}%`),
+      )
+    : undefined;
+  return db
+    .select()
+    .from(skills)
+    .where(and(visibility, matches, beginnerOnly ? eq(skills.isBeginner, true) : undefined))
+    .orderBy(desc(skills.createdAt));
+}
+
+/** Réponses de @kemet menées à leur terme qui ont retenu ce skill. */
+export async function countSkillUses(db: DbOrTx, skillId: string) {
+  const [row] = await db
+    .select({ count: count(assistantInvocations.id) })
+    .from(assistantInvocations)
+    .where(
+      and(
+        sql`${assistantInvocations.skillIds} @> array[${skillId}]::uuid[]`,
+        eq(assistantInvocations.status, "done"),
+      ),
+    );
+  return row?.count ?? 0;
 }
 
 export async function listMemberSpaceIds(db: Db, profileId: string) {
@@ -93,6 +142,11 @@ export async function getSkillRatingStats(db: DbOrTx, skillId: string) {
     .from(skillRatings)
     .where(eq(skillRatings.skillId, skillId));
   return { average: row?.average ? Number(row.average) : null, count: row?.count ?? 0 };
+}
+
+export async function getSkillStats(db: DbOrTx, skillId: string) {
+  const [ratings, uses] = await Promise.all([getSkillRatingStats(db, skillId), countSkillUses(db, skillId)]);
+  return { ...ratings, uses };
 }
 
 export async function rateSkill(db: Db, skillId: string, raterId: string, stars: number) {

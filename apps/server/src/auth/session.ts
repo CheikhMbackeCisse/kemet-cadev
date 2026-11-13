@@ -3,9 +3,19 @@ import type { FastifyRequest } from "fastify";
 import { unauthorized } from "../errors.js";
 import type { Auth } from "./auth.js";
 
-export async function getSessionUserId(auth: Auth, request: FastifyRequest): Promise<string | null> {
-  const session = await auth.api.getSession({ headers: fromNodeHeaders(request.headers) });
-  return session?.user.id ?? null;
+// La limite de débit, sa clé et la route lisent chacune la session d'une
+// même requête : une seule lecture suffit.
+const sessionUserIds = new WeakMap<FastifyRequest, Promise<string | null>>();
+
+export function getSessionUserId(auth: Auth, request: FastifyRequest): Promise<string | null> {
+  let pending = sessionUserIds.get(request);
+  if (!pending) {
+    pending = auth.api
+      .getSession({ headers: fromNodeHeaders(request.headers) })
+      .then((session) => session?.user.id ?? null);
+    sessionUserIds.set(request, pending);
+  }
+  return pending;
 }
 
 export async function requireSessionUserId(auth: Auth, request: FastifyRequest): Promise<string> {

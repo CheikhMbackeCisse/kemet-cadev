@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { assistantInvocationDetailSchema, assistantInvocationStatusSchema } from "./assistant.js";
 import { levelSchema } from "./points.js";
+import { profileKindSchema } from "./profile.js";
 import { attachmentSchema, MAX_POST_ATTACHMENTS } from "./attachment.js";
 import { httpUrlSchema } from "./url.js";
 import { workTypeSchema } from "./work.js";
@@ -20,6 +22,9 @@ export const createPostSchema = z
     testUrl: httpUrlSchema(500).nullable().optional(),
     testAsk: z.string().min(1).max(MAX_POST_TEST_ASK_LENGTH).nullable().optional(),
     attachmentIds: z.array(z.string().uuid()).max(MAX_POST_ATTACHMENTS).optional(),
+    isBeginner: z.boolean().optional(),
+    /** Publier au nom d'une organisation que la personne gère ; vérifié par le serveur. */
+    asOrganizationId: z.string().uuid().nullable().optional(),
   })
   .refine((input) => input.body.trim().length > 0 || (input.attachmentIds?.length ?? 0) > 0, {
     message: "Un post doit contenir du texte ou au moins une image.",
@@ -66,13 +71,13 @@ export const createPostFeedbackSchema = z.object({
 
 export type CreatePostFeedbackInput = z.infer<typeof createPostFeedbackSchema>;
 
-export const feedTabSchema = z.enum(["abonnements", "pour-toi"]);
+export const feedTabSchema = z.enum(["abonnements", "pour-toi", "debuter"]);
 
 export type FeedTab = z.infer<typeof feedTabSchema>;
 
 export const feedQuerySchema = z.object({
   tab: feedTabSchema.default("abonnements"),
-  cursor: z.string().optional(),
+  cursor: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
@@ -85,7 +90,8 @@ export const sharedPostPreviewSchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
-  authorLevel: levelSchema,
+  authorKind: profileKindSchema,
+  authorLevel: levelSchema.nullable(),
   body: z.string(),
   format: postFormatSchema.nullable(),
   attachments: z.array(attachmentSchema),
@@ -105,6 +111,14 @@ export const postWorkPreviewSchema = z.object({
 
 export type PostWorkPreview = z.infer<typeof postWorkPreviewSchema>;
 
+export const postRepostedBySchema = z.object({
+  profileId: z.string().uuid(),
+  handle: z.string(),
+  displayName: z.string(),
+});
+
+export type PostRepostedBy = z.infer<typeof postRepostedBySchema>;
+
 export const postSummarySchema = z.object({
   id: z.string().uuid(),
   authorId: z.string().uuid(),
@@ -112,18 +126,33 @@ export const postSummarySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
-  authorLevel: levelSchema,
+  authorKind: profileKindSchema,
+  authorLevel: levelSchema.nullable(),
   body: z.string(),
   format: postFormatSchema.nullable(),
   testUrl: z.string().nullable(),
   testAsk: z.string().nullable(),
+  isBeginner: z.boolean(),
   attachments: z.array(attachmentSchema),
+  /** Crédit d'un visuel repris d'un tiers, affiché sous les images. */
+  mediaCredit: z.object({ label: z.string(), url: z.string().nullable() }).nullable().optional(),
   sharedPost: sharedPostPreviewSchema.nullable(),
   work: postWorkPreviewSchema.nullable(),
   utileCount: z.number().int().nonnegative(),
   reactedByMe: z.boolean(),
+  savedByMe: z.boolean(),
   replyCount: z.number().int().nonnegative(),
   feedbackCount: z.number().int().nonnegative(),
+  repostCount: z.number().int().nonnegative(),
+  repostedByMe: z.boolean(),
+  /** Faux pour un visiteur et sur ses propres posts. */
+  authorFollowedByMe: z.boolean(),
+  /** Fil seulement : personne suivie (ou soi) qui a republié ce post, la plus récente. */
+  repostedBy: postRepostedBySchema.nullable().optional(),
+  /** Fil seulement : première réponse terminée de @kocc, affichée dépliée sous le post. */
+  kemetAnswer: z.lazy(() => postReplySchema.nullable()).optional(),
+  /** Fil "Pour toi" seulement : épinglé en tête pour tout le monde (réponse de Kocc dépliée). */
+  pinned: z.boolean().optional(),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
   deletedAt: z.string().datetime().nullable(),
@@ -138,6 +167,21 @@ export const postReactionResultSchema = z.object({
 
 export type PostReactionResult = z.infer<typeof postReactionResultSchema>;
 
+export const postBookmarkInputSchema = z.object({ saved: z.boolean() });
+
+export const postBookmarkResultSchema = z.object({ savedByMe: z.boolean() });
+
+export type PostBookmarkResult = z.infer<typeof postBookmarkResultSchema>;
+
+export const postRepostInputSchema = z.object({ reposted: z.boolean() });
+
+export const postRepostResultSchema = z.object({
+  repostCount: z.number().int().nonnegative(),
+  repostedByMe: z.boolean(),
+});
+
+export type PostRepostResult = z.infer<typeof postRepostResultSchema>;
+
 export const postReplySchema = z.object({
   id: z.string().uuid(),
   postId: z.string().uuid(),
@@ -146,15 +190,45 @@ export const postReplySchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
-  authorLevel: levelSchema,
+  authorKind: profileKindSchema,
+  authorLevel: levelSchema.nullable(),
   body: z.string(),
   isSolution: z.boolean(),
+  /** Renseigné seulement pour une réponse de @kocc : skill cité, avis, réponse enregistrée. */
+  assistant: assistantInvocationDetailSchema.nullable(),
   createdAt: z.string().datetime(),
   editedAt: z.string().datetime().nullable(),
   deletedAt: z.string().datetime().nullable(),
 });
 
 export type PostReply = z.infer<typeof postReplySchema>;
+
+/**
+ * Suite donnée à une réponse qui appelle @kocc : l'invocation lancée, ou la
+ * raison immédiate du refus (quota atteint). `null` sans appel à @kocc.
+ */
+export const postReplyAssistantStartSchema = z.object({
+  invocationId: z.string().uuid().nullable(),
+  errorCode: z.string().nullable(),
+});
+
+export type PostReplyAssistantStart = z.infer<typeof postReplyAssistantStartSchema>;
+
+export const createPostReplyResultSchema = z.object({
+  reply: postReplySchema,
+  assistant: postReplyAssistantStartSchema.nullable(),
+});
+
+export type CreatePostReplyResult = z.infer<typeof createPostReplyResultSchema>;
+
+/** État d'une réponse de @kocc sous un post, lu par la personne qui l'a demandée. */
+export const postAssistantStatusSchema = z.object({
+  status: assistantInvocationStatusSchema,
+  errorCode: z.string().nullable(),
+  reply: postReplySchema.nullable(),
+});
+
+export type PostAssistantStatus = z.infer<typeof postAssistantStatusSchema>;
 
 export const postFeedbackEntrySchema = z.object({
   id: z.string().uuid(),

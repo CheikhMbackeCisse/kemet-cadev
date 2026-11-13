@@ -7,6 +7,8 @@ export interface CodeTextareaProps extends Omit<TextareaProps, "value" | "onChan
   label?: ReactNode;
   value: string;
   onValueChange: (value: string) => void;
+  /** Affichée sous le champ (FormField). */
+  error?: string | null;
 }
 
 /**
@@ -19,6 +21,7 @@ export function CodeTextarea({
   onValueChange,
   id,
   disabled,
+  error,
   ...props
 }: CodeTextareaProps) {
   const generatedId = useId();
@@ -40,7 +43,14 @@ export function CodeTextarea({
         onPaste={handlePaste}
         disabled={disabled}
         {...props}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${textareaId}-error` : props["aria-describedby"]}
       />
+      {error && (
+        <p id={`${textareaId}-error`} className="text-sm text-danger">
+          {error}
+        </p>
+      )}
       {notice}
     </div>
   );

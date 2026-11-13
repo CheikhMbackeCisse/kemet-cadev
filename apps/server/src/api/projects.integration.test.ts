@@ -1,5 +1,6 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
+import { createDb, projects, type Db } from "@kemet/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -10,10 +11,11 @@ const databaseUrl = getTestDatabaseUrl();
 describe.skipIf(!databaseUrl)("Projets (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
+  let db: Db;
 
   beforeEach(async () => {
     await resetTestDatabase(databaseUrl!);
-    const db = createDb(databaseUrl!);
+    db = createDb(databaseUrl!);
     emailSender = new InMemoryEmailSender();
     const auth = createAuth({
       db,
@@ -326,5 +328,103 @@ describe.skipIf(!databaseUrl)("Projets (base Postgres réelle)", () => {
       headers: { cookie: stranger.cookie },
     });
     expect(asStranger.statusCode).toBe(403);
+  });
+
+  it("un visiteur lit les projets et leurs demandes, mais n'écrit rien et ne voit aucune candidature", async () => {
+    const owner = await createMember("owner-visitor@test.kemet", "ownervisitor");
+    await createProject(owner.cookie);
+    const published = await app.inject({
+      method: "POST",
+      url: "/api/projects/projet-test/help-requests",
+      headers: { cookie: owner.cookie },
+      payload: { title: "Relire mon schéma", description: "Un regard extérieur sur le schéma de la base avant de publier." },
+    });
+    const helpRequestId = published.json().helpRequest.id as string;
+
+    const list = await app.inject({ method: "GET", url: "/api/projects" });
+    expect(list.statusCode).toBe(200);
+    expect(list.json().items).toHaveLength(1);
+    const detail = await app.inject({ method: "GET", url: "/api/projects/projet-test" });
+    expect(detail.statusCode).toBe(200);
+    const helpRequests = await app.inject({ method: "GET", url: "/api/projects/projet-test/help-requests" });
+    expect(helpRequests.statusCode).toBe(200);
+    expect(helpRequests.json().items).toHaveLength(1);
+
+    const applications = await app.inject({ method: "GET", url: `/api/help-requests/${helpRequestId}/applications` });
+    expect(applications.statusCode).toBe(401);
+    const apply = await app.inject({ method: "POST", url: `/api/help-requests/${helpRequestId}/applications`, payload: { message: "Je peux aider." } });
+    expect(apply.statusCode).toBe(401);
+    const create = await app.inject({ method: "POST", url: "/api/projects", payload: { slug: "x", name: "X", pitch: "Un pitch assez long pour passer." } });
+    expect(create.statusCode).toBe(401);
+  });
+
+  describe("cartes projet du fil", () => {
+    const DAY = 24 * 60 * 60 * 1000;
+
+    async function openHelpRequest(cookie: string, slug: string, title: string) {
+      const response = await app.inject({
+        method: "POST",
+        url: `/api/projects/${slug}/help-requests`,
+        headers: { cookie },
+        payload: { kind: "collaboration", title, description: "Une description assez longue pour être acceptée." },
+      });
+      expect(response.statusCode).toBe(200);
+    }
+
+    async function ageProject(slug: string, days: number) {
+      await db.update(projects).set({ createdAt: new Date(Date.now() - days * DAY) }).where(eq(projects.slug, slug));
+    }
+
+    it("classe d'abord les projets qui cherchent de l'aide, avec leurs rôles, et ignore les projets supprimés ou trop anciens", async () => {
+      const owner = await createMember("feed-owner@test.kemet", "feedowner");
+      await createProject(owner.cookie, { slug: "calme", name: "Projet calme" });
+      await createProject(owner.cookie, { slug: "recrute", name: "Projet qui recrute" });
+      await openHelpRequest(owner.cookie, "recrute", "Cherche une designer");
+      await createProject(owner.cookie, { slug: "supprime", name: "Projet supprimé" });
+      await app.inject({ method: "DELETE", url: "/api/projects/supprime", headers: { cookie: owner.cookie } });
+      await createProject(owner.cookie, { slug: "ancien", name: "Projet ancien" });
+      await ageProject("ancien", 90);
+      await createProject(owner.cookie, { slug: "ancien-relance", name: "Ancien projet relancé" });
+      await ageProject("ancien-relance", 90);
+      await openHelpRequest(owner.cookie, "ancien-relance", "Cherche un développeur mobile");
+
+      const response = await app.inject({ method: "GET", url: "/api/feed/projects?limit=10" });
+      expect(response.statusCode).toBe(200);
+      const items = response.json().items as { slug: string; openRoles: { title: string }[] }[];
+      const slugs = items.map((item) => item.slug);
+      expect(slugs).not.toContain("supprime");
+      expect(slugs).not.toContain("ancien");
+      expect(slugs.slice(0, 2).sort()).toEqual(["ancien-relance", "recrute"]);
+      expect(slugs.at(-1)).toBe("calme");
+      expect(items.find((item) => item.slug === "recrute")!.openRoles.map((role) => role.title)).toEqual([
+        "Cherche une designer",
+      ]);
+    });
+
+    it("limite l'onglet Abonnements aux projets des personnes suivies et aux siens", async () => {
+      const reader = await createMember("feed-reader@test.kemet", "feedreader");
+      const followed = await createMember("feed-followed@test.kemet", "feedfollowed");
+      const stranger = await createMember("feed-stranger@test.kemet", "feedstranger");
+      await createProject(reader.cookie, { slug: "le-mien" });
+      await createProject(followed.cookie, { slug: "suivi" });
+      await createProject(stranger.cookie, { slug: "inconnu" });
+      await app.inject({ method: "POST", url: "/api/users/feedfollowed/follow", headers: { cookie: reader.cookie } });
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/feed/projects?tab=abonnements",
+        headers: { cookie: reader.cookie },
+      });
+      const slugs = (response.json().items as { slug: string }[]).map((item) => item.slug).sort();
+      expect(slugs).toEqual(["le-mien", "suivi"]);
+
+      const visitor = await app.inject({ method: "GET", url: "/api/feed/projects?tab=abonnements" });
+      expect((visitor.json().items as unknown[]).length).toBe(3);
+    });
+
+    it("refuse une limite hors bornes", async () => {
+      const response = await app.inject({ method: "GET", url: "/api/feed/projects?limit=500" });
+      expect(response.statusCode).toBe(400);
+    });
   });
 });

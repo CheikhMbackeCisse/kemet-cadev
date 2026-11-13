@@ -1,7 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import type { Db } from "@kemet/db";
+import { profiles, type Db } from "@kemet/db";
+import { and, eq } from "drizzle-orm";
 import { DEMO_EMAIL_REJECTED_CODE, isDemoEmailAddress } from "@kemet/shared";
 import { DemoAddressFilter } from "../email/demo-address-filter.js";
 import type { EmailSender } from "../email/email-sender.js";
@@ -34,6 +35,18 @@ function rejectDemoEmail(email: unknown) {
       message: "Les adresses du domaine de démonstration ne peuvent pas créer de compte.",
     });
   }
+}
+
+// Un figurant du seed n'a ni mot de passe ni compte social, mais une
+// réinitialisation de mot de passe ou une liaison sociale par adresse email
+// créerait une ligne `account`. Aucune session ni aucun moyen de connexion
+// ne doit jamais lui être donné, quel que soit le chemin.
+async function rejectFillerUser(db: Db, userId: string) {
+  const [filler] = await db
+    .select({ id: profiles.id })
+    .from(profiles)
+    .where(and(eq(profiles.userId, userId), eq(profiles.isFiller, true)));
+  if (filler) throw new APIError("FORBIDDEN", { message: "Ce compte ne peut pas se connecter." });
 }
 
 export function createAuth(config: AuthConfig) {
@@ -76,6 +89,13 @@ export function createAuth(config: AuthConfig) {
           .catch((error) => console.error("Échec de l'envoi de l'email de vérification", error));
       },
     },
+    // Écrit en clair plutôt que laissé aux valeurs par défaut : une connexion
+    // sociale rejoint le compte de même adresse seulement si le fournisseur
+    // confirme l'adresse et si le compte l'a déjà vérifiée. Vérifié pour
+    // Google par google-account-linking.integration.test.ts.
+    account: {
+      accountLinking: { enabled: true, requireLocalEmailVerified: true, trustedProviders: [] },
+    },
     socialProviders: {
       ...(config.github && { github: config.github }),
       ...(config.google && { google: config.google }),
@@ -95,6 +115,20 @@ export function createAuth(config: AuthConfig) {
           },
         },
       },
+      account: {
+        create: {
+          before: async (account) => {
+            await rejectFillerUser(config.db, account.userId);
+          },
+        },
+      },
+      session: {
+        create: {
+          before: async (session) => {
+            await rejectFillerUser(config.db, session.userId);
+          },
+        },
+      },
     },
     advanced: {
       ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
@@ -105,6 +139,11 @@ export function createAuth(config: AuthConfig) {
       // (3 par minute), vérifiée par un test d'intégration.
       customRules: {
         "/sign-in/email": { window: 60, max: 5 },
+        // Le mot de passe actuel s'y vérifie : une session volée ne doit pas
+        // servir à le deviner.
+        "/change-password": { window: 60, max: 5 },
+        "/link-social": { window: 60, max: 5 },
+        "/unlink-account": { window: 60, max: 5 },
       },
     },
   });

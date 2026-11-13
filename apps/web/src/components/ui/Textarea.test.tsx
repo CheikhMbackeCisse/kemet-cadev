@@ -44,19 +44,31 @@ function text(lines: number): string {
 
 function renderField(variant: TextareaVariant, value: string) {
   const view = render(
-    <Textarea aria-label="Champ" variant={variant} value={value} onChange={() => {}} style={style} />,
+    <Textarea
+      aria-label="Champ"
+      variant={variant}
+      value={value}
+      onChange={() => {}}
+      style={style}
+    />,
   );
   return {
     field: screen.getByRole("textbox", { name: "Champ" }),
     setValue: (next: string) =>
       view.rerender(
-        <Textarea aria-label="Champ" variant={variant} value={next} onChange={() => {}} style={style} />,
+        <Textarea
+          aria-label="Champ"
+          variant={variant}
+          value={next}
+          onChange={() => {}}
+          style={style}
+        />,
       ),
   };
 }
 
 describe("Textarea", () => {
-  it("part d'une ligne dans un composeur, grandit jusqu'à six, puis défile", () => {
+  it("part d'une ligne dans un composeur, grandit jusqu'à cinq, puis défile", () => {
     const { field, setValue } = renderField("composer", "");
     expect(field.style.height).toBe(heightFor(1));
     expect(field.style.overflowY).toBe("hidden");
@@ -66,7 +78,7 @@ describe("Textarea", () => {
     expect(field.style.overflowY).toBe("hidden");
 
     setValue(text(9));
-    expect(field.style.height).toBe(heightFor(6));
+    expect(field.style.height).toBe(heightFor(5));
     expect(field.style.overflowY).toBe("auto");
   });
 

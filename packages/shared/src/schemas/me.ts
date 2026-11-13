@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { credentialSchema } from "./credential.js";
+import { onboardingStateSchema } from "./onboarding.js";
 import { profileSchema } from "./profile.js";
 
 export const meResponseSchema = z.object({
@@ -7,6 +8,7 @@ export const meResponseSchema = z.object({
     id: z.string(),
     email: z.string().email(),
     emailVerified: z.boolean(),
+    name: z.string(),
   }),
   profile: profileSchema.nullable(),
   // Seulement sur son propre profil : les autres ne voient que le niveau.
@@ -20,6 +22,8 @@ export const meResponseSchema = z.object({
   // avec lesquels se reconnecter.
   hasPassword: z.boolean(),
   socialProviders: z.array(z.string()),
+  // Nul tant que le profil n'existe pas (avant /completer-profil).
+  onboarding: onboardingStateSchema.nullable(),
 });
 
 export type MeResponse = z.infer<typeof meResponseSchema>;
@@ -42,7 +46,13 @@ export const publicProfileResponseSchema = z.object({
   credentials: z.array(credentialSchema),
   followerCount: z.number().int().nonnegative(),
   followingCount: z.number().int().nonnegative(),
+  /** Travaux publiés et travaux co-signés acceptés, comme l'onglet Bibliothèque. */
+  workCount: z.number().int().nonnegative(),
+  /** Offres publiées et visibles, closes comprises : en-tête d'une organisation. */
+  opportunityCount: z.number().int().nonnegative(),
   isFollowedByViewer: z.boolean().nullable(),
+  /** Faux pour un profil sans compte de connexion (organisation du seed, compte supprimé). */
+  acceptsMessages: z.boolean(),
 });
 
 export type PublicProfileResponse = z.infer<typeof publicProfileResponseSchema>;

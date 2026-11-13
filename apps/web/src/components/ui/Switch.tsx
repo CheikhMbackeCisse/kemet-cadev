@@ -7,6 +7,7 @@ export interface SwitchProps {
   id?: string;
   disabled?: boolean;
   "aria-label"?: string;
+  "aria-describedby"?: string;
   className?: string;
 }
 

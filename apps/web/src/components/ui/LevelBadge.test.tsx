@@ -3,18 +3,23 @@ import { describe, expect, it } from "vitest";
 import { LevelBadge } from "./LevelBadge.js";
 
 describe("LevelBadge", () => {
-  it("annonce le niveau aux lecteurs d'écran", () => {
+  it("montre une icône nommée pour les lecteurs d'écran et au survol", () => {
     render(<LevelBadge level="scribe" />);
-    expect(screen.getByText(/Scribe/).textContent).toBe("Niveau Scribe");
+    const badge = screen.getByRole("img", { name: "Niveau Scribe" });
+    expect(badge).toHaveAttribute("title", "Scribe");
+    expect(badge).toHaveClass("text-level-scribe");
+    expect(badge.textContent).toBe("");
   });
 
-  it("garde la même teinte pour tous les niveaux sauf Légende", () => {
+  it("donne à chaque niveau sa couleur", () => {
     const { rerender } = render(<LevelBadge level="apprenti" />);
-    const badge = screen.getByText(/Apprenti/);
-    expect(badge).toHaveClass("bg-accent-soft-2", "text-level-badge-text");
-    expect(badge).not.toHaveClass("border");
-
+    expect(screen.getByRole("img", { name: "Niveau Apprenti" })).toHaveClass("text-level-apprenti");
     rerender(<LevelBadge level="legende" />);
-    expect(screen.getByText(/Légende/)).toHaveClass("bg-primary", "text-white");
+    expect(screen.getByRole("img", { name: "Niveau Légende" })).toHaveClass("text-level-legende");
+  });
+
+  it("écrit le nom du niveau quand on le demande", () => {
+    render(<LevelBadge level="architecte" showLabel />);
+    expect(screen.getByText(/Architecte/).textContent).toBe("Niveau Architecte");
   });
 });

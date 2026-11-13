@@ -1,84 +1,103 @@
-import { Plus, Star } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import type { SkillSummary } from "@kemet/shared";
-import { listSkills } from "../lib/chat/api.js";
+import { navigate } from "../lib/navigation/navigate.js";
+import { Plus, Search, Star } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
+import { RailPage } from "../components/layout/RailPage.js";
+import { SkillCard } from "../components/skills/SkillCard.js";
+import { Button } from "../components/ui/Button.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
+import { Input } from "../components/ui/Input.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
+import { listSkills } from "../lib/chat/api.js";
 import { fr } from "../i18n/fr.js";
-import { RailPage } from "../components/layout/RailPage.js";
+
+// Attente après la dernière frappe avant d'interroger le serveur.
+const SEARCH_DELAY_MS = 250;
 
 export function SkillsPage() {
-  const [skills, setSkills] = useState<SkillSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const searchId = useId();
+  const [query, setQuery] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
+  // Pendant une recherche, les résultats précédents restent affichés.
+  const skillsQuery = useQuery({
+    queryKey: ["skills", appliedQuery],
+    queryFn: () => listSkills(appliedQuery).then((page) => page.items),
+    placeholderData: keepPreviousData,
+  });
+  const skills = skillsQuery.data ?? [];
+  const error = skillsQuery.isError && !skillsQuery.data;
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    listSkills()
-      .then((page) => setSkills(page.items))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => load(), [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setAppliedQuery(query.trim()), SEARCH_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [query]);
 
   return (
-    <RailPage activeSection="skills" className="gap-6 px-4 py-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-text">{fr.skills.title}</h1>
-          <p className="text-sm text-subtle">{fr.skills.subtitle}</p>
-        </div>
-        <a
-          href="/skills/nouveau"
-          className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
-        >
-          <Plus className="size-4" aria-hidden="true" />
+    <RailPage activeSection="skills" className="gap-6 px-4 pt-3 lg:pt-6" tabSwipe>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-lg font-bold text-text">{fr.skills.title}</h1>
+        <HeaderActionLink href="/skills/nouveau" icon={Plus}>
           {fr.skills.create}
-        </a>
+        </HeaderActionLink>
       </div>
 
-      {loading ? (
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+      <div className="flex flex-col gap-3">
+        <div className="relative max-w-xl">
+          <label htmlFor={searchId} className="sr-only">
+            {fr.skills.searchLabel}
+          </label>
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+            aria-hidden="true"
+          />
+          <Input
+            id={searchId}
+            type="search"
+            autoComplete="off"
+            placeholder={fr.skills.searchPlaceholder}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      {skillsQuery.isPending ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-56 w-full rounded-card" />
+          ))}
         </div>
       ) : error ? (
         <ErrorState
           message={fr.skills.loadingError}
-          retry={{ label: fr.chat.retry, onClick: load }}
+          retry={{ label: fr.chat.retry, onClick: () => void skillsQuery.refetch() }}
         />
       ) : skills.length === 0 ? (
-        <EmptyState
-          icon={Star}
-          message={fr.skills.noSkills}
-          action={{
-            label: fr.skills.create,
-            onClick: () => (window.location.href = "/skills/nouveau"),
-          }}
-        />
+        appliedQuery ? (
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-base text-text-2">{fr.skills.searchNoResult(appliedQuery)}</p>
+            <Button variant="secondary" onClick={() => setQuery("")}>
+              {fr.skills.clearSearch}
+            </Button>
+          </div>
+        ) : (
+          <EmptyState
+            icon={Star}
+            message={fr.skills.noSkills}
+            action={{
+              label: fr.skills.create,
+              onClick: () => navigate("/skills/nouveau"),
+            }}
+          />
+        )
       ) : (
-        <ul className="flex flex-col divide-y divide-border">
+        <ul className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {skills.map((skill) => (
-            <li key={skill.id}>
-              <a
-                href={`/skills/${skill.slug}`}
-                className="block -mx-4 px-4 py-4 transition-colors duration-150 lg:-mx-3 lg:px-3 lg:hover:bg-surface-2"
-              >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-medium text-text">{skill.name}</span>
-                  <span className="flex items-center gap-1 text-xs text-subtle">
-                    <Star className="size-4" aria-hidden="true" />
-                    {fr.skills.averageStars(skill.averageStars ?? 0, skill.ratingCount)}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-text-2">{skill.description}</p>
-                <p className="mt-2 text-xs text-subtle">
-                  {fr.skills.byAuthor(skill.authorDisplayName)}
-                </p>
-              </a>
+            <li key={skill.id} className="min-w-0">
+              <SkillCard skill={skill} />
             </li>
           ))}
         </ul>

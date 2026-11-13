@@ -1,10 +1,12 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
+import { createDb, profiles, spaces } from "@kemet/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
 import { createNoopChatPublisher } from "../chat/pubsub.js";
 import { InMemoryStorage } from "../storage/file-storage.js";
+import { readFileSync } from "node:fs";
 import { buildApp } from "./app.js";
 
 const databaseUrl = getTestDatabaseUrl();
@@ -17,6 +19,22 @@ const PNG_BYTES = Buffer.from(
   "base64",
 );
 const SVG_BYTES = Buffer.from('<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"></svg>');
+
+const VOICE_WEBM = readFileSync(new URL("../storage/fixtures/voice.webm", import.meta.url));
+
+function buildVoiceBody(durationMs: string | null, data: Buffer, boundary: string): Buffer {
+  const field =
+    durationMs === null
+      ? ""
+      : `--${boundary}\r\nContent-Disposition: form-data; name="durationMs"\r\n\r\n${durationMs}\r\n`;
+  return Buffer.concat([
+    Buffer.from(
+      `${field}--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="voix.webm"\r\nContent-Type: audio/webm\r\n\r\n`,
+    ),
+    data,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+}
 
 function buildMultipartBody(filename: string, contentType: string, data: Buffer, boundary: string): Buffer {
   return Buffer.concat([
@@ -238,5 +256,204 @@ describe.skipIf(!databaseUrl)("Fichiers et images dans les messages (base Postgr
 
     const second = await uploadAttachment(owner, channel.id, "b.png", "image/png", PNG_BYTES);
     expect(second.statusCode).toBe(400);
+  });
+
+  async function uploadVoice(cookie: string, channelId: string, durationMs: string | null, data: Buffer) {
+    const boundary = "----kemetvoiceboundary";
+    return app.inject({
+      method: "POST",
+      url: `/api/channels/${channelId}/messages/voice`,
+      headers: { cookie, "content-type": `multipart/form-data; boundary=${boundary}` },
+      payload: buildVoiceBody(durationMs, data, boundary),
+    });
+  }
+
+  it("accepte un message vocal enregistré par le navigateur, gardé tel quel et servi par plages", async () => {
+    const owner = await createMember("voice1@test.kemet", "Owner", "voice1");
+    const { channel } = await createSpaceWithGeneralChannel(owner, "vocal");
+
+    const uploaded = await uploadVoice(owner, channel.id, "4200", VOICE_WEBM);
+    expect(uploaded.statusCode).toBe(200);
+    const attachment = uploaded.json().attachment as { id: string; kind: string; mimeType: string; durationMs: number };
+    expect(attachment).toMatchObject({ kind: "voice", mimeType: "audio/webm", durationMs: 4200 });
+
+    const sent = await app.inject({
+      method: "POST",
+      url: `/api/channels/${channel.id}/messages`,
+      headers: { cookie: owner },
+      payload: { clientId: crypto.randomUUID(), body: "", attachmentIds: [attachment.id] },
+    });
+    expect(sent.statusCode).toBe(200);
+    expect(sent.json().message.attachments[0].kind).toBe("voice");
+
+    const whole = await app.inject({ method: "GET", url: `/api/attachments/${attachment.id}/content`, headers: { cookie: owner } });
+    expect(whole.statusCode).toBe(200);
+    expect(whole.headers["accept-ranges"]).toBe("bytes");
+    expect(whole.headers["content-type"]).toBe("audio/webm");
+    expect(whole.headers["content-disposition"]).toContain("inline");
+    expect(whole.headers["x-content-type-options"]).toBe("nosniff");
+    expect(whole.headers["content-security-policy"]).toBe("default-src 'none'");
+    expect(whole.headers["cache-control"]).toBe("private, max-age=604800");
+    expect(whole.rawPayload.equals(VOICE_WEBM)).toBe(true);
+
+    const part = await app.inject({
+      method: "GET",
+      url: `/api/attachments/${attachment.id}/content`,
+      headers: { cookie: owner, range: "bytes=0-99" },
+    });
+    expect(part.statusCode).toBe(206);
+    expect(part.headers["content-range"]).toBe(`bytes 0-99/${VOICE_WEBM.length}`);
+    expect(part.rawPayload.equals(VOICE_WEBM.subarray(0, 100))).toBe(true);
+
+    const outside = await app.inject({
+      method: "GET",
+      url: `/api/attachments/${attachment.id}/content`,
+      headers: { cookie: owner, range: `bytes=${VOICE_WEBM.length}-` },
+    });
+    expect(outside.statusCode).toBe(416);
+    expect(outside.headers["cache-control"]).toBe("no-store");
+  });
+
+  it("refuse un message vocal sans durée valide ou de plus de deux minutes", async () => {
+    const owner = await createMember("voice2@test.kemet", "Owner", "voice2");
+    const { channel } = await createSpaceWithGeneralChannel(owner, "vocal2");
+
+    expect((await uploadVoice(owner, channel.id, null, VOICE_WEBM)).statusCode).toBe(400);
+    expect((await uploadVoice(owner, channel.id, "abc", VOICE_WEBM)).statusCode).toBe(400);
+    expect((await uploadVoice(owner, channel.id, "120001", VOICE_WEBM)).statusCode).toBe(400);
+  });
+
+  it("refuse comme message vocal un fichier qui n'est pas de l'audio", async () => {
+    const owner = await createMember("voice3@test.kemet", "Owner", "voice3");
+    const { channel } = await createSpaceWithGeneralChannel(owner, "vocal3");
+
+    const response = await uploadVoice(owner, channel.id, "1000", PNG_BYTES);
+    expect(response.statusCode).toBe(400);
+  });
+
+  it("refuse un message vocal à qui ne peut pas écrire dans le salon", async () => {
+    const owner = await createMember("voice4@test.kemet", "Owner", "voice4");
+    const outsider = await createMember("voice5@test.kemet", "Outsider", "voice5");
+    const { channel } = await createSpaceWithGeneralChannel(owner, "vocal4", "private");
+
+    const response = await uploadVoice(outsider, channel.id, "1000", VOICE_WEBM);
+    expect([403, 404]).toContain(response.statusCode);
+    const anonymous = await app.inject({ method: "POST", url: `/api/channels/${channel.id}/messages/voice` });
+    expect(anonymous.statusCode).toBe(401);
+  });
+
+  it("compte un message vocal dans le quota de stockage de l'utilisateur", async () => {
+    app = await createApp({ maxAttachmentBytes: 25 * 1024 * 1024, maxUserStorageBytes: VOICE_WEBM.length })();
+    const owner = await createMember("voice6@test.kemet", "Owner", "voice6");
+    const { channel } = await createSpaceWithGeneralChannel(owner, "vocal5");
+
+    expect((await uploadVoice(owner, channel.id, "1000", VOICE_WEBM)).statusCode).toBe(200);
+    expect((await uploadVoice(owner, channel.id, "1000", VOICE_WEBM)).statusCode).toBe(400);
+  });
+
+  describe("droits d'écriture d'un message vocal", () => {
+    const db = createDb(databaseUrl!);
+
+    async function openConversation(cookie: string, handle: string) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/conversations",
+        headers: { cookie },
+        payload: { handles: [handle] },
+      });
+      return response.json().conversation as { id: string; channelId: string };
+    }
+
+    async function sendText(cookie: string, channelId: string) {
+      return app.inject({
+        method: "POST",
+        url: `/api/channels/${channelId}/messages`,
+        headers: { cookie },
+        payload: { clientId: crypto.randomUUID(), body: "Bonjour" },
+      });
+    }
+
+    it("refuse un compte suspendu", async () => {
+      const owner = await createMember("voice7@test.kemet", "Owner", "voice7");
+      const { channel } = await createSpaceWithGeneralChannel(owner, "vocal7");
+      await db.update(profiles).set({ suspendedAt: new Date() }).where(eq(profiles.handle, "voice7"));
+
+      expect((await uploadVoice(owner, channel.id, "1000", VOICE_WEBM)).statusCode).toBe(403);
+    });
+
+    it("refuse un espace archivé", async () => {
+      const owner = await createMember("voice8@test.kemet", "Owner", "voice8");
+      const { space, channel } = await createSpaceWithGeneralChannel(owner, "vocal8");
+      await db.update(spaces).set({ archivedAt: new Date() }).where(eq(spaces.id, space.id));
+
+      expect((await uploadVoice(owner, channel.id, "1000", VOICE_WEBM)).statusCode).toBe(403);
+    });
+
+    it("refuse un second envoi tant qu'une demande de conversation est en attente", async () => {
+      const awa = await createMember("voice9@test.kemet", "Awa", "voice9");
+      await createMember("voice10@test.kemet", "Binta", "voice10");
+      const conversation = await openConversation(awa, "voice10");
+
+      expect((await sendText(awa, conversation.channelId)).statusCode).toBe(200);
+      expect((await uploadVoice(awa, conversation.channelId, "1000", VOICE_WEBM)).statusCode).toBe(403);
+    });
+
+    it("refuse un envoi à qui a bloqué l'auteur, et à un membre parti", async () => {
+      const awa = await createMember("voice11@test.kemet", "Awa", "voice11");
+      const binta = await createMember("voice12@test.kemet", "Binta", "voice12");
+      const conversation = await openConversation(awa, "voice12");
+      await app.inject({ method: "POST", url: `/api/conversations/${conversation.id}/accept`, headers: { cookie: binta } });
+      expect((await uploadVoice(awa, conversation.channelId, "1000", VOICE_WEBM)).statusCode).toBe(200);
+
+      await app.inject({ method: "PUT", url: "/api/users/voice11/block", headers: { cookie: binta } });
+      expect((await uploadVoice(awa, conversation.channelId, "1000", VOICE_WEBM)).statusCode).toBe(403);
+
+      await app.inject({ method: "POST", url: `/api/conversations/${conversation.id}/leave`, headers: { cookie: binta } });
+      expect([403, 404]).toContain((await uploadVoice(binta, conversation.channelId, "1000", VOICE_WEBM)).statusCode);
+    });
+
+    it("ne rattache pas un vocal envoyé dans un salon à un message d'un autre salon", async () => {
+      const owner = await createMember("voice13@test.kemet", "Owner", "voice13");
+      const first = await createSpaceWithGeneralChannel(owner, "vocal13a");
+      const second = await createSpaceWithGeneralChannel(owner, "vocal13b");
+      const uploaded = (await uploadVoice(owner, first.channel.id, "1000", VOICE_WEBM)).json().attachment as { id: string };
+
+      const sent = await app.inject({
+        method: "POST",
+        url: `/api/channels/${second.channel.id}/messages`,
+        headers: { cookie: owner },
+        payload: { clientId: crypto.randomUUID(), body: "", attachmentIds: [uploaded.id] },
+      });
+      expect(sent.statusCode).toBe(400);
+    });
+
+    it("refuse un enregistrement de plus de 4 Mio, et l'audio par la route des fichiers", async () => {
+      const owner = await createMember("voice14@test.kemet", "Owner", "voice14");
+      const { channel } = await createSpaceWithGeneralChannel(owner, "vocal14");
+      const oversized = Buffer.concat([VOICE_WEBM, Buffer.alloc(4 * 1024 * 1024)]);
+
+      expect((await uploadVoice(owner, channel.id, "1000", oversized)).statusCode).toBe(400);
+      expect((await uploadAttachment(owner, channel.id, "voix.webm", "audio/webm", VOICE_WEBM)).statusCode).toBe(400);
+    });
+
+    it("cache un vocal d'un salon privé à qui n'en est pas membre", async () => {
+      const owner = await createMember("voice15@test.kemet", "Owner", "voice15");
+      const outsider = await createMember("voice16@test.kemet", "Outsider", "voice16");
+      const { channel } = await createSpaceWithGeneralChannel(owner, "vocal15", "private");
+      const uploaded = (await uploadVoice(owner, channel.id, "1000", VOICE_WEBM)).json().attachment as { id: string };
+      await app.inject({
+        method: "POST",
+        url: `/api/channels/${channel.id}/messages`,
+        headers: { cookie: owner },
+        payload: { clientId: crypto.randomUUID(), body: "", attachmentIds: [uploaded.id] },
+      });
+
+      const response = await app.inject({
+        method: "GET",
+        url: `/api/attachments/${uploaded.id}/content`,
+        headers: { cookie: outsider },
+      });
+      expect(response.statusCode).toBe(404);
+    });
   });
 });

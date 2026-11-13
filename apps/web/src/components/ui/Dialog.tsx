@@ -13,7 +13,14 @@ export interface DialogProps {
   className?: string;
 }
 
-export function Dialog({ open, onOpenChange, title, description, children, className }: DialogProps) {
+export function Dialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  className,
+}: DialogProps) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
@@ -29,7 +36,9 @@ export function Dialog({ open, onOpenChange, title, description, children, class
         >
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <RadixDialog.Title className="text-lg font-semibold text-text">{title}</RadixDialog.Title>
+              <RadixDialog.Title className="text-lg font-semibold text-text">
+                {title}
+              </RadixDialog.Title>
               {description && (
                 <RadixDialog.Description className="mt-1 text-sm text-text-2">
                   {description}

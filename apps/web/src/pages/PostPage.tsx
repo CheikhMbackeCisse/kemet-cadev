@@ -1,7 +1,17 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type SetStateAction } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  forgetPost,
+  postFeedbackQueryKey,
+  postFromFeedCache,
+  postQueryKey,
+  postRepliesQueryKey,
+} from "../lib/feed/feedQuery.js";
 import {
   isDeletedAccountHandle,
+  isAssistantHandle,
   type PostFeedbackEntry,
   type PostReply,
   type PostSummary,
@@ -16,7 +26,9 @@ import {
   listPostFeedback,
   listPostReplies,
   markPostReplySolution,
-  sharePost,
+  retryPostAssistant,
+  sendAssistantFeedback,
+  setPostBookmark,
   togglePostReaction,
 } from "../lib/chat/api.js";
 import { Avatar } from "../components/ui/Avatar.js";
@@ -32,7 +44,6 @@ import { useToast } from "../components/ui/Toast.js";
 import { PostCard, PostCardSkeleton } from "../components/feed/PostCard.js";
 import { RichText } from "../components/content/RichText.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
-import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
@@ -42,6 +53,15 @@ import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
+import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
+import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
+import { KoccButton } from "../components/assistant/KoccButton.js";
+import { ASSISTANT_NOTICE_ID, KoccComposerHint } from "../components/assistant/KoccQuestionTag.js";
+import { ComposerBar, ComposerSendButton } from "../components/composer/ComposerBar.js";
+import { mentionsAssistant } from "../lib/chat/assistantNotice.js";
+import { KoccSymbol } from "../components/assistant/KoccSymbol.js";
+import { removeKoccMention } from "../lib/assistant/koccDraft.js";
+import { usePostAssistant } from "../lib/feed/usePostAssistant.js";
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -58,55 +78,90 @@ function readPostId(pathname: string): string {
 
 export function PostPage() {
   const toast = useToast();
-  const postId = readPostId(window.location.pathname);
+  // Lu une seule fois : pendant le retour vers une autre page, celle-ci reste
+  // affichée alors que l'adresse a déjà changé.
+  const [postId] = useState(() => readPostId(window.location.pathname));
   const { status, profile, isSuspended } = useSession();
   const canInteract = status === "ready" && !isSuspended;
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [post, setPost] = useState<PostSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [notFound, setNotFound] = useState(false);
+  const queryClient = useQueryClient();
 
-  const [replies, setReplies] = useState<PostReply[]>([]);
+  // Ouvert depuis le fil, le post s'affiche tout de suite avec ce que le fil
+  // en sait, puis se met à jour.
+  const postQuery = useQuery({
+    queryKey: postQueryKey(postId),
+    queryFn: () => getPost(postId).then((result) => result.post),
+    initialData: () => postFromFeedCache(queryClient, postId),
+    initialDataUpdatedAt: 0,
+  });
+  // Un 404 l'emporte sur ce que le fil savait : le post a été supprimé ou
+  // masqué depuis.
+  const notFound = postQuery.error instanceof ChatApiError && postQuery.error.statusCode === 404;
+  const post = notFound ? null : (postQuery.data ?? null);
+  const loading = postQuery.isPending;
+  const error = !post && postQuery.isError && !notFound;
+  useEffect(() => {
+    if (notFound) forgetPost(queryClient, postId);
+  }, [notFound, queryClient, postId]);
+  const setPost = useCallback(
+    (update: SetStateAction<PostSummary | null>) =>
+      queryClient.setQueryData<PostSummary | null>(postQueryKey(postId), (current) =>
+        typeof update === "function" ? update(current ?? null) : update,
+      ),
+    [queryClient, postId],
+  );
+
+  const repliesQuery = useQuery({
+    queryKey: postRepliesQueryKey(postId),
+    queryFn: () => listPostReplies(postId).then((page) => page.items),
+  });
+  const replies = repliesQuery.data ?? [];
+  const setReplies = useCallback(
+    (update: (current: PostReply[]) => PostReply[]) =>
+      queryClient.setQueryData<PostReply[]>(postRepliesQueryKey(postId), (current) =>
+        update(current ?? []),
+      ),
+    [queryClient, postId],
+  );
+
   const [replyDraft, setReplyDraft] = useState("");
   const replyPaste = usePasteAsCode(replyTextareaRef, setReplyDraft, "-mb-2");
   const [replyToDelete, setReplyToDelete] = useState<string | null>(null);
 
-  const [feedback, setFeedback] = useState<PostFeedbackEntry[]>([]);
+  const feedbackQuery = useQuery({
+    queryKey: postFeedbackQueryKey(postId),
+    queryFn: () => listPostFeedback(postId).then((result) => result.items),
+    enabled: post?.format === "a_tester",
+  });
+  const feedback = feedbackQuery.data ?? [];
+  function setFeedback(update: (current: PostFeedbackEntry[]) => PostFeedbackEntry[]) {
+    queryClient.setQueryData<PostFeedbackEntry[]>(postFeedbackQueryKey(postId), (current) =>
+      update(current ?? []),
+    );
+  }
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackBody, setFeedbackBody] = useState("");
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const loadPost = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    setNotFound(false);
-    getPost(postId)
-      .then((result) => setPost(result.post))
-      .catch((err) => {
-        if (err instanceof ChatApiError && err.statusCode === 404) setNotFound(true);
-        else setError(true);
-      })
-      .finally(() => setLoading(false));
-  }, [postId]);
+  const appendReply = useCallback(
+    (reply: PostReply) => {
+      setReplies((current) =>
+        current.some((item) => item.id === reply.id) ? current : [...current, reply],
+      );
+      setPost((current) =>
+        current ? { ...current, replyCount: current.replyCount + 1 } : current,
+      );
+    },
+    [setReplies, setPost],
+  );
+  const assistant = usePostAssistant(appendReply);
 
-  useEffect(() => loadPost(), [loadPost]);
-
-  useEffect(() => {
-    listPostReplies(postId)
-      .then((page) => setReplies(page.items))
-      .catch(() => {});
-  }, [postId]);
-
-  useEffect(() => {
-    if (post?.format !== "a_tester") return;
-    listPostFeedback(postId)
-      .then((result) => setFeedback(result.items))
-      .catch(() => {});
-  }, [postId, post?.format]);
+  function loadPost() {
+    void postQuery.refetch();
+  }
 
   async function handleReact() {
     if (!post) return;
@@ -118,13 +173,14 @@ export function PostPage() {
     }
   }
 
-  async function handleShare() {
+  async function handleSave() {
     if (!post) return;
     try {
-      await sharePost(post.id);
-      toast.show(fr.feed.shared, "success");
+      const result = await setPostBookmark(post.id, !post.savedByMe);
+      setPost({ ...post, savedByMe: result.savedByMe });
+      toast.show(result.savedByMe ? fr.feed.savedToast : fr.feed.unsavedToast, "success");
     } catch {
-      toast.show(fr.feed.shareError, "danger");
+      toast.show(fr.feed.saveError, "danger");
     }
   }
 
@@ -133,24 +189,44 @@ export function PostPage() {
     setDeleteOpen(false);
     try {
       await deletePost(post.id);
-      window.location.href = "/fil";
+      forgetPost(queryClient, post.id);
+      navigate("/fil");
     } catch {
       toast.show(fr.feed.postDeleteError, "danger");
+    }
+  }
+
+  async function sendReply(body: string) {
+    try {
+      const result = await createPostReply(postId, { body });
+      appendReply(result.reply);
+      setReplyDraft("");
+      assistant.track(result.assistant);
+    } catch {
+      toast.show(fr.feed.replySendError, "danger");
     }
   }
 
   async function handleReply() {
     const body = replyDraft.trim();
     if (!body) return;
+    await sendReply(body);
+  }
+
+  async function retryAssistant(invocationId: string) {
     try {
-      const { reply } = await createPostReply(postId, { body });
-      setReplies((current) => [...current, reply]);
-      setReplyDraft("");
-      setPost((current) =>
-        current ? { ...current, replyCount: current.replyCount + 1 } : current,
-      );
+      const result = await retryPostAssistant(invocationId);
+      assistant.track(result.assistant);
     } catch {
-      toast.show(fr.feed.replySendError, "danger");
+      toast.show(fr.chat.assistantFailed, "danger");
+    }
+  }
+
+  async function handleAssistantFeedback(invocationId: string, helpful: boolean) {
+    try {
+      await sendAssistantFeedback(invocationId, helpful);
+    } catch {
+      toast.show(fr.feed.reactError, "danger");
     }
   }
 
@@ -201,9 +277,6 @@ export function PostPage() {
         <ArrowLeft className="size-4" aria-hidden="true" />
         {fr.feed.back}
       </a>
-      <div className="flex items-center gap-2">
-        <AccountMenu />
-      </div>
     </div>
   );
 
@@ -211,6 +284,7 @@ export function PostPage() {
     return (
       <ReadingPage
         activeSection="fil"
+        width="feed"
         header={header}
         state={
           loading
@@ -219,7 +293,7 @@ export function PostPage() {
               ? {
                   kind: "notFound",
                   message: fr.feed.postNotFound,
-                  retry: { label: fr.feed.back, onClick: () => (window.location.href = "/fil") },
+                  retry: { label: fr.feed.back, onClick: () => navigate("/fil") },
                 }
               : {
                   kind: "error",
@@ -233,6 +307,11 @@ export function PostPage() {
   }
 
   const isOwnPost = profile !== null && profile.id === post.authorId && !post.deletedAt;
+  // Une réponse de @kemet se retire par qui l'a demandée ou par l'auteur du post.
+  const canRemoveAssistantReply = (reply: PostReply) =>
+    canInteract &&
+    !reply.deletedAt &&
+    (isOwnPost || (profile !== null && reply.assistant?.requestedBy === profile.id));
   const hasGivenFeedback =
     profile !== null && feedback.some((entry) => entry.authorId === profile.id);
 
@@ -240,6 +319,7 @@ export function PostPage() {
     <>
       <ReadingPage
         activeSection="fil"
+        width="feed"
         header={header}
         className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
       >
@@ -253,14 +333,17 @@ export function PostPage() {
           canFeedback={canInteract && post.format === "a_tester" && !hasGivenFeedback}
           canReport={canInteract && !post.deletedAt}
           onReact={handleReact}
-          onShare={handleShare}
+          onSave={handleSave}
           onFeedback={() => setFeedbackOpen(true)}
           onDelete={() => setDeleteOpen(true)}
           onReply={() => replyTextareaRef.current?.focus()}
+          onChange={(change) =>
+            setPost((current) => (current ? { ...current, ...change } : current))
+          }
         />
 
         {post.format === "question" && !post.deletedAt && (
-          <WorkMatchPanel subject={{ type: "post", id: post.id }} signedIn={status === "ready"} />
+          <WorkMatchPanel subject={{ type: "post", id: post.id }} />
         )}
 
         {post.format === "a_tester" && feedback.length > 0 && (
@@ -288,87 +371,193 @@ export function PostPage() {
         )}
 
         <div className="flex flex-col gap-3">
-          <p className="text-md font-semibold text-text">{fr.feed.replyCount(post.replyCount)}</p>
+          {post.replyCount > 0 && (
+            <p className="text-md font-semibold text-text">{fr.feed.replyCount(post.replyCount)}</p>
+          )}
           {replies.length === 0 ? (
             <EmptyState message={fr.feed.noReplies} />
           ) : (
-            replies.map((reply) => (
-              <div key={reply.id} className="flex gap-3">
-                <ProfileLink
-                  handle={reply.authorHandle}
-                  aria-label={fr.profile.viewProfile(reply.authorDisplayName)}
-                >
-                  <Avatar
-                    deleted={isDeletedAccountHandle(reply.authorHandle)}
-                    name={reply.authorDisplayName}
-                    src={reply.authorAvatarUrl ?? undefined}
-                    countryCode={reply.authorCountry}
+            replies.map((reply) =>
+              isAssistantHandle(reply.authorHandle) && reply.assistant ? (
+                <div key={reply.id} className="flex flex-col gap-1">
+                  <AssistantMessage
+                    content={
+                      reply.deletedAt ? fr.chat.messageDeleted : <RichText source={reply.body} />
+                    }
+                    skill={
+                      reply.assistant.skill ? skillReferenceFrom(reply.assistant.skill) : undefined
+                    }
+                    recorded={reply.assistant.recorded}
+                    initialFeedback={
+                      reply.assistant.helpful === true
+                        ? "helpful"
+                        : reply.assistant.helpful === false
+                          ? "not-helpful"
+                          : null
+                    }
+                    // L'avis rapporte des points : réservé à qui a posé la
+                    // question et à l'auteur du post (règle côté serveur).
+                    hideFeedback={
+                      !canInteract || (profile?.id !== reply.assistant.requestedBy && !isOwnPost)
+                    }
+                    onFeedback={(helpful) =>
+                      void handleAssistantFeedback(reply.assistant!.invocationId, helpful)
+                    }
                   />
-                </ProfileLink>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <ProfileLink handle={reply.authorHandle} className="min-w-0 max-w-full">
+                  {(reply.isSolution ||
+                    (isOwnPost && post.format === "question") ||
+                    canRemoveAssistantReply(reply)) && (
+                    <div className="flex items-center gap-2">
+                      {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
+                      {isOwnPost && post.format === "question" && !reply.deletedAt && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSolution(reply)}
+                          className="text-xs text-link hover:underline"
+                        >
+                          {reply.isSolution ? fr.feed.unmarkSolution : fr.feed.markSolution}
+                        </button>
+                      )}
+                      {canRemoveAssistantReply(reply) && (
+                        <IconButton
+                          aria-label={fr.feed.delete}
+                          onClick={() => setReplyToDelete(reply.id)}
+                        >
+                          <Trash2 className="size-4" aria-hidden="true" />
+                        </IconButton>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div key={reply.id} className="flex gap-3">
+                  <ProfileLink
+                    handle={reply.authorHandle}
+                    aria-label={fr.profile.viewProfile(reply.authorDisplayName)}
+                  >
+                    <Avatar
+                      deleted={isDeletedAccountHandle(reply.authorHandle)}
+                      name={reply.authorDisplayName}
+                      src={reply.authorAvatarUrl ?? undefined}
+                      countryCode={reply.authorCountry}
+                      square={reply.authorKind === "organization"}
+                    />
+                  </ProfileLink>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
                       <UserName
                         name={reply.authorDisplayName}
+                        handle={reply.authorHandle}
                         level={authorLevel(reply.authorHandle, reply.authorLevel)}
+                        organization={reply.authorKind === "organization"}
                       />
-                    </ProfileLink>
-                    <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
-                    {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
-                  </div>
-                  {reply.deletedAt ? (
-                    <p className="mt-0.5 text-sm text-text">{fr.chat.messageDeleted}</p>
-                  ) : (
-                    <RichText source={reply.body} className="mt-0.5 text-sm text-text" />
-                  )}
-                  <div className="mt-1 flex items-center gap-2">
-                    {isOwnPost && post.format === "question" && !reply.deletedAt && (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleSolution(reply)}
-                        className="text-xs text-link hover:underline"
-                      >
-                        {reply.isSolution ? fr.feed.unmarkSolution : fr.feed.markSolution}
-                      </button>
+                      <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
+                      {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
+                    </div>
+                    {reply.deletedAt ? (
+                      <p className="mt-0.5 text-sm text-text">{fr.chat.messageDeleted}</p>
+                    ) : (
+                      <RichText source={reply.body} className="mt-0.5 text-sm text-text" />
                     )}
-                    {profile?.id === reply.authorId && !reply.deletedAt && (
-                      <IconButton
-                        aria-label={fr.feed.delete}
-                        onClick={() => setReplyToDelete(reply.id)}
-                      >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </IconButton>
-                    )}
+                    <div className="mt-1 flex items-center gap-2">
+                      {isOwnPost && post.format === "question" && !reply.deletedAt && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSolution(reply)}
+                          className="text-xs text-link hover:underline"
+                        >
+                          {reply.isSolution ? fr.feed.unmarkSolution : fr.feed.markSolution}
+                        </button>
+                      )}
+                      {profile?.id === reply.authorId && !reply.deletedAt && (
+                        <IconButton
+                          aria-label={fr.feed.delete}
+                          onClick={() => setReplyToDelete(reply.id)}
+                        >
+                          <Trash2 className="size-4" aria-hidden="true" />
+                        </IconButton>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ),
+            )
+          )}
+          {assistant.isPending && (
+            <div
+              role="status"
+              className="flex items-center gap-2 rounded-card border border-assistant-border bg-assistant-bg px-4 py-3 text-sm text-text-2"
+            >
+              <KoccSymbol className="size-5 motion-safe:animate-pulse" />
+              {fr.feed.assistantPending}
+            </div>
+          )}
+          {canInteract && assistant.failure && (
+            <AssistantFailureNotice
+              errorCode={assistant.failure.errorCode}
+              onRetry={
+                assistant.failure.invocationId === null
+                  ? null
+                  : () => {
+                      const invocationId = assistant.failure!.invocationId!;
+                      assistant.dismissFailure();
+                      void retryAssistant(invocationId);
+                      replyTextareaRef.current?.focus();
+                    }
+              }
+              onDismiss={() => {
+                assistant.dismissFailure();
+                replyTextareaRef.current?.focus();
+              }}
+            />
           )}
           {canInteract && (
             <div className="flex flex-col gap-2">
               {replyPaste.notice}
-              <div className="flex gap-2">
-                <CodeButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />
-                <Textarea
-                  ref={replyTextareaRef}
-                  placeholder={fr.feed.replyPlaceholder}
-                  aria-label={fr.feed.replyPlaceholder}
-                  value={replyDraft}
-                  onChange={(event) => setReplyDraft(event.target.value)}
-                  onPaste={replyPaste.handlePaste}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      void handleReply();
+              <KoccComposerHint
+                draft={replyDraft}
+                onRemoveMention={() => {
+                  setReplyDraft(removeKoccMention);
+                  replyTextareaRef.current?.focus();
+                }}
+              />
+              <ComposerBar
+                leading={<KoccButton textareaRef={replyTextareaRef} onChange={setReplyDraft} />}
+                field={
+                  <Textarea
+                    ref={replyTextareaRef}
+                    placeholder={fr.feed.replyPlaceholder}
+                    aria-label={fr.feed.replyPlaceholder}
+                    aria-describedby={
+                      mentionsAssistant(replyDraft) ? ASSISTANT_NOTICE_ID : undefined
                     }
-                  }}
-                  variant="composer"
-                  className="max-md:min-h-11 flex-1"
-                />
-                <Button onClick={handleReply} disabled={!replyDraft.trim()}>
-                  {fr.feed.reply}
-                </Button>
-              </div>
+                    value={replyDraft}
+                    onChange={(event) => setReplyDraft(event.target.value)}
+                    onPaste={replyPaste.handlePaste}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        void handleReply();
+                      }
+                    }}
+                    variant="composer"
+                  />
+                }
+                tools={
+                  <CodeButton
+                    appearance="icon"
+                    textareaRef={replyTextareaRef}
+                    onChange={setReplyDraft}
+                  />
+                }
+                action={
+                  <ComposerSendButton
+                    label={fr.feed.reply}
+                    ready={Boolean(replyDraft.trim())}
+                    onClick={() => void handleReply()}
+                  />
+                }
+              />
             </div>
           )}
         </div>

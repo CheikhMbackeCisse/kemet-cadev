@@ -51,7 +51,7 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
       },
     };
     // Facteur 1 : la limite réduite des comptes neufs a son propre test plus bas.
-    app = buildApp({ db, auth, chat, assistant, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 } });
+    app = buildApp({ db, auth, chat, assistant, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 } });
   });
 
   afterEach(async () => {
@@ -523,6 +523,11 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
 
     const status = await app.inject({ method: "GET", url: "/api/users/awa/block", headers: { cookie: binta.cookie } });
     expect(status.json()).toEqual({ blocked: true });
+    const blocks = await app.inject({ method: "GET", url: "/api/me/blocks", headers: { cookie: binta.cookie } });
+    expect(blocks.json().items.map((item: { handle: string }) => item.handle)).toEqual(["awa"]);
+    const othersBlocks = await app.inject({ method: "GET", url: "/api/me/blocks", headers: { cookie: awa.cookie } });
+    expect(othersBlocks.json().items).toEqual([]);
+    expect((await app.inject({ method: "GET", url: "/api/me/blocks" })).statusCode).toBe(401);
     await app.inject({ method: "DELETE", url: "/api/users/awa/block", headers: { cookie: binta.cookie } });
     expect((await openConversation(awa, binta, coumba)).statusCode).toBe(200);
   });
@@ -693,12 +698,12 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
     expect(response.statusCode).toBe(400);
   });
 
-  it("n'appelle jamais @kemet dans une conversation privée", async () => {
+  it("n'appelle jamais @kocc dans une conversation privée", async () => {
     const awa = await createMember("awa");
     const binta = await createMember("binta");
     await follow(binta, awa);
     const conversation = (await openConversation(awa, binta)).json().conversation;
-    expect((await send(awa, conversation.channelId, "@kemet tu peux résumer ?")).statusCode).toBe(200);
+    expect((await send(awa, conversation.channelId, "@kocc tu peux résumer ?")).statusCode).toBe(200);
     expect(mentions).toHaveLength(0);
   });
 
@@ -790,7 +795,7 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
       secret: "test-secret-at-least-32-characters-long",
       rateLimitEnabled: false,
     });
-    app = buildApp({ db, auth, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 0.25 } });
+    app = buildApp({ db, auth, antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 0.25, anonymousIpFactor: 3 } });
     const spammer = await createMember("nouveau");
     const targets: Member[] = [];
     // Dix par minute d'ordinaire, trois pour un compte neuf (10 x 0,25 arrondi).

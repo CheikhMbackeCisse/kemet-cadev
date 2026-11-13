@@ -8,7 +8,11 @@ export function KemetSymbol({ className }: KemetSymbolProps) {
   return (
     <>
       <img src="/brand/kemet-symbol.svg" alt="" className={cn("kemet-symbol-light", className)} />
-      <img src="/brand/kemet-symbol-dark.svg" alt="" className={cn("kemet-symbol-dark", className)} />
+      <img
+        src="/brand/kemet-symbol-dark.svg"
+        alt=""
+        className={cn("kemet-symbol-dark", className)}
+      />
     </>
   );
 }

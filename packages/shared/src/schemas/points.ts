@@ -30,3 +30,25 @@ export function isLevelAtLeast(level: Level, minimum: Level): boolean {
 
 /** "Ouvert aux missions" se débloque à Artisan (docs/CONTEXTE.md). */
 export const OPEN_TO_OPPORTUNITIES_MIN_LEVEL: Level = "artisan";
+
+/** Réponse de GET /api/levels : seuils, effectif de chaque niveau et barème. */
+export interface LevelsResponse {
+  levels: { level: Level; minPoints: number; memberCount: number }[];
+  rules: {
+    replySolution: number;
+    feedbackGiven: number;
+    assistantSkillHelpful: number;
+    projectHelpConfirmed: number;
+    competitionParticipation: number;
+    competitionPodium: number[];
+    credentials: {
+      degree: number;
+      experienceYear: number;
+      seniorRole: number;
+      internship: number;
+      ongoingEducation: number;
+      cap: number;
+    };
+    regularity: { perActiveDay: number; windowDays: number; cap: number };
+  };
+}

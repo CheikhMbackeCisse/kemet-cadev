@@ -4,11 +4,13 @@ import {
   createHelpRequestSchema,
   createProjectSchema,
   decideApplicationSchema,
+  feedProjectsQuerySchema,
   paginationQuerySchema,
   updateProjectSchema,
 } from "@kemet/shared";
 import { loadProjectsConfig, type ProjectsConfig } from "../../config/projects-config.js";
-import { requireSessionUserId } from "../../auth/session.js";
+import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
+import { listFolloweeIds } from "../repositories/posts.js";
 import { badRequest, conflict, forbidden, notFound } from "../../errors.js";
 import {
   closeHelpRequest,
@@ -21,9 +23,12 @@ import {
   findProjectById,
   findProjectBySlug,
   insertApplication,
+  FEED_PROJECT_ROLES,
   insertHelpRequest,
   listApplicationsForHelpRequest,
+  listFeedProjects,
   listHelpRequestsForProject,
+  listOpenRoles,
   listProjects,
   softDeleteProject,
   updateProject,
@@ -48,6 +53,8 @@ async function requireOwnProfile(db: ChatAppDeps["db"], userId: string) {
 
 export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
   const projectsConfig: ProjectsConfig = loadProjectsConfig();
+  // Lectures publiques : sans session, la limite est la seule borne.
+  const publicReadLimit = { config: { rateLimit: { max: 120, timeWindow: "1 minute" } } };
 
   async function toProjectSummary(row: Awaited<ReturnType<typeof findProjectBySlug>> & object) {
     const [owner, openHelpRequestCount] = await Promise.all([
@@ -57,12 +64,29 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     return serializeProjectSummary(row, owner!, openHelpRequestCount);
   }
 
-  app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/projects", async (request) => {
-    await requireSessionUserId(auth, request);
+  app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/projects", publicReadLimit, async (request) => {
     const query = paginationQuerySchema.parse(request.query);
     const page = await listProjects(db, query.cursor, query.limit);
     const items = await Promise.all(page.items.map((row) => toProjectSummary(row)));
     return { items, nextCursor: page.nextCursor };
+  });
+
+  // Cartes projet du fil. Un visiteur n'a pas d'abonnements : il reçoit
+  // toujours le classement "Pour toi", comme pour les posts.
+  app.get<{ Querystring: { tab?: string; limit?: string } }>("/api/feed/projects", publicReadLimit, async (request) => {
+    const query = feedProjectsQuerySchema.parse(request.query);
+    const userId = await getSessionUserId(auth, request);
+    const profile = userId ? await findProfileByUserId(db, userId) : null;
+    const ownerIds =
+      query.tab === "abonnements" && profile ? [profile.id, ...(await listFolloweeIds(db, profile.id))] : null;
+    const rows = await listFeedProjects(db, ownerIds, query.limit);
+    const items = await Promise.all(
+      rows.map(async (row) => ({
+        ...(await toProjectSummary(row)),
+        openRoles: await listOpenRoles(db, row.id, FEED_PROJECT_ROLES),
+      })),
+    );
+    return { items };
   });
 
   app.post("/api/projects", { config: { rateLimit: { max: 10, timeWindow: "1 minute" } } }, async (request) => {
@@ -75,8 +99,7 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     return { project: serializeProjectDetail(project, profile, 0, projectsConfig.datacloudReferralUrl) };
   });
 
-  app.get<{ Params: { slug: string } }>("/api/projects/:slug", async (request) => {
-    await requireSessionUserId(auth, request);
+  app.get<{ Params: { slug: string } }>("/api/projects/:slug", publicReadLimit, async (request) => {
     const project = await findProjectBySlug(db, request.params.slug);
     if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
     const [owner, openHelpRequestCount] = await Promise.all([
@@ -116,8 +139,7 @@ export function registerProjectRoutes(app: FastifyInstance, { db, auth }: ChatAp
     },
   );
 
-  app.get<{ Params: { slug: string } }>("/api/projects/:slug/help-requests", async (request) => {
-    await requireSessionUserId(auth, request);
+  app.get<{ Params: { slug: string } }>("/api/projects/:slug/help-requests", publicReadLimit, async (request) => {
     const project = await findProjectBySlug(db, request.params.slug);
     if (!project || project.deletedAt) throw notFound("Ce projet n'existe pas.");
     const rows = await listHelpRequestsForProject(db, project.id);

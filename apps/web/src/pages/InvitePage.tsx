@@ -1,3 +1,4 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { useCallback, useEffect, useState } from "react";
 import type { InvitePreview } from "@kemet/shared";
 import { acceptInvite, previewInvite } from "../lib/chat/api.js";
@@ -19,7 +20,9 @@ const STATUS_MESSAGE: Record<InvitePreview["status"], (spaceName: string | null)
 };
 
 export function InvitePage() {
-  const code = readCode(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [code] = useState(() => readCode(window.location.pathname));
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [joinError, setJoinError] = useState(false);
@@ -42,7 +45,7 @@ export function InvitePage() {
     try {
       const result = await acceptInvite(code);
       if (result.joined && result.spaceId) {
-        window.location.href = `/salons?space=${result.spaceId}`;
+        navigate(`/salons?space=${result.spaceId}`);
         return;
       }
       setJoinStatus((result.status as InvitePreview["status"]) ?? "not_found");
@@ -54,7 +57,10 @@ export function InvitePage() {
   if (loadError) {
     return (
       <main className="flex h-viewport flex-col items-center justify-center px-4">
-        <ErrorState message={fr.invites.loadingError} retry={{ label: fr.chat.retry, onClick: load }} />
+        <ErrorState
+          message={fr.invites.loadingError}
+          retry={{ label: fr.chat.retry, onClick: load }}
+        />
       </main>
     );
   }

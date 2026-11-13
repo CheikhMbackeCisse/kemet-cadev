@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { completeProfile } from "./support/accounts.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -37,9 +38,7 @@ async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", {
-    data: { handle, displayName: handle, country: "SN" },
-  });
+  await completeProfile(request, handle);
 }
 
 async function signInBrowser(page: Page, email: string): Promise<void> {
@@ -54,9 +53,14 @@ const INJECTION =
   '<img src=x onerror="window.kemetInjected = true"> [piège](javascript:window.kemetInjected=true)';
 
 async function expectInjectionNeutralized(page: Page): Promise<void> {
-  await expect(page.getByText('<img src=x onerror="window.kemetInjected = true">')).toBeVisible();
+  // La couverture d'un skill reprend le début de son contenu en décor
+  // (aria-hidden) : seul le rendu lu par tous compte ici.
+  const readable = page.locator(':not([aria-hidden="true"] *)');
+  await expect(
+    page.getByText('<img src=x onerror="window.kemetInjected = true">').and(readable),
+  ).toBeVisible();
   await expect(page.locator('img[src="x"]')).toHaveCount(0);
-  await expect(page.getByText("piège", { exact: true })).toBeVisible();
+  await expect(page.getByText("piège", { exact: true }).and(readable)).toBeVisible();
   await expect(page.locator('a[href^="javascript"]')).toHaveCount(0);
   expect(await page.evaluate(() => "kemetInjected" in window)).toBe(false);
 }

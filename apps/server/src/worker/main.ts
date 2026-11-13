@@ -5,7 +5,7 @@ import { runMigrations } from "@kemet/db/migrate";
 import { healthcheckResponseSchema } from "@kemet/shared";
 import { cleanupOrphanAttachments } from "../chat/attachments-cleanup.js";
 import { cleanupOrphanPostAttachments } from "../feed/post-attachments-cleanup.js";
-import { cleanupOrphanWorkAttachments } from "../works/work-attachments-cleanup.js";
+import { cleanupOrphanWorkAttachments, cleanupOrphanWorkMedia } from "../works/work-attachments-cleanup.js";
 import { LocalDiskStorage } from "../storage/file-storage.js";
 
 const databaseUrl = process.env.DATABASE_URL ?? "postgres://kemet:kemet@localhost:5432/kemet";
@@ -50,6 +50,8 @@ new Worker(
     if (job.name === CLEANUP_WORK_ATTACHMENTS_JOB) {
       const deleted = await cleanupOrphanWorkAttachments(db, storage);
       if (deleted > 0) job.log(`${deleted} PDF orphelin(s) de travail supprimé(s).`);
+      const deletedMedia = await cleanupOrphanWorkMedia(db, storage);
+      if (deletedMedia > 0) job.log(`${deletedMedia} média(s) orphelin(s) de travail supprimé(s).`);
     }
   },
   { connection },

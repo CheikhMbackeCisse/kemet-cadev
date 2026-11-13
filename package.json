@@ -7,6 +7,16 @@
   "engines": {
     "node": ">=22"
   },
+  "pnpm": {
+    "ignoredOptionalDependencies": [
+      "@napi-rs/canvas"
+    ],
+    "overrides": {
+      "undici@>=7.0.0 <7.30.1": "7.30.1",
+      "better-auth>zod": "4.6.7",
+      "@better-auth/core>zod": "4.6.7"
+    }
+  },
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -15,7 +25,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "licenses:check": "tsx scripts/check-licenses.ts",
-    "test:scripts": "tsx --test scripts/lockfile-platforms.test.ts",
+    "test:scripts": "tsx --test scripts/lockfile-platforms.test.ts scripts/deploy-script.test.ts",
     "eval:llm-throughput": "tsx evals/llm-throughput.ts",
     "eval:work-matching": "tsx evals/work-matching.ts",
     "db:migrate": "pnpm --filter @kemet/db migrate",
@@ -24,12 +34,17 @@
     "db:promote-admin": "pnpm --filter @kemet/db promote-admin"
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/d3-geo": "^3.1.1",
+    "@types/topojson-client": "^3.1.5",
+    "d3-geo": "3.1.2",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.0",
+    "topojson-client": "3.1.0",
+    "tsx": "^4.19.0",
     "turbo": "^2.3.0",
     "typescript": "^5.7.0",
-    "tsx": "^4.19.0",
-    "eslint": "^9.17.0",
-    "@eslint/js": "^9.17.0",
     "typescript-eslint": "^8.19.0",
-    "prettier": "^3.4.0"
+    "world-atlas": "2.0.2"
   }
 }

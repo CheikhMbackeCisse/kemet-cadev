@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { Inbox, MessagesSquare } from "lucide-react";
 import type { Conversation, ConversationBox } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
@@ -61,7 +62,9 @@ function ConversationRow({
             </time>
           </span>
           {conversation.work && (
-            <span className="truncate text-xs text-subtle">{fr.messages.aboutWork(conversation.work.title)}</span>
+            <span className="truncate text-xs text-subtle">
+              {fr.messages.aboutWork(conversation.work.title)}
+            </span>
           )}
           <span className="flex items-center justify-between gap-2">
             <span className={cn("truncate text-sm", unread ? "text-text" : "text-muted")}>
@@ -69,11 +72,15 @@ function ConversationRow({
             </span>
             {unread ? (
               <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-xs font-medium leading-none text-white tabular-nums">
-                <span aria-hidden="true">{conversation.unreadCount > 9 ? "9+" : conversation.unreadCount}</span>
+                <span aria-hidden="true">
+                  {conversation.unreadCount > 9 ? "9+" : conversation.unreadCount}
+                </span>
                 <span className="sr-only">{fr.messages.unreadCount(conversation.unreadCount)}</span>
               </span>
             ) : (
-              awaiting && <span className="shrink-0 text-xs text-subtle">{fr.messages.awaitingShort}</span>
+              awaiting && (
+                <span className="shrink-0 text-xs text-subtle">{fr.messages.awaitingShort}</span>
+              )
             )}
           </span>
         </span>
@@ -99,7 +106,12 @@ export function ConversationListSkeleton() {
   );
 }
 
-export function ConversationList({ box, list, activeConversationId, viewerId }: ConversationListProps) {
+export function ConversationList({
+  box,
+  list,
+  activeConversationId,
+  viewerId,
+}: ConversationListProps) {
   if (list.status === "loading") return <ConversationListSkeleton />;
   if (list.status === "error") {
     return (
@@ -117,7 +129,7 @@ export function ConversationList({ box, list, activeConversationId, viewerId }: 
         message={fr.messages.emptyInbox}
         action={{
           label: fr.messages.newConversation,
-          onClick: () => (window.location.href = "/messages/nouveau"),
+          onClick: () => navigate("/messages/nouveau"),
         }}
         className="py-8"
       />

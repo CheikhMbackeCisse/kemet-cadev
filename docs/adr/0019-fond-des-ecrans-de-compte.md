@@ -55,3 +55,16 @@ l'écran reste correct en thème clair comme en thème sombre.
   ailleurs sans s'en rendre compte.
 - Une relecture d'interface qui signale un dégradé hors des écrans de compte
   reste un signalement valable : l'exception ne vaut pas blanc-seing.
+
+## Complément du 08/11/2026
+
+L'écran d'accueil d'une première visite (`/decouvrir`) reprend ce fond : il
+mène à l'inscription et fait partie des mêmes écrans d'entrée. Les questions
+qui le suivent gardent le fond ordinaire de l'application.
+
+## Complément du 08/11/2026
+
+Le fond a quitté `AuthBackground.tsx` pour
+`apps/web/src/components/arrival/ArrivalBackground.tsx`, partagé par tout le
+parcours d'arrivée, et la carte opaque est devenue une carte en verre dépoli.
+Voir `docs/adr/0030-parcours-d-arrivee.md`.

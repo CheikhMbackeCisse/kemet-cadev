@@ -3,9 +3,17 @@
 #   - un domaine réel ou un nom sslip.io en production : Caddy obtient seul
 #     un certificat Let's Encrypt, sans autre réglage.
 {$PUBLIC_HOST} {
-	encode gzip
+	# Les fichiers de l'app arrivent déjà compressés en Brotli par le serveur
+	# web ; encode ne retouche pas une réponse qui porte Content-Encoding.
+	encode zstd gzip
 
+	# defer : appliqués à l'écriture de la réponse, ces en-têtes remplacent
+	# ceux que l'API pose déjà (helmet) au lieu de s'y ajouter, sans quoi
+	# chacun partait deux fois sur /api.
+	# microphone=(self) : enregistrement des messages vocaux.
 	header {
+		defer
+		Permissions-Policy "camera=(), geolocation=(), payment=(), usb=(), microphone=(self)"
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
@@ -36,9 +44,14 @@
 	# Radix positionnés par Popper posent des attributs style à l'exécution.
 	# font-src accepte data: : Vite insère en base64 les plus petits fichiers
 	# de police de @fontsource, bloqués sinon.
+	# img-src blob: : aperçu local d'une image choisie, avant son envoi.
+	# media-src : vidéos des travaux et des posts, servies par l'API sur la même
+	# origine ; blob: pour lire dans le navigateur une vidéo choisie avant son
+	# envoi, le temps d'en tirer l'image d'aperçu.
+	# frame-src : seul le lecteur YouTube sans cookie, chargé au clic.
 	# L'API pose sa propre politique, plus stricte.
 	handle {
-		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 		reverse_proxy web:8080
 	}
 }

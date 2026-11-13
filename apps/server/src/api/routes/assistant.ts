@@ -1,13 +1,24 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { assistantFeedbackSchema } from "@kemet/shared";
+import { assistantFeedbackSchema, type SkillCitation } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
-import { badRequest, notFound } from "../../errors.js";
-import { findInvocationById, findInvocationByResponseMessageId, setInvocationHelpful } from "../repositories/assistant.js";
+import { badRequest, forbidden, notFound } from "../../errors.js";
+import { findPostById } from "../repositories/posts.js";
+import {
+  findInvocationById,
+  findInvocationByResponseMessageId,
+  setInvocationHelpful,
+} from "../repositories/assistant.js";
 import { canViewSkill, findAuthorProfile, findSkillsByIds } from "../repositories/skills.js";
+import { serializeSkillCitation } from "../skill-serializers.js";
 import { findProfileByUserId } from "../repositories/profiles.js";
-import { awardPoints, computeUtileAwardAmount, POINTS_ASSISTANT_SKILL_HELPFUL } from "../repositories/points.js";
+import {
+  awardPoints,
+  computeUtileAwardAmount,
+  POINTS_ASSISTANT_SKILL_HELPFUL,
+} from "../repositories/points.js";
 import type { ChatAppDeps } from "../app.js";
+import { canActForAuthor } from "../repositories/organization-accounts.js";
 import { requireChannelAccess, requireWritableSpace } from "./channels.js";
 
 const messageIdParamsSchema = z.object({ id: z.string().uuid() });
@@ -24,24 +35,23 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
     const params = messageIdParamsSchema.safeParse(request.params);
     if (!params.success) throw notFound("Cette réponse n'a pas d'invocation associée.");
     const invocation = await findInvocationByResponseMessageId(db, params.data.id);
-    if (!invocation) throw notFound("Cette réponse n'a pas d'invocation associée.");
+    if (!invocation?.channelId) throw notFound("Cette réponse n'a pas d'invocation associée.");
     await requireChannelAccess(db, invocation.channelId, profileId);
     const [citedSkill] = await findSkillsByIds(db, invocation.skillIds);
-    let skill: { slug: string; name: string; authorHandle: string; authorDisplayName: string } | null = null;
+    let skill: SkillCitation | null = null;
     // Défense en profondeur : si la visibilité du skill a changé depuis la
     // réponse (passé de public à privé, retiré d'un espace), on ne la
     // révèle plus ici même si elle apparaît toujours dans le message déjà
     // posté.
     if (citedSkill && (await canViewSkill(db, citedSkill, profileId))) {
-      const author = await findAuthorProfile(db, citedSkill.authorId);
-      skill = {
-        slug: citedSkill.slug,
-        name: citedSkill.name,
-        authorHandle: author.handle,
-        authorDisplayName: author.displayName,
-      };
+      skill = serializeSkillCitation(citedSkill, await findAuthorProfile(db, citedSkill.authorId));
     }
-    return { invocationId: invocation.id, skill, helpful: invocation.helpful, recorded: invocation.recorded };
+    return {
+      invocationId: invocation.id,
+      skill,
+      helpful: invocation.helpful,
+      recorded: invocation.recorded,
+    };
   });
 
   // Tout lecteur peut marquer la réponse Utile, ce qui rapporte des points à
@@ -55,14 +65,34 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
       const profile = await findProfileByUserId(db, userId);
       if (!profile) throw badRequest("Complétez votre profil avant de donner votre avis.");
       const invocation = await findInvocationById(db, request.params.id);
-      if (!invocation || invocation.status !== "done") throw notFound("Cette réponse n'existe pas.");
-      const access = await requireChannelAccess(db, invocation.channelId, profile.id);
-      if (access.kind !== "space") throw notFound("Cette réponse n'existe pas.");
-      requireWritableSpace(access.space);
+      if (!invocation || invocation.status !== "done")
+        throw notFound("Cette réponse n'existe pas.");
+      if (invocation.channelId) {
+        const access = await requireChannelAccess(db, invocation.channelId, profile.id);
+        if (access.kind !== "space") throw notFound("Cette réponse n'existe pas.");
+        requireWritableSpace(access.space);
+      } else {
+        // Sous un post : lisible par tous, mais un compte suspendu n'écrit plus.
+        const post = invocation.postId ? await findPostById(db, invocation.postId) : null;
+        if (!post || post.deletedAt) throw notFound("Cette réponse n'existe pas.");
+        if (profile.suspendedAt) throw forbidden("Ce compte est suspendu.");
+        // Réponse lisible par tous : l'avis, qui rapporte des points à
+        // l'auteur du skill, revient à qui a posé la question ou à l'auteur du post.
+        if (
+          invocation.requestedBy !== profile.id &&
+          !(await canActForAuthor(db, profile.id, post.authorId))
+        ) {
+          throw forbidden(
+            "Seuls la personne qui a posé la question et l'auteur du post donnent leur avis.",
+          );
+        }
+      }
       const input = assistantFeedbackSchema.parse(request.body);
       if (input.helpful && invocation.helpful !== true) {
         const citedSkills = await findSkillsByIds(db, invocation.skillIds);
-        const authorIds = [...new Set(citedSkills.map((skill) => skill.authorId))].filter((id) => id !== profile.id);
+        const authorIds = [...new Set(citedSkills.map((skill) => skill.authorId))].filter(
+          (id) => id !== profile.id,
+        );
         if (authorIds.length > 0) {
           const amount = await computeUtileAwardAmount(db, POINTS_ASSISTANT_SKILL_HELPFUL, profile);
           for (const authorId of authorIds) {

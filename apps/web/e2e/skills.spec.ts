@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { completeProfile } from "./support/accounts.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -37,7 +38,7 @@ async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", { data: { handle, displayName: handle, country: "SN" } });
+  await completeProfile(request, handle);
 }
 
 async function signInBrowser(page: Page, email: string): Promise<void> {
@@ -58,13 +59,19 @@ test("publie un skill et le retrouve sur sa page publique", async ({ page, reque
 
   await page.getByLabel("Nom").fill(slug);
   await page.getByLabel(/Description/).fill("Une phrase qui explique quand utiliser ce skill.");
+  // Les onglets Écrire et Aperçu portent le même libellé que le champ.
   await page
-    .getByLabel(/Contenu/)
+    .getByRole("textbox", { name: /Contenu/ })
     .fill("Instructions détaillées pour ce skill de test bout en bout.");
   await page.getByRole("button", { name: "Publier", exact: true }).click();
 
   // La page renvoie vers la liste une fois le skill publié.
   await expect(page).toHaveURL(/\/skills$/);
+  await page.getByLabel("Chercher un skill").fill(slug);
+  await expect(page.getByRole("link", { name: new RegExp(slug) })).toHaveCount(1);
+  await page.getByLabel("Chercher un skill").fill(`${slug}-introuvable`);
+  await expect(page.getByText(/Aucun skill ne correspond/)).toBeVisible();
+  await page.getByLabel("Chercher un skill").fill(slug);
   await page.getByRole("link", { name: new RegExp(slug) }).click();
   await expect(page.getByRole("heading", { name: slug })).toBeVisible();
 });

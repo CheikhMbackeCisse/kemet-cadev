@@ -2,7 +2,9 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "../../lib/cn.js";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+/** "inverse" et "inverse-ghost" : sur le fond de marque du parcours d'arrivée, toujours sombre. */
+export type ButtonVariant =
+  "primary" | "secondary" | "ghost" | "danger" | "inverse" | "inverse-ghost";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -10,10 +12,12 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-white hover:bg-primary-hover",
+  primary: "bg-action-strong text-on-action-strong hover:bg-action-strong-hover",
   secondary: "bg-transparent text-text border border-border-strong hover:bg-surface-2",
   ghost: "bg-transparent text-text-2 hover:bg-surface-2",
   danger: "bg-danger text-danger-on hover:brightness-95",
+  inverse: "bg-auth-text font-semibold text-[var(--auth-bg-to)] hover:bg-auth-button-hover",
+  "inverse-ghost": "bg-transparent text-auth-text hover:bg-white/10",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

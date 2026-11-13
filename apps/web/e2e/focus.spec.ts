@@ -28,7 +28,9 @@ test("un champ montre son focus par sa bordure, sans contour autour", async ({ p
   expect(borderColor).toBe(await primaryColor(page));
 });
 
-test("un lien atteint au clavier a un contour, pas un lien atteint à la souris", async ({ page }) => {
+test("un lien atteint au clavier a un contour, pas un lien atteint à la souris", async ({
+  page,
+}) => {
   await page.goto("/connexion");
   const link = page.getByRole("link", { name: "Mot de passe oublié ?" });
 
@@ -45,6 +47,27 @@ test("un lien atteint au clavier a un contour, pas un lien atteint à la souris"
 
   await page.goto("/connexion");
   await page.getByLabel("Mot de passe", { exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(link).toBeFocused();
+  expect(await outlineOf(link)).toEqual({ style: "solid", width: "2px" });
+});
+
+test("après un clic, un focus donné par le code n'a pas de contour, le clavier le rend", async ({
+  page,
+}) => {
+  await page.goto("/connexion");
+  const link = page.getByRole("link", { name: "Mot de passe oublié ?" });
+  await page.getByLabel("Mot de passe", { exact: true }).focus();
+  await page.keyboard.press("Tab");
+  expect(await outlineOf(link)).toEqual({ style: "solid", width: "2px" });
+
+  // Comme le titre d'une nouvelle page : le focus bouge, rien n'est encadré.
+  await page.mouse.click(2, 2);
+  await link.evaluate((element) => (element as HTMLElement).focus());
+  await expect(link).toBeFocused();
+  expect((await outlineOf(link)).style).toBe("none");
+
+  await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Tab");
   await expect(link).toBeFocused();
   expect(await outlineOf(link)).toEqual({ style: "solid", width: "2px" });

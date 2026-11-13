@@ -1,10 +1,12 @@
+import { navigate } from "../lib/navigation/navigate.js";
+import { pageFor } from "../lib/navigation/pages.js";
 import {
   ArrowDown,
   Hash,
   MessageSquare,
   MessageSquareReply,
+  Loader2,
   Paperclip,
-  Send,
   SmilePlus,
   UserPlus,
   Users,
@@ -19,6 +21,7 @@ import {
   listChannels,
   listSpaceMembers,
   listSpaces,
+  getMostActiveSpaceId,
   removeSpaceMember,
   uploadAttachment,
 } from "../lib/chat/api.js";
@@ -28,12 +31,22 @@ import { takeDraftFocusRequest, useChannelDraft } from "../lib/chat/useChannelDr
 import { useMessageListScroll } from "../lib/chat/useMessageListScroll.js";
 import { DaySeparator, UnreadSeparator } from "../components/chat/TimelineSeparator.js";
 import { MessageAttachments } from "../components/chat/MessageAttachments.js";
+import { PinnedPostBanner } from "../components/chat/PinnedPostBanner.js";
+import { useVoiceMessage } from "../components/chat/VoiceRecorder.js";
 import { AssistantFailureNotice } from "../components/assistant/AssistantFailureNotice.js";
-import { AssistantMessage } from "../components/assistant/AssistantMessage.js";
+import { AssistantMessage, skillReferenceFrom } from "../components/assistant/AssistantMessage.js";
+import { KoccButton } from "../components/assistant/KoccButton.js";
+import { ASSISTANT_NOTICE_ID, KoccComposerHint } from "../components/assistant/KoccQuestionTag.js";
+import {
+  COMPOSER_ICON_CLASS,
+  COMPOSER_TOOL_CLASS,
+  ComposerBar,
+  ComposerSendButton,
+} from "../components/composer/ComposerBar.js";
+import { removeKoccMention } from "../lib/assistant/koccDraft.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { RichText } from "../components/content/RichText.js";
-import { AccountMenu } from "../components/shell/AccountMenu.js";
 import { AppShell } from "../components/shell/AppShell.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { OutgoingMessages } from "../components/chat/OutgoingMessages.js";
@@ -61,11 +74,7 @@ import { IconButton } from "../components/ui/IconButton.js";
 import { Input } from "../components/ui/Input.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
-import {
-  markAssistantNoticeSeen,
-  mentionsAssistant,
-  shouldShowAssistantNotice,
-} from "../lib/chat/assistantNotice.js";
+import { mentionsAssistant } from "../lib/chat/assistantNotice.js";
 import { Tooltip } from "../components/ui/Tooltip.js";
 import { useToast } from "../components/ui/Toast.js";
 import { UserName } from "../components/ui/UserName.js";
@@ -73,7 +82,7 @@ import { formatCount } from "../lib/formatCount.js";
 import { cn } from "../lib/cn.js";
 import { fr } from "../i18n/fr.js";
 import {
-  KEMET_HANDLE,
+  isAssistantHandle,
   isDeletedAccountHandle,
   type Attachment,
   type Channel,
@@ -87,9 +96,13 @@ function readParam(name: string): string | null {
 }
 
 function writeParams(params: Record<string, string>) {
+  // Cette page reste affichée pendant que la suivante charge : elle ne doit
+  // pas réécrire l'adresse d'une autre page.
+  if (pageFor(window.location.pathname) !== "space") return;
   const url = new URL(window.location.href);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  window.history.replaceState(null, "", url.toString());
+  // Garde l'état de l'historique : il porte la vue mobile (liste ou salon).
+  window.history.replaceState(window.history.state, "", url.toString());
 }
 
 function formatTime(iso: string): string {
@@ -99,6 +112,7 @@ function formatTime(iso: string): string {
 export function SpacePage() {
   const toast = useToast();
   const { status, profile, isSuspended } = useSession();
+  const isVisitor = status === "visitor";
   const canInteract = status === "ready";
   // Un compte suspendu garde la lecture (canInteract) mais pas l'écriture :
   // composeur, réactions et signalement s'appuient sur canWrite plutôt que
@@ -175,6 +189,21 @@ export function SpacePage() {
     composer.setSelectionRange(composer.value.length, composer.value.length);
   }, [activeChannelId, canWrite]);
 
+  // Un espace trouvé par la recherche n'est pas toujours dans la page chargée de la liste.
+  function openSearchedSpace(found: Space) {
+    setSpaces((current) =>
+      current.some((space) => space.id === found.id)
+        ? current.map((space) =>
+            space.id === found.id
+              ? { ...space, role: found.role, memberCount: found.memberCount }
+              : space,
+          )
+        : [found, ...current],
+    );
+    setActiveSpaceId(found.id);
+    setActiveChannelId(null);
+  }
+
   function switchChannel(channelId: string) {
     // Une pièce jointe appartient à son salon (le serveur la refuserait
     // ailleurs) ; le brouillon de texte, lui, reste gardé par salon.
@@ -187,18 +216,25 @@ export function SpacePage() {
     setSpacesError(false);
     try {
       const page = await listSpaces();
+      // Visiteur : l'espace le plus actif de la semaine plutôt que le plus récent.
+      const mostActive = isVisitor
+        ? (await getMostActiveSpaceId().catch(() => ({ spaceId: null }))).spaceId
+        : null;
+      const preferred = page.items.some((space) => space.id === mostActive) ? mostActive : null;
       setSpaces(page.items);
-      setActiveSpaceId((current) => current ?? page.items[0]?.id ?? null);
+      setActiveSpaceId((current) => current ?? preferred ?? page.items[0]?.id ?? null);
     } catch {
       setSpacesError(true);
     } finally {
       setSpacesLoading(false);
     }
-  }, []);
+  }, [isVisitor]);
 
+  // Attendre la session : un visiteur n'ouvre pas le même espace par défaut.
+  const sessionKnown = status !== "loading";
   useEffect(() => {
-    void refreshSpaces();
-  }, [refreshSpaces]);
+    if (sessionKnown) void refreshSpaces();
+  }, [refreshSpaces, sessionKnown]);
 
   const refreshChannels = useCallback(async (spaceId: string) => {
     setChannelsLoading(true);
@@ -374,8 +410,6 @@ export function SpacePage() {
     }
   }
 
-  const showAssistantNotice = shouldShowAssistantNotice(draft);
-
   function handleSend() {
     const body = draft.trim();
     const attachments = pendingAttachments;
@@ -388,8 +422,12 @@ export function SpacePage() {
       null,
       attachments.map((attachment) => attachment.id),
     );
-    if (mentionsAssistant(body)) markAssistantNoticeSeen();
   }
+
+  const voice = useVoiceMessage({
+    channelId: activeChannelId,
+    onRecorded: (attachmentId) => send("", null, [attachmentId]),
+  });
 
   async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -464,7 +502,10 @@ export function SpacePage() {
           status: spacesLoading ? "loading" : spacesError ? "error" : "ready",
           onRetry: () => void refreshSpaces(),
           channelsLoading,
+          channelsError,
+          onRetryChannels: () => activeSpaceId && void refreshChannels(activeSpaceId),
           canCreateSpace: canWrite,
+          onOpenSearchedSpace: openSearchedSpace,
         }}
         channelList={{
           // Le nombre de membres est déjà dans le titre du panneau de droite.
@@ -474,7 +515,6 @@ export function SpacePage() {
           onSelect: switchChannel,
         }}
         activeMobileTabId="salons"
-        topBarExtra={<AccountMenu />}
         rightPanel={
           !canInteract
             ? undefined
@@ -482,6 +522,7 @@ export function SpacePage() {
                 title: activeSpace
                   ? fr.spaces.membersWithCount(formatCount(activeSpace.memberCount))
                   : fr.spaces.members,
+                openLabel: fr.spaces.members,
                 content: (
                   <div className="flex flex-col gap-4 text-sm">
                     <div className="flex flex-col gap-1">
@@ -581,6 +622,7 @@ export function SpacePage() {
         }
       >
         <div className="flex h-full flex-col">
+          {activeSpaceId && <PinnedPostBanner spaceId={activeSpaceId} />}
           <div className="relative flex min-h-0 flex-1 flex-col">
             <div
               ref={messageListRef}
@@ -610,7 +652,7 @@ export function SpacePage() {
                   message={fr.spaces.noSpaces}
                   action={{
                     label: fr.spaces.createTitle,
-                    onClick: () => (window.location.href = "/salons/nouveau"),
+                    onClick: () => navigate("/salons/nouveau"),
                   }}
                 />
               ) : channelsLoading ? (
@@ -673,9 +715,10 @@ export function SpacePage() {
                   )}
                   {timeline.map((item) => {
                     if (item.type === "unread") return <UnreadSeparator key={item.key} />;
-                    if (item.type === "day") return <DaySeparator key={item.key} label={item.label} />;
+                    if (item.type === "day")
+                      return <DaySeparator key={item.key} label={item.label} />;
                     const { group } = item;
-                    return group.authorHandle === KEMET_HANDLE ? (
+                    return isAssistantHandle(group.authorHandle) ? (
                       <AssistantMessage
                         key={group.messages[0]!.id}
                         content={
@@ -687,15 +730,9 @@ export function SpacePage() {
                         }
                         skill={
                           assistantMetaByMessageId[group.messages[0]!.id]?.skill
-                            ? {
-                                skillName:
-                                  assistantMetaByMessageId[group.messages[0]!.id]!.skill!.name,
-                                skillHref: `/skills/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.slug}`,
-                                authorName:
-                                  assistantMetaByMessageId[group.messages[0]!.id]!.skill!
-                                    .authorDisplayName,
-                                authorHref: `/u/${assistantMetaByMessageId[group.messages[0]!.id]!.skill!.authorHandle}`,
-                              }
+                            ? skillReferenceFrom(
+                                assistantMetaByMessageId[group.messages[0]!.id]!.skill!,
+                              )
                             : undefined
                         }
                         initialFeedback={
@@ -758,12 +795,14 @@ export function SpacePage() {
                             <div className="min-w-0 flex-1">
                               {index === 0 && (
                                 <div className="flex flex-wrap items-baseline gap-x-2">
-                                  <ProfileLink handle={group.authorHandle} className="min-w-0 max-w-full">
-                                    <UserName
-                                      name={group.authorDisplayName}
-                                      level={group.authorLevel && authorLevel(group.authorHandle, group.authorLevel)}
-                                    />
-                                  </ProfileLink>
+                                  <UserName
+                                    name={group.authorDisplayName}
+                                    handle={group.authorHandle}
+                                    level={
+                                      group.authorLevel &&
+                                      authorLevel(group.authorHandle, group.authorLevel)
+                                    }
+                                  />
                                   <span className="text-xs text-subtle">
                                     {formatTime(message.createdAt)}
                                   </span>
@@ -901,6 +940,7 @@ export function SpacePage() {
                           assistantStream.text ? <RichText source={assistantStream.text} /> : "…"
                         }
                         hideFeedback
+                        streaming
                         recorded={assistantStream.recorded}
                       />
                     </div>
@@ -979,7 +1019,109 @@ export function SpacePage() {
                 />
               )}
               {composerPaste.notice}
-              <div className="relative flex gap-2">
+              <KoccComposerHint
+                draft={draft}
+                onRemoveMention={() => {
+                  setDraft(removeKoccMention(draft));
+                  composerRef.current?.focus();
+                }}
+              />
+              <ComposerBar
+                leading={
+                  <KoccButton
+                    textareaRef={composerRef}
+                    onChange={(value) => {
+                      setDraft(value);
+                      mentions.syncCaret();
+                    }}
+                    disabled={!activeChannelId}
+                  />
+                }
+                field={
+                  <Textarea
+                    ref={composerRef}
+                    placeholder={fr.chat.composerPlaceholder}
+                    aria-label={fr.chat.composerPlaceholder}
+                    aria-describedby={mentionsAssistant(draft) ? ASSISTANT_NOTICE_ID : undefined}
+                    value={draft}
+                    disabled={!activeChannelId}
+                    onChange={(event) => {
+                      setDraft(event.target.value);
+                      mentions.syncCaret();
+                    }}
+                    onSelect={mentions.syncCaret}
+                    onPaste={composerPaste.handlePaste}
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={mentions.suggestions.length > 0}
+                    aria-controls={mentions.suggestions.length > 0 ? MENTION_LISTBOX_ID : undefined}
+                    aria-activedescendant={
+                      mentions.suggestions.length > 0
+                        ? mentionOptionId(mentions.activeIndex)
+                        : undefined
+                    }
+                    enterKeyHint={enterSends ? "send" : "enter"}
+                    onKeyDown={(event) => {
+                      if (mentions.handleKeyDown(event)) return;
+                      if (
+                        enterSends &&
+                        event.key === "Enter" &&
+                        !event.shiftKey &&
+                        !event.nativeEvent.isComposing
+                      ) {
+                        event.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    variant="composer"
+                  />
+                }
+                tools={
+                  <>
+                    <CodeButton
+                      appearance="icon"
+                      textareaRef={composerRef}
+                      onChange={(value) => {
+                        setDraft(value);
+                        mentions.syncCaret();
+                      }}
+                      disabled={!activeChannelId}
+                    />
+                    <button
+                      type="button"
+                      aria-label={fr.chat.attachFile}
+                      title={fr.chat.attachFile}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={!activeChannelId || uploadingAttachment}
+                      aria-busy={uploadingAttachment || undefined}
+                      className={COMPOSER_TOOL_CLASS}
+                    >
+                      {uploadingAttachment ? (
+                        <Loader2
+                          className={cn(COMPOSER_ICON_CLASS, "animate-spin")}
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Paperclip className={COMPOSER_ICON_CLASS} aria-hidden="true" />
+                      )}
+                    </button>
+                  </>
+                }
+                action={
+                  // Le micro prend la place de l'envoi tant qu'il n'y a rien à
+                  // envoyer, comme dans une messagerie de téléphone.
+                  voice.button && !draft.trim() && pendingAttachments.length === 0 ? (
+                    voice.button
+                  ) : (
+                    <ComposerSendButton
+                      ready={Boolean(draft.trim()) || pendingAttachments.length > 0}
+                      onClick={handleSend}
+                      disabled={!activeChannelId || uploadingAttachment}
+                    />
+                  )
+                }
+              >
+                {voice.overlay}
                 <p className="sr-only" aria-live="polite">
                   {mentions.suggestions.length > 0
                     ? fr.chat.mentionCount(mentions.suggestions.length)
@@ -999,79 +1141,8 @@ export function SpacePage() {
                   className="hidden"
                   onChange={handleFileSelected}
                 />
-                <IconButton
-                  aria-label={fr.chat.attachFile}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!activeChannelId}
-                  loading={uploadingAttachment}
-                >
-                  <Paperclip className="size-4" aria-hidden="true" />
-                </IconButton>
-                <CodeButton
-                  textareaRef={composerRef}
-                  onChange={(value) => {
-                    setDraft(value);
-                    mentions.syncCaret();
-                  }}
-                  disabled={!activeChannelId}
-                />
-                <Textarea
-                  ref={composerRef}
-                  placeholder={fr.chat.composerPlaceholder}
-                  aria-label={fr.chat.composerPlaceholder}
-                  aria-describedby={showAssistantNotice ? "assistant-notice" : undefined}
-                  value={draft}
-                  disabled={!activeChannelId}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    mentions.syncCaret();
-                  }}
-                  onSelect={mentions.syncCaret}
-                  onPaste={composerPaste.handlePaste}
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-expanded={mentions.suggestions.length > 0}
-                  aria-controls={mentions.suggestions.length > 0 ? MENTION_LISTBOX_ID : undefined}
-                  aria-activedescendant={
-                    mentions.suggestions.length > 0
-                      ? mentionOptionId(mentions.activeIndex)
-                      : undefined
-                  }
-                  enterKeyHint={enterSends ? "send" : "enter"}
-                  onKeyDown={(event) => {
-                    if (mentions.handleKeyDown(event)) return;
-                    if (
-                      enterSends &&
-                      event.key === "Enter" &&
-                      !event.shiftKey &&
-                      !event.nativeEvent.isComposing
-                    ) {
-                      event.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  variant="composer"
-                  className="max-md:min-h-11 flex-1 rounded-card"
-                />
-                <Button
-                  onClick={handleSend}
-                  // Garde le focus (et le clavier mobile ouvert) dans le composeur.
-                  onPointerDown={(event) => event.preventDefault()}
-                  aria-label={fr.chat.send}
-                  disabled={!activeChannelId || uploadingAttachment}
-                  className="max-md:size-control-mobile max-md:px-0"
-                >
-                  <Send className="size-4" aria-hidden="true" />
-                </Button>
-              </div>
-              {showAssistantNotice && (
-                <p id="assistant-notice" className="text-xs text-subtle">
-                  {fr.assistantNotice.text}{" "}
-                  <a href="/confidentialite" className="text-link hover:underline">
-                    {fr.assistantNotice.link}
-                  </a>
-                </p>
-              )}
+              </ComposerBar>
+              {voice.notice}
             </div>
           )}
         </div>

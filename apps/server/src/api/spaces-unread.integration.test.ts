@@ -186,4 +186,22 @@ describe.skipIf(!databaseUrl)("Non-lus d'un espace (base Postgres réelle)", () 
     expect(await hasUnreadInList(spaceId, outsider.cookie)).toBeUndefined();
     expect(await hasUnreadInDetail(spaceId, outsider.cookie)).toBeNull();
   });
+
+  it("ouvre un visiteur sur l'espace public le plus actif de la semaine, jamais un espace privé", async () => {
+    const owner = await createMember("hote-actif");
+    const quiet = await createSpaceWithGeneral(owner.cookie, "espace-calme", "public");
+    const busy = await createSpaceWithGeneral(owner.cookie, "espace-anime", "public");
+    const secret = await createSpaceWithGeneral(owner.cookie, "espace-secret", "private");
+    const now = Date.now();
+    const recent = (count: number) =>
+      Array.from({ length: count }, (_, index) => new Date(now - (index + 1) * 60_000));
+    const old = Array.from({ length: 20 }, (_, index) => new Date(now - (10 + index) * 86_400_000));
+    await insertMessages(quiet.generalId, owner.profileId, [...recent(1), ...old]);
+    await insertMessages(busy.generalId, owner.profileId, recent(3));
+    await insertMessages(secret.generalId, owner.profileId, recent(9));
+
+    const response = await app.inject({ method: "GET", url: "/api/spaces/most-active" });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ spaceId: busy.spaceId });
+  });
 });

@@ -1,4 +1,4 @@
-import { eq, getTableColumns, inArray } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray } from "drizzle-orm";
 import {
   account,
   applications,
@@ -16,12 +16,17 @@ import {
   messages,
   pointsLedger,
   postAttachments,
+  postBookmarks,
+  postReposts,
   postFeedback,
   postReactions,
   postReplies,
   posts,
   profileBlocks,
   profiles,
+  opportunities,
+  organizationManagers,
+  organizationRequests,
   projects,
   readStates,
   reports,
@@ -38,6 +43,8 @@ import {
   user,
   votes,
   workAttachments,
+  workMedia,
+  profileCvs,
   workAuthors,
   workExternalAuthors,
   workLinks,
@@ -46,7 +53,10 @@ import {
   type Db,
 } from "@kemet/db";
 
-function omit<Columns extends object, Key extends keyof Columns>(columns: Columns, ...keys: Key[]): Omit<Columns, Key> {
+function omit<Columns extends object, Key extends keyof Columns>(
+  columns: Columns,
+  ...keys: Key[]
+): Omit<Columns, Key> {
   const copy = { ...columns };
   for (const key of keys) delete copy[key];
   return copy;
@@ -55,12 +65,18 @@ function omit<Columns extends object, Key extends keyof Columns>(columns: Column
 // Détails internes (clé de stockage, index de recherche) et identité des
 // administrateurs qui ont traité une demande : jamais dans l'export.
 const messageAttachmentColumns = omit(getTableColumns(messageAttachments), "storageKey");
-const postAttachmentColumns = omit(getTableColumns(postAttachments), "storageKey");
+const postAttachmentColumns = omit(
+  getTableColumns(postAttachments),
+  "storageKey",
+  "posterStorageKey",
+);
 const skillColumns = omit(getTableColumns(skills), "searchVector");
 const competitionColumns = omit(getTableColumns(competitions), "reviewedBy");
 const reportColumns = omit(getTableColumns(reports), "resolvedBy");
 const workColumns = omit(getTableColumns(works), "searchVector");
 const workAttachmentColumns = omit(getTableColumns(workAttachments), "storageKey");
+const workMediaColumns = omit(getTableColumns(workMedia), "storageKey");
+const cvColumns = omit(getTableColumns(profileCvs), "storageKey");
 
 /**
  * Toutes les données rattachées à un compte, lisibles par la personne
@@ -69,7 +85,13 @@ const workAttachmentColumns = omit(getTableColumns(workAttachments), "storageKey
  */
 export async function buildAccountExport(db: Db, userId: string, profileId: string | null) {
   const [account_] = await db
-    .select({ id: user.id, email: user.email, name: user.name, emailVerified: user.emailVerified, createdAt: user.createdAt })
+    .select({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt,
+    })
     .from(user)
     .where(eq(user.id, userId));
   const [sessions, linkedAccounts] = await Promise.all([
@@ -88,7 +110,12 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
       .where(eq(account.userId, userId)),
   ]);
 
-  const base = { exportedAt: new Date().toISOString(), account: account_ ?? null, sessions, linkedAccounts };
+  const base = {
+    exportedAt: new Date().toISOString(),
+    account: account_ ?? null,
+    sessions,
+    linkedAccounts,
+  };
   if (!profileId) return { ...base, profile: null };
 
   const [
@@ -104,6 +131,8 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     postAttachmentRows,
     replyRows,
     postReactionRows,
+    postBookmarkRows,
+    postRepostRows,
     feedbackRows,
     skillRows,
     skillRatingRows,
@@ -132,24 +161,37 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
       .select({ handle: profiles.handle, since: follows.createdAt })
       .from(follows)
       .innerJoin(profiles, eq(profiles.id, follows.followeeId))
-      .where(eq(follows.followerId, profileId)),
+      .where(and(eq(follows.followerId, profileId), eq(profiles.isFiller, false))),
     db
       .select({ handle: profiles.handle, since: follows.createdAt })
       .from(follows)
       .innerJoin(profiles, eq(profiles.id, follows.followerId))
-      .where(eq(follows.followeeId, profileId)),
+      .where(and(eq(follows.followeeId, profileId), eq(profiles.isFiller, false))),
     db
-      .select({ space: spaces.name, slug: spaces.slug, role: spaceMembers.role, joinedAt: spaceMembers.joinedAt })
+      .select({
+        space: spaces.name,
+        slug: spaces.slug,
+        role: spaceMembers.role,
+        joinedAt: spaceMembers.joinedAt,
+      })
       .from(spaceMembers)
       .innerJoin(spaces, eq(spaces.id, spaceMembers.spaceId))
       .where(eq(spaceMembers.profileId, profileId)),
     db.select().from(messages).where(eq(messages.authorId, profileId)),
     db.select().from(messageReactions).where(eq(messageReactions.profileId, profileId)),
-    db.select(messageAttachmentColumns).from(messageAttachments).where(eq(messageAttachments.authorId, profileId)),
+    db
+      .select(messageAttachmentColumns)
+      .from(messageAttachments)
+      .where(eq(messageAttachments.authorId, profileId)),
     db.select().from(posts).where(eq(posts.authorId, profileId)),
-    db.select(postAttachmentColumns).from(postAttachments).where(eq(postAttachments.authorId, profileId)),
+    db
+      .select(postAttachmentColumns)
+      .from(postAttachments)
+      .where(eq(postAttachments.authorId, profileId)),
     db.select().from(postReplies).where(eq(postReplies.authorId, profileId)),
     db.select().from(postReactions).where(eq(postReactions.profileId, profileId)),
+    db.select().from(postBookmarks).where(eq(postBookmarks.profileId, profileId)),
+    db.select().from(postReposts).where(eq(postReposts.profileId, profileId)),
     db.select().from(postFeedback).where(eq(postFeedback.authorId, profileId)),
     db.select(skillColumns).from(skills).where(eq(skills.authorId, profileId)),
     db.select().from(skillRatings).where(eq(skillRatings.raterId, profileId)),
@@ -179,7 +221,15 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
   const skillFileRows =
     skillRows.length === 0
       ? []
-      : await db.select().from(skillFiles).where(inArray(skillFiles.skillId, skillRows.map((skill) => skill.id)));
+      : await db
+          .select()
+          .from(skillFiles)
+          .where(
+            inArray(
+              skillFiles.skillId,
+              skillRows.map((skill) => skill.id),
+            ),
+          );
 
   const workRows = await db.select(workColumns).from(works).where(eq(works.publisherId, profileId));
   const workIds = workRows.map((work) => work.id);
@@ -187,8 +237,13 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     workLinkRows,
     workExternalAuthorRows,
     workAttachmentRows,
+    workMediaRows,
     coauthorshipRows,
     workMatchRows,
+    cvRows,
+    opportunityRows,
+    organizationRequestRows,
+    managedOrganizationRows,
   ] = await Promise.all([
     workIds.length === 0
       ? []
@@ -200,8 +255,20 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
       .select(workAttachmentColumns)
       .from(workAttachments)
       .where(eq(workAttachments.authorId, profileId)),
+    db.select(workMediaColumns).from(workMedia).where(eq(workMedia.authorId, profileId)),
     db.select().from(workAuthors).where(eq(workAuthors.profileId, profileId)),
     db.select().from(workMatchRequests).where(eq(workMatchRequests.requestedBy, profileId)),
+    db.select(cvColumns).from(profileCvs).where(eq(profileCvs.profileId, profileId)),
+    db.select().from(opportunities).where(eq(opportunities.authorId, profileId)),
+    db
+      .select(omit(getTableColumns(organizationRequests), "logoStorageKey", "decidedById"))
+      .from(organizationRequests)
+      .where(eq(organizationRequests.requesterId, profileId)),
+    db
+      .select({ handle: profiles.handle, since: organizationManagers.createdAt })
+      .from(organizationManagers)
+      .innerJoin(profiles, eq(profiles.id, organizationManagers.organizationId))
+      .where(eq(organizationManagers.managerId, profileId)),
   ]);
 
   return {
@@ -218,6 +285,8 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     postAttachments: postAttachmentRows,
     postReplies: replyRows,
     postReactions: postReactionRows,
+    postBookmarks: postBookmarkRows,
+    postReposts: postRepostRows,
     postFeedback: feedbackRows,
     skills: skillRows,
     skillFiles: skillFileRows,
@@ -225,6 +294,7 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     assistantInvocations: invocationRows,
     mcpServers: mcpServerRows,
     projects: projectRows,
+    opportunities: opportunityRows,
     helpRequests: helpRequestRows,
     applications: applicationRows,
     competitions: competitionRows,
@@ -242,9 +312,13 @@ export async function buildAccountExport(db: Db, userId: string, profileId: stri
     workLinks: workLinkRows,
     workExternalAuthors: workExternalAuthorRows,
     workAttachments: workAttachmentRows,
+    workMedia: workMediaRows,
     workCoauthorships: coauthorshipRows,
     workMatchRequests: workMatchRows,
     conversations: conversationRows,
     blockedProfiles: blockRows,
+    cv: cvRows[0] ?? null,
+    organizationRequests: organizationRequestRows,
+    managedOrganizations: managedOrganizationRows,
   };
 }

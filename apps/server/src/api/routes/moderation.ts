@@ -13,13 +13,21 @@ import {
   resolvePendingReportsForTarget,
   resolveReportTarget,
 } from "../repositories/moderation.js";
-import { findProfileByHandle, findProfileByUserId, reinstateProfile, suspendProfile } from "../repositories/profiles.js";
+import {
+  findProfileByHandle,
+  findProfileByUserId,
+  reinstateProfile,
+  suspendProfile,
+} from "../repositories/profiles.js";
 import { findProfileById, softDeleteMessage } from "../repositories/chat.js";
 import { softDeletePost } from "../repositories/posts.js";
+import { removeAvatar } from "../repositories/avatars.js";
 import { softDeleteWork } from "../repositories/works.js";
+import { softDeleteOpportunity } from "../repositories/opportunities.js";
 import { serializeModerationActionEntry, serializeReport } from "../moderation-serializers.js";
 import { antiSpamMax } from "../../moderation/anti-spam.js";
 import type { ChatAppDeps } from "../app.js";
+import { canActForAuthor } from "../repositories/organization-accounts.js";
 
 const MAX_REPORTS_PER_MINUTE = 20;
 
@@ -36,17 +44,28 @@ async function requireAdmin(db: ChatAppDeps["db"], userId: string) {
   return profile;
 }
 
-export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiSpamConfig }: ChatAppDeps): void {
+export function registerModerationRoutes(
+  app: FastifyInstance,
+  { db, auth, antiSpamConfig, storage }: ChatAppDeps,
+): void {
   app.post(
     "/api/reports",
-    { config: { rateLimit: { max: antiSpamMax(db, auth, antiSpamConfig, MAX_REPORTS_PER_MINUTE), timeWindow: "1 minute" } } },
+    {
+      config: {
+        rateLimit: {
+          max: antiSpamMax(db, auth, antiSpamConfig, MAX_REPORTS_PER_MINUTE),
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request) => {
       const userId = await requireSessionUserId(auth, request);
       const profile = await requireOwnProfile(db, userId);
       const input = createReportSchema.parse(request.body);
       const target = await resolveReportTarget(db, input.targetType, input.targetId, profile.id);
       if (!target) throw notFound("Ce contenu n'existe plus.");
-      if (target.authorId === profile.id) throw badRequest("Impossible de se signaler soi-même.");
+      if (await canActForAuthor(db, profile.id, target.authorId))
+        throw badRequest("Impossible de se signaler soi-même.");
       const isConversation = input.targetType === "conversation";
       const report = await insertReport(db, {
         reporterId: profile.id,
@@ -91,10 +110,16 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
 
       const contentTargets = report.targetType !== "profile";
       if (input.action === "hide" && !contentTargets) {
-        throw badRequest("Seul un message, un post ou un travail peut être masqué.");
+        throw badRequest("Seul un message, un post, un travail ou une offre peut être masqué.");
       }
-      if (input.action === "suspend" && report.targetType !== "profile" && report.targetType !== "conversation") {
-        throw badRequest("Seul un profil, ou la personne signalée avec une conversation, peut être suspendu.");
+      if (
+        input.action === "suspend" &&
+        report.targetType !== "profile" &&
+        report.targetType !== "conversation"
+      ) {
+        throw badRequest(
+          "Seul un profil, ou la personne signalée avec une conversation, peut être suspendu.",
+        );
       }
 
       if (input.action === "dismiss") {
@@ -107,13 +132,26 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
           reportId: report.id,
           reason: input.reason ?? null,
         });
-        const summary = await describeReportTarget(db, resolved.targetType, resolved.targetId, resolved.excerptUntil);
-        return { report: serializeReport(resolved, (await findProfileById(db, resolved.reporterId))!.handle, summary) };
+        const summary = await describeReportTarget(
+          db,
+          resolved.targetType,
+          resolved.targetId,
+          resolved.excerptUntil,
+        );
+        return {
+          report: serializeReport(
+            resolved,
+            (await findProfileById(db, resolved.reporterId))!.handle,
+            summary,
+          ),
+        };
       }
 
       if (input.action === "hide") {
         if (report.targetType === "message") await softDeleteMessage(db, report.targetId);
         else if (report.targetType === "work") await softDeleteWork(db, report.targetId);
+        else if (report.targetType === "opportunity")
+          await softDeleteOpportunity(db, report.targetId);
         else await softDeletePost(db, report.targetId);
         await resolvePendingReportsForTarget(db, report.targetType, report.targetId, admin.id);
         await insertModerationAction(db, {
@@ -125,9 +163,16 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
           reason: input.reason ?? null,
         });
       } else {
-        const suspendedId = report.targetType === "conversation" ? report.reportedProfileId : report.targetId;
+        const suspendedId =
+          report.targetType === "conversation" ? report.reportedProfileId : report.targetId;
         if (!suspendedId) throw badRequest("Personne à suspendre dans cette conversation.");
-        await suspendProfile(db, suspendedId);
+        // La photo envoyée part avec la suspension : elle reste sinon
+        // affichée partout, et aucune autre action ne la retire.
+        const removedAvatar = await db.transaction(async (tx) => {
+          await suspendProfile(tx, suspendedId);
+          return removeAvatar(tx, suspendedId);
+        });
+        if (removedAvatar) await storage.delete(removedAvatar);
         await resolvePendingReportsForTarget(db, report.targetType, report.targetId, admin.id);
         await insertModerationAction(db, {
           actorId: admin.id,
@@ -140,8 +185,19 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
       }
 
       const updated = await findReportById(db, report.id);
-      const summary = await describeReportTarget(db, updated!.targetType, updated!.targetId, updated!.excerptUntil);
-      return { report: serializeReport(updated!, (await findProfileById(db, updated!.reporterId))!.handle, summary) };
+      const summary = await describeReportTarget(
+        db,
+        updated!.targetType,
+        updated!.targetId,
+        updated!.excerptUntil,
+      );
+      return {
+        report: serializeReport(
+          updated!,
+          (await findProfileById(db, updated!.reporterId))!.handle,
+          summary,
+        ),
+      };
     },
   );
 
@@ -167,20 +223,23 @@ export function registerModerationRoutes(app: FastifyInstance, { db, auth, antiS
     },
   );
 
-  app.get<{ Querystring: { cursor?: string; limit?: string } }>("/api/moderation/log", async (request) => {
-    const userId = await requireSessionUserId(auth, request);
-    await requireAdmin(db, userId);
-    const query = paginationQuerySchema.parse(request.query);
-    const page = await listModerationLog(db, query.cursor, query.limit);
-    const items = await Promise.all(
-      page.items.map(async (row) => {
-        const [actor, summary] = await Promise.all([
-          findProfileById(db, row.actorId),
-          describeReportTarget(db, row.targetType, row.targetId),
-        ]);
-        return serializeModerationActionEntry(row, actor!.handle, summary);
-      }),
-    );
-    return { items, nextCursor: page.nextCursor };
-  });
+  app.get<{ Querystring: { cursor?: string; limit?: string } }>(
+    "/api/moderation/log",
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      await requireAdmin(db, userId);
+      const query = paginationQuerySchema.parse(request.query);
+      const page = await listModerationLog(db, query.cursor, query.limit);
+      const items = await Promise.all(
+        page.items.map(async (row) => {
+          const [actor, summary] = await Promise.all([
+            findProfileById(db, row.actorId),
+            describeReportTarget(db, row.targetType, row.targetId),
+          ]);
+          return serializeModerationActionEntry(row, actor!.handle, summary);
+        }),
+      );
+      return { items, nextCursor: page.nextCursor };
+    },
+  );
 }

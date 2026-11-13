@@ -1,28 +1,38 @@
+import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
+import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
 import { Input } from "../components/ui/Input.js";
 import { ChatApiError, signIn } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
+import { landingPath } from "../lib/onboarding/steps.js";
+import { FormField } from "../components/ui/FormField.js";
+import { useFieldErrors } from "../lib/useFieldErrors.js";
+import { requiredFieldErrors } from "../lib/forms.js";
 import { fr } from "../i18n/fr.js";
-import { missingFieldsReason } from "../lib/forms.js";
+import { ArrivalAction } from "../components/arrival/ArrivalAction.js";
 import { SubmitButton } from "../components/ui/SubmitButton.js";
+import { PrivacyLine } from "../components/auth/PrivacyLine.js";
 
 export function LoginPage() {
-  const { status, refresh } = useSession();
+  usePreloadNext("/fil", "/completer-profil", "/bienvenue");
+  const { status, onboarding, refresh } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { formRef, errors: fieldErrors, report } = useFieldErrors<"email" | "password">();
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (status === "ready") window.location.href = "/fil";
-    if (status === "incomplete") window.location.href = "/completer-profil";
-  }, [status]);
+    if (status === "ready" || status === "incomplete")
+      navigate(landingPath(status, onboarding), { replace: true });
+  }, [status, onboarding]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (!report(requiredFieldErrors({ email, password }))) return;
     setSubmitting(true);
     try {
       await signIn({ email, password });
@@ -37,77 +47,61 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout
-      title={fr.auth.loginTitle}
-      subtitle={fr.auth.loginSubtitle}
-      intro={
-        <>
-          <p className="text-xl font-bold text-auth-text">{fr.auth.landingHeadline}</p>
-          <p className="text-sm text-auth-text-muted">{fr.auth.landingPitch}</p>
-        </>
-      }
-      footer={
-        <p className="text-center text-sm text-auth-text-muted">
-          {fr.auth.landingVisitorIntro}{" "}
-          <a href="/salons" className="font-medium text-auth-text underline underline-offset-2">
-            {fr.auth.landingBrowseSpaces}
-          </a>{" "}
-          ·{" "}
-          <a href="/fil" className="font-medium text-auth-text underline underline-offset-2">
-            {fr.auth.landingBrowseFeed}
-          </a>
-        </p>
-      }
-    >
-      <div className="flex flex-col gap-2">
-        <SocialSignInButtons callbackURL="/fil" />
-        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.auth.emailLabel}
+    <AuthLayout title={fr.auth.loginTitle}>
+      <div className="flex flex-col gap-3">
+        <SocialSignInButtons callbackURL="/" />
+        <form
+          ref={formRef}
+          noValidate
+          className="relative flex flex-col gap-3"
+          onSubmit={handleSubmit}
+        >
+          <FormField tone="inverse" label={fr.auth.emailLabel} error={fieldErrors.email}>
             <Input
               type="email"
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-          </label>
-          <label className="flex flex-col gap-1 text-sm text-text-2">
-            {fr.auth.passwordLabel}
+          </FormField>
+          <FormField tone="inverse" label={fr.auth.passwordLabel} error={fieldErrors.password}>
             <Input
               type="password"
               autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-          </label>
-          <a href="/mot-de-passe-oublie" className="self-end text-sm text-link hover:underline">
+          </FormField>
+          <a
+            href="/mot-de-passe-oublie"
+            className="inline-flex min-h-control-mobile items-center self-end text-sm text-auth-text-muted underline underline-offset-2 hover:text-auth-text md:min-h-control"
+          >
             {fr.auth.forgotPasswordLink}
           </a>
-          {error && (
-            <p className="text-sm text-danger" role="alert">
-              {error}
-            </p>
-          )}
-          <SubmitButton
-            label={fr.auth.loginSubmit}
-            loading={submitting}
-            disabledReason={missingFieldsReason([
-              [email, fr.auth.emailLabel],
-              [password, fr.auth.passwordLabel],
-            ])}
-          />
+          <ArrivalAction>
+            {error && (
+              <p className="text-sm text-auth-danger" role="alert">
+                {error}
+              </p>
+            )}
+            <SubmitButton
+              label={fr.auth.loginSubmit}
+              variant="inverse"
+              block
+              loading={submitting}
+            />
+          </ArrivalAction>
         </form>
-        <p className="text-center text-sm text-subtle">
+        <p className="text-center text-sm text-auth-text-muted">
           {fr.auth.noAccountYet}{" "}
-          <a href="/inscription" className="text-link hover:underline">
+          <a
+            href="/inscription"
+            className="font-medium text-auth-text underline underline-offset-2"
+          >
             {fr.auth.signupLink}
           </a>
         </p>
-        <p className="text-center text-sm text-subtle">
-          <a href="/confidentialite" className="text-link hover:underline">
-            {fr.privacy.title}
-          </a>
-        </p>
+        <PrivacyLine />
       </div>
     </AuthLayout>
   );

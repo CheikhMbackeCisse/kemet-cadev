@@ -38,7 +38,27 @@ export const ATTACHMENT_TEXT_EXTENSIONS = [
 export const MAX_ATTACHMENTS_PER_MESSAGE = 10;
 export const MAX_POST_ATTACHMENTS = 4;
 
-export const attachmentKindSchema = z.enum(["image", "file"]);
+/** Message vocal : deux minutes au plus, enregistrées par le navigateur. */
+export const VOICE_MAX_DURATION_MS = 2 * 60 * 1000;
+/**
+ * Deux minutes d'Opus ou d'AAC à 32 kbit/s pèsent environ 500 ko ; la marge
+ * couvre un navigateur qui ignore le débit demandé.
+ */
+export const VOICE_MAX_BYTES = 4 * 1024 * 1024;
+
+export const voiceDurationSchema = z.coerce.number().int().min(1).max(VOICE_MAX_DURATION_MS);
+
+/** Vidéo d'un post : MP4 ou WebM, envoyée telle quelle, jamais convertie. */
+export const POST_VIDEO_MIME_TYPES = ["video/mp4", "video/webm"] as const;
+export type PostVideoMimeType = (typeof POST_VIDEO_MIME_TYPES)[number];
+/** 60 secondes à environ 2,5 Mbit/s ; plus lourd se lirait mal en 3G. */
+export const POST_VIDEO_MAX_BYTES = 20 * 1024 * 1024;
+export const POST_VIDEO_MAX_DURATION_MS = 60 * 1000;
+/** Image d'aperçu extraite par le navigateur : une image JPEG ou WebP de 720 px au plus. */
+export const POST_VIDEO_POSTER_MAX_BYTES = 1024 * 1024;
+export const POST_VIDEO_POSTER_MAX_SIDE = 1280;
+
+export const attachmentKindSchema = z.enum(["image", "file", "voice", "video"]);
 
 export const attachmentSchema = z.object({
   id: z.string().uuid(),
@@ -46,6 +66,11 @@ export const attachmentSchema = z.object({
   mimeType: z.string(),
   originalName: z.string(),
   byteSize: z.number().int().nonnegative(),
+  /** Durée d'un message vocal ou d'une vidéo, nulle pour tout autre fichier. */
+  durationMs: z.number().int().nullable(),
+  /** Image d'un post : dimensions lues à l'envoi, pour réserver le cadre. */
+  width: z.number().int().positive().nullable().optional(),
+  height: z.number().int().positive().nullable().optional(),
   createdAt: z.string().datetime(),
   // Fichier effacé du disque avec le compte de son auteur : la ligne reste
   // pour afficher "Fichier supprimé" plutôt qu'un lien cassé.

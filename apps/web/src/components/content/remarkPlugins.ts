@@ -1,4 +1,4 @@
-import { KEMET_HANDLE } from "@kemet/shared";
+import { ASSISTANT_MENTION_HANDLE, isAssistantHandle } from "@kemet/shared";
 import type { Link, Nodes, PhrasingContent, Root, Strong } from "mdast";
 import { findAndReplace } from "mdast-util-find-and-replace";
 
@@ -10,8 +10,9 @@ const MENTION_PRECEDING_CHAR = /[a-zA-Z0-9._%+-]/;
 export const USER_MENTION_CLASS = "user-mention";
 
 /**
- * Transforme `@handle` en lien vers le profil, et `@kemet` en mention de
- * l'assistant (qui n'a pas de page de profil). Une adresse email comme
+ * Transforme `@handle` en lien vers le profil, et `@kocc` en mention de
+ * l'assistant, sans lien. L'ancien `@kemet` des messages déjà écrits
+ * s'affiche aussi `@kocc`. Une adresse email comme
  * awa@example.com n'est pas une mention.
  */
 export function remarkMentions() {
@@ -23,11 +24,11 @@ export function remarkMentions() {
         (value: string, handle: string, match: { index: number; input: string }) => {
           const previous = match.input.charAt(match.index - 1);
           if (previous && MENTION_PRECEDING_CHAR.test(previous)) return false;
-          if (handle === KEMET_HANDLE) {
+          if (isAssistantHandle(handle)) {
             const assistant: Strong = {
               type: "strong",
               data: { hName: "span", hProperties: { className: ["assistant-mention"] } },
-              children: [{ type: "text", value }],
+              children: [{ type: "text", value: `@${ASSISTANT_MENTION_HANDLE}` }],
             };
             return assistant;
           }

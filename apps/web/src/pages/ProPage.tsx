@@ -28,7 +28,7 @@ const BENEFITS: Benefit[] = [
 
 export function ProPage() {
   return (
-    <RailPage activeMobileTab="moi" className="gap-6 px-4 py-8">
+    <RailPage activeMobileTab="moi" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
         <div className="flex items-center gap-3">
           <Sparkles className="size-6 text-primary" aria-hidden="true" />
@@ -37,21 +37,15 @@ export function ProPage() {
               <h1 className="text-lg font-bold text-text">{fr.pro.title}</h1>
               <Badge>{fr.pro.previewBadge}</Badge>
             </div>
-            <p className="text-sm text-subtle">{fr.pro.subtitle}</p>
           </div>
         </div>
       </div>
 
-      <p className="rounded-card bg-surface-2 p-4 text-sm text-text-2">
-        {fr.pro.previewNotice}
-      </p>
+      <p className="rounded-card bg-surface-2 p-4 text-sm text-text-2">{fr.pro.previewNotice}</p>
 
       <ul className="grid gap-3 sm:grid-cols-2">
         {BENEFITS.map((benefit) => (
-          <li
-            key={benefit.title}
-            className="flex flex-col gap-2 rounded-card bg-surface p-4"
-          >
+          <li key={benefit.title} className="flex flex-col gap-2 rounded-card bg-surface p-4">
             <benefit.icon className="size-5 text-text-2" aria-hidden="true" />
             <h2 className="text-md font-semibold text-text">{benefit.title}</h2>
             <p className="text-sm text-text-2">{benefit.body}</p>

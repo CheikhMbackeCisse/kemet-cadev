@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent, type RefObject } from "react";
-import { KEMET_HANDLE, type SkillSummary, type SpaceMember } from "@kemet/shared";
+import { ASSISTANT_MENTION_HANDLE, type SkillSummary, type SpaceMember } from "@kemet/shared";
 import { listSkills } from "./api.js";
 import { applySuggestion, findMentionQuery } from "./mentionQuery.js";
 
@@ -67,13 +67,13 @@ export function useMentionAutocomplete({
           detail: skill.slug,
         }));
     }
-    const assistant: MentionSuggestion[] = matches(query.query, KEMET_HANDLE)
+    const assistant: MentionSuggestion[] = matches(query.query, ASSISTANT_MENTION_HANDLE)
       ? [
           {
-            id: KEMET_HANDLE,
-            value: KEMET_HANDLE,
+            id: ASSISTANT_MENTION_HANDLE,
+            value: ASSISTANT_MENTION_HANDLE,
             label: assistantLabel,
-            detail: `@${KEMET_HANDLE}`,
+            detail: `@${ASSISTANT_MENTION_HANDLE}`,
           },
         ]
       : [];

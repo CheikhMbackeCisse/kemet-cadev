@@ -1,3 +1,4 @@
+import { navigate } from "../../lib/navigation/navigate.js";
 import { Hash } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { Channel, Space } from "@kemet/shared";
@@ -7,6 +8,7 @@ import { storeChannelDraft } from "../../lib/chat/useChannelDraft.js";
 import { Dialog } from "../ui/Dialog.js";
 import { ErrorState } from "../ui/ErrorState.js";
 import { Skeleton } from "../ui/Skeleton.js";
+import { SpaceIcon, spaceTints } from "../ui/SpaceIcon.js";
 
 interface SpaceWithChannels {
   space: Space;
@@ -58,8 +60,10 @@ export function AskKemetDialog({ skillSlug, open, onOpenChange }: AskKemetDialog
 
   function openChannel(space: Space, channel: Channel) {
     storeChannelDraft(channel.id, fr.skills.askKemetDraft(skillSlug));
-    window.location.href = `/salons?space=${space.id}&channel=${channel.id}`;
+    navigate(`/salons?space=${space.id}&channel=${channel.id}`);
   }
+
+  const tints = spaceTints(groups?.map(({ space }) => space) ?? []);
 
   return (
     <Dialog
@@ -91,7 +95,16 @@ export function AskKemetDialog({ skillSlug, open, onOpenChange }: AskKemetDialog
         <div className="flex max-h-80 flex-col gap-4 overflow-y-auto">
           {groups.map(({ space, channels }) => (
             <section key={space.id} aria-labelledby={`ask-kemet-space-${space.id}`}>
-              <h3 id={`ask-kemet-space-${space.id}`} className="text-sm font-semibold text-text">
+              <h3
+                id={`ask-kemet-space-${space.id}`}
+                className="flex items-center gap-2 text-sm font-semibold text-text"
+              >
+                <SpaceIcon
+                  id={space.id}
+                  name={space.name}
+                  tint={tints.get(space.id)}
+                  className="size-6 rounded-[6px]"
+                />
                 {space.name}
               </h3>
               <ul className="mt-1 flex flex-col">

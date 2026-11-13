@@ -1,10 +1,17 @@
 import type { FastifyInstance } from "fastify";
-import { isLevelAtLeast, OPEN_TO_OPPORTUNITIES_MIN_LEVEL, updateProfileSchema } from "@kemet/shared";
+import {
+  handleSchema,
+  isLevelAtLeast,
+  isReservedHandle,
+  OPEN_TO_OPPORTUNITIES_MIN_LEVEL,
+  updateProfileSchema,
+} from "@kemet/shared";
+import { z } from "zod";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden } from "../../errors.js";
 import {
   findAccountById,
-  findProfileByHandle,
+  findProfileOwningHandle,
   findProfileByUserId,
   listCredentials,
   upsertProfile,
@@ -14,6 +21,9 @@ import { buildAccountExport } from "../repositories/account-export.js";
 import { findPasswordHash, listSocialProviders } from "../repositories/account-deletion.js";
 import { serializeCredential, serializeProfile } from "../serializers.js";
 import type { AppDeps } from "../app.js";
+import { serializeOnboarding } from "./onboarding.js";
+
+const handleAvailabilityQuerySchema = z.object({ handle: z.string().max(60) });
 
 export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): void {
   app.get("/api/me", async (request) => {
@@ -29,7 +39,13 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       listSocialProviders(db, userId),
     ]);
     return {
-      user: { id: account.id, email: account.email, emailVerified: account.emailVerified },
+      // Le nom donné à l'inscription préremplit "Ton nom" (Complète ton profil).
+      user: {
+        id: account.id,
+        email: account.email,
+        emailVerified: account.emailVerified,
+        name: account.name,
+      },
       profile: profile && points ? serializeProfile(profile, points.level) : null,
       points: points?.totalPoints ?? 0,
       credentials: credentials.map(serializeCredential),
@@ -37,6 +53,7 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       isSuspended: profile?.suspendedAt != null,
       hasPassword: passwordHash !== null,
       socialProviders,
+      onboarding: profile ? serializeOnboarding(profile) : null,
     };
   });
 
@@ -56,6 +73,23 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
     },
   );
 
+  // Vérifiée pendant la saisie de "Ton @" : la réponse ne dit que si
+  // l'identifiant est libre, jamais à qui il appartient. La règle d'écriture
+  // reste celle de PATCH /api/me/profile, qui refuse un identifiant pris.
+  app.get(
+    "/api/me/handle-availability",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const { handle } = handleAvailabilityQuerySchema.parse(request.query);
+      if (!handleSchema.safeParse(handle).success) return { available: false, reason: "invalid" };
+      if (isReservedHandle(handle)) return { available: false, reason: "reserved" };
+      const owner = await findProfileOwningHandle(db, handle);
+      if (owner && owner.userId !== userId) return { available: false, reason: "taken" };
+      return { available: true };
+    },
+  );
+
   app.patch(
     "/api/me/profile",
     { config: { rateLimit: { max: 20, timeWindow: "1 minute" } } },
@@ -69,19 +103,21 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       // profil existant est bloquée, comme toute autre écriture.
       if (existing?.suspendedAt) throw forbidden("Ce compte est suspendu.");
 
-      if (!existing && (!patch.handle || !patch.country || !patch.displayName)) {
-        throw badRequest("L'identifiant, le pays et le nom affiché sont requis à la création du profil.");
+      // Le pays se choisit au premier écran de l'onboarding, qui peut se
+      // passer : il n'est pas requis ici.
+      if (!existing && (!patch.handle || !patch.displayName)) {
+        throw badRequest("L'identifiant et le nom affiché sont requis à la création du profil.");
       }
 
       if (patch.openToOpportunities) {
         const level = existing ? (await computeProfilePoints(db, existing.id)).level : "apprenti";
         if (!isLevelAtLeast(level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL)) {
-          throw forbidden("« Ouvert aux opportunités » se débloque au niveau Artisan.");
+          throw forbidden("« Disponible pour des opportunités » se débloque au niveau Artisan.");
         }
       }
 
       if (patch.handle) {
-        const owner = await findProfileByHandle(db, patch.handle);
+        const owner = await findProfileOwningHandle(db, patch.handle);
         if (owner && owner.userId !== userId) {
           throw conflict("Cet identifiant est déjà pris.");
         }

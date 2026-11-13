@@ -69,7 +69,7 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     app = buildApp({
       db,
       auth,
-      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 },
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 },
     });
   });
 
@@ -239,7 +239,8 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
       url: "/api/spaces",
       headers: { cookie: lecteur.cookie },
     });
-    expect(spaces.json().items).toEqual([]);
+    const listed = (spaces.json().items as { id: string }[]).map((space) => space.id);
+    expect(listed).not.toContain(WORK_DISCUSSIONS_SPACE_ID);
 
     const written = await app.inject({
       method: "POST",
@@ -561,6 +562,9 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     expect(
       (await app.inject({ method: "GET", url: "/api/users/invite/works" })).json().items,
     ).toEqual([]);
+    expect((await app.inject({ method: "GET", url: "/api/users/invite" })).json().workCount).toBe(
+      0,
+    );
 
     const invitations = await app.inject({
       method: "GET",
@@ -598,6 +602,12 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     expect(profileWorks.json().items).toEqual([
       expect.objectContaining({ slug: "memoire-test", relation: "coauthored" }),
     ]);
+    expect((await app.inject({ method: "GET", url: "/api/users/invite" })).json().workCount).toBe(
+      1,
+    );
+    expect((await app.inject({ method: "GET", url: "/api/users/autrice" })).json().workCount).toBe(
+      1,
+    );
   });
 
   it("un refus garde le coauteur hors du travail", async () => {
@@ -793,6 +803,7 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     expect(download.headers["content-type"]).toBe("application/pdf");
     expect(download.headers["content-disposition"]).toMatch(/^attachment;/);
     expect(download.headers["x-content-type-options"]).toBe("nosniff");
+    expect(download.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
 
     const pending = await uploadPdf(author.cookie);
     const unattached = await app.inject({
@@ -856,7 +867,7 @@ describe.skipIf(!databaseUrl)("Travaux (base Postgres réelle)", () => {
     app = buildApp({
       db,
       auth,
-      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 },
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 },
       attachmentLimits: {
         maxAttachmentBytes: 1024 * 1024,
         maxUserStorageBytes: PDF_BYTES.length + PNG_BYTES.length - 1,

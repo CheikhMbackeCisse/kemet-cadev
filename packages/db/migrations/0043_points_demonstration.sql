@@ -1,0 +1,1 @@
+ALTER TYPE "public"."points_source" ADD VALUE 'demonstration';

@@ -1,4 +1,4 @@
-import type { APIRequestContext, Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 export const PASSWORD = "une-passphrase-solide";
@@ -26,6 +26,31 @@ async function findVerificationUrl(email: string): Promise<string> {
   throw new Error(`Email de vérification introuvable pour ${email}.`);
 }
 
+const PROFILE_ATTEMPTS = 3;
+
+/**
+ * Pose l'identifiant, le nom et le pays d'un compte neuf. Tous les parcours
+ * partagent l'adresse IP du runner, clé de la limite de PATCH
+ * /api/me/profile (20 par minute) : un 429 attend la fenêtre suivante, comme
+ * createPublicSpace. Sans cette vérification, un profil refusé faisait échouer
+ * plus loin un parcours qui n'avait rien à voir.
+ */
+export async function completeProfile(request: APIRequestContext, handle: string): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    const response = await request.patch("/api/me/profile", {
+      data: { handle, displayName: handle, country: "SN" },
+    });
+    if (response.status() === 429 && attempt < PROFILE_ATTEMPTS) {
+      const waitMs = (Number(response.headers()["retry-after"] ?? "60") + 1) * 1000;
+      test.info().setTimeout(test.info().timeout + waitMs);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      continue;
+    }
+    expect(response.ok(), `PATCH /api/me/profile : ${response.status()}`).toBe(true);
+    return;
+  }
+}
+
 /** Crée un compte vérifié avec un profil complet, connecté dans `request`. */
 export async function signUpVerifyAndSignIn(
   request: APIRequestContext,
@@ -38,9 +63,7 @@ export async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", {
-    data: { handle, displayName: handle, country: "SN" },
-  });
+  await completeProfile(request, handle);
 }
 
 export async function signInBrowser(page: Page, email: string): Promise<void> {
@@ -48,7 +71,9 @@ export async function signInBrowser(page: Page, email: string): Promise<void> {
 }
 
 /**
- * Identifiant unique par projet et par essai. Pas de troncature de
+ * Identifiant unique par projet et par essai. Le préfixe tient en 10
+ * caractères : avec "desktop" et les 13 chiffres de Date.now(), l'identifiant
+ * atteint la limite de 30 de handleSchema. Pas de troncature de
  * Date.now() : un essai et sa relance en CI, à quelques dizaines de ms
  * d'écart, entreraient en conflit sur l'identifiant.
  */

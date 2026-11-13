@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { createPublicSpace } from "./support/spaces.js";
 import { expectVisitorInvitation } from "./support/visitor.js";
+import { completeProfile } from "./support/accounts.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -39,7 +40,7 @@ async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", { data: { handle, displayName: handle, country: "SN" } });
+  await completeProfile(request, handle);
 }
 
 test("une inscription complète par l'interface mène jusqu'au fil", async ({ page }) => {
@@ -61,17 +62,24 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
   await page.getByRole("button", { name: "Me connecter" }).click();
 
   await expect(page).toHaveURL(/\/completer-profil/);
-  await page.getByLabel("Nom affiché").fill(name);
-  await page.getByLabel("Identifiant").fill(handle);
-  await page.getByLabel("Pays").click();
-  await page.getByRole("option", { name: "Sénégal" }).click();
+  await page.getByLabel("Ton nom").fill(name);
+  await page.getByLabel("Ton @").fill(handle);
   await page.getByRole("button", { name: "Continuer" }).click();
 
-  await expect(page).toHaveURL(/\/ton-role/);
-  await page.getByRole("link", { name: "Passer cette étape" }).click();
+  // L'onboarding se passe écran par écran ; son parcours complet est testé
+  // dans onboarding.spec.ts.
+  await expect(page).toHaveURL(/\/bienvenue\/pays/);
+  for (let screen = 1; screen <= 6; screen += 1) {
+    await expect(page.getByRole("progressbar", { name: `Étape ${screen} sur 6` })).toBeAttached();
+    await page.getByRole("button", { name: "Passer" }).click();
+  }
 
   await expect(page).toHaveURL(/\/fil/);
-  await expect(page.getByRole("button", { name: name, exact: false })).toBeVisible();
+  // Le menu du compte n'existe que sur ordinateur (onglet Moi sur téléphone) :
+  // la session est lue directement.
+  await expect(page.getByRole("heading", { name: "Fil", exact: true })).toBeVisible();
+  const me = await (await page.request.get("/api/me")).json();
+  expect(me.profile).toMatchObject({ handle, displayName: name });
 });
 
 test("un visiteur sans session parcourt un espace public et le fil sans composeur", async ({

@@ -25,10 +25,11 @@ export async function insertPendingAttachment(
     channelId: string;
     authorId: string;
     storageKey: string;
-    kind: "image" | "file";
+    kind: "image" | "file" | "voice";
     mimeType: string;
     originalName: string;
     byteSize: number;
+    durationMs?: number;
   },
 ) {
   const [attachment] = await db.insert(messageAttachments).values(input).returning();

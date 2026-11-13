@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb } from "@kemet/db";
+import { createDb, spacePinnedPosts } from "@kemet/db";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -16,9 +16,16 @@ const PNG_BYTES = Buffer.from(
 );
 const PDF_BYTES = Buffer.from("%PDF-1.4\n%%EOF");
 
-function buildMultipartBody(filename: string, contentType: string, data: Buffer, boundary: string): Buffer {
+function buildMultipartBody(
+  filename: string,
+  contentType: string,
+  data: Buffer,
+  boundary: string,
+): Buffer {
   return Buffer.concat([
-    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`),
+    Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${contentType}\r\n\r\n`,
+    ),
     data,
     Buffer.from(`\r\n--${boundary}--\r\n`),
   ]);
@@ -27,8 +34,20 @@ function buildMultipartBody(filename: string, contentType: string, data: Buffer,
 describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", () => {
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
+  let failReads = false;
 
-  function createApp(attachmentLimits?: { maxAttachmentBytes: number; maxUserStorageBytes: number }) {
+  // Fichier présent en base mais illisible sur le disque.
+  class FlakyStorage extends InMemoryStorage {
+    override read(...args: Parameters<InMemoryStorage["read"]>) {
+      if (failReads) throw new Error("lecture impossible");
+      return super.read(...args);
+    }
+  }
+
+  function createApp(attachmentLimits?: {
+    maxAttachmentBytes: number;
+    maxUserStorageBytes: number;
+  }) {
     return async () => {
       const db = createDb(databaseUrl!);
       emailSender = new InMemoryEmailSender();
@@ -43,14 +62,18 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
       return buildApp({
         db,
         auth,
-        storage: new InMemoryStorage(),
-        attachmentLimits: attachmentLimits ?? { maxAttachmentBytes: 25 * 1024 * 1024, maxUserStorageBytes: 500 * 1024 * 1024 },
+        storage: new FlakyStorage(),
+        attachmentLimits: attachmentLimits ?? {
+          maxAttachmentBytes: 25 * 1024 * 1024,
+          maxUserStorageBytes: 500 * 1024 * 1024,
+        },
       });
     };
   }
 
   beforeEach(async () => {
     await resetTestDatabase(databaseUrl!);
+    failReads = false;
     app = await createApp()();
   });
 
@@ -68,10 +91,18 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
   }
 
   async function createMember(email: string, handle: string): Promise<string> {
-    await app.inject({ method: "POST", url: "/api/auth/sign-up/email", payload: { email, password: "une-passphrase-solide", name: handle } });
+    await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-up/email",
+      payload: { email, password: "une-passphrase-solide", name: handle },
+    });
     const verificationUrl = new URL(extractVerificationUrl(email));
     await app.inject({ method: "GET", url: verificationUrl.pathname + verificationUrl.search });
-    const signIn = await app.inject({ method: "POST", url: "/api/auth/sign-in/email", payload: { email, password: "une-passphrase-solide" } });
+    const signIn = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-in/email",
+      payload: { email, password: "une-passphrase-solide" },
+    });
     const cookie = extractCookie(signIn);
     await app.inject({
       method: "PATCH",
@@ -82,7 +113,12 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
     return cookie;
   }
 
-  async function uploadPostAttachment(cookie: string, filename: string, contentType: string, data: Buffer) {
+  async function uploadPostAttachment(
+    cookie: string,
+    filename: string,
+    contentType: string,
+    data: Buffer,
+  ) {
     const boundary = "----kemettestboundary";
     return app.inject({
       method: "POST",
@@ -113,10 +149,38 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
     expect(created.statusCode).toBe(200);
     expect(created.json().post.attachments).toHaveLength(1);
 
-    const served = await app.inject({ method: "GET", url: `/api/post-attachments/${attachmentId}/content` });
+    const served = await app.inject({
+      method: "GET",
+      url: `/api/post-attachments/${attachmentId}/content`,
+    });
     expect(served.statusCode).toBe(200);
     expect(served.headers["content-disposition"]).toContain("inline");
+    expect(served.headers["cache-control"]).toBe("public, max-age=31536000, immutable");
     expect(served.rawPayload.equals(PNG_BYTES)).toBe(true);
+  });
+
+  it("répond une erreur JSON sans cache quand le fichier ne se lit plus", async () => {
+    const owner = await createMember("owner-disk@test.kemet", "ownerdisk");
+    const attachmentId = (
+      await uploadPostAttachment(owner, "photo.png", "image/png", PNG_BYTES)
+    ).json().attachment.id as string;
+    await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { cookie: owner },
+      payload: { body: "", attachmentIds: [attachmentId] },
+    });
+
+    failReads = true;
+    const served = await app.inject({
+      method: "GET",
+      url: `/api/post-attachments/${attachmentId}/content`,
+    });
+    expect(served.statusCode).toBe(500);
+    expect(served.headers["content-type"]).toContain("application/json");
+    expect(served.headers["cache-control"]).toBe("no-store");
+    expect(served.headers["content-disposition"]).toBeUndefined();
+    expect(served.json().error.code).toBe("internal_error");
   });
 
   it("refuse un post sans texte ni image", async () => {
@@ -144,12 +208,18 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
 
     await app.inject({ method: "DELETE", url: `/api/posts/${postId}`, headers: { cookie: owner } });
 
-    const served = await app.inject({ method: "GET", url: `/api/post-attachments/${attachmentId}/content` });
+    const served = await app.inject({
+      method: "GET",
+      url: `/api/post-attachments/${attachmentId}/content`,
+    });
     expect(served.statusCode).toBe(404);
   });
 
   it("partage un quota de stockage unique avec les fichiers de salon", async () => {
-    app = await createApp({ maxAttachmentBytes: 25 * 1024 * 1024, maxUserStorageBytes: PNG_BYTES.length })();
+    app = await createApp({
+      maxAttachmentBytes: 25 * 1024 * 1024,
+      maxUserStorageBytes: PNG_BYTES.length,
+    })();
     const owner = await createMember("owner5@test.kemet", "owner5");
     const space = (
       await app.inject({
@@ -160,7 +230,11 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
       })
     ).json().space as { id: string };
     const channels = (
-      await app.inject({ method: "GET", url: `/api/spaces/${space.id}/channels`, headers: { cookie: owner } })
+      await app.inject({
+        method: "GET",
+        url: `/api/spaces/${space.id}/channels`,
+        headers: { cookie: owner },
+      })
     ).json().items as { id: string; slug: string }[];
     const channel = channels.find((c) => c.slug === "general")!;
 
@@ -233,5 +307,81 @@ describe.skipIf(!databaseUrl)("Images sur les posts (base Postgres réelle)", ()
       payload: { body: "", attachmentIds: [attachmentId] },
     });
     expect(created.statusCode).toBe(400);
+  });
+
+  it("garde l'ordre choisi pour le carrousel et les dimensions lues à l'envoi", async () => {
+    const owner = await createMember("carousel@test.kemet", "carousel");
+    const ids: string[] = [];
+    for (const name of ["a.png", "b.png", "c.png"]) {
+      const uploaded = await uploadPostAttachment(owner, name, "image/png", PNG_BYTES);
+      expect(uploaded.json().attachment).toMatchObject({ width: 1, height: 1 });
+      ids.push(uploaded.json().attachment.id as string);
+    }
+    const order = [ids[2]!, ids[0]!, ids[1]!];
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { cookie: owner },
+      payload: { body: "Trois images", attachmentIds: order },
+    });
+    const postId = created.json().post.id as string;
+    const read = await app.inject({ method: "GET", url: `/api/posts/${postId}` });
+    expect(read.json().post.attachments.map((attachment: { id: string }) => attachment.id)).toEqual(
+      order,
+    );
+    expect(read.json().post.mediaCredit).toBeNull();
+  });
+
+  it("montre le post épinglé d'un espace public à un visiteur, jamais celui d'un espace privé", async () => {
+    const owner = await createMember("pin@test.kemet", "pinowner");
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/posts",
+      headers: { cookie: owner },
+      payload: { body: "**La CADEV en bref**\n\nLe texte." },
+    });
+    const postId = created.json().post.id as string;
+    const db = createDb(databaseUrl!);
+    const spaceIds: string[] = [];
+    for (const visibility of ["public", "private"]) {
+      const space = await app.inject({
+        method: "POST",
+        url: "/api/spaces",
+        headers: { cookie: owner },
+        payload: { name: `Espace ${visibility}`, slug: `espace-${visibility}`, visibility },
+      });
+      const spaceId = space.json().space.id as string;
+      spaceIds.push(spaceId);
+      await db.insert(spacePinnedPosts).values({ spaceId, postId });
+    }
+
+    const visible = await app.inject({
+      method: "GET",
+      url: `/api/spaces/${spaceIds[0]}/pinned-post`,
+    });
+    expect(visible.statusCode).toBe(200);
+    expect(visible.json().pinned).toEqual({ postId, title: "La CADEV en bref", imageId: null });
+
+    const hidden = await app.inject({
+      method: "GET",
+      url: `/api/spaces/${spaceIds[1]}/pinned-post`,
+    });
+    expect(hidden.statusCode).toBe(404);
+    const member = await app.inject({
+      method: "GET",
+      url: `/api/spaces/${spaceIds[1]}/pinned-post`,
+      headers: { cookie: owner },
+    });
+    expect(member.json().pinned?.postId).toBe(postId);
+
+    await app.inject({ method: "DELETE", url: `/api/posts/${postId}`, headers: { cookie: owner } });
+    const afterDelete = await app.inject({
+      method: "GET",
+      url: `/api/spaces/${spaceIds[0]}/pinned-post`,
+    });
+    expect(afterDelete.json().pinned).toBeNull();
+
+    const malformed = await app.inject({ method: "GET", url: "/api/spaces/abc/pinned-post" });
+    expect(malformed.statusCode).toBe(400);
   });
 });

@@ -11,19 +11,52 @@ type ChatEventHandler = (event: ChatEvent) => void;
 type TypingHandler = (event: TypingEvent) => void;
 
 let socket: Socket | null = null;
+// Les salles d'un salon ne survivent pas à une déconnexion côté serveur : on
+// les redemande à chaque connexion, la première comme les suivantes.
+const joinedChannels = new Set<string>();
 
 function getSocket(): Socket {
   if (!socket) {
     socket = io({ withCredentials: true });
+    socket.on("connect", () => {
+      for (const channelId of joinedChannels) socket?.emit("channel:join", { channelId });
+    });
+    keepOutOfBackForwardCache(socket);
   }
   return socket;
 }
 
+/**
+ * Une connexion ouverte empêche le navigateur de garder la page pour le
+ * bouton Retour : elle se ferme quand la page est quittée et se rouvre si le
+ * navigateur la ressort de ce cache.
+ */
+function keepOutOfBackForwardCache(client: Socket) {
+  window.addEventListener("pagehide", () => client.disconnect());
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) client.connect();
+  });
+}
+
+/**
+ * L'identité d'une connexion est fixée à son ouverture : après un changement
+ * de compte, on la rouvre et on oublie les salons de la personne précédente.
+ */
+export function resetRealtimeConnection(): void {
+  joinedChannels.clear();
+  if (!socket) return;
+  socket.disconnect();
+  socket.connect();
+}
+
 export function joinChannel(channelId: string): void {
-  getSocket().emit("channel:join", { channelId });
+  joinedChannels.add(channelId);
+  const client = getSocket();
+  if (client.connected) client.emit("channel:join", { channelId });
 }
 
 export function leaveChannel(channelId: string): void {
+  joinedChannels.delete(channelId);
   getSocket().emit("channel:leave", { channelId });
 }
 

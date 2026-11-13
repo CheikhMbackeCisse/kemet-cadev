@@ -18,6 +18,12 @@ test("le panneau Salons se replie au clic et par Ctrl+B, et s'en souvient", asyn
   await expect(panel).toBeHidden();
 
   await page.reload();
+  // Le panneau est aussi caché avant que l'application soit chargée : attendre
+  // la barre, sinon Ctrl+B part avant que le raccourci soit écouté.
+  await expect(bar.getByRole("button", { name: "Salons" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
   await expect(page.getByRole("complementary", { name: "Salons" })).toBeHidden();
 
   await page.keyboard.press("Control+b");

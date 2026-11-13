@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { markIntroSeen } from "./lib/intro/introStorage.js";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { App } from "./App.js";
 
@@ -67,16 +68,28 @@ describe("App", () => {
     },
   );
 
-  it("ouvre le fil sur /, y compris pour un visiteur", async () => {
+  it("ouvre le fil sur / pour un visiteur qui a déjà vu l'accueil", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 401 })),
+    );
+    markIntroSeen();
+    window.history.pushState({}, "", "/");
+    render(<App />);
+    expect(
+      await screen.findByRole("heading", { name: "Fil" }, { timeout: 10000 }),
+    ).toBeInTheDocument();
+    window.localStorage.clear();
+  });
+
+  it("ouvre l'accueil sur / à la première visite d'un visiteur", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response(null, { status: 401 })),
     );
     window.history.pushState({}, "", "/");
     render(<App />);
-    expect(
-      await screen.findByRole("heading", { name: "Fil" }, { timeout: 10000 }),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(window.location.pathname).toBe("/decouvrir"));
   });
 
   it("garde la page de connexion sur /connexion", async () => {

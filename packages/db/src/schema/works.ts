@@ -170,12 +170,63 @@ export const workAttachments = pgTable(
   ],
 );
 
+export const workMediaKindEnum = pgEnum("work_media_kind", ["image", "video", "youtube"]);
+export const workMediaRoleEnum = pgEnum("work_media_role", ["cover", "gallery", "video"]);
+
+// Couverture, galerie et vidéos d'un travail. Une image ou une vidéo envoyée
+// attend sans travail (`work_id` nul) jusqu'à la publication, comme le PDF ;
+// une vidéo YouTube n'existe qu'attachée, par son seul identifiant.
+export const workMedia = pgTable(
+  "work_media",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workId: uuid("work_id").references(() => works.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    kind: workMediaKindEnum("kind").notNull(),
+    role: workMediaRoleEnum("role"),
+    storageKey: text("storage_key").unique(),
+    mimeType: text("mime_type"),
+    originalName: text("original_name"),
+    byteSize: bigint("byte_size", { mode: "number" }).notNull().default(0),
+    youtubeId: text("youtube_id"),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("work_media_work_idx").on(table.workId, table.position),
+    index("work_media_author_idx").on(table.authorId),
+    uniqueIndex("work_media_one_cover_idx")
+      .on(table.workId)
+      .where(sql`${table.role} = 'cover'`),
+    check(
+      "work_media_source",
+      sql`(${table.kind} = 'youtube') = (${table.youtubeId} is not null and ${table.storageKey} is null)`,
+    ),
+    check(
+      "work_media_youtube_id",
+      sql`${table.youtubeId} is null or ${table.youtubeId} ~ '^[A-Za-z0-9_-]{11}$'`,
+    ),
+    check(
+      "work_media_role_matches_kind",
+      sql`${table.role} is null or (${table.kind} = 'image') = (${table.role} in ('cover', 'gallery'))`,
+    ),
+  ],
+);
+
 export const worksRelations = relations(works, ({ one, many }) => ({
   publisher: one(profiles, { fields: [works.publisherId], references: [profiles.id] }),
   authors: many(workAuthors),
   externalAuthors: many(workExternalAuthors),
   links: many(workLinks),
   attachments: many(workAttachments),
+  media: many(workMedia),
+}));
+
+export const workMediaRelations = relations(workMedia, ({ one }) => ({
+  work: one(works, { fields: [workMedia.workId], references: [works.id] }),
+  author: one(profiles, { fields: [workMedia.authorId], references: [profiles.id] }),
 }));
 
 export const workAuthorsRelations = relations(workAuthors, ({ one }) => ({

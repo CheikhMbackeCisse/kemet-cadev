@@ -15,7 +15,8 @@ export interface SkillCandidate {
  * droit d'utiliser. Les étapes suivantes ne supposent rien de la méthode.
  */
 export interface SkillRetriever {
-  findCandidates(query: string, profileId: string, limit?: number): Promise<SkillCandidate[]>;
+  /** `publicOnly` : seulement les skills publics, pour une réponse que tout le monde lira. */
+  findCandidates(query: string, profileId: string, options?: { publicOnly?: boolean; limit?: number }): Promise<SkillCandidate[]>;
 }
 
 /**
@@ -28,7 +29,7 @@ export class FullTextRetriever implements SkillRetriever {
   async findCandidates(
     query: string,
     profileId: string,
-    limit = DEFAULT_CANDIDATE_LIMIT,
+    { publicOnly = false, limit = DEFAULT_CANDIDATE_LIMIT }: { publicOnly?: boolean; limit?: number } = {},
   ): Promise<SkillCandidate[]> {
     const trimmed = query.trim();
     if (!trimmed) return [];
@@ -42,9 +43,10 @@ export class FullTextRetriever implements SkillRetriever {
       )
       and (
         s.visibility = 'public'
-        or (s.visibility = 'private' and s.author_id = ${profileId})
+        or (not ${publicOnly} and s.visibility = 'private' and s.author_id = ${profileId})
         or (
-          s.visibility = 'space'
+          not ${publicOnly}
+          and s.visibility = 'space'
           and s.space_id in (select space_id from space_members where profile_id = ${profileId})
         )
       )

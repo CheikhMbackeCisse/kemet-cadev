@@ -1,4 +1,5 @@
 import type {
+  SpacePinnedPost,
   Application,
   AssistantInvocationDetail,
   Attachment,
@@ -10,10 +11,12 @@ import type {
   ConversationDetail,
   ConversationUnreadSummary,
   CreateApplicationInput,
+  LevelsResponse,
   CreateCompetitionRequestInput,
   CreateHelpRequestInput,
   CreatePostInput,
   CreatePostReplyInput,
+  CreatePostReplyResult,
   CreateProjectInput,
   CreateSkillInput,
   CreateSubmissionInput,
@@ -26,13 +29,24 @@ import type {
   CreateReportInput,
   MeResponse,
   Message,
+  OnboardingState,
+  PersonSuggestion,
+  UpdateOnboardingInput,
   ModerationActionEntry,
   Report,
   ResolveReportInput,
+  FeedProject,
+  PostAssistantStatus,
+  PostReplyAssistantStart,
   PostFeedbackEntry,
+  PostBookmarkResult,
+  PostRepostResult,
   PostReactionResult,
   PostReply,
   PostSummary,
+  ManagedOrganization,
+  OrganizationRequest,
+  OrganizationType,
   ProfileSummary,
   ProjectDetail,
   ProjectSummary,
@@ -41,6 +55,7 @@ import type {
   Space,
   SpaceMember,
   SkillDetail,
+  SkillExampleAnswer,
   SkillSummary,
   Submission,
   SubmissionResult,
@@ -54,13 +69,23 @@ import type {
   ProfileWork,
   UpdateWorkInput,
   WorkAttachment,
+  WorkUploadedMedia,
   WorkDetail,
   WorkMatchResult,
   WorkMatchSubject,
+  RelatedPeople,
   WorkSummary,
   WorkSort,
   WorkStatus,
   WorkType,
+  Cv,
+  CvVisibility,
+  Profile,
+  ProfileLibrary,
+  CreateOpportunityInput,
+  OpportunityDetail,
+  OpportunityInput,
+  OpportunitySummary,
 } from "@kemet/shared";
 
 class ChatApiError extends Error {
@@ -79,7 +104,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     credentials: "include",
     // Fastify refuse en 400 un corps vide annoncé comme JSON : un POST sans corps
     // (suivre, rejoindre) ne doit pas porter cet en-tête.
-    headers: { ...(init?.body !== undefined && { "Content-Type": "application/json" }), ...init?.headers },
+    headers: {
+      ...(init?.body !== undefined && { "Content-Type": "application/json" }),
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
@@ -137,6 +165,14 @@ export function listSpaces(cursor?: string): Promise<Page<Space>> {
   return request(`/api/spaces${query}`);
 }
 
+export function getSpacePinnedPost(spaceId: string): Promise<{ pinned: SpacePinnedPost | null }> {
+  return request(`/api/spaces/${spaceId}/pinned-post`);
+}
+
+export function getMostActiveSpaceId(): Promise<{ spaceId: string | null }> {
+  return request("/api/spaces/most-active");
+}
+
 export function createSpace(input: {
   name: string;
   slug: string;
@@ -160,6 +196,20 @@ export function addSpaceMember(spaceId: string, handle: string) {
     method: "POST",
     body: JSON.stringify({ handle }),
   });
+}
+
+export function searchSpaces(query: string) {
+  const params = new URLSearchParams({ q: query });
+  return request<{ items: Space[] }>(`/api/spaces/search?${params.toString()}`);
+}
+
+export function searchPeople(query: string) {
+  const params = new URLSearchParams({ q: query });
+  return request<{ items: ProfileSummary[] }>(`/api/people/search?${params.toString()}`);
+}
+
+export function joinSpace(spaceId: string) {
+  return request<{ joined: boolean }>(`/api/spaces/${spaceId}/join`, { method: "POST" });
 }
 
 export function removeSpaceMember(spaceId: string, profileId: string) {
@@ -236,6 +286,35 @@ export async function uploadAttachment(channelId: string, file: File): Promise<A
   return attachment;
 }
 
+const VOICE_EXTENSIONS: Record<string, string> = { "audio/mp4": "m4a", "audio/ogg": "ogg" };
+
+export async function uploadVoiceMessage(
+  channelId: string,
+  blob: Blob,
+  durationMs: number,
+): Promise<Attachment> {
+  const formData = new FormData();
+  // Le serveur lit la durée avant le fichier : elle doit le précéder.
+  formData.append("durationMs", String(Math.round(durationMs)));
+  const baseType = blob.type.split(";")[0] ?? "";
+  formData.append("file", blob, `message-vocal.${VOICE_EXTENSIONS[baseType] ?? "webm"}`);
+  const response = await fetch(`/api/channels/${channelId}/messages/voice`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { attachment } = (await response.json()) as { attachment: Attachment };
+  return attachment;
+}
+
 export function attachmentUrl(attachmentId: string): string {
   return `/api/attachments/${attachmentId}/content`;
 }
@@ -260,8 +339,105 @@ export async function uploadPostAttachment(file: File): Promise<Attachment> {
   return attachment;
 }
 
+export interface OrganizationRequestForm {
+  name: string;
+  organizationType: OrganizationType;
+  country: string;
+  websiteUrl: string;
+  description: string;
+  logo: File | null;
+}
+
+export async function sendOrganizationRequest(form: OrganizationRequestForm) {
+  const formData = new FormData();
+  formData.append("name", form.name);
+  formData.append("organizationType", form.organizationType);
+  formData.append("country", form.country);
+  formData.append("websiteUrl", form.websiteUrl);
+  formData.append("description", form.description);
+  if (form.logo) formData.append("logo", form.logo);
+  const response = await fetch("/api/organization-requests", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  return (await response.json()) as { request: OrganizationRequest };
+}
+
+export function getMyOrganizationRequest() {
+  return request<{ request: OrganizationRequest | null }>("/api/me/organization-request");
+}
+
+export function listMyOrganizations() {
+  return request<{ items: ManagedOrganization[] }>("/api/me/organizations");
+}
+
+export function listPendingOrganizationRequests() {
+  return request<{ items: OrganizationRequest[] }>("/api/organization-requests");
+}
+
+export function decideOrganizationRequest(id: string, decision: "accept" | "refuse") {
+  return request<{ status: "accepted" | "refused"; organizationHandle: string | null }>(
+    `/api/organization-requests/${encodeURIComponent(id)}`,
+    { method: "PUT", body: JSON.stringify({ decision }) },
+  );
+}
+
 export function postAttachmentUrl(attachmentId: string): string {
   return `/api/post-attachments/${attachmentId}/content`;
+}
+
+export function postVideoPosterUrl(attachmentId: string): string {
+  return `/api/post-attachments/${attachmentId}/poster`;
+}
+
+/**
+ * Vidéo d'un post et son image d'aperçu, en un envoi. XMLHttpRequest plutôt
+ * que fetch : seul lui donne l'avancement de l'envoi, utile en 3G.
+ */
+export function uploadPostVideo(
+  video: File,
+  poster: Blob,
+  onProgress: (fraction: number) => void,
+): Promise<Attachment> {
+  const formData = new FormData();
+  formData.append("poster", poster, "apercu.jpg");
+  formData.append("video", video);
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/posts/videos");
+    xhr.withCredentials = true;
+    xhr.responseType = "json";
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      const body = xhr.response as {
+        attachment?: Attachment;
+        error?: { code?: string; message?: string };
+      } | null;
+      if (xhr.status >= 200 && xhr.status < 300 && body?.attachment) resolve(body.attachment);
+      else
+        reject(
+          new ChatApiError(
+            body?.error?.code ?? "unknown_error",
+            body?.error?.message ?? "Une erreur est survenue.",
+            xhr.status,
+          ),
+        );
+    };
+    xhr.onerror = () =>
+      reject(new ChatApiError("network_error", "La connexion a été coupée pendant l'envoi.", 0));
+    xhr.send(formData);
+  });
 }
 
 export function editMessage(messageId: string, body: string) {
@@ -307,12 +483,18 @@ export function revokeInvite(inviteId: string) {
   return request<{ revoked: boolean }>(`/api/invites/${inviteId}`, { method: "DELETE" });
 }
 
-export function listSkills() {
-  return request<{ items: SkillSummary[] }>("/api/skills");
+export function listSkills(query = "", options: { beginner?: boolean } = {}) {
+  const params = new URLSearchParams();
+  if (query) params.set("q", query);
+  if (options.beginner) params.set("beginner", "1");
+  const search = params.toString() ? `?${params.toString()}` : "";
+  return request<{ items: SkillSummary[] }>(`/api/skills${search}`);
 }
 
 export function getSkill(slug: string) {
-  return request<{ skill: SkillDetail }>(`/api/skills/${slug}`);
+  return request<{ skill: SkillDetail; exampleAnswer: SkillExampleAnswer | null }>(
+    `/api/skills/${slug}`,
+  );
 }
 
 export function createSkill(input: CreateSkillInput) {
@@ -365,8 +547,27 @@ export function acceptInvite(code: string) {
   );
 }
 
+export function getLevels() {
+  return request<LevelsResponse>("/api/levels");
+}
+
 export function getMe() {
   return request<MeResponse>("/api/me");
+}
+
+export function updateOnboarding(input: UpdateOnboardingInput) {
+  return request<{ onboarding: OnboardingState }>("/api/me/onboarding", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export function getOnboardingSpaces() {
+  return request<{ items: Space[] }>("/api/me/onboarding/spaces");
+}
+
+export function getOnboardingPeople() {
+  return request<{ items: PersonSuggestion[] }>("/api/me/onboarding/people");
 }
 
 export function updateMyProfile(input: UpdateProfileInput) {
@@ -374,6 +575,19 @@ export function updateMyProfile(input: UpdateProfileInput) {
     method: "PATCH",
     body: JSON.stringify(input),
   });
+}
+
+export type HandleAvailability =
+  { available: true } | { available: false; reason: "invalid" | "reserved" | "taken" };
+
+export function checkHandleAvailability(handle: string, signal?: AbortSignal) {
+  const params = new URLSearchParams({ handle });
+  return request<HandleAvailability>(`/api/me/handle-availability?${params}`, { signal });
+}
+
+export function listOrganizationSuggestions(kind: "school" | "company", query: string) {
+  const params = new URLSearchParams({ kind, q: query });
+  return request<{ items: string[] }>(`/api/organizations?${params.toString()}`);
 }
 
 export function getUserProfile(handle: string) {
@@ -388,12 +602,15 @@ export function unfollowUser(handle: string) {
   return request<{ following: boolean }>(`/api/users/${handle}/follow`, { method: "DELETE" });
 }
 
-export function listUserFollowers(handle: string, cursor?: string): Promise<Page<ProfileSummary>> {
+/** `hiddenCount` : abonnés ou abonnements comptés mais jamais listés. */
+export type FollowPage = Page<ProfileSummary> & { hiddenCount: number };
+
+export function listUserFollowers(handle: string, cursor?: string): Promise<FollowPage> {
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
   return request(`/api/users/${handle}/followers${query}`);
 }
 
-export function listUserFollowing(handle: string, cursor?: string): Promise<Page<ProfileSummary>> {
+export function listUserFollowing(handle: string, cursor?: string): Promise<FollowPage> {
   const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
   return request(`/api/users/${handle}/following${query}`);
 }
@@ -405,6 +622,10 @@ export function getAuthConfig() {
 }
 
 /** Responsable des données personnelles, null tant que le serveur ne le configure pas. */
+export function getSiteConfig() {
+  return request<{ demoContentNotice: boolean }>("/api/site-config");
+}
+
 export function getPrivacyContact() {
   return request<{ contact: { name: string; email: string } | null }>("/api/privacy-contact");
 }
@@ -435,7 +656,7 @@ export async function signInWithSocialProvider(
 ): Promise<void> {
   const result = await request<{ url: string }>("/api/auth/sign-in/social", {
     method: "POST",
-    body: JSON.stringify({ provider, callbackURL }),
+    body: JSON.stringify({ provider, callbackURL, errorCallbackURL: callbackURL }),
   });
   window.location.href = result.url;
 }
@@ -468,7 +689,7 @@ export function listPosts(tab: FeedTab, cursor?: string): Promise<Page<PostSumma
 }
 
 export function getPost(postId: string) {
-  return request<{ post: PostSummary }>(`/api/posts/${postId}`);
+  return request<{ post: PostSummary }>(`/api/posts/${encodeURIComponent(postId)}`);
 }
 
 export function createPost(input: CreatePostInput) {
@@ -489,11 +710,28 @@ export function deletePost(postId: string) {
   return request<{ deleted: boolean }>(`/api/posts/${postId}`, { method: "DELETE" });
 }
 
-export function sharePost(postId: string, body = "") {
-  return request<{ post: PostSummary }>(`/api/posts/${postId}/share`, {
-    method: "POST",
-    body: JSON.stringify({ body }),
+export function setPostBookmark(postId: string, saved: boolean) {
+  return request<PostBookmarkResult>(`/api/posts/${postId}/bookmark`, {
+    method: "PUT",
+    body: JSON.stringify({ saved }),
   });
+}
+
+export function setPostRepost(postId: string, reposted: boolean) {
+  return request<PostRepostResult>(`/api/posts/${postId}/repost`, {
+    method: "PUT",
+    body: JSON.stringify({ reposted }),
+  });
+}
+
+export function listUserPosts(handle: string, cursor?: string): Promise<Page<PostSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/users/${encodeURIComponent(handle)}/posts${query}`);
+}
+
+export function listBookmarkedPosts(cursor?: string): Promise<Page<PostSummary>> {
+  const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return request(`/api/me/bookmarks${query}`);
 }
 
 export function togglePostReaction(postId: string) {
@@ -506,10 +744,25 @@ export function listPostReplies(postId: string, cursor?: string): Promise<Page<P
 }
 
 export function createPostReply(postId: string, input: CreatePostReplyInput) {
-  return request<{ reply: PostReply }>(`/api/posts/${postId}/replies`, {
+  return request<CreatePostReplyResult>(`/api/posts/${postId}/replies`, {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export function getPostAssistantStatus(invocationId: string) {
+  return request<PostAssistantStatus>(`/api/post-assistant-invocations/${invocationId}`);
+}
+
+export function retryPostAssistant(invocationId: string) {
+  return request<{ assistant: PostReplyAssistantStart }>(
+    `/api/post-assistant-invocations/${invocationId}/retry`,
+    { method: "POST" },
+  );
+}
+
+export function listFeedProjects(tab: FeedTab, limit: number): Promise<{ items: FeedProject[] }> {
+  return request(`/api/feed/projects?tab=${tab}&limit=${limit}`);
 }
 
 export function deletePostReply(replyId: string) {
@@ -762,6 +1015,33 @@ export function unblockUser(handle: string) {
   return request<{ blocked: boolean }>(`/api/users/${handle}/block`, { method: "DELETE" });
 }
 
+export function listBlockedUsers() {
+  return request<{ items: ProfileSummary[] }>("/api/me/blocks");
+}
+
+export function changePassword(input: { currentPassword: string; newPassword: string }) {
+  return request<{ status: boolean }>("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ ...input, revokeOtherSessions: true }),
+  });
+}
+
+/** Rattache un compte GitHub, Google ou LinkedIn au compte connecté : renvoie vers le fournisseur. */
+export async function linkSocialProvider(provider: SocialProvider, callbackURL: string) {
+  const result = await request<{ url: string }>("/api/auth/link-social", {
+    method: "POST",
+    body: JSON.stringify({ provider, callbackURL, errorCallbackURL: callbackURL }),
+  });
+  window.location.href = result.url;
+}
+
+export function unlinkSocialProvider(provider: SocialProvider) {
+  return request<{ status: boolean }>("/api/auth/unlink-account", {
+    method: "POST",
+    body: JSON.stringify({ providerId: provider }),
+  });
+}
+
 export { ChatApiError };
 
 export function listWorks(
@@ -859,6 +1139,27 @@ export async function uploadWorkAttachment(file: File): Promise<WorkAttachment> 
   return attachment;
 }
 
+/** Image (couverture, galerie) ou vidéo d'un travail, type vérifié par le serveur. */
+export async function uploadWorkMedia(file: File): Promise<WorkUploadedMedia> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/works/media", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { media } = (await response.json()) as { media: WorkUploadedMedia };
+  return media;
+}
+
 export function workAttachmentUrl(attachmentId: string): string {
   return `/api/work-attachments/${attachmentId}/content`;
 }
@@ -867,5 +1168,128 @@ export function findWorkMatches(subject: WorkMatchSubject) {
   return request<{ result: WorkMatchResult }>("/api/work-matches", {
     method: "POST",
     body: JSON.stringify({ subject }),
+  });
+}
+
+/** Tags communs seulement, sans l'assistant : ouvert à un visiteur. */
+export function getRelatedPeople(subject: { type: "work" | "project"; slug: string }) {
+  const base = subject.type === "work" ? "/api/works" : "/api/projects";
+  return request<{ related: RelatedPeople }>(
+    `${base}/${encodeURIComponent(subject.slug)}/related-people`,
+  );
+}
+
+export function getUserLibrary(handle: string) {
+  return request<ProfileLibrary>(`/api/users/${encodeURIComponent(handle)}/library`);
+}
+
+/** Adresse du PDF, lue par l'aperçu et par le lien de téléchargement. */
+export function cvContentUrl(handle: string): string {
+  return `/api/users/${encodeURIComponent(handle)}/cv/content`;
+}
+
+/** Envoie la photo de profil ; renvoie sa nouvelle adresse. */
+export async function uploadMyAvatar(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/me/avatar", {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { avatarUrl } = (await response.json()) as { avatarUrl: string };
+  return avatarUrl;
+}
+
+export async function uploadCv(file: File): Promise<Cv> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch("/api/me/cv", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ChatApiError(
+      body?.error?.code ?? "unknown_error",
+      body?.error?.message ?? "Une erreur est survenue.",
+      response.status,
+    );
+  }
+  const { cv } = (await response.json()) as { cv: Cv };
+  return cv;
+}
+
+export function updateCvVisibility(visibility: CvVisibility) {
+  return request<{ cv: Cv }>("/api/me/cv", {
+    method: "PATCH",
+    body: JSON.stringify({ visibility }),
+  });
+}
+
+export function deleteCv() {
+  return request<{ deleted: true }>("/api/me/cv", { method: "DELETE" });
+}
+
+export function listOpenProfiles() {
+  return request<{ items: Profile[] }>("/api/feed/open-profiles");
+}
+
+export interface OpportunityFilters {
+  kind?: string;
+  country?: string;
+  domain?: string;
+  includeClosed?: boolean;
+  author?: string;
+}
+
+export function listOpportunities(filters: OpportunityFilters, cursor?: string | null, limit = 20) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (filters.kind) params.set("kind", filters.kind);
+  if (filters.country) params.set("country", filters.country);
+  if (filters.domain) params.set("domain", filters.domain);
+  if (filters.author) params.set("author", filters.author);
+  if (filters.includeClosed) params.set("includeClosed", "true");
+  if (cursor) params.set("cursor", cursor);
+  return request<{ items: OpportunitySummary[]; nextCursor: string | null }>(
+    `/api/opportunities?${params}`,
+  );
+}
+
+export function getOpportunity(slug: string) {
+  return request<{ opportunity: OpportunityDetail }>(
+    `/api/opportunities/${encodeURIComponent(slug)}`,
+  );
+}
+
+export function createOpportunity(input: CreateOpportunityInput) {
+  return request<{ opportunity: OpportunityDetail }>("/api/opportunities", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateOpportunity(slug: string, input: OpportunityInput) {
+  return request<{ opportunity: OpportunityDetail }>(
+    `/api/opportunities/${encodeURIComponent(slug)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function deleteOpportunity(slug: string) {
+  return request<{ deleted: boolean }>(`/api/opportunities/${encodeURIComponent(slug)}`, {
+    method: "DELETE",
   });
 }

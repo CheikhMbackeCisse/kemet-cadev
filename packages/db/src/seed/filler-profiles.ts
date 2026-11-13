@@ -157,6 +157,8 @@ export async function insertFillerProfiles(db: DbOrTx, seeds: FillerProfileSeed[
       title: seed.title,
       avatarUrl: avatarDataUri(seed.handle),
       isDemo: true,
+      isFiller: true,
+      onboardingCompletedAt: new Date(),
     }));
     const inserted = await db.insert(profiles).values(profileRows).returning({ id: profiles.id });
     profileIds.push(...inserted.map((row) => row.id));

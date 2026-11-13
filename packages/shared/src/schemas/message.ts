@@ -47,7 +47,8 @@ export const messageSchema = z.object({
   authorDisplayName: z.string(),
   authorAvatarUrl: z.string().nullable(),
   authorCountry: z.string(),
-  authorLevel: levelSchema,
+  /** Absent pour Kocc : le profil système n'a pas de niveau. */
+  authorLevel: levelSchema.nullable(),
   body: z.string(),
   mentionedHandles: z.array(z.string()),
   reactions: z.array(reactionSchema),

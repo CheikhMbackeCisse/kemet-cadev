@@ -95,3 +95,10 @@ profil créé, et toute page qui détecte cet état y renvoie.
   poste de développement actuel.
 - Salon "Mèmes" (type spécial image) et page Kemet Pro restent des sous-lots
   11 séparés.
+
+## Complément du 08/11/2026
+
+La lecture des projets et des compétitions rejoint le mode visiteur : aucun
+de ces contenus n'est privé, et ces pages étaient déjà dans la navigation
+d'un visiteur. Les candidatures, le vote personnel et toute écriture restent
+réservés à un compte.

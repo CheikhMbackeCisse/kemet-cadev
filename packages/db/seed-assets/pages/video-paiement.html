@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+/* Filmé par render.mjs pendant 7 secondes : saisie, coupure réseau,
+   nouvelle tentative avec la même clé, confirmation d'un seul débit. */
+body { padding: 0; background: #0f3b2e; }
+.frame { background: #0f3b2e; color: #eaf7f0; }
+.step { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 18px; gap: 12px; opacity: 0; font-size: 15px; color: #0f3b2e; }
+.s1 { animation: show 0s 0s forwards, hide 0s 2.2s forwards; }
+.s2 { animation: show 0s 2.2s forwards, hide 0s 4.2s forwards; }
+.s3 { animation: show 0s 4.2s forwards; }
+@keyframes show { to { opacity: 1; } }
+@keyframes hide { to { opacity: 0; } }
+.amount { font-size: 38px; font-weight: 800; text-align: center; margin: 30px 0 8px; overflow: hidden; white-space: nowrap; width: 0; animation: type 1.2s steps(8) 0.3s forwards; align-self: center; }
+@keyframes type { to { width: 190px; } }
+.pay { margin-top: auto; background: #0f3b2e; color: #fff; border-radius: 12px; padding: 14px; text-align: center; font-weight: 700; }
+.pay.press { animation: press 0.3s 1.8s; }
+@keyframes press { 50% { transform: scale(0.96); background: #1b5a46; } }
+.spinner { width: 54px; height: 54px; border-radius: 50%; border: 6px solid #d7e9e1; border-top-color: #0f3b2e; align-self: center; margin-top: 90px; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.warn { background: #fff1d1; color: #8a5a00; border-radius: 10px; padding: 10px 12px; font-weight: 600; text-align: center; opacity: 0; animation: show 0s 3s forwards; }
+.check { width: 90px; height: 90px; border-radius: 50%; background: #dcf5e7; color: #107a46; font-size: 50px; display: flex; align-items: center; justify-content: center; align-self: center; margin-top: 50px; transform: scale(0); animation: pop 0.4s 4.3s forwards; }
+@keyframes pop { to { transform: scale(1); } }
+.log { position: absolute; right: 70px; top: 120px; width: 520px; font-family: Consolas, monospace; font-size: 18px; line-height: 1.8; color: #cfe9dd; }
+.log div { opacity: 0; }
+.log div:nth-child(1) { animation: show 0s 1.9s forwards; }
+.log div:nth-child(2) { animation: show 0s 2.6s forwards; }
+.log div:nth-child(3) { animation: show 0s 3.6s forwards; }
+.log div:nth-child(4) { animation: show 0s 4.3s forwards; }
+.log b { color: #5fd38d; }
+.log i { color: #f4c95d; font-style: normal; }
+</style>
+</head>
+<body>
+<section class="frame">
+  <div class="stage" style="justify-content:flex-start;padding-left:140px">
+    <div class="phone"><div class="screen" style="background:#fff">
+      <div class="statusbar" style="color:#0f3b2e"><span>14:02</span><span>3G</span></div>
+      <div style="position:relative;flex:1">
+        <div class="step s1">
+          <b style="font-size:18px">Payer Boutique Ndeye</b>
+          <div class="amount">25 000 F</div>
+          <div style="text-align:center;opacity:.6">Frais : 0 F</div>
+          <div class="pay press">Payer</div>
+        </div>
+        <div class="step s2">
+          <div class="spinner"></div>
+          <div style="text-align:center;font-weight:600">Envoi en cours…</div>
+          <div class="warn">Réseau coupé, nouvelle tentative avec la même référence</div>
+        </div>
+        <div class="step s3" style="text-align:center">
+          <div class="check">✓</div>
+          <b style="font-size:20px">Paiement envoyé</b>
+          <div style="font-size:30px;font-weight:800">25 000 F</div>
+          <div style="background:#f2f8f5;border-radius:10px;padding:10px;font-size:14px">Un seul débit, même après la coupure.</div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+  <div class="log">
+    <div>POST /payments key=pay_7f3c <b>201</b> débité</div>
+    <div><i>délai dépassé côté téléphone</i></div>
+    <div>POST /payments key=pay_7f3c <b>201</b> rejouée</div>
+    <div>solde débité une seule fois</div>
+  </div>
+</section>
+</body>
+</html>

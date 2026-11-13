@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { KEMET_HANDLE, type Message, type SkillCitation } from "@kemet/shared";
+import { isAssistantHandle, type Message, type SkillCitation } from "@kemet/shared";
 import {
   getAssistantInvocation,
   listMessages,
@@ -218,7 +218,7 @@ export function useChannelMessages(
     // de page), ce socle arrive après coup par cet appel, jamais par
     // assistant:done qui ne couvre que la réponse en cours.
     for (const message of messages) {
-      if (message.authorHandle !== KEMET_HANDLE) continue;
+      if (!isAssistantHandle(message.authorHandle)) continue;
       if (assistantMetaByMessageId[message.id] || fetchedMetaRef.current.has(message.id)) continue;
       fetchedMetaRef.current.add(message.id);
       getAssistantInvocation(message.id)

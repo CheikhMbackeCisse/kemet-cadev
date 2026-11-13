@@ -1,6 +1,6 @@
-import { CI_DOCKER_RECORDING, DESIGN_SYSTEM_RECORDING } from "@kemet/db";
+import { CI_DOCKER_RECORDING, DESIGN_SYSTEM_RECORDING, WAVE_WEBHOOK_RECORDING } from "@kemet/db";
 import { describe, expect, it } from "vitest";
-import { findRecordedAnswer, splitForReplay } from "./recorded-answers.js";
+import { findRecordedAnswer, findSkillExampleAnswer, splitForReplay } from "./recorded-answers.js";
 
 describe("findRecordedAnswer", () => {
   it("retrouve une question de démo retapée sans accents ni ponctuation", () => {
@@ -27,5 +27,23 @@ describe("splitForReplay", () => {
     const chunks = splitForReplay(CI_DOCKER_RECORDING.answer);
     expect(chunks.length).toBeGreaterThan(10);
     expect(chunks.join("")).toBe(CI_DOCKER_RECORDING.answer);
+  });
+});
+
+describe("findSkillExampleAnswer", () => {
+  it("montre l'échange enregistré d'un skill de démonstration, question comprise", () => {
+    expect(findSkillExampleAnswer("wave-paiements", true)).toEqual({
+      question: "@kocc avec wave-paiements, comment vérifier la signature d'un webhook Wave en Node.js ?",
+      answer: WAVE_WEBHOOK_RECORDING.answer,
+    });
+    expect(findSkillExampleAnswer("ci-docker-fiable", true)?.answer).toBe(CI_DOCKER_RECORDING.answer);
+  });
+
+  it("ne prête jamais un exemple à un skill recréé sous le même slug", () => {
+    expect(findSkillExampleAnswer("wave-paiements", false)).toBeNull();
+  });
+
+  it("ne montre rien pour un skill sans échange enregistré", () => {
+    expect(findSkillExampleAnswer("airflow-workers-oom", true)).toBeNull();
   });
 });

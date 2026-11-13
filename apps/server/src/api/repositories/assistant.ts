@@ -1,10 +1,18 @@
-import { eq, sql } from "drizzle-orm";
-import { assistantInvocations, type Db } from "@kemet/db";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { assistantInvocations, postReplies, type Db } from "@kemet/db";
 import type { LlmProviderName } from "../../ai/llm-provider.js";
 
 export async function insertInvocation(
   db: Db,
   input: { channelId: string; triggerMessageId: string; requestedBy: string },
+) {
+  const [row] = await db.insert(assistantInvocations).values(input).returning();
+  return row!;
+}
+
+export async function insertPostInvocation(
+  db: Db,
+  input: { postId: string; triggerReplyId: string; requestedBy: string },
 ) {
   const [row] = await db.insert(assistantInvocations).values(input).returning();
   return row!;
@@ -17,13 +25,20 @@ export async function markInvocationStreaming(db: Db, id: string): Promise<void>
 export async function completeInvocation(
   db: Db,
   id: string,
-  input: { responseMessageId: string; provider: LlmProviderName | null; skillIds: string[]; recorded: boolean },
+  input: {
+    responseMessageId?: string;
+    responseReplyId?: string;
+    provider: LlmProviderName | null;
+    skillIds: string[];
+    recorded: boolean;
+  },
 ): Promise<void> {
   await db
     .update(assistantInvocations)
     .set({
       status: "done",
-      responseMessageId: input.responseMessageId,
+      responseMessageId: input.responseMessageId ?? null,
+      responseReplyId: input.responseReplyId ?? null,
       provider: input.provider,
       skillIds: input.skillIds,
       recorded: input.recorded,
@@ -47,6 +62,29 @@ export async function findInvocationById(db: Db, id: string) {
 export async function findInvocationByResponseMessageId(db: Db, messageId: string) {
   const [row] = await db.select().from(assistantInvocations).where(eq(assistantInvocations.responseMessageId, messageId));
   return row ?? null;
+}
+
+export async function listInvocationsByResponseReplyIds(db: Db, replyIds: string[]) {
+  if (replyIds.length === 0) return [];
+  return db.select().from(assistantInvocations).where(inArray(assistantInvocations.responseReplyId, replyIds));
+}
+
+/** Première réponse terminée de @kemet sous chacun de ces posts, quand elle existe encore. */
+export async function listFirstAssistantRepliesByPostIds(db: Db, postIds: string[]) {
+  if (postIds.length === 0) return [];
+  const rows = await db
+    .selectDistinctOn([postReplies.postId], { reply: postReplies })
+    .from(assistantInvocations)
+    .innerJoin(postReplies, eq(postReplies.id, assistantInvocations.responseReplyId))
+    .where(
+      and(
+        inArray(assistantInvocations.postId, postIds),
+        eq(assistantInvocations.status, "done"),
+        isNull(postReplies.deletedAt),
+      ),
+    )
+    .orderBy(postReplies.postId, asc(postReplies.createdAt));
+  return rows.map((row) => row.reply);
 }
 
 export async function setInvocationHelpful(db: Db, id: string, helpful: boolean): Promise<void> {

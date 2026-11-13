@@ -1,7 +1,8 @@
-import { MessagesSquare, Send } from "lucide-react";
+import { MessagesSquare } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import type { WorkDetail } from "@kemet/shared";
 import { CodeButton } from "../content/CodeButton.js";
+import { ComposerBar, ComposerSendButton } from "../composer/ComposerBar.js";
 import { RichText } from "../content/RichText.js";
 import { usePasteAsCode } from "../content/usePasteAsCode.js";
 import { OutgoingMessages } from "../chat/OutgoingMessages.js";
@@ -109,8 +110,6 @@ export function WorkDiscussion({ work, viewer }: WorkDiscussionProps) {
 
   return (
     <section className="flex flex-col gap-4" aria-label={fr.works.tabDiscussion}>
-      <p className="text-sm text-subtle">{fr.works.discussionHint}</p>
-
       {loading ? (
         <div className="flex flex-col gap-3" role="status" aria-label={fr.works.tabDiscussion}>
           <Skeleton className="h-12 w-full" />
@@ -154,15 +153,11 @@ export function WorkDiscussion({ work, viewer }: WorkDiscussionProps) {
                 </a>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <a
-                      href={`/u/${item.group.authorHandle}`}
-                      className="min-w-0 max-w-full hover:underline"
-                    >
-                      <UserName
-                        name={item.group.authorDisplayName}
-                        level={item.group.authorLevel}
-                      />
-                    </a>
+                    <UserName
+                      name={item.group.authorDisplayName}
+                      handle={item.group.authorHandle}
+                      level={item.group.authorLevel}
+                    />
                     {authorIds.has(item.group.authorId) && <Badge>{fr.works.authorTag}</Badge>}
                     <time
                       dateTime={item.group.messages[0]!.createdAt}
@@ -208,41 +203,37 @@ export function WorkDiscussion({ work, viewer }: WorkDiscussionProps) {
 
       {viewer ? (
         <div className="flex flex-col gap-2 border-t border-border pt-4">
-          {showSuggestions && <SuggestionChips suggestions={suggestedMessages(work)} onPick={applySuggestion} />}
+          {showSuggestions && (
+            <SuggestionChips suggestions={suggestedMessages(work)} onPick={applySuggestion} />
+          )}
           {paste.notice}
-          <div className="flex items-end gap-2">
-            <CodeButton textareaRef={composerRef} onChange={setDraft} />
-            <Textarea
-              ref={composerRef}
-              placeholder={fr.works.discussionPlaceholder}
-              aria-label={fr.works.discussionPlaceholder}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onPaste={paste.handlePaste}
-              onKeyDown={(event) => {
-                if (
-                  enterSends &&
-                  event.key === "Enter" &&
-                  !event.shiftKey &&
-                  !event.nativeEvent.isComposing
-                ) {
-                  event.preventDefault();
-                  handleSend();
-                }
-              }}
-              enterKeyHint={enterSends ? "send" : "enter"}
-              variant="composer"
-              className="max-md:min-h-11 flex-1 rounded-card"
-            />
-            <Button
-              onClick={handleSend}
-              onPointerDown={(event) => event.preventDefault()}
-              aria-label={fr.chat.send}
-              className="max-md:size-control-mobile max-md:px-0"
-            >
-              <Send className="size-4" aria-hidden="true" />
-            </Button>
-          </div>
+          <ComposerBar
+            field={
+              <Textarea
+                ref={composerRef}
+                placeholder={fr.works.discussionPlaceholder}
+                aria-label={fr.works.discussionPlaceholder}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onPaste={paste.handlePaste}
+                onKeyDown={(event) => {
+                  if (
+                    enterSends &&
+                    event.key === "Enter" &&
+                    !event.shiftKey &&
+                    !event.nativeEvent.isComposing
+                  ) {
+                    event.preventDefault();
+                    handleSend();
+                  }
+                }}
+                enterKeyHint={enterSends ? "send" : "enter"}
+                variant="composer"
+              />
+            }
+            tools={<CodeButton appearance="icon" textareaRef={composerRef} onChange={setDraft} />}
+            action={<ComposerSendButton ready={Boolean(draft.trim())} onClick={handleSend} />}
+          />
         </div>
       ) : (
         <a

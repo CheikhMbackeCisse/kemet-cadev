@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="video-vertical.css">
+<style>
+/* Filmé 6 secondes : la batterie descend pendant que les tests tournent, le courant revient. */
+body { background: #14231d; color: #eaf7f0; }
+.battery { width: 360px; height: 170px; border: 8px solid #eaf7f0; border-radius: 28px; padding: 14px; position: relative; align-self: center; }
+.battery::after { content: ""; position: absolute; right: -30px; top: 50px; width: 18px; height: 54px; border-radius: 0 8px 8px 0; background: #eaf7f0; }
+.level { height: 100%; border-radius: 12px; background: #5fd38d; width: 100%; animation: drain 3.6s 0.3s linear forwards, charge 0.9s 4.4s ease-out forwards; }
+@keyframes drain { 60% { background: #f4c95d; } to { width: 12%; background: #e0584b; } }
+@keyframes charge { from { width: 12%; background: #e0584b; } to { width: 100%; background: #5fd38d; } }
+.pct { text-align: center; font-size: 72px; font-weight: 800; font-variant-numeric: tabular-nums; height: 90px; position: relative; }
+.pct span { position: absolute; inset: 0; opacity: 0; }
+.pct span:nth-child(1) { animation: show 0s 0s forwards, hide 0s 1.2s forwards; }
+.pct span:nth-child(2) { animation: show 0s 1.2s forwards, hide 0s 2.4s forwards; }
+.pct span:nth-child(3) { animation: show 0s 2.4s forwards, hide 0s 3.9s forwards; }
+.pct span:nth-child(4) { animation: show 0s 3.9s forwards, hide 0s 4.4s forwards; }
+.pct span:nth-child(5) { animation: show 0s 4.4s forwards; }
+.tests { font-size: 30px; line-height: 1.7; }
+.tests div { opacity: 0; }
+.tests div:nth-child(1) { animation: show 0s 0.6s forwards; }
+.tests div:nth-child(2) { animation: show 0s 1.6s forwards; }
+.tests div:nth-child(3) { animation: show 0s 2.6s forwards; }
+.tests div:nth-child(4) { animation: show 0s 4.5s forwards; }
+.ok { color: #5fd38d; }
+.back { font-size: 46px; font-weight: 800; color: #f4c95d; animation: show 0s 4.4s forwards; }
+</style>
+</head>
+<body>
+  <h1>Coupure de courant pendant les tests</h1>
+  <div class="battery"><div class="level"></div></div>
+  <div class="pct"><span>100 %</span><span>64 %</span><span>31 %</span><span>12 %</span><span>⚡ secteur</span></div>
+  <div class="tests mono">
+    <div><span class="ok">✓</span> paiements (38)</div>
+    <div><span class="ok">✓</span> stock (54)</div>
+    <div><span class="ok">✓</span> sync hors ligne (21)</div>
+    <div><span class="ok">✓</span> 113 tests, 0 échec</div>
+  </div>
+  <div class="back late">Le courant est revenu avant la batterie.</div>
+  <div class="sign">Vidéo d'exemple, Kemet</div>
+</body>
+</html>

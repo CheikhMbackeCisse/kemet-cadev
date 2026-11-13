@@ -8,6 +8,7 @@ export interface CheckboxProps {
   id?: string;
   disabled?: boolean;
   "aria-label"?: string;
+  "aria-describedby"?: string;
   className?: string;
 }
 

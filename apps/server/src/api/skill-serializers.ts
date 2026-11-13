@@ -1,11 +1,12 @@
 import type { skills, profiles } from "@kemet/db";
-import type { SkillDetail, SkillSummary } from "@kemet/shared";
+import { skillCodeExcerpt, type SkillCitation, type SkillDetail, type SkillSummary } from "@kemet/shared";
 
 type SkillRow = typeof skills.$inferSelect;
 type ProfileRow = typeof profiles.$inferSelect;
 type RatingStats = { average: number | null; count: number };
+type SkillStats = RatingStats & { uses: number };
 
-export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings: RatingStats): SkillSummary {
+export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings: SkillStats): SkillSummary {
   return {
     id: row.id,
     slug: row.slug,
@@ -13,19 +14,34 @@ export function serializeSkillSummary(row: SkillRow, author: ProfileRow, ratings
     description: row.description,
     tags: row.tags,
     visibility: row.visibility,
+    isBeginner: row.isBeginner,
     authorId: row.authorId,
     authorHandle: author.handle,
     authorDisplayName: author.displayName,
+    authorAvatarUrl: author.avatarUrl,
+    codeExcerpt: skillCodeExcerpt(row.content),
     averageStars: ratings.average,
     ratingCount: ratings.count,
+    usageCount: ratings.uses,
     createdAt: row.createdAt.toISOString(),
   };
 }
 
-export function serializeSkillDetail(row: SkillRow, author: ProfileRow, ratings: RatingStats): SkillDetail {
+export function serializeSkillDetail(row: SkillRow, author: ProfileRow, ratings: SkillStats): SkillDetail {
   return {
     ...serializeSkillSummary(row, author, ratings),
     content: row.content,
     spaceId: row.spaceId,
+  };
+}
+
+/** Skill cité par une réponse de @kemet, avec son auteur. */
+export function serializeSkillCitation(row: SkillRow, author: ProfileRow): SkillCitation {
+  return {
+    slug: row.slug,
+    name: row.name,
+    authorHandle: author.handle,
+    authorDisplayName: author.displayName,
+    authorAvatarUrl: author.avatarUrl,
   };
 }

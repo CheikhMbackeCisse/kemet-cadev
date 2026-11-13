@@ -24,7 +24,7 @@ vi.mock("../components/layout/RailPage.js", () => ({
 
 function me(overrides: Partial<MeResponse>): MeResponse {
   return {
-    user: { id: "u1", email: "amina@test.kemet", emailVerified: true },
+    user: { id: "u1", email: "amina@test.kemet", emailVerified: true, name: "Amina" },
     profile: null,
     points: 0,
     credentials: [],
@@ -32,6 +32,7 @@ function me(overrides: Partial<MeResponse>): MeResponse {
     isSuspended: false,
     hasPassword: true,
     socialProviders: [],
+    onboarding: null,
     ...overrides,
   };
 }
@@ -60,28 +61,31 @@ describe("DeleteAccountPage", () => {
     deleteMyAccount.mockReset();
   });
 
-  it("demande la case et le mot de passe avant d'activer la suppression", async () => {
+  it("à l'envoi, signale sous chaque champ la case et le mot de passe manquants", async () => {
     getMe.mockResolvedValue(me({ hasPassword: true }));
     renderPage();
 
     const password = await screen.findByLabelText("Ton mot de passe");
-    expect(screen.getByRole("button", SUBMIT)).toBeDisabled();
-    expect(screen.getByText("Coche la case pour confirmer.")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("checkbox"));
-    expect(screen.getByText("Saisis ton mot de passe.")).toBeInTheDocument();
-
-    fireEvent.change(password, { target: { value: "secret" } });
     expect(screen.getByRole("button", SUBMIT)).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", SUBMIT));
+
+    expect(screen.getByText("Coche la case pour confirmer.")).toBeInTheDocument();
+    expect(screen.getByText("Saisis ton mot de passe.")).toBeInTheDocument();
+    expect(password).toHaveAttribute("aria-invalid", "true");
+    expect(deleteMyAccount).not.toHaveBeenCalled();
   });
 
   it("dit clairement qu'un mot de passe est faux, sans quitter la page", async () => {
     getMe.mockResolvedValue(me({ hasPassword: true }));
     const { ChatApiError } = await import("../lib/chat/api.js");
-    deleteMyAccount.mockRejectedValue(new ChatApiError("wrong_password", "Mot de passe incorrect.", 403));
+    deleteMyAccount.mockRejectedValue(
+      new ChatApiError("wrong_password", "Mot de passe incorrect.", 403),
+    );
     renderPage();
 
-    fireEvent.change(await screen.findByLabelText("Ton mot de passe"), { target: { value: "faux" } });
+    fireEvent.change(await screen.findByLabelText("Ton mot de passe"), {
+      target: { value: "faux" },
+    });
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", SUBMIT));
 
@@ -93,7 +97,9 @@ describe("DeleteAccountPage", () => {
     getMe.mockResolvedValue(me({ hasPassword: false, socialProviders: ["github"] }));
     renderPage();
 
-    expect(await screen.findByRole("button", { name: "Se reconnecter avec GitHub" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Se reconnecter avec GitHub" }),
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText("Ton mot de passe")).not.toBeInTheDocument();
   });
 });

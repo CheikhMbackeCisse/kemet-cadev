@@ -1,22 +1,44 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { TooltipProvider } from "../ui/Tooltip.js";
 import { ActivityBar } from "./ActivityBar.js";
 import { SidePanelProvider } from "./sidePanel.js";
 
-vi.mock("./AccountMenu.js", () => ({ AccountMenu: () => null }));
+let wide = false;
+vi.mock("../../lib/useMediaQuery.js", () => ({ useMediaQuery: () => wide }));
 
-function renderBar(unreadCounts?: Partial<Record<string, number>>) {
+vi.mock("../../lib/useSiteConfig.js", () => ({ useSiteConfig: () => null }));
+
+vi.mock("../../session/SessionProvider.js", () => ({
+  useSession: () => ({
+    status: "ready",
+    isPlatformAdmin: false,
+    profile: { displayName: "Awa Ndiaye", handle: "awa", avatarUrl: null },
+  }),
+}));
+
+function renderBar(
+  unreadCounts?: Partial<Record<string, number>>,
+  options: { activeSection?: string; hasSidePanel?: boolean } = {},
+) {
   return render(
     <TooltipProvider>
-      <SidePanelProvider>
-        <ActivityBar activeSection="fil" hasSidePanel={false} unreadCounts={unreadCounts} />
+      <SidePanelProvider enabled={options.hasSidePanel ?? false}>
+        <ActivityBar
+          activeSection={options.activeSection ?? "fil"}
+          hasSidePanel={options.hasSidePanel ?? false}
+          unreadCounts={unreadCounts}
+        />
       </SidePanelProvider>
     </TooltipProvider>,
   );
 }
 
-describe("barre d'activité", () => {
+describe("barre latérale", () => {
+  afterEach(() => {
+    wide = false;
+  });
+
   it("annonce les non-lus d'une section dans le nom de son icône", () => {
     renderBar({ salons: 3 });
     expect(screen.getByRole("link", { name: "Salons, 3 non lus" })).toBeInTheDocument();
@@ -31,5 +53,65 @@ describe("barre d'activité", () => {
   it("n'affiche aucune pastille sans non-lus", () => {
     renderBar({ salons: 0 });
     expect(screen.getByRole("link", { name: "Salons" })).toHaveTextContent("");
+  });
+
+  it("remplit l'icône d'une section ouverte qui s'y prête, épaissit le trait des autres", () => {
+    const { unmount } = renderBar(undefined, { activeSection: "fil" });
+    const filIcon = screen.getByRole("link", { name: "Fil" }).querySelector("svg")!;
+    expect(filIcon).toHaveClass("fill-current");
+    unmount();
+
+    renderBar(undefined, { activeSection: "parametres" });
+    const settingsIcon = screen.getByRole("link", { name: "Paramètres" }).querySelector("svg")!;
+    expect(settingsIcon).not.toHaveClass("fill-current");
+    expect(settingsIcon).toHaveAttribute("stroke-width", "2.25");
+  });
+
+  it("garde un seul arrêt de tabulation, sur la section ouverte", () => {
+    renderBar(undefined, { activeSection: "parametres" });
+    const focusable = screen.getAllByRole("link").filter((link) => link.tabIndex === 0);
+    expect(focusable.map((link) => link.getAttribute("href"))).toContain("/parametres");
+    expect(screen.getByRole("link", { name: "Fil" }).tabIndex).toBe(-1);
+  });
+
+  it("sur grand écran, montre les libellés et le compte, sans Enregistrés, Sécurité ni Se déconnecter", () => {
+    wide = true;
+    renderBar();
+    expect(screen.getByRole("link", { name: "Fil" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Fil" })).toHaveTextContent("Fil");
+    expect(screen.queryByRole("link", { name: "Enregistrés" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sécurité" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Mon profil, Awa Ndiaye, @awa" })).toHaveAttribute(
+      "href",
+      "/u/awa",
+    );
+    expect(screen.queryByText("Se déconnecter")).not.toBeInTheDocument();
+  });
+
+  it("se resserre en icônes sur une page à panneau latéral", () => {
+    wide = true;
+    renderBar(undefined, { activeSection: "salons", hasSidePanel: true });
+    expect(screen.getByRole("link", { name: "Fil" })).toHaveTextContent("");
+    expect(screen.getByRole("button", { name: "Salons" })).toHaveAttribute("aria-expanded");
+  });
+});
+
+describe("ordre de la barre latérale", () => {
+  it("met les sections en haut, puis Confidentialité et Paramètres en bas, sans doublon", () => {
+    renderBar();
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toEqual([
+      "/fil",
+      "/fil",
+      "/travaux",
+      "/salons",
+      "/messages",
+      "/skills",
+      "/projets",
+      "/competitions",
+      "/confidentialite",
+      "/parametres",
+      "/u/awa",
+    ]);
   });
 });

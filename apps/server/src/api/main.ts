@@ -12,7 +12,11 @@ import { UnavailableLlmProvider } from "../ai/llm-provider.js";
 import { FullTextRetriever } from "../ai/skill-retriever.js";
 import { RedisResponseCache } from "../ai/response-cache.js";
 import { KemetAssistantOrchestrator, RECORDED_ANSWER_REPLAY_DELAY_MS } from "../ai/assistant-orchestrator.js";
+import { KemetPostAssistant } from "../ai/post-assistant.js";
 import { WorkMatcher } from "../ai/work-matcher.js";
+import type { AssistantRuntime } from "../ai/assistant-runtime.js";
+import { ConcurrencyLimiter, resolveMaxConcurrentAnswers } from "../ai/concurrency-limiter.js";
+import { RedisQuotaCounter } from "../ai/quota.js";
 import { FullTextWorkRetriever } from "../ai/work-retriever.js";
 import { buildApp } from "./app.js";
 
@@ -86,6 +90,15 @@ function createOpenRouterBudget(): RedisDailyBudget {
 }
 
 const recordedAnswersEnabled = process.env.ASSISTANT_RECORDED_ANSWERS === "true";
+// Une seule file pour les réponses des salons et des posts, un seul compteur
+// de quota pour ces réponses et pour les Travaux. Une seule nouvelle
+// tentative si Valkey ne répond pas : la demande échoue au lieu d'attendre.
+const quotaClient = new Redis(valkeyUrl, { maxRetriesPerRequest: 1 });
+quotaClient.on("error", () => console.warn(JSON.stringify({ event: "assistant_quota_store_unreachable" })));
+const assistantRuntime: AssistantRuntime = {
+  quotaCounter: new RedisQuotaCounter(quotaClient),
+  limiter: new ConcurrencyLimiter(resolveMaxConcurrentAnswers(process.env)),
+};
 // Une seule chaîne pour l'assistant et les Travaux : les pauses d'un modèle
 // après un 429 et le budget OpenRouter du jour valent pour les deux.
 const llmProvider = llmChain ?? new UnavailableLlmProvider();
@@ -99,6 +112,21 @@ const assistant =
         new RedisResponseCache(valkeyUrl),
         undefined,
         { enabled: recordedAnswersEnabled, replayDelayMs: RECORDED_ANSWER_REPLAY_DELAY_MS },
+        assistantRuntime,
+      )
+    : undefined;
+const postAssistant =
+  llmChain || recordedAnswersEnabled
+    ? new KemetPostAssistant(
+        db,
+        llmProvider,
+        new FullTextRetriever(db),
+        new RedisResponseCache(valkeyUrl),
+        undefined,
+        recordedAnswersEnabled,
+        // Appelé bien après la construction de `app` : jamais pendant sa zone morte.
+        (error) => app.log.error(error, "échec de la réponse de l'assistant sous un post"),
+        assistantRuntime,
       )
     : undefined;
 
@@ -106,9 +134,10 @@ const assistant =
 // recherche plein texte, ou sur sa réponse enregistrée pour la démo.
 const workMatcher = new WorkMatcher(db, llmProvider, new FullTextWorkRetriever(db), {
   recordedAnswers: recordedAnswersEnabled,
+  quotaCounter: assistantRuntime.quotaCounter,
 });
 
-const app = buildApp({ db, auth, chat, storage, attachmentLimits, assistant, workMatcher });
+const app = buildApp({ db, auth, chat, storage, attachmentLimits, assistant, postAssistant, workMatcher });
 
 const port = Number(process.env.API_PORT ?? 3001);
 app.listen({ port, host: "0.0.0.0" }).catch((error) => {

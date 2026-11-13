@@ -9,6 +9,7 @@ import {
   workAuthors,
   workExternalAuthors,
   workLinks,
+  workMedia,
   WORK_DISCUSSIONS_SPACE_ID,
   works,
   type Db,
@@ -81,6 +82,7 @@ function searchCondition(q: string): SQL {
         where ${qualified(workAuthors.workId)} = ${qualified(works.id)} and ${qualified(workAuthors.status)} = 'accepted'
       ))
       and ${qualified(profiles.deletedAt)} is null
+      and ${qualified(profiles.isFiller)} = false
       and (${qualified(profiles.displayName)} ilike ${pattern} or ${qualified(profiles.handle)} ilike ${pattern})
     )
     or exists (
@@ -187,6 +189,9 @@ export async function softDeleteWork(db: Db, workId: string) {
     // La discussion part avec le travail : un titre masqué après signalement
     // ne doit pas rester public par son salon.
     if (work?.channelId) await tx.delete(channels).where(eq(channels.id, work.channelId));
+    // Images et vidéos libérées : le nettoyage horaire les efface et elles
+    // sortent du quota de l'auteur.
+    await tx.update(workMedia).set({ workId: null, role: null }).where(eq(workMedia.workId, workId));
     await tx
       .update(posts)
       .set({ deletedAt: now })
@@ -301,11 +306,30 @@ export async function listProfileWorks(
   return toPage(rows, limit);
 }
 
+/** Même périmètre que `listProfileWorks`, compté. */
+export async function countProfileWorks(db: Db, profileId: string): Promise<number> {
+  const coauthored = db
+    .select({ id: workAuthors.workId })
+    .from(workAuthors)
+    .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "accepted")));
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(works)
+    .where(
+      and(
+        isNull(works.deletedAt),
+        or(eq(works.publisherId, profileId), inArray(works.id, coauthored)),
+      ),
+    );
+  return row?.count ?? 0;
+}
+
 export interface WorkPeople {
   publisher: ProfileRow;
   coauthors: ProfileRow[];
   externalAuthors: string[];
   hasPdf: boolean;
+  coverMediaId: string | null;
   messageCount: number;
   levels: Map<string, Level>;
 }
@@ -318,7 +342,7 @@ export async function loadWorkPeople(
   const result = new Map<string, WorkPeople>();
   if (rows.length === 0) return result;
   const workIds = rows.map((row) => row.id);
-  const [coauthorRows, externalRows, attachmentRows, countRows] = await Promise.all([
+  const [coauthorRows, externalRows, attachmentRows, countRows, coverRows] = await Promise.all([
     db
       .select({ workId: workAuthors.workId, profile: profiles })
       .from(workAuthors)
@@ -338,11 +362,16 @@ export async function loadWorkPeople(
       .select({ id: works.id, messageCount: messageCountSql })
       .from(works)
       .where(inArray(works.id, workIds)),
+    db
+      .select({ workId: workMedia.workId, id: workMedia.id })
+      .from(workMedia)
+      .where(and(inArray(workMedia.workId, workIds), eq(workMedia.role, "cover"))),
   ]);
   const publisherIds = [...new Set(rows.map((row) => row.publisherId))];
   const publishers = await db.select().from(profiles).where(inArray(profiles.id, publisherIds));
   const publisherById = new Map(publishers.map((profile) => [profile.id, profile]));
   const withPdf = new Set(attachmentRows.map((row) => row.workId));
+  const coverById = new Map(coverRows.map((row) => [row.workId, row.id]));
   const messageCountById = new Map(countRows.map((row) => [row.id, row.messageCount]));
   const levels = await computeLevels(db, [
     ...publisherIds,
@@ -359,6 +388,7 @@ export async function loadWorkPeople(
         .filter((entry) => entry.workId === row.id)
         .map((entry) => entry.name),
       hasPdf: withPdf.has(row.id),
+      coverMediaId: coverById.get(row.id) ?? null,
       messageCount: messageCountById.get(row.id) ?? 0,
       levels,
     });

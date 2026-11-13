@@ -338,4 +338,38 @@ describe.skipIf(!databaseUrl)("Parcours vérifié, niveau affiché et opportunit
       expect(list.json().items[0].applicantLevel).toBe("scribe");
     });
   });
+
+  describe("GET /api/levels", () => {
+    it("compte les membres de chaque niveau sans l'assistant ni les comptes supprimés, sans session", async () => {
+      const artisan = await createMember("artisan@example.com", "artisan-niveaux");
+      await createMember("apprenti@example.com", "apprenti-niveaux");
+      const gone = await createMember("parti@example.com", "parti-niveaux");
+      await db.insert(pointsLedger).values({
+        profileId: artisan.profileId,
+        source: "post_feedback_given",
+        sourceId: "00000000-0000-4000-8000-000000000301",
+        amount: 400,
+      });
+      await db.insert(pointsLedger).values({
+        profileId: gone.profileId,
+        source: "post_feedback_given",
+        sourceId: "00000000-0000-4000-8000-000000000302",
+        amount: 400,
+      });
+      await db.update(profiles).set({ deletedAt: new Date() }).where(eq(profiles.id, gone.profileId));
+
+      const response = await app.inject({ method: "GET", url: "/api/levels" });
+      expect(response.statusCode).toBe(200);
+      const body = response.json() as { levels: { level: string; minPoints: number; memberCount: number }[]; rules: { replySolution: number } };
+      expect(body.levels.map((entry) => [entry.level, entry.memberCount])).toEqual([
+        ["apprenti", 1],
+        ["artisan", 1],
+        ["scribe", 0],
+        ["architecte", 0],
+        ["legende", 0],
+      ]);
+      expect(body.levels[1]!.minPoints).toBe(300);
+      expect(body.rules.replySolution).toBe(10);
+    });
+  });
 });

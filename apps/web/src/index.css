@@ -2,9 +2,8 @@
 @import "@fontsource/plus-jakarta-sans/500.css";
 @import "@fontsource/plus-jakarta-sans/600.css";
 @import "@fontsource/plus-jakarta-sans/700.css";
-@import "@fontsource/plus-jakarta-sans/800.css";
 @import "@fontsource-variable/geist-mono";
-@import "flag-icons/css/flag-icons.min.css";
+@import "@fontsource-variable/space-grotesk/wght.css";
 @import "./styles/tokens.css";
 
 @tailwind base;
@@ -26,6 +25,15 @@
     /* viewport-fit=cover : en paysage, l'encoche mangerait les bords. */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
+  }
+
+  /* Titres et textes mis en avant en Space Grotesk (DESIGN.md,
+     Typographie) ; le texte courant reste en Plus Jakarta Sans. */
+  h1,
+  h2,
+  h3 {
+    font-family: "Space Grotesk Variable", "Plus Jakarta Sans", sans-serif;
+    letter-spacing: -0.01em;
   }
 
   code,
@@ -81,6 +89,11 @@
     }
   }
 
+  /* Champ en erreur après un envoi (FormField) : bordure de danger. */
+  [data-field][aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+
   /* Contour réservé à la navigation au clavier. Un champ de saisie
      (data-field) montre son focus par sa bordure, jamais par un second
      cadre autour. */
@@ -89,9 +102,30 @@
     outline-offset: 2px;
   }
 
+  /* Titre ou zone qui reçoit le focus après un changement de page, pour le
+     lecteur d'écran : jamais de contour, il n'est pas un contrôle. */
+  [tabindex="-1"]:focus {
+    outline: none;
+  }
+
   [data-field]:focus,
   [data-field]:focus-visible {
     outline: none;
+  }
+
+  /* Pas d'attente du double toucher sur un contrôle. Le zoom à deux doigts
+     reste permis : la balise viewport ne le bloque pas. */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="link"] {
+    touch-action: manipulation;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -107,6 +141,16 @@
 }
 
 @layer utilities {
+  /* Rangée qui défile au doigt (onglets, filtres) : sa barre de défilement
+     couperait le soulignement de l'onglet actif. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* 100vh compte la barre d'adresse mobile comme visible : la page dépassait
      de l'écran et défilait en entier. 100dvh suit la hauteur réellement
      visible, clavier compris ; 100vh reste le repli des navigateurs qui ne
@@ -155,4 +199,545 @@
       scrollbar-color: var(--subtle) transparent;
     }
   }
+}
+
+/*
+ * Parcours d'arrivée (components/arrival/). La scène pose la carte au centre,
+ * entre deux bandes de décor : au-dessus et au-dessous sur téléphone, à
+ * gauche et à droite à partir de 768 px. Le décor ne passe jamais sous la
+ * carte ; une bande trop petite pour lui reste vide.
+ */
+.arrival-stage {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.arrival-stage-sm {
+  --arrival-column: calc(25rem + 2rem);
+}
+
+.arrival-stage-md {
+  --arrival-column: calc(28rem + 2rem);
+}
+
+.arrival-stage-lg {
+  --arrival-column: calc(42rem + 2rem);
+}
+
+.arrival-stage > main {
+  justify-self: center;
+  width: 100%;
+  max-width: var(--arrival-column);
+}
+
+@media (min-width: 768px) {
+  .arrival-stage {
+    grid-template-rows: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, var(--arrival-column)) minmax(0, 1fr);
+  }
+}
+
+/* La carte tient dans l'écran : la rangée du milieu ne dépasse jamais. */
+.arrival-stage-fit {
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .arrival-stage-fit {
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+
+.arrival-footer-space {
+  flex-shrink: 0;
+  height: 3rem;
+}
+
+/* Tailles minimales tirées de DECOR_MIN_BAND (components/arrival/decorLayout.ts). */
+.arrival-band {
+  container: arrival-band / size;
+}
+
+.arrival-band-items {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  @container arrival-band (min-width: 320px) and (min-height: 110px) {
+    .arrival-band-items[data-screen="mobile"] {
+      display: block;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  @container arrival-band (min-width: 280px) and (min-height: 420px) {
+    .arrival-band-items[data-screen="desktop"] {
+      display: block;
+    }
+  }
+}
+
+/*
+ * Dérive lente d'un élément autour de sa place, sans rotation ni fondu : une
+ * pastille reste nette. Seul transform bouge. Arrêtée quand l'onglet est
+ * caché, absente sur connexion lente et avec prefers-reduced-motion.
+ */
+@keyframes arrival-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(var(--drift-x), var(--drift-y), 0);
+  }
+}
+
+.arrival-drift {
+  animation: arrival-drift var(--drift-duration) ease-in-out var(--drift-delay) infinite;
+}
+
+.arrival-decor-icon {
+  color: var(--auth-decor-icon);
+}
+
+.arrival-decor-code {
+  color: var(--auth-decor-code);
+}
+
+.arrival-decor-calm {
+  color: var(--auth-text);
+  opacity: var(--auth-decor-calm-opacity);
+}
+
+/* Pastille d'un logo en couleur sur l'accueil : blanche, pleine, sans flou. */
+.arrival-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-card);
+  background-color: var(--auth-tile-bg);
+}
+
+.africa-watermark {
+  height: min(78vh, calc(90vw * 1.124));
+}
+
+/*
+ * Sur l'accueil, le continent remplit l'écran : sur téléphone, toute la
+ * largeur moins une marge, pour que les capitales du nord passent au-dessus
+ * de la carte et celles du sud au-dessous ; sur ordinateur, presque toute la
+ * hauteur, le réseau autour de la carte.
+ */
+.africa-watermark-network {
+  height: min(96vh, calc((100vw - 16px) * 1.124));
+  height: min(96dvh, calc((100vw - 16px) * 1.124));
+}
+
+/*
+ * Réseau des capitales, comme vu de nuit : points lumineux reliés par des
+ * arcs, villes en points pâles. Ce que la carte couvre s'atténue
+ * (data-covered, posé par ArrivalLayout) ; le masque des lueurs fait de même.
+ */
+.network-arc {
+  stroke: var(--auth-network-line);
+}
+
+.network-dot {
+  position: absolute;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+
+.capital-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--auth-capital-dot);
+  box-shadow: 0 0 6px 2px var(--auth-capital-halo);
+}
+
+.city-dot {
+  width: 3px;
+  height: 3px;
+  background-color: var(--auth-city-dot);
+}
+
+.network-dot[data-covered] {
+  opacity: var(--auth-network-covered-opacity);
+  box-shadow: none;
+}
+
+.network-covered-zone {
+  fill: black;
+  fill-opacity: calc(1 - var(--auth-network-covered-opacity));
+}
+
+/*
+ * Fond de "Complète ton profil" (ProfileUniverse.tsx) : trois profondeurs.
+ * L'arrière-plan, petit, flou et pâle, peut passer derrière la carte ; le
+ * premier plan, net, jamais. Chaque couche suit le pointeur d'autant plus
+ * qu'elle est proche (--parallax-x et -y, de -1 à 1).
+ */
+.universe-layer {
+  transition: transform 600ms ease-out;
+}
+
+.universe-layer[data-depth="back"] {
+  transform: translate3d(calc(var(--parallax-x, 0) * 4px), calc(var(--parallax-y, 0) * 4px), 0);
+}
+
+.universe-layer[data-depth="middle"] {
+  transform: translate3d(calc(var(--parallax-x, 0) * 10px), calc(var(--parallax-y, 0) * 10px), 0);
+}
+
+.universe-layer[data-depth="front"] {
+  transform: translate3d(calc(var(--parallax-x, 0) * 18px), calc(var(--parallax-y, 0) * 18px), 0);
+}
+
+.universe-item[data-depth="back"] {
+  opacity: 0.3;
+  filter: blur(1.5px);
+}
+
+.universe-item[data-depth="middle"] {
+  opacity: 0.6;
+  filter: blur(0.5px);
+}
+
+.universe-item[data-clash] {
+  visibility: hidden;
+}
+
+.universe-code {
+  color: var(--code-cover-text);
+}
+
+.universe-code [data-tone="keyword"] {
+  color: var(--code-cover-keyword);
+}
+
+.universe-code [data-tone="string"] {
+  color: var(--code-cover-string);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .universe-layer {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* Un élément du décor posé sur le réseau : caché, sans perdre sa place. */
+.arrival-decor-item[data-clash] {
+  visibility: hidden;
+}
+
+@media (min-width: 768px) {
+  .capital-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .city-dot {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+/*
+ * Une lueur part d'une capitale, glisse le long de l'arc puis s'efface à
+ * l'arrivée, et repart sur un autre arc (AfricaNetwork.tsx). Trois lueurs
+ * décalées d'un tiers de cycle. Épaisseurs en unités du contour : plus
+ * épaisses sur téléphone, où le continent est plus petit.
+ */
+@keyframes network-glow {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  64% {
+    opacity: 1;
+  }
+  70% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+
+.network-glow {
+  opacity: 0;
+  stroke: var(--auth-network-glow);
+  animation: network-glow 9s linear infinite;
+}
+
+.network-glow-halo {
+  stroke-opacity: 0.3;
+  stroke-width: 12;
+}
+
+.network-glow-core {
+  stroke-width: 5;
+}
+
+@media (min-width: 768px) {
+  .network-glow-halo {
+    stroke-width: 9;
+  }
+
+  .network-glow-core {
+    stroke-width: 3.5;
+  }
+}
+
+.arrival-root[data-paused] .arrival-drift,
+.arrival-root[data-paused] .network-glow {
+  animation-play-state: paused;
+}
+
+/* Sur connexion lente et avec moins de mouvement : le réseau fixe, sans lueurs. */
+.arrival-root[data-still] .arrival-drift {
+  animation: none;
+}
+
+.arrival-root[data-still] .network-glow {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrival-drift {
+    animation: none;
+  }
+
+  .network-glow {
+    display: none;
+  }
+}
+
+/*
+ * Bouton principal d'une carte du parcours (ArrivalAction.tsx), collé au bas
+ * de l'écran quand la carte dépasse, au-dessus de la zone sûre de l'iPhone.
+ * La bande prend toute la largeur de la carte (p-5, puis p-8 à partir de
+ * 640 px) ; ses marges négatives rendent sa place à la mise en page, qui ne
+ * bouge donc pas quand elle se colle. Seul son fond de verre apparaît alors
+ * (data-stuck).
+ */
+.arrival-action {
+  --arrival-action-x: 1.25rem;
+  --arrival-action-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: -0.75rem calc(-1 * var(--arrival-action-x)) calc(-1 * var(--arrival-action-bottom));
+  padding: 0.75rem var(--arrival-action-x) var(--arrival-action-bottom);
+  border-top: 1px solid transparent;
+}
+
+@media (min-width: 640px) {
+  .arrival-action {
+    --arrival-action-x: 2rem;
+  }
+}
+
+.arrival-action[data-stuck] {
+  border-top-color: var(--auth-glass-border);
+  background-color: color-mix(in srgb, var(--auth-glass) 92%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Un champ qui prend le focus ne passe pas sous le bouton collé. */
+:root[data-arrival] {
+  scroll-padding-bottom: 7rem;
+}
+
+/*
+ * Carte en verre dépoli posée sur ce fond. Le décor n'y passe jamais ; un
+ * flou léger laisse lire le continent à travers la carte, sur téléphone
+ * surtout, où la carte en couvre la plus grande part.
+ */
+.arrival-glass {
+  background-color: color-mix(
+    in srgb,
+    var(--auth-glass) calc(var(--auth-glass-opacity) * 100%),
+    transparent
+  );
+  border: 1px solid var(--auth-glass-border);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.arrival-glass-clear {
+  --auth-glass-opacity: var(--auth-glass-clear-opacity);
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+}
+
+/*
+ * Page "Moi" sur téléphone : elle monte depuis le bas, comme une feuille,
+ * en 200 ms (DESIGN.md, Mouvement).
+ */
+
+/*
+ * Navigation entre deux pages (components/navigation/Router.tsx) : l'écran
+ * précédent reste en place, une barre fine en haut signale l'attente. Elle
+ * n'apparaît qu'après 150 ms, une page déjà chargée ne la montre jamais.
+ */
+@keyframes navigation-progress {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  80% {
+    transform: scaleX(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0.95);
+    opacity: 1;
+  }
+}
+
+.navigation-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  height: 2px;
+  background-color: var(--primary);
+  transform-origin: left;
+  opacity: 0;
+  animation: navigation-progress 4s cubic-bezier(0.1, 0.7, 0.3, 1) 150ms forwards;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Une transition ne joue pas à l'apparition de l'élément : une animation
+     d'une seule étape garde le délai, sans mouvement. */
+  .navigation-progress {
+    transform: scaleX(1);
+    animation: navigation-appear 1ms linear 150ms forwards;
+  }
+}
+
+@keyframes navigation-appear {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes voice-recording-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.voice-recording-dot {
+  animation: voice-recording-blink 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-recording-dot {
+    animation: none;
+  }
+}
+
+.voice-progress {
+  accent-color: var(--primary);
+}
+
+/*
+ * Recherche des salons et messages sur téléphone : la barre se déploie depuis
+ * la loupe, à droite, par-dessus les onglets Salons et Messages.
+ */
+@keyframes chat-search-reveal {
+  from {
+    clip-path: inset(0 0 0 calc(100% - 48px));
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+.chat-search-reveal {
+  animation: chat-search-reveal 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-search-reveal {
+    animation: none;
+  }
+}
+
+/*
+ * Squelette de chargement (components/ui/Skeleton.tsx) : invisible pendant
+ * les 300 premières millisecondes. Une réponse rapide ou un cache n'en montre
+ * jamais ; sa place est réservée, rien ne saute à son apparition.
+ */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.skeleton {
+  opacity: 0;
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 300ms infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: navigation-appear 1ms linear 300ms forwards;
+  }
+}
+
+/*
+ * Glissement entre onglets sur téléphone (lib/navigation/tabSwipe.ts) : la
+ * page ou le panneau qui arrive entre du côté d'où vient le doigt. Le geste
+ * est coupé avec prefers-reduced-motion, l'animation n'a donc pas de repli.
+ */
+:root[data-tab-swipe="next"] main:not([data-swipe-leaving]),
+[data-swipe-in="next"] {
+  animation: tab-swipe-from-right 180ms ease-out;
+}
+
+:root[data-tab-swipe="previous"] main:not([data-swipe-leaving]),
+[data-swipe-in="previous"] {
+  animation: tab-swipe-from-left 180ms ease-out;
+}
+
+@keyframes tab-swipe-from-right {
+  from {
+    transform: translateX(24px);
+    opacity: 0.4;
+  }
+}
+
+@keyframes tab-swipe-from-left {
+  from {
+    transform: translateX(-24px);
+    opacity: 0.4;
+  }
+}
+
+/* Après un clic ou un toucher, aucun contour de focus, même donné par le
+   code (lib/inputModality.ts) : il ne revient qu'avec le clavier. Hors des
+   couches, pour passer devant les utilitaires focus-visible:ring-*. */
+:root[data-input="pointer"] :focus-visible {
+  outline: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
 }

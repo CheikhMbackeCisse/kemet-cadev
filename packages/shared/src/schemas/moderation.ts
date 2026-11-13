@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const reportTargetSchema = z.enum(["message", "post", "profile", "work", "conversation"]);
+export const reportTargetSchema = z.enum(["message", "post", "profile", "work", "conversation", "opportunity"]);
 export type ReportTarget = z.infer<typeof reportTargetSchema>;
 
 export const reportStatusSchema = z.enum(["pending", "resolved", "dismissed"]);

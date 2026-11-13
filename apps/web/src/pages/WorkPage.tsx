@@ -1,6 +1,13 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft, FileDown, Mail, MessagesSquare } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { isDeletedAccountHandle, type WorkDetail, type WorkLink, type WorkPerson } from "@kemet/shared";
+import {
+  isDeletedAccountHandle,
+  workMediaContentPath,
+  type WorkDetail,
+  type WorkLink,
+  type WorkPerson,
+} from "@kemet/shared";
 import {
   ChatApiError,
   decideWorkInvitation,
@@ -11,6 +18,7 @@ import {
   workAttachmentUrl,
 } from "../lib/chat/api.js";
 import { RichText } from "../components/content/RichText.js";
+import { WorkVideo } from "../components/works/WorkVideo.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
@@ -23,7 +31,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
 import { ReportDialog } from "../components/moderation/ReportMenu.js";
 import { WorkDiscussion } from "../components/works/WorkDiscussion.js";
-import { WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
+import { useWorkMatch, WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
 import {
   formatFileSize,
   WORK_LINK_ICONS,
@@ -99,8 +107,11 @@ const WORK_SKELETON = (
 
 export function WorkPage() {
   const toast = useToast();
-  const slug = readSlug(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [slug] = useState(() => readSlug(window.location.pathname));
   const { status, profile, isSuspended } = useSession();
+  const workMatch = useWorkMatch({ type: "work", slug });
 
   const [work, setWork] = useState<WorkDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -142,7 +153,9 @@ export function WorkPage() {
     changeTab("discussion");
     // Sur mobile, les onglets sont au-dessus de cette colonne : on les ramène à l'écran.
     requestAnimationFrame(() => {
-      const trigger = tabsRef.current?.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+      const trigger = tabsRef.current?.querySelector<HTMLElement>(
+        '[role="tab"][data-state="active"]',
+      );
       tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
       trigger?.focus({ preventScroll: true });
     });
@@ -153,10 +166,12 @@ export function WorkPage() {
     setTeamBusy(true);
     try {
       const { conversation } = await openTeamConversation(work.slug);
-      window.location.href = `/messages/${conversation.id}`;
+      navigate(`/messages/${conversation.id}`);
     } catch (err) {
       toast.show(
-        err instanceof ChatApiError && err.statusCode < 500 ? err.message : fr.works.writeToTeamError,
+        err instanceof ChatApiError && err.statusCode < 500
+          ? err.message
+          : fr.works.writeToTeamError,
         "danger",
       );
       setTeamBusy(false);
@@ -192,7 +207,7 @@ export function WorkPage() {
     setDeleteOpen(false);
     try {
       await deleteWork(slug);
-      window.location.href = "/travaux";
+      navigate("/travaux");
     } catch {
       toast.show(fr.works.deleteError, "danger");
     }
@@ -223,7 +238,7 @@ export function WorkPage() {
                   message: fr.works.notFound,
                   retry: {
                     label: fr.works.back,
-                    onClick: () => (window.location.href = "/travaux"),
+                    onClick: () => navigate("/travaux"),
                   },
                 }
               : {
@@ -262,7 +277,7 @@ export function WorkPage() {
     );
 
   function onMenuSelect(value: string) {
-    if (value === "edit") window.location.href = `/travaux/${work!.slug}/modifier`;
+    if (value === "edit") navigate(`/travaux/${work!.slug}/modifier`);
     if (value === "delete") setDeleteOpen(true);
     if (value === "withdraw") setWithdrawOpen(true);
     if (value === "report") setReportOpen(true);
@@ -292,6 +307,46 @@ export function WorkPage() {
   const presentation = (
     <div className="flex flex-col gap-6">
       <RichText source={work.summary} className="text-base text-text" />
+
+      {work.videos.length > 0 && (
+        <AsideSection title={fr.works.videosTitle}>
+          <div className="flex flex-col gap-4">
+            {work.videos.map((video, index) => (
+              <WorkVideo
+                key={video.id}
+                video={video}
+                title={fr.works.videoTitle(work.title, index + 1)}
+              />
+            ))}
+          </div>
+        </AsideSection>
+      )}
+
+      {work.gallery.length > 0 && (
+        <AsideSection title={fr.works.galleryTitle}>
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {work.gallery.map((image, index) => (
+              <li key={image.id}>
+                <a
+                  href={workMediaContentPath(image.id)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label={fr.works.openImage(index + 1)}
+                  className="block overflow-hidden rounded-card border border-border hover:border-border-strong"
+                >
+                  <img
+                    src={workMediaContentPath(image.id)}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[4/3] w-full bg-surface-2 object-cover"
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </AsideSection>
+      )}
 
       {(work.links.length > 0 || work.attachment) && (
         <AsideSection title={fr.works.linksTitle}>
@@ -366,6 +421,13 @@ export function WorkPage() {
     <ReadingPage activeSection="travaux" header={header}>
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-10">
         <article className="flex min-w-0 flex-col gap-4">
+          {work.coverMediaId && (
+            <img
+              src={workMediaContentPath(work.coverMediaId)}
+              alt={fr.works.coverAlt(work.title)}
+              className="aspect-[16/9] w-full rounded-card border border-border bg-surface-2 object-cover"
+            />
+          )}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h1 className="text-lg font-bold text-text">{work.title}</h1>
@@ -384,6 +446,13 @@ export function WorkPage() {
               />
             )}
           </div>
+
+          {/* Sous le titre sur téléphone, en haut de la colonne de droite sur ordinateur : un seul état. */}
+          <WorkMatchPanel
+            subject={{ type: "work", slug: work.slug }}
+            match={workMatch}
+            className="lg:hidden"
+          />
 
           {work.viewerRole === "invited" && (
             <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border py-3">
@@ -426,6 +495,11 @@ export function WorkPage() {
         </article>
 
         <aside className="flex flex-col gap-6 border-t border-border pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <WorkMatchPanel
+            subject={{ type: "work", slug: work.slug }}
+            match={workMatch}
+            className="hidden border-b border-border pb-6 lg:flex"
+          />
           <div className="flex flex-col gap-2">
             <Button onClick={joinDiscussion} aria-describedby="work-discussion-participants">
               <MessagesSquare className="size-4" aria-hidden="true" />
@@ -441,12 +515,6 @@ export function WorkPage() {
               </Button>
             )}
           </div>
-
-          <WorkMatchPanel
-            subject={{ type: "work", slug: work.slug }}
-            signedIn={status === "ready"}
-            className="border-t border-border pt-6"
-          />
         </aside>
       </div>
 

@@ -1,10 +1,9 @@
-import { ArrowLeft, ExternalLink, Settings, Sparkles } from "lucide-react";
+import { navigate } from "../lib/navigation/navigate.js";
+import { ArrowLeft, HeartHandshake, Share2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   isLevelAtLeast,
   OPEN_TO_OPPORTUNITIES_MIN_LEVEL,
-  type Credential,
-  type CredentialType,
   type ProfileSummary,
   type PublicProfileResponse,
 } from "@kemet/shared";
@@ -22,47 +21,33 @@ import {
 } from "../lib/chat/api.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Badge } from "../components/ui/Badge.js";
-import { Card } from "../components/ui/Card.js";
 import { Button } from "../components/ui/Button.js";
 import { Dialog } from "../components/ui/Dialog.js";
-import { LevelBadge } from "../components/ui/LevelBadge.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { UserName } from "../components/ui/UserName.js";
 import { useToast } from "../components/ui/Toast.js";
 import { ReadingPage } from "../components/layout/ReadingPage.js";
-import { Tabs } from "../components/ui/Tabs.js";
-import { ProfileWorks, WorkInvitations } from "../components/works/ProfileWorks.js";
+import { WorkInvitations } from "../components/works/ProfileWorks.js";
+import { ProfileTabs } from "../components/profile/ProfileTabs.js";
 import { MoreActionsMenu } from "../components/ui/MoreActionsMenu.js";
+import { profileSubtitle } from "../lib/profileIdentity.js";
 import { useSession } from "../session/SessionProvider.js";
-import { formatCount } from "../lib/formatCount.js";
+import { shareLink } from "../lib/shareLink.js";
+import { ProfileHeader } from "../components/profile/ProfileHeader.js";
+import { AvatarChangeButton } from "../components/profile/AvatarChangeButton.js";
+import { OrganizationHeader } from "../components/organizations/OrganizationHeader.js";
+import { OrganizationTabs } from "../components/organizations/OrganizationTabs.js";
+import { SIGN_UP_PATH } from "../session/signUpInvite.js";
+import {
+  PROFILE_ACTION_CLASS,
+  PROFILE_ACTIONS_ROW_CLASS,
+} from "../components/profile/profileActionClass.js";
 import { fr } from "../i18n/fr.js";
 
-const ROLE_LABELS: Record<string, string> = {
-  developer: fr.auth.roleDeveloper,
-  designer: fr.auth.roleDesigner,
-  hr: fr.auth.roleHr,
-  student: fr.auth.roleStudent,
-  project_manager: fr.auth.roleProjectManager,
-  other: fr.auth.roleOther,
-};
-
-const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
-  job: fr.profile.credentialTypeJob,
-  education: fr.profile.credentialTypeEducation,
-  internship: fr.profile.credentialTypeInternship,
-};
+// "Autre" ne dit rien sur un profil : la spécialité suffit.
 
 function readHandle(pathname: string): string {
   return pathname.replace(/^\/u\//, "");
-}
-
-function formatCredentialDate(date: string): string {
-  return new Date(date).toLocaleDateString("fr-FR", { year: "numeric", month: "short" });
-}
-
-function formatCredentialRange(startDate: string, endDate: string | null): string {
-  const start = formatCredentialDate(startDate);
-  return endDate ? `De ${start} à ${formatCredentialDate(endDate)}` : `Depuis ${start}`;
 }
 
 type FollowListKind = "followers" | "following";
@@ -79,7 +64,9 @@ const PROFILE_SKELETON = (
 
 export function UserPage() {
   const toast = useToast();
-  const handle = readHandle(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [handle] = useState(() => readHandle(window.location.pathname));
   const { profile: viewerProfile, isSuspended } = useSession();
   // `null` tant que le statut n'est pas connu : "Écrire" attend de le savoir.
   const [blocked, setBlocked] = useState<boolean | null>(null);
@@ -92,28 +79,13 @@ export function UserPage() {
   const [error, setError] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
-  // L'onglet vit dans l'adresse : "Parcours" se partage par un lien.
-  const [tab, setTab] = useState(() =>
-    new URLSearchParams(window.location.search).get("onglet") === "parcours"
-      ? "parcours"
-      : "travaux",
-  );
-
-  function selectTab(value: string) {
-    setTab(value);
-    const url =
-      value === "parcours"
-        ? `${window.location.pathname}?onglet=parcours`
-        : window.location.pathname;
-    window.history.replaceState(null, "", url);
-  }
-
   const [worksReloadKey, setWorksReloadKey] = useState(0);
 
   const [followList, setFollowList] = useState<FollowListKind | null>(null);
   const [followListItems, setFollowListItems] = useState<ProfileSummary[]>([]);
   const [followListCursor, setFollowListCursor] = useState<string | null>(null);
   const [followListLoading, setFollowListLoading] = useState(false);
+  const [followListHidden, setFollowListHidden] = useState(0);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -142,11 +114,25 @@ export function UserPage() {
     setMessageBusy(true);
     try {
       const { conversation } = await openConversation([handle]);
-      window.location.href = `/messages/${conversation.id}`;
+      navigate(`/messages/${conversation.id}`);
     } catch (err) {
-      toast.show(err instanceof ChatApiError && err.statusCode === 403 ? err.message : fr.messages.writeError, "danger");
+      toast.show(
+        err instanceof ChatApiError && err.statusCode === 403
+          ? err.message
+          : fr.messages.writeError,
+        "danger",
+      );
       setMessageBusy(false);
     }
+  }
+
+  async function handleShare() {
+    const outcome = await shareLink(
+      `${window.location.origin}/u/${handle}`,
+      fr.profile.shareTitle(data?.profile.displayName ?? handle),
+    );
+    if (outcome === "copied") toast.show(fr.profile.linkCopied, "success");
+    if (outcome === "failed") toast.show(fr.profile.shareFailed, "danger");
   }
 
   async function handleToggleBlock() {
@@ -191,12 +177,14 @@ export function UserPage() {
     setFollowList(kind);
     setFollowListItems([]);
     setFollowListCursor(null);
+    setFollowListHidden(0);
     setFollowListLoading(true);
     const loader = kind === "followers" ? listUserFollowers : listUserFollowing;
     loader(handle)
       .then((page) => {
         setFollowListItems(page.items);
         setFollowListCursor(page.nextCursor);
+        setFollowListHidden(page.hiddenCount);
       })
       .catch(() => toast.show(fr.profile.loadingError, "danger"))
       .finally(() => setFollowListLoading(false));
@@ -236,7 +224,7 @@ export function UserPage() {
               ? {
                   kind: "notFound",
                   message: fr.profile.notFound,
-                  retry: { label: fr.profile.back, onClick: () => (window.location.href = "/fil") },
+                  retry: { label: fr.profile.back, onClick: () => navigate("/fil") },
                 }
               : {
                   kind: "error",
@@ -249,135 +237,212 @@ export function UserPage() {
     );
   }
 
-  const { profile, credentials, followerCount, followingCount, isFollowedByViewer } = data;
+  const {
+    profile,
+    credentials,
+    followerCount,
+    followingCount,
+    isFollowedByViewer,
+    acceptsMessages,
+  } = data;
   const isOwnProfile = viewerProfile?.handle === profile.handle;
 
-  const credentialsContent = (
-    <div className="flex flex-col gap-3">
-      {credentials.length === 0 ? (
-        <p className="text-sm text-subtle">{fr.profile.noCredentials}</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-border">
-          {credentials.map((credential: Credential) => (
-            <li key={credential.id} className="py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge>{CREDENTIAL_TYPE_LABELS[credential.type]}</Badge>
-                <span className="text-sm font-medium text-text">{credential.title}</span>
-                <Badge tone={credential.status === "verified" ? "success" : "neutral"}>
-                  {credential.status === "verified"
-                    ? fr.profile.credentialVerified
-                    : fr.profile.credentialDeclared}
-                </Badge>
-              </div>
-              <p className="mt-1 text-sm text-text-2">{credential.organization}</p>
-              <p className="mt-0.5 text-xs text-subtle">
-                {formatCredentialRange(credential.startDate, credential.endDate)}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+  const followDialog = (
+    <Dialog
+      open={followList !== null}
+      onOpenChange={(open) => !open && setFollowList(null)}
+      title={followList === "followers" ? fr.profile.followersTitle : fr.profile.followingTitle}
+    >
+      <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
+        {followListItems.length === 0 && followListHidden === 0 && !followListLoading ? (
+          <p className="text-sm text-subtle">
+            {followList === "followers" ? fr.profile.emptyFollowers : fr.profile.emptyFollowing}
+          </p>
+        ) : (
+          followListItems.map((item) => (
+            <a
+              key={item.id}
+              href={`/u/${item.handle}`}
+              className="flex items-center gap-2 rounded-control p-1 hover:bg-surface-2"
+            >
+              <Avatar
+                name={item.displayName}
+                src={item.avatarUrl ?? undefined}
+                size={32}
+                countryCode={item.country}
+                square={item.kind === "organization"}
+              />
+              <UserName name={item.displayName} organization={item.kind === "organization"} />
+            </a>
+          ))
+        )}
+        {followListLoading && <Skeleton className="h-10 w-full" />}
+        {!followListCursor && !followListLoading && followListHidden > 0 && (
+          <p className="px-1 text-sm text-text-2">
+            {fr.profile.hiddenFollows(
+              new Intl.NumberFormat("fr-FR").format(followListHidden),
+              followListItems.length > 0,
+            )}
+          </p>
+        )}
+        {followListCursor && !followListLoading && (
+          <Button variant="secondary" className="self-center text-xs" onClick={loadMoreFollowList}>
+            {fr.profile.loadMore}
+          </Button>
+        )}
+      </div>
+    </Dialog>
   );
 
-  return (
-    <ReadingPage header={header} activeMobileTab="moi">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-start gap-3">
-          <Avatar
-            name={profile.displayName}
-            src={profile.avatarUrl ?? undefined}
-            size={40}
-            countryCode={profile.country}
-          />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold text-text">{profile.displayName}</h1>
-              <LevelBadge level={profile.level} />
-            </div>
-            <p className="text-sm text-subtle">
-              {[profile.role ? ROLE_LABELS[profile.role] : null, profile.title]
-                .filter(Boolean)
-                .join(" · ") || `@${profile.handle}`}
-            </p>
-          </div>
-          {isOwnProfile ? (
-            <a
-              href="/parametres"
-              className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control border border-border-strong px-4 text-sm font-medium text-text hover:bg-surface-2"
-            >
-              <Settings className="size-4" aria-hidden="true" />
-              {fr.profile.settingsLink}
-            </a>
-          ) : (
-            viewerProfile && (
-              // Sur téléphone, trois boutons à côté du nom le coupaient sur deux lignes.
-              <div className="flex shrink-0 items-center gap-2 max-sm:w-full">
+  if (profile.kind === "organization") {
+    return (
+      <ReadingPage header={header} activeMobileTab="">
+        <OrganizationHeader
+          profile={profile}
+          stats={[
+            {
+              label: fr.profile.statFollowers(followerCount),
+              value: followerCount,
+              onClick: () => openFollowList("followers"),
+            },
+            {
+              label: fr.organizations.statOpportunities(data.opportunityCount),
+              value: data.opportunityCount,
+            },
+          ]}
+          actions={
+            <div className={PROFILE_ACTIONS_ROW_CLASS}>
+              {viewerProfile ? (
                 <Button
                   variant={isFollowedByViewer ? "secondary" : "primary"}
                   onClick={handleToggleFollow}
                   disabled={followBusy}
                 >
-                  {isFollowedByViewer ? fr.profile.unfollow : fr.profile.follow}
+                  {isFollowedByViewer ? fr.organizations.unfollow : fr.organizations.follow}
                 </Button>
-                {blocked === false && !isSuspended && (
-                  <Button variant="secondary" onClick={handleWrite} loading={messageBusy}>
-                    {fr.messages.write}
-                  </Button>
-                )}
-                <MoreActionsMenu
-                  label={fr.messages.profileActions(profile.displayName)}
-                  items={[
-                    blocked
-                      ? { value: "unblock", label: fr.messages.unblock(profile.handle) }
-                      : { value: "block", label: fr.messages.block(profile.handle), danger: true },
-                  ]}
-                  onSelect={(value) => (value === "unblock" ? void handleToggleBlock() : setBlockConfirmOpen(true))}
-                />
-              </div>
-            )
-          )}
-        </div>
-
-        {blocked && <p className="text-sm text-text-2">{fr.messages.blockedNote(profile.handle)}</p>}
-
-        {/* Kemet Pro ne vit que sur son propre profil, nulle part ailleurs. */}
-        {isOwnProfile && (
-          <Card variant="plain" className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <Sparkles className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-md font-semibold text-text">{fr.profile.proTitle}</p>
-                <p className="text-sm text-text-2">{fr.profile.proPitch}</p>
-              </div>
+              ) : (
+                <a
+                  href={SIGN_UP_PATH}
+                  className="inline-flex h-control items-center justify-center rounded-control bg-action-strong px-4 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover max-md:h-control-mobile"
+                >
+                  {fr.organizations.follow}
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => void handleShare()}
+                className={PROFILE_ACTION_CLASS}
+              >
+                <Share2 className="size-4 shrink-0" aria-hidden="true" />
+                {fr.organizations.share}
+              </button>
             </div>
-            <a
-              href="/pro"
-              className="inline-flex h-control max-md:h-control-mobile items-center justify-center rounded-control border border-border-strong px-4 text-sm font-medium text-text hover:bg-surface-2"
-            >
-              {fr.profile.proCta}
-            </a>
-          </Card>
+          }
+        />
+        <OrganizationTabs handle={profile.handle} />
+        {followDialog}
+      </ReadingPage>
+    );
+  }
+
+  return (
+    <ReadingPage
+      header={header}
+      activeSection={isOwnProfile ? "moi" : undefined}
+      activeMobileTab={isOwnProfile ? "moi" : ""}
+    >
+      <div className="flex flex-col gap-3">
+        <ProfileHeader
+          profile={profile}
+          subtitle={profileSubtitle(profile)}
+          addNameHref={isOwnProfile ? "/parametres/profil" : undefined}
+          avatarAction={
+            isOwnProfile ? (
+              <AvatarChangeButton
+                variant="badge"
+                hasPhoto={Boolean(profile.avatarUrl)}
+                disabled={isSuspended}
+                onChanged={(avatarUrl) =>
+                  setData((current) =>
+                    current ? { ...current, profile: { ...current.profile, avatarUrl } } : current,
+                  )
+                }
+              />
+            ) : undefined
+          }
+          stats={[
+            { label: fr.profile.statWorks(data.workCount), value: data.workCount },
+            {
+              label: fr.profile.statFollowers(followerCount),
+              value: followerCount,
+              onClick: () => openFollowList("followers"),
+            },
+            {
+              label: fr.profile.statFollowing(followingCount),
+              value: followingCount,
+              onClick: () => openFollowList("following"),
+            },
+          ]}
+          actions={
+            isOwnProfile ? (
+              <div className={PROFILE_ACTIONS_ROW_CLASS}>
+                <a href="/parametres/profil" className={PROFILE_ACTION_CLASS}>
+                  {fr.profile.editProfile}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => void handleShare()}
+                  className={PROFILE_ACTION_CLASS}
+                >
+                  <Share2 className="size-4 shrink-0" aria-hidden="true" />
+                  {fr.profile.share}
+                </button>
+              </div>
+            ) : (
+              viewerProfile && (
+                <div className="flex items-center gap-2 md:w-[26rem]">
+                  <Button
+                    variant={isFollowedByViewer ? "secondary" : "primary"}
+                    onClick={handleToggleFollow}
+                    disabled={followBusy}
+                    className="flex-1"
+                  >
+                    {isFollowedByViewer ? fr.profile.unfollow : fr.profile.follow}
+                  </Button>
+                  {blocked === false && !isSuspended && acceptsMessages && (
+                    <Button
+                      variant="secondary"
+                      onClick={handleWrite}
+                      loading={messageBusy}
+                      className="flex-1"
+                    >
+                      {fr.messages.write}
+                    </Button>
+                  )}
+                  <MoreActionsMenu
+                    label={fr.messages.profileActions(profile.displayName)}
+                    items={[
+                      blocked
+                        ? { value: "unblock", label: fr.messages.unblock(profile.handle) }
+                        : {
+                            value: "block",
+                            label: fr.messages.block(profile.handle),
+                            danger: true,
+                          },
+                    ]}
+                    onSelect={(value) =>
+                      value === "unblock" ? void handleToggleBlock() : setBlockConfirmOpen(true)
+                    }
+                  />
+                </div>
+              )
+            )
+          }
+        />
+
+        {blocked && (
+          <p className="text-sm text-text-2">{fr.messages.blockedNote(profile.handle)}</p>
         )}
-
-        {profile.bio && <p className="whitespace-pre-wrap text-sm text-text">{profile.bio}</p>}
-
-        <div className="flex items-center gap-4 text-sm">
-          <button
-            type="button"
-            onClick={() => openFollowList("followers")}
-            className="rounded-control py-2 hover:underline max-md:min-h-control-mobile"
-          >
-            {fr.profile.followersCount(formatCount(followerCount))}
-          </button>
-          <button
-            type="button"
-            onClick={() => openFollowList("following")}
-            className="rounded-control py-2 hover:underline max-md:min-h-control-mobile"
-          >
-            {fr.profile.followingCount(formatCount(followingCount))}
-          </button>
-        </div>
 
         {profile.stack.length > 0 && (
           <div className="flex flex-col gap-1.5">
@@ -390,85 +455,37 @@ export function UserPage() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
-          {profile.githubUrl && (
-            <a
-              href={profile.githubUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"
-            >
-              <ExternalLink className="size-4" aria-hidden="true" />
-              {fr.profile.githubLink}
-            </a>
-          )}
-          {profile.openToOpportunities &&
-            isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL) && (
-            <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
-          )}
-        </div>
+        {((profile.openToOpportunities &&
+          profile.level &&
+          isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL)) ||
+          profile.helpsBeginners) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {profile.openToOpportunities &&
+              profile.level &&
+              isLevelAtLeast(profile.level, OPEN_TO_OPPORTUNITIES_MIN_LEVEL) && (
+                <Badge tone="success">{fr.profile.openToOpportunities}</Badge>
+              )}
+            {profile.helpsBeginners && (
+              <Badge tone="accent">
+                <HeartHandshake className="size-3.5" aria-hidden="true" />
+                {fr.profile.helpsBeginners}
+              </Badge>
+            )}
+          </div>
+        )}
       </div>
 
       {isOwnProfile && <WorkInvitations onDecided={() => setWorksReloadKey((key) => key + 1)} />}
 
-      <Tabs
-        value={tab}
-        onValueChange={selectTab}
-        items={[
-          {
-            value: "travaux",
-            label: fr.works.profileTab,
-            content: (
-              <ProfileWorks
-                handle={profile.handle}
-                isOwnProfile={isOwnProfile}
-                reloadKey={worksReloadKey}
-              />
-            ),
-          },
-          { value: "parcours", label: fr.works.profileCredentialsTab, content: credentialsContent },
-        ]}
+      <ProfileTabs
+        profile={profile}
+        workCount={data.workCount}
+        credentials={credentials}
+        isOwnProfile={isOwnProfile}
+        worksReloadKey={worksReloadKey}
       />
 
-      <Dialog
-        open={followList !== null}
-        onOpenChange={(open) => !open && setFollowList(null)}
-        title={followList === "followers" ? fr.profile.followersTitle : fr.profile.followingTitle}
-      >
-        <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
-          {followListItems.length === 0 && !followListLoading ? (
-            <p className="text-sm text-subtle">
-              {followList === "followers" ? fr.profile.emptyFollowers : fr.profile.emptyFollowing}
-            </p>
-          ) : (
-            followListItems.map((item) => (
-              <a
-                key={item.id}
-                href={`/u/${item.handle}`}
-                className="flex items-center gap-2 rounded-control p-1 hover:bg-surface-2"
-              >
-                <Avatar
-                  name={item.displayName}
-                  src={item.avatarUrl ?? undefined}
-                  size={32}
-                  countryCode={item.country}
-                />
-                <UserName name={item.displayName} />
-              </a>
-            ))
-          )}
-          {followListLoading && <Skeleton className="h-10 w-full" />}
-          {followListCursor && !followListLoading && (
-            <Button
-              variant="secondary"
-              className="self-center text-xs"
-              onClick={loadMoreFollowList}
-            >
-              {fr.profile.loadMore}
-            </Button>
-          )}
-        </div>
-      </Dialog>
+      {followDialog}
       <Dialog
         open={blockConfirmOpen}
         onOpenChange={setBlockConfirmOpen}

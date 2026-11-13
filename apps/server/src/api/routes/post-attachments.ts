@@ -1,9 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
+import { readImageSize } from "@kemet/shared";
 import { requireSessionUserId } from "../../auth/session.js";
+import { z } from "zod";
 import { badRequest, forbidden, notFound } from "../../errors.js";
+import { PUBLIC_FILE_CACHE } from "../../storage/cache-control.js";
 import { detectAttachment } from "../../storage/detect-attachment.js";
 import { contentDisposition } from "../../storage/content-disposition.js";
+import { parseByteRange } from "../../storage/byte-range.js";
 import { lockUserStorageQuota } from "../repositories/attachments.js";
 import { sumTotalUserStorageBytes } from "../repositories/storage-usage.js";
 import {
@@ -69,44 +73,110 @@ export function registerPostAttachmentRoutes(
       }
 
       const storageKey = randomUUID();
-      const attachment = await db.transaction(async (tx) => {
-        // Même verrou que les fichiers de salon : un seul quota par utilisateur.
-        await lockUserStorageQuota(tx, profile.id);
-        const alreadyStored = await sumTotalUserStorageBytes(tx, profile.id);
-        if (alreadyStored + buffer.length > attachmentLimits.maxUserStorageBytes) {
-          throw badRequest("Quota de stockage de fichiers atteint.");
-        }
-        await storage.save(storageKey, buffer);
-        return insertPendingPostAttachment(tx, {
-          authorId: profile.id,
-          storageKey,
-          mimeType: detected.mimeType,
-          originalName: sanitizeFilename(part.filename),
-          byteSize: buffer.length,
+      let saved = false;
+      const attachment = await db
+        .transaction(async (tx) => {
+          // Même verrou que les fichiers de salon : un seul quota par utilisateur.
+          await lockUserStorageQuota(tx, profile.id);
+          const alreadyStored = await sumTotalUserStorageBytes(tx, profile.id);
+          if (alreadyStored + buffer.length > attachmentLimits.maxUserStorageBytes) {
+            throw badRequest("Quota de stockage de fichiers atteint.");
+          }
+          await storage.save(storageKey, buffer);
+          saved = true;
+          return insertPendingPostAttachment(tx, {
+            authorId: profile.id,
+            storageKey,
+            mimeType: detected.mimeType,
+            originalName: sanitizeFilename(part.filename),
+            byteSize: buffer.length,
+            ...(readImageSize(buffer, detected.mimeType) ?? { width: null, height: null }),
+          });
+        })
+        // Sans ligne en base, ni le quota ni le nettoyage des orphelins ne
+        // verraient ce fichier.
+        .catch(async (error: unknown) => {
+          if (saved) await storage.delete(storageKey);
+          throw error;
         });
-      });
 
       return { attachment: serializePostAttachment(attachment) };
     },
   );
 
-  app.get<{ Params: { id: string } }>("/api/post-attachments/:id/content", async (request, reply) => {
-    const attachment = await findPostAttachmentById(db, request.params.id);
-    // Une image jamais rattachée à un post (composeur abandonné) n'est
-    // jamais servie, comme pour les fichiers de salon.
-    if (!attachment || !attachment.postId) throw notFound("Cette image n'existe pas.");
-    const post = await findPostById(db, attachment.postId);
-    // Sans ce contrôle, l'image d'un post supprimé resterait joignable par son
-    // URL. Route publique, comme le fil.
-    if (!post || post.deletedAt) throw notFound("Cette image n'existe pas.");
-    if (await isProfileDeleted(db, attachment.authorId)) throw notFound("Cette image a été supprimée.");
+  const attachmentParamsSchema = z.object({ id: z.string().uuid() });
 
-    reply
-      .header("X-Content-Type-Options", "nosniff")
-      .header("Content-Security-Policy", "default-src 'none'")
-      .header("Content-Length", attachment.byteSize)
-      .header("Content-Disposition", contentDisposition("inline", attachment.originalName))
-      .type(attachment.mimeType);
-    return reply.send(storage.read(attachment.storageKey));
-  });
+  async function findServable(params: unknown) {
+    const { id } = attachmentParamsSchema.parse(params);
+    const attachment = await findPostAttachmentById(db, id);
+    // Un fichier jamais rattaché à un post (composeur abandonné) n'est
+    // jamais servi, comme pour les fichiers de salon.
+    if (!attachment || !attachment.postId) throw notFound("Ce fichier n'existe pas.");
+    const post = await findPostById(db, attachment.postId);
+    // Sans ce contrôle, le fichier d'un post supprimé resterait joignable par
+    // son URL. Route publique, comme le fil.
+    if (!post || post.deletedAt) throw notFound("Ce fichier n'existe pas.");
+    if (await isProfileDeleted(db, attachment.authorId))
+      throw notFound("Ce fichier a été supprimé.");
+    return attachment;
+  }
+
+  // Seuls des types d'image et de vidéo vérifiés sur le contenu arrivent ici,
+  // servis avec le type détecté à l'envoi et sans interprétation possible
+  // (nosniff, CSP vide). Les requêtes partielles laissent le lecteur vidéo
+  // avancer sans tout télécharger, et reprendre une lecture coupée.
+  app.get<{ Params: { id: string } }>(
+    "/api/post-attachments/:id/content",
+    async (request, reply) => {
+      const attachment = await findServable(request.params);
+      reply
+        .header("X-Content-Type-Options", "nosniff")
+        .header("Content-Security-Policy", "default-src 'none'")
+        .header("Cache-Control", PUBLIC_FILE_CACHE)
+        .header("Accept-Ranges", "bytes")
+        .header("Content-Disposition", contentDisposition("inline", attachment.originalName))
+        .type(attachment.mimeType);
+
+      const range = parseByteRange(request.headers.range, attachment.byteSize);
+      if (range === "unsatisfiable") {
+        return reply
+          .code(416)
+          .header("Cache-Control", "no-store")
+          .header("Content-Range", `bytes */${attachment.byteSize}`)
+          .send();
+      }
+      if (range) {
+        return reply
+          .code(206)
+          .header("Content-Range", `bytes ${range.start}-${range.end}/${attachment.byteSize}`)
+          .header("Content-Length", range.end - range.start + 1)
+          .send(storage.read(attachment.storageKey, range));
+      }
+      return reply
+        .header("Content-Length", attachment.byteSize)
+        .send(storage.read(attachment.storageKey));
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    "/api/post-attachments/:id/poster",
+    async (request, reply) => {
+      const attachment = await findServable(request.params);
+      if (
+        !attachment.posterStorageKey ||
+        !attachment.posterMimeType ||
+        attachment.posterByteSize === null
+      ) {
+        throw notFound("Cette vidéo n'a pas d'image d'aperçu.");
+      }
+      reply
+        .header("X-Content-Type-Options", "nosniff")
+        .header("Content-Security-Policy", "default-src 'none'")
+        .header("Cache-Control", PUBLIC_FILE_CACHE)
+        .header("Content-Length", attachment.posterByteSize)
+        .header("Content-Disposition", contentDisposition("inline", "apercu"))
+        .type(attachment.posterMimeType);
+      return reply.send(storage.read(attachment.posterStorageKey));
+    },
+  );
 }

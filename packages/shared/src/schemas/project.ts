@@ -69,6 +69,20 @@ export const projectSummarySchema = z.object({
 
 export type ProjectSummary = z.infer<typeof projectSummarySchema>;
 
+export const MAX_FEED_PROJECTS = 20;
+
+export const feedProjectsQuerySchema = z.object({
+  tab: z.enum(["abonnements", "pour-toi"]).default("pour-toi"),
+  limit: z.coerce.number().int().min(1).max(MAX_FEED_PROJECTS).default(6),
+});
+
+/** Carte d'un projet dans le fil : le résumé et les rôles qu'il cherche. */
+export const feedProjectSchema = projectSummarySchema.extend({
+  openRoles: z.array(z.object({ id: z.string().uuid(), title: z.string(), kind: helpRequestKindSchema })),
+});
+
+export type FeedProject = z.infer<typeof feedProjectSchema>;
+
 export const projectDetailSchema = projectSummarySchema.extend({
   description: z.string(),
   repoUrl: z.string(),

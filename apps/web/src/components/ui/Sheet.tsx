@@ -36,7 +36,9 @@ export function Sheet({ open, onOpenChange, side, title, children, className }: 
           )}
         >
           <div className="mb-3 flex items-center justify-between gap-4">
-            <RadixDialog.Title className="text-md font-semibold text-text">{title}</RadixDialog.Title>
+            <RadixDialog.Title className="text-md font-semibold text-text">
+              {title}
+            </RadixDialog.Title>
             <RadixDialog.Close
               aria-label="Fermer"
               className="inline-flex size-control-mobile shrink-0 items-center justify-center rounded-control text-text-2 hover:bg-surface-2"

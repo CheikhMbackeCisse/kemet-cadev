@@ -25,7 +25,20 @@
   --link: #1265dd;
   --accent-soft: #ecf3ff;
   --accent-soft-2: #dbe9fd;
+  /* Section ouverte de la barre latérale : plus sombre que le survol (surface-2). */
+  --nav-active: #e1e7ef;
+  /* État actif fort (barre latérale, espace choisi, action d'en-tête) : le
+     noir de l'onglet actif du bas, à la place du bleu. */
+  --action-strong: #1f1f1f;
+  --action-strong-hover: #3a3a3a;
+  --on-action-strong: #ffffff;
   --level-badge-text: #0f56bd;
+  --level-apprenti: #2e7d32;
+  --level-artisan: #a14f00;
+  --level-scribe: #0e7490;
+  --level-architecte: #1265dd;
+  --level-legende: #7c3aed;
+  --rating-star: #a14f00;
   --assistant-bg: #f5f8ff;
   --assistant-border: #d0e2ff;
   --success: #1e8205;
@@ -33,6 +46,18 @@
   --danger: #c4320a;
   --danger-soft: #fbe9e3;
   --on-danger: #ffffff;
+  --space-tint-1: #1565c0;
+  --space-tint-2: #2e7d32;
+  --space-tint-3: #6a1b9a;
+  --space-tint-4: #ad1457;
+  --space-tint-5: #00695c;
+  --space-tint-6: #a14f00;
+  --space-tint-7: #c62828;
+  --space-tint-8: #3949ab;
+  --space-tint-9: #6d4c41;
+  --space-tint-10: #455a64;
+  --space-tint-11: #76680a;
+  --space-tint-12: #00727d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -51,7 +76,17 @@
     --link: #7fb0f7;
     --accent-soft: #16233d;
     --accent-soft-2: #1d2e50;
+    --nav-active: #283553;
+    --action-strong: #e8ecf4;
+    --action-strong-hover: #ffffff;
+    --on-action-strong: #0d1320;
     --level-badge-text: #7fb0f7;
+    --level-apprenti: #5cc46b;
+    --level-artisan: #e8a33c;
+    --level-scribe: #3cc0d8;
+    --level-architecte: #7fb0f7;
+    --level-legende: #b794f6;
+    --rating-star: #e8a33c;
     --assistant-bg: #121c30;
     --assistant-border: #26406e;
     --success: #4cc26a;
@@ -59,6 +94,18 @@
     --danger: #f07856;
     --danger-soft: #3a1b14;
     --on-danger: #0d1320;
+    --space-tint-1: #1565c0;
+    --space-tint-2: #2e7d32;
+    --space-tint-3: #6a1b9a;
+    --space-tint-4: #ad1457;
+    --space-tint-5: #00695c;
+    --space-tint-6: #a14f00;
+    --space-tint-7: #c62828;
+    --space-tint-8: #3949ab;
+    --space-tint-9: #6d4c41;
+    --space-tint-10: #455a64;
+    --space-tint-11: #76680a;
+    --space-tint-12: #00727d;
   }
 }
 
@@ -109,7 +156,17 @@
   --link: #7fb0f7;
   --accent-soft: #16233d;
   --accent-soft-2: #1d2e50;
+  --nav-active: #283553;
+  --action-strong: #e8ecf4;
+  --action-strong-hover: #ffffff;
+  --on-action-strong: #0d1320;
   --level-badge-text: #7fb0f7;
+  --level-apprenti: #5cc46b;
+  --level-artisan: #e8a33c;
+  --level-scribe: #3cc0d8;
+  --level-architecte: #7fb0f7;
+  --level-legende: #b794f6;
+  --rating-star: #e8a33c;
   --assistant-bg: #121c30;
   --assistant-border: #26406e;
   --success: #4cc26a;
@@ -117,13 +174,39 @@
   --danger: #f07856;
   --danger-soft: #3a1b14;
   --on-danger: #0d1320;
+  --space-tint-1: #1565c0;
+  --space-tint-2: #2e7d32;
+  --space-tint-3: #6a1b9a;
+  --space-tint-4: #ad1457;
+  --space-tint-5: #00695c;
+  --space-tint-6: #a14f00;
+  --space-tint-7: #c62828;
+  --space-tint-8: #3949ab;
+  --space-tint-9: #6d4c41;
+  --space-tint-10: #455a64;
+  --space-tint-11: #76680a;
+  --space-tint-12: #00727d;
+}
+
+/**
+ * Couverture d'un skill : une petite fenêtre d'éditeur sombre dans les deux
+ * thèmes. Valeurs reprises du thème sombre (--bg, --surface, --text-2,
+ * --link, --level-apprenti, --subtle), sans dégradé.
+ */
+:root {
+  --code-cover-bg: #0d1320;
+  --code-cover-bar: #141b2a;
+  --code-cover-text: #c3cbda;
+  --code-cover-keyword: #7fb0f7;
+  --code-cover-string: #5cc46b;
+  --code-cover-comment: #8792a8;
 }
 
 /**
  * Fond de marque des écrans de compte (connexion, inscription, mot de passe).
  * Dégradé et halos : seule exception à la liste « Ce qui est interdit » de
- * DESIGN.md, voir docs/adr/0019-fond-des-ecrans-de-compte.md. Ne pas
- * réutiliser ailleurs.
+ * DESIGN.md, voir docs/adr/0019-fond-des-ecrans-de-compte.md. Partagé
+ * par l'écran d'accueil d'une première visite (/decouvrir), nulle part ailleurs.
  */
 :root {
   --auth-bg-from: #0b2f78;
@@ -134,6 +217,55 @@
   --auth-tile: #15306b;
   --auth-text: #ffffff;
   --auth-text-muted: rgba(255, 255, 255, 0.72);
+  /* Bouton principal posé sur le fond de marque : blanc, texte du fond. */
+  --auth-button-hover: #dbe6fb;
+  /*
+   * Carte en verre dépoli du parcours d'arrivée : teinte du fond, opacité,
+   * bord clair. Le fond restant sombre dans les deux thèmes, le texte de la
+   * carte est blanc ; tokens.test.ts vérifie son contraste au pire cas, le
+   * contour du continent posé sur le halo le plus clair.
+   */
+  --auth-glass: #061b47;
+  --auth-glass-opacity: 0.6;
+  /* Carte de l'accueil, plus claire : le continent se lit au travers. */
+  --auth-glass-clear-opacity: 0.5;
+  --auth-glass-border: rgba(255, 255, 255, 0.2);
+  --auth-danger: #ffc9c2;
+  --auth-success: #a7f3c0;
+  /*
+   * Continent en filigrane, réseau de l'accueil, décor autour de la carte.
+   * Les arcs ne dépassent jamais le contour (même teinte, moins opaques) ;
+   * ce que la carte couvre tombe à 25 %. Pastille blanche pleine des logos,
+   * icônes et code en blanc atténué, tout le décor à 16 % sur les écrans
+   * calmes.
+   */
+  --auth-continent-fill: rgba(147, 197, 253, 0.06);
+  --auth-continent-line: rgba(147, 197, 253, 0.4);
+  --auth-network-line: rgba(147, 197, 253, 0.38);
+  --auth-network-glow: #e0f2fe;
+  --auth-network-covered-opacity: 0.25;
+  --auth-capital-dot: #e0f2fe;
+  --auth-capital-halo: rgba(125, 211, 252, 0.45);
+  --auth-city-dot: rgba(191, 219, 254, 0.55);
+  --auth-tile-bg: #ffffff;
+  --auth-decor-icon: rgba(255, 255, 255, 0.72);
+  --auth-decor-code: rgba(255, 255, 255, 0.56);
+  --auth-decor-calm-opacity: 0.16;
+  --auth-divider: rgba(255, 255, 255, 0.15);
+  --auth-skeleton: rgba(255, 255, 255, 0.1);
+}
+
+/*
+ * Insigne de niveau posé sur le fond de marque, sombre dans les deux thèmes :
+ * couleurs du thème sombre, motif de la teinte de la carte en verre.
+ */
+.level-on-dark {
+  --level-apprenti: #5cc46b;
+  --level-artisan: #e8a33c;
+  --level-scribe: #3cc0d8;
+  --level-architecte: #7fb0f7;
+  --level-legende: #b794f6;
+  --bg: #061b47;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -169,7 +301,7 @@
  * Contour de focus sur le fond sombre des ecrans de compte : le bleu
  * --primary du contour par defaut n'a pas assez de contraste sur ce fond.
  */
-.auth-on-dark :focus-visible:not([data-field]) {
+.auth-on-dark :focus-visible:not([data-field]):not([tabindex="-1"]) {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }

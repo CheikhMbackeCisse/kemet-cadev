@@ -17,7 +17,11 @@ function closesAfter(fields: [string, string]) {
 
 export const createCompetitionRequestSchema = z
   .object({
-    slug: z.string().min(3).max(60).regex(slugPattern, "Lettres minuscules, chiffres et tirets seulement."),
+    slug: z
+      .string()
+      .min(3)
+      .max(60)
+      .regex(slugPattern, "Lettres minuscules, chiffres et tirets seulement."),
     name: z.string().min(2).max(80),
     pitch: z.string().min(10).max(200),
     description: z.string().max(4000).optional().default(""),
@@ -88,9 +92,19 @@ export const competitionSummarySchema = z.object({
 
 export type CompetitionSummary = z.infer<typeof competitionSummarySchema>;
 
+export const competitionPersonSchema = z.object({
+  handle: z.string(),
+  displayName: z.string(),
+  avatarUrl: z.string().nullable(),
+  country: z.string(),
+});
+
+export type CompetitionPerson = z.infer<typeof competitionPersonSchema>;
+
 export const competitionDetailSchema = competitionSummarySchema.extend({
   description: z.string(),
   createdByHandle: z.string(),
+  createdBy: competitionPersonSchema,
   // Nulle pour tout lecteur autre que le créateur et les admins.
   reviewNote: z.string().nullable(),
   viewerIsCreator: z.boolean(),
@@ -105,6 +119,8 @@ export const teamSchema = z.object({
   name: z.string(),
   captainHandle: z.string(),
   memberHandles: z.array(z.string()),
+  captain: competitionPersonSchema,
+  members: z.array(competitionPersonSchema),
   hasSubmission: z.boolean(),
   viewerIsMember: z.boolean(),
   createdAt: z.string().datetime(),

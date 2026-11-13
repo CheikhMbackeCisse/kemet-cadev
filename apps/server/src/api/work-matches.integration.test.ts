@@ -47,7 +47,7 @@ describe.skipIf(!databaseUrl)("Qui a travaill√© sur ce sujet ? (base Postgres r√
     app = buildApp({
       db,
       auth,
-      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1 },
+      antiSpamConfig: { newAccountWindowHours: 24, newAccountFactor: 1, anonymousIpFactor: 3 },
       workMatcher: new WorkMatcher(db, provider, new FullTextWorkRetriever(db), options),
     });
   }

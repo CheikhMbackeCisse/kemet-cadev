@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { completeProfile } from "./support/accounts.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -37,7 +38,7 @@ async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", { data: { handle, displayName: handle, country: "SN" } });
+  await completeProfile(request, handle);
 }
 
 async function signInBrowser(page: Page, email: string): Promise<void> {
@@ -51,7 +52,7 @@ const hasLiveAssistant = Boolean(
   process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.OPENROUTER_API_KEY,
 );
 
-test("mentionner @kemet dans un salon envoie la question", async ({ page, request }) => {
+test("le bouton Kocc prépare une question dans un salon, envoyée à la main", async ({ page, request }) => {
   const email = `e2e-assistant-${test.info().project.name}-${Date.now()}@test.kemet`;
   const handle = `e2easst${test.info().project.name}${Date.now()}`;
 
@@ -66,13 +67,24 @@ test("mentionner @kemet dans un salon envoie la question", async ({ page, reques
 
   const composer = page.getByPlaceholder("Écrire un message…");
   await composer.waitFor();
-  const question = `@kemet comment vérifier la signature d'un webhook ? ${handle}`;
-  await composer.fill(question);
+  await composer.fill("comment vérifier la signature d'un webhook ? " + handle);
+  await page.getByRole("button", { name: "Poser une question à Kocc" }).click();
+  const question = `@kocc comment vérifier la signature d'un webhook ? ${handle}`;
+  await expect(composer).toHaveValue(question);
+  await expect(page.getByText("Question à Kocc")).toBeVisible();
+  // Rien ne part tout seul : la question attend l'envoi.
+  const messages = page.getByRole("log", { name: "Messages du salon" });
+  await expect(messages.getByText(question)).toHaveCount(0);
+
+  // La croix retire la mention, le bouton la remet.
+  await page.getByRole("button", { name: "Retirer la question à Kocc" }).click();
+  await expect(composer).toHaveValue(`comment vérifier la signature d'un webhook ? ${handle}`);
+  await page.getByRole("button", { name: "Poser une question à Kocc" }).click();
   await page.getByRole("button", { name: "Envoyer" }).click();
 
-  await expect(page.getByText(question)).toBeVisible();
+  await expect(messages.getByText(question)).toBeVisible();
 
   if (hasLiveAssistant) {
-    await expect(page.getByText("kemet").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("Kocc", { exact: true }).first()).toBeVisible({ timeout: 30_000 });
   }
 });

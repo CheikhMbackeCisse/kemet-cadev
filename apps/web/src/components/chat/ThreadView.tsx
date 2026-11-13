@@ -1,9 +1,10 @@
-import { ArrowLeft, Send, X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Message } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
 import type { OutgoingMessage } from "../../lib/chat/outgoing.js";
 import { CodeButton } from "../content/CodeButton.js";
+import { ComposerBar, ComposerSendButton } from "../composer/ComposerBar.js";
 import { usePasteAsCode } from "../content/usePasteAsCode.js";
 import { RichText } from "../content/RichText.js";
 import { Button } from "../ui/Button.js";
@@ -13,7 +14,6 @@ import { Skeleton } from "../ui/Skeleton.js";
 import { Textarea } from "../ui/Textarea.js";
 import { UserName } from "../ui/UserName.js";
 import { OutgoingMessages } from "./OutgoingMessages.js";
-import { ProfileLink } from "../ui/ProfileLink.js";
 
 interface ThreadViewProps {
   parent: Message;
@@ -41,9 +41,7 @@ function ThreadMessage({ message }: { message: Message }) {
   return (
     <div className="flex flex-col gap-0.5">
       <div className="flex items-baseline gap-2">
-        <ProfileLink handle={message.authorHandle}>
-          <UserName name={message.authorDisplayName} />
-        </ProfileLink>
+        <UserName name={message.authorDisplayName} handle={message.authorHandle} />
         <span className="text-xs text-subtle">{formatTime(message.createdAt)}</span>
       </div>
       {message.deletedAt ? (
@@ -147,39 +145,33 @@ export function ThreadView({
       {canWrite && (
         <div className="flex shrink-0 flex-col gap-2 border-t border-border p-3">
           {pasteNotice}
-          <div className="flex gap-2">
-            <CodeButton textareaRef={composerRef} onChange={setDraft} iconOnly />
-            <Textarea
-              ref={composerRef}
-              placeholder={fr.chat.threadComposerPlaceholder}
-              aria-label={fr.chat.threadComposerPlaceholder}
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onPaste={handlePaste}
-              enterKeyHint={enterSends ? "send" : "enter"}
-              onKeyDown={(event) => {
-                if (
-                  enterSends &&
-                  event.key === "Enter" &&
-                  !event.shiftKey &&
-                  !event.nativeEvent.isComposing
-                ) {
-                  event.preventDefault();
-                  send();
-                }
-              }}
-              variant="composer"
-              className="max-md:min-h-11 flex-1"
-            />
-            <Button
-              onClick={send}
-              onPointerDown={(event) => event.preventDefault()}
-              aria-label={fr.chat.send}
-              className="max-md:size-control-mobile max-md:px-0"
-            >
-              <Send className="size-4" aria-hidden="true" />
-            </Button>
-          </div>
+          <ComposerBar
+            field={
+              <Textarea
+                ref={composerRef}
+                placeholder={fr.chat.threadComposerPlaceholder}
+                aria-label={fr.chat.threadComposerPlaceholder}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onPaste={handlePaste}
+                enterKeyHint={enterSends ? "send" : "enter"}
+                onKeyDown={(event) => {
+                  if (
+                    enterSends &&
+                    event.key === "Enter" &&
+                    !event.shiftKey &&
+                    !event.nativeEvent.isComposing
+                  ) {
+                    event.preventDefault();
+                    send();
+                  }
+                }}
+                variant="composer"
+              />
+            }
+            tools={<CodeButton appearance="icon" textareaRef={composerRef} onChange={setDraft} />}
+            action={<ComposerSendButton ready={Boolean(draft.trim())} onClick={send} />}
+          />
         </div>
       )}
     </section>

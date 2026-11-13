@@ -1,47 +1,42 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { FolderGit2, Plus } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import type { ProjectSummary } from "@kemet/shared";
+import { useQuery } from "@tanstack/react-query";
 import { listProjects } from "../lib/chat/api.js";
 import { Badge } from "../components/ui/Badge.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { ErrorState } from "../components/ui/ErrorState.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
 import { fr } from "../i18n/fr.js";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { useSession } from "../session/SessionProvider.js";
+import { goToSignUp, SIGN_UP_PATH } from "../session/signUpInvite.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 
 export function ProjectsPage() {
-  const [projects, setProjects] = useState<ProjectSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    listProjects()
-      .then((page) => setProjects(page.items))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => load(), [load]);
+  const { status } = useSession();
+  const isVisitor = status === "visitor";
+  const projectsQuery = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => listProjects().then((page) => page.items),
+  });
+  const projects = projectsQuery.data ?? [];
+  const loading = projectsQuery.isPending;
+  const error = projectsQuery.isError && !projectsQuery.data;
+  const load = () => void projectsQuery.refetch();
 
   return (
-    <RailPage activeSection="projets" className="gap-6 px-4 py-8">
+    <RailPage activeSection="projets" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
-        <div>
-          <h1 className="text-lg font-bold text-text">{fr.projects.title}</h1>
-          <p className="text-sm text-subtle">{fr.projects.subtitle}</p>
-        </div>
+        <h1 className="text-lg font-bold text-text">{fr.projects.title}</h1>
         <div className="flex items-center gap-2">
-          <a
-            href="/projets/nouveau"
-            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
-          >
-            <Plus className="size-4" aria-hidden="true" />
+          <HeaderActionLink href={isVisitor ? SIGN_UP_PATH : "/projets/nouveau"} icon={Plus}>
             {fr.projects.create}
-          </a>
+          </HeaderActionLink>
         </div>
       </div>
+
+      {isVisitor && <VisitorBanner />}
 
       {loading ? (
         <div className="flex flex-col gap-3">
@@ -59,7 +54,7 @@ export function ProjectsPage() {
           message={fr.projects.noProjects}
           action={{
             label: fr.projects.createTitle,
-            onClick: () => (window.location.href = "/projets/nouveau"),
+            onClick: isVisitor ? goToSignUp : () => navigate("/projets/nouveau"),
           }}
         />
       ) : (

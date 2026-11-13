@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { completeProfile } from "./support/accounts.js";
 
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://localhost:8025";
 const PASSWORD = "une-passphrase-solide";
@@ -44,7 +45,7 @@ async function signUpVerifyAndSignIn(
   const verificationUrl = new URL(await findVerificationUrl(email));
   await request.get(verificationUrl.pathname + verificationUrl.search);
   await request.post("/api/auth/sign-in/email", { data: { email, password: PASSWORD } });
-  await request.patch("/api/me/profile", { data: { handle, displayName: handle, country: "SN" } });
+  await completeProfile(request, handle);
 }
 
 async function signInBrowser(page: Page, email: string): Promise<void> {
@@ -84,7 +85,7 @@ test("publie un post avec une image et la voit affichée dans le fil", async ({ 
   await page.getByRole("link", { name: "Publier", exact: true }).click();
   await expect(page).toHaveURL(/\/fil\/nouveau$/);
 
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[type="file"][accept="image/*"]').setInputFiles({
     name: fileName,
     mimeType: "image/png",
     buffer: PNG_BYTES,
@@ -95,4 +96,77 @@ test("publie un post avec une image et la voit affichée dans le fil", async ({ 
 
   await expect(page).toHaveURL(/\/fil$/);
   await expect(page.getByAltText(fileName)).toBeVisible();
+});
+
+test("enregistre un post, le retrouve dans Enregistrés et copie son lien", async ({
+  page,
+  request,
+  context,
+}) => {
+  const email = `e2e-feedsave-${test.info().project.name}-${Date.now()}@test.kemet`;
+  const handle = `e2esave${test.info().project.name}${Date.now()}`;
+  const body = `Post à garder ${Date.now()}`;
+
+  await signUpVerifyAndSignIn(request, email, handle);
+  await signInBrowser(page, email);
+  const created = await page.request.post("/api/posts", { data: { body } });
+  const postId = (await created.json()).post.id as string;
+
+  await page.goto(`/fil/${postId}`);
+  await page.getByRole("button", { name: /Marquer utile/ }).click();
+  await expect(page.getByRole("button", { name: /Marquer utile, 1 personne/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Enregistrer", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByText("Enregistré.", { exact: true }).first()).toBeVisible();
+
+  await page.goto("/enregistres");
+  await expect(page).toHaveURL(/\/(moi|u\/[^/?]+)\?onglet=enregistres$/);
+  await expect(page.getByText(body)).toBeVisible();
+
+  // Sans feuille de partage (navigateur de bureau), le lien est copié.
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
+  await page.evaluate(() => Object.defineProperty(navigator, "share", { value: undefined }));
+  await page.getByRole("button", { name: "Partager", exact: true }).first().click();
+  await expect(page.getByText(/Lien copié|Le lien n'a pas pu être copié/).first()).toBeVisible();
+});
+
+test("republie le post d'une autre personne et la suit depuis le menu du post", async ({
+  page,
+  request,
+}) => {
+  const project = test.info().project.name;
+  const stamp = Date.now();
+  const authorHandle = `e2erpa${project}${stamp}`;
+  const readerHandle = `e2erpr${project}${stamp}`;
+  const body = `Post à republier ${stamp}`;
+
+  await signUpVerifyAndSignIn(request, `e2e-rpa-${project}-${stamp}@test.kemet`, authorHandle);
+  const created = await request.post("/api/posts", { data: { body } });
+  const postId = (await created.json()).post.id as string;
+  await signUpVerifyAndSignIn(page.request, `e2e-rpr-${project}-${stamp}@test.kemet`, readerHandle);
+
+  await page.goto(`/fil/${postId}`);
+  await page.getByRole("button", { name: /^Republier/ }).click();
+  await expect(page.getByRole("button", { name: /Republier, 1 republication/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await page.getByRole("button", { name: "Actions sur ce post" }).click();
+  await expect(page.getByRole("menuitem", { name: "Copier le lien" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Signaler" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Supprimer" })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "S'abonner" }).click();
+  await expect(page.getByText(`Tu suis ${authorHandle}.`, { exact: true })).toBeVisible();
+
+  // Plus d'onglet Abonnements : la republication se lit dans "Pour toi".
+  await page.goto("/fil");
+  const row = page.locator("li").filter({ hasText: body });
+  await expect(row.getByText("Tu as republié")).toBeVisible();
 });

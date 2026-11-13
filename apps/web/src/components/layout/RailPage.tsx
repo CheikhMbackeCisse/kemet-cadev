@@ -9,6 +9,8 @@ export interface RailPageProps {
   /** Onglet mobile actif, quand il ne porte pas le même identifiant que la section. */
   activeMobileTab?: string;
   className?: string;
+  /** Voir `AppFrame` : page racine d'un onglet du bas. */
+  tabSwipe?: boolean;
   children: ReactNode;
 }
 
@@ -16,14 +18,20 @@ export interface RailPageProps {
  * Pages pleines qui ne sont ni un salon ni une page de lecture (skills,
  * projets, compétitions, paramètres…), dans le cadre commun.
  */
-export function RailPage({ activeSection, activeMobileTab, className, children }: RailPageProps) {
+export function RailPage({
+  activeSection,
+  activeMobileTab,
+  className,
+  tabSwipe,
+  children,
+}: RailPageProps) {
   const activeTab = activeMobileTab ?? mobileTabFor(activeSection ?? "");
 
   return (
-    <AppFrame activeSection={activeSection} activeMobileTab={activeTab}>
+    <AppFrame activeSection={activeSection} activeMobileTab={activeTab} tabSwipe={tabSwipe}>
       <main
         className={cn(
-          "mx-auto flex w-full max-w-reading flex-col gap-6 px-4 py-8",
+          "mx-auto flex w-full max-w-reading flex-col gap-6 px-4 pt-3 lg:pt-6",
           "pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8",
           className,
         )}

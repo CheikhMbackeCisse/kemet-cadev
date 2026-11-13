@@ -11,11 +11,11 @@ on:
 permissions:
   contents: read
 
-# Un nouveau push sur une pull request annule le run précédent, devenu
-# inutile. Sur main, chaque commit garde son run : Images en dépend.
+# Un nouveau push annule le run précédent de la même pull request ou de
+# main, devenu inutile.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
@@ -38,16 +38,20 @@ jobs:
           fetch-depth: 0
 
       # Les jobs qui démarrent la pile ou la base (plusieurs minutes chacun)
-      # ne tournent pas pour un commit qui ne touche que la documentation,
-      # définie dans code-changes.sh comme pour le workflow Images. Lint,
-      # typecheck, tests unitaires, licences et scan des secrets tournent
-      # toujours.
+      # ne tournent que sur une pull request, et pas pour un commit qui ne
+      # touche que la documentation, définie dans code-changes.sh comme pour
+      # le workflow Images. Lint, typecheck, tests unitaires, licences et
+      # scan des secrets tournent sur toute pull request.
       - name: Repérer les chemins modifiés
         id: changes
         env:
           BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.before }}
         run: |
           set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            echo "stack=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if ! git cat-file -e "${BASE}^{commit}" 2> /dev/null; then
             echo "stack=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -59,28 +63,54 @@ jobs:
             echo "stack=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Sur main, la CI complète a déjà tourné sur la pull request : un commit
+      # de fusion qui reprend tel quel l'arbre de sa tête n'a rien de nouveau
+      # à vérifier. Tout autre push sur main ne repasse que lint et typecheck.
+      - name: Comparer au contenu vérifié par la pull request
+        id: merged
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          if git rev-parse -q --verify 'HEAD^2' > /dev/null &&
+            [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse 'HEAD^2^{tree}')" ]; then
+            echo "verified=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "verified=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        if: steps.merged.outputs.verified != 'true'
         with:
           version: 9.15.0
 
       - uses: actions/setup-node@v4
+        if: steps.merged.outputs.verified != 'true'
         with:
           node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: steps.merged.outputs.verified != 'true'
 
       - run: pnpm lint
+        if: steps.merged.outputs.verified != 'true'
       - run: pnpm typecheck
+        if: steps.merged.outputs.verified != 'true'
       - run: pnpm test
+        if: github.event_name == 'pull_request'
       - run: pnpm test:scripts
+        if: github.event_name == 'pull_request'
       - name: Tester le choix construire ou réétiqueter du workflow Images
+        if: github.event_name == 'pull_request'
         run: bash .github/scripts/images-plan.test.sh
       - run: pnpm licenses:check
+        if: github.event_name == 'pull_request'
       - name: THIRD_PARTY_LICENSES.md à jour
+        if: github.event_name == 'pull_request'
         run: git diff --exit-code THIRD_PARTY_LICENSES.md
 
       - name: Scan des secrets
+        if: github.event_name == 'pull_request'
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -225,10 +255,16 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter @kemet/web exec playwright install chromium
 
+      # Version construite servie par e2e/new-version.spec.ts, qui simule un
+      # déploiement sous un service worker déjà installé.
+      - name: Copier la version construite du conteneur web
+        run: docker compose -f infra/docker-compose.yml --env-file .env cp web:/app/dist "$RUNNER_TEMP/web-dist"
+
       - name: Lancer les parcours Playwright (bureau et mobile)
         env:
           PLAYWRIGHT_BASE_URL: http://localhost
           MAILPIT_URL: http://localhost:8025
+          KEMET_WEB_DIST: ${{ runner.temp }}/web-dist
         run: pnpm --filter @kemet/web test:e2e
 
       - name: Déposer le rapport Playwright en cas d'échec

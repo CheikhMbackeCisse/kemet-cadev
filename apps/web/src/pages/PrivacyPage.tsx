@@ -43,12 +43,14 @@ export function PrivacyPage() {
   }, []);
 
   return (
-    <RailPage activeSection="confidentialite" activeMobileTab="" className="gap-6 px-4 py-8">
+    <RailPage
+      activeSection="confidentialite"
+      activeMobileTab=""
+      className="gap-6 px-4 pt-3 lg:pt-6"
+    >
       <div>
         <h1 className="text-lg font-bold text-text">{fr.privacy.title}</h1>
-        <p className="text-base text-subtle">
-          {fr.privacy.subtitle} {fr.privacy.updatedAt}
-        </p>
+        <p className="text-base text-subtle">{fr.privacy.updatedAt}</p>
       </div>
 
       <Section title={fr.privacy.keptTitle}>

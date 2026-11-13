@@ -29,21 +29,32 @@ function toPage<T extends { createdAt: Date }>(rows: T[], limit: number) {
   return { items, nextCursor: hasMore && last ? last.createdAt.toISOString() : null };
 }
 
-type CompetitionWindow = { registrationClosesAt: Date; submissionClosesAt: Date; votingClosesAt: Date };
+type CompetitionWindow = {
+  registrationClosesAt: Date;
+  submissionClosesAt: Date;
+  votingClosesAt: Date;
+};
 
 /**
  * La phase ne se stocke jamais : elle se relit à chaque appel à partir des
  * trois échéances, comme le reste des états dérivés de ce projet (soldes,
  * niveaux). `now` n'est paramétrable que pour les tests.
  */
-export function computeCompetitionPhase(competition: CompetitionWindow, now: Date = new Date()): CompetitionPhase {
+export function computeCompetitionPhase(
+  competition: CompetitionWindow,
+  now: Date = new Date(),
+): CompetitionPhase {
   if (now < competition.registrationClosesAt) return "registration";
   if (now < competition.submissionClosesAt) return "submission";
   if (now < competition.votingClosesAt) return "voting";
   return "closed";
 }
 
-export async function createCompetitionRequest(db: Db, createdBy: string, input: CreateCompetitionRequestInput) {
+export async function createCompetitionRequest(
+  db: Db,
+  createdBy: string,
+  input: CreateCompetitionRequestInput,
+) {
   const [competition] = await db
     .insert(competitions)
     .values({
@@ -66,19 +77,31 @@ export async function findCompetitionBySlug(db: DbOrTx, slug: string) {
 }
 
 export async function findCompetitionById(db: DbOrTx, competitionId: string) {
-  const [competition] = await db.select().from(competitions).where(eq(competitions.id, competitionId));
+  const [competition] = await db
+    .select()
+    .from(competitions)
+    .where(eq(competitions.id, competitionId));
   return competition ?? null;
 }
 
 export async function listPublishedCompetitions(db: Db, cursor: string | undefined, limit: number) {
   const visible = eq(competitions.status, "published");
   const condition = cursor ? and(visible, lt(competitions.createdAt, new Date(cursor))) : visible;
-  const rows = await db.select().from(competitions).where(condition).orderBy(desc(competitions.createdAt)).limit(limit + 1);
+  const rows = await db
+    .select()
+    .from(competitions)
+    .where(condition)
+    .orderBy(desc(competitions.createdAt))
+    .limit(limit + 1);
   return toPage(rows, limit);
 }
 
 export async function listPendingCompetitionRequests(db: Db) {
-  return db.select().from(competitions).where(eq(competitions.status, "pending_review")).orderBy(desc(competitions.createdAt));
+  return db
+    .select()
+    .from(competitions)
+    .where(eq(competitions.status, "pending_review"))
+    .orderBy(desc(competitions.createdAt));
 }
 
 /**
@@ -87,7 +110,12 @@ export async function listPendingCompetitionRequests(db: Db) {
  * compétition publiée (équipes, soumissions, votes en cours) vers refusée
  * par une seconde validation accidentelle.
  */
-export async function reviewCompetition(db: Db, competitionId: string, reviewerId: string, input: ReviewCompetitionInput) {
+export async function reviewCompetition(
+  db: Db,
+  competitionId: string,
+  reviewerId: string,
+  input: ReviewCompetitionInput,
+) {
   const [competition] = await db
     .update(competitions)
     .set({
@@ -101,34 +129,54 @@ export async function reviewCompetition(db: Db, competitionId: string, reviewerI
 }
 
 export async function countTeams(db: DbOrTx, competitionId: string) {
-  const [row] = await db.select({ value: count() }).from(teams).where(eq(teams.competitionId, competitionId));
+  const [row] = await db
+    .select({ value: count() })
+    .from(teams)
+    .where(eq(teams.competitionId, competitionId));
   return row?.value ?? 0;
 }
 
 export async function countSubmissions(db: DbOrTx, competitionId: string) {
-  const [row] = await db.select({ value: count() }).from(submissions).where(eq(submissions.competitionId, competitionId));
+  const [row] = await db
+    .select({ value: count() })
+    .from(submissions)
+    .where(eq(submissions.competitionId, competitionId));
   return row?.value ?? 0;
 }
 
 export type CreateTeamResult =
-  | { error: "already_member" }
-  | { error: "name_taken" }
-  | { team: typeof teams.$inferSelect };
+  { error: "already_member" } | { error: "name_taken" } | { team: typeof teams.$inferSelect };
 
 /**
  * Les deux vérifications (déjà dans une équipe, nom déjà pris) se font
  * dans la même transaction que la création pour ne jamais laisser une
  * équipe orpheline sans capitaine inscrit comme membre.
  */
-export async function createTeam(db: Db, competitionId: string, captainId: string, input: CreateTeamInput): Promise<CreateTeamResult> {
+export async function createTeam(
+  db: Db,
+  competitionId: string,
+  captainId: string,
+  input: CreateTeamInput,
+): Promise<CreateTeamResult> {
   return db.transaction(async (tx) => {
     const [alreadyMember, nameTaken] = await Promise.all([
-      tx.select({ id: teamMembers.id }).from(teamMembers).where(and(eq(teamMembers.competitionId, competitionId), eq(teamMembers.profileId, captainId))),
-      tx.select({ id: teams.id }).from(teams).where(and(eq(teams.competitionId, competitionId), eq(teams.name, input.name))),
+      tx
+        .select({ id: teamMembers.id })
+        .from(teamMembers)
+        .where(
+          and(eq(teamMembers.competitionId, competitionId), eq(teamMembers.profileId, captainId)),
+        ),
+      tx
+        .select({ id: teams.id })
+        .from(teams)
+        .where(and(eq(teams.competitionId, competitionId), eq(teams.name, input.name))),
     ]);
     if (alreadyMember.length > 0) return { error: "already_member" };
     if (nameTaken.length > 0) return { error: "name_taken" };
-    const [team] = await tx.insert(teams).values({ competitionId, captainId, name: input.name }).returning();
+    const [team] = await tx
+      .insert(teams)
+      .values({ competitionId, captainId, name: input.name })
+      .returning();
     await tx.insert(teamMembers).values({ teamId: team!.id, competitionId, profileId: captainId });
     return { team: team! };
   });
@@ -159,21 +207,32 @@ export async function findTeamForMember(db: DbOrTx, competitionId: string, profi
 }
 
 export async function listTeamsForCompetition(db: DbOrTx, competitionId: string) {
-  return db.select().from(teams).where(eq(teams.competitionId, competitionId)).orderBy(desc(teams.createdAt));
+  return db
+    .select()
+    .from(teams)
+    .where(eq(teams.competitionId, competitionId))
+    .orderBy(desc(teams.createdAt));
 }
 
 export async function listTeamMemberIds(db: DbOrTx, teamId: string) {
-  const rows = await db.select({ profileId: teamMembers.profileId }).from(teamMembers).where(eq(teamMembers.teamId, teamId));
+  const rows = await db
+    .select({ profileId: teamMembers.profileId })
+    .from(teamMembers)
+    .where(eq(teamMembers.teamId, teamId));
   return rows.map((row) => row.profileId);
 }
 
-export async function listTeamMemberHandles(db: DbOrTx, teamId: string) {
-  const rows = await db
-    .select({ handle: profiles.handle })
+export async function listTeamMembers(db: DbOrTx, teamId: string) {
+  return db
+    .select({
+      handle: profiles.handle,
+      displayName: profiles.displayName,
+      avatarUrl: profiles.avatarUrl,
+      country: profiles.country,
+    })
     .from(teamMembers)
     .innerJoin(profiles, eq(profiles.id, teamMembers.profileId))
-    .where(eq(teamMembers.teamId, teamId));
-  return rows.map((row) => row.handle);
+    .where(and(eq(teamMembers.teamId, teamId), eq(profiles.isFiller, false)));
 }
 
 export async function isTeamMember(db: DbOrTx, teamId: string, profileId: string) {
@@ -185,7 +244,10 @@ export async function isTeamMember(db: DbOrTx, teamId: string, profileId: string
 }
 
 export async function findProjectOwnerId(db: DbOrTx, projectId: string) {
-  const [project] = await db.select({ ownerId: projects.ownerId }).from(projects).where(eq(projects.id, projectId));
+  const [project] = await db
+    .select({ ownerId: projects.ownerId })
+    .from(projects)
+    .where(eq(projects.id, projectId));
   return project?.ownerId ?? null;
 }
 
@@ -253,8 +315,16 @@ export async function listSubmissionsForCompetition(db: DbOrTx, competitionId: s
  * refusé). Un même votant ne choisit qu'une soumission par compétition :
  * revoter met simplement à jour son choix, jusqu'à la fin du vote.
  */
-export async function castVote(db: Db, competitionId: string, submissionId: string, voterId: string) {
-  const [submission] = await db.select({ teamId: submissions.teamId }).from(submissions).where(eq(submissions.id, submissionId));
+export async function castVote(
+  db: Db,
+  competitionId: string,
+  submissionId: string,
+  voterId: string,
+) {
+  const [submission] = await db
+    .select({ teamId: submissions.teamId })
+    .from(submissions)
+    .where(eq(submissions.id, submissionId));
   if (!submission) return null;
   const ownTeam = await isTeamMember(db, submission.teamId, voterId);
   if (ownTeam) return null;
@@ -270,7 +340,10 @@ export async function castVote(db: Db, competitionId: string, submissionId: stri
 }
 
 export async function findVoteForViewer(db: DbOrTx, competitionId: string, voterId: string) {
-  const [vote] = await db.select().from(votes).where(and(eq(votes.competitionId, competitionId), eq(votes.voterId, voterId)));
+  const [vote] = await db
+    .select()
+    .from(votes)
+    .where(and(eq(votes.competitionId, competitionId), eq(votes.voterId, voterId)));
   return vote ?? null;
 }
 
@@ -279,14 +352,29 @@ export async function findVoteForViewer(db: DbOrTx, competitionId: string, voter
  * (auto-notation refusée). Révisable jusqu'à la fin du vote : une seule
  * ligne par binôme (soumission, juré), mise à jour plutôt que dupliquée.
  */
-export async function submitJuryScore(db: Db, competitionId: string, submissionId: string, jurorId: string, input: JuryScoreInput) {
-  const [submission] = await db.select({ teamId: submissions.teamId }).from(submissions).where(eq(submissions.id, submissionId));
+export async function submitJuryScore(
+  db: Db,
+  competitionId: string,
+  submissionId: string,
+  jurorId: string,
+  input: JuryScoreInput,
+) {
+  const [submission] = await db
+    .select({ teamId: submissions.teamId })
+    .from(submissions)
+    .where(eq(submissions.id, submissionId));
   if (!submission) return null;
   const ownTeam = await isTeamMember(db, submission.teamId, jurorId);
   if (ownTeam) return null;
   const [score] = await db
     .insert(juryScores)
-    .values({ competitionId, submissionId, jurorId, score: input.score, comment: input.comment ?? null })
+    .values({
+      competitionId,
+      submissionId,
+      jurorId,
+      score: input.score,
+      comment: input.comment ?? null,
+    })
     .onConflictDoUpdate({
       target: [juryScores.submissionId, juryScores.jurorId],
       set: { score: input.score, comment: input.comment ?? null },
@@ -311,7 +399,10 @@ export interface SubmissionStanding {
  * compétition) sur une même échelle 0-100 avant de les pondérer, pour que
  * les deux comptent peu importe le nombre de votants ou de jurés.
  */
-export async function computeStandings(db: DbOrTx, competitionId: string): Promise<SubmissionStanding[]> {
+export async function computeStandings(
+  db: DbOrTx,
+  competitionId: string,
+): Promise<SubmissionStanding[]> {
   const rows = await db
     .select({ submission: submissions, team: teams })
     .from(submissions)
@@ -319,7 +410,11 @@ export async function computeStandings(db: DbOrTx, competitionId: string): Promi
     .where(eq(submissions.competitionId, competitionId));
 
   const juryRows = await db
-    .select({ submissionId: juryScores.submissionId, average: avg(juryScores.score), count: count() })
+    .select({
+      submissionId: juryScores.submissionId,
+      average: avg(juryScores.score),
+      count: count(),
+    })
     .from(juryScores)
     .where(eq(juryScores.competitionId, competitionId))
     .groupBy(juryScores.submissionId);

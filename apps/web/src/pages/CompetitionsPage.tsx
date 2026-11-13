@@ -1,6 +1,8 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { Plus, Trophy } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { CompetitionDetail, CompetitionSummary } from "@kemet/shared";
+import { useQuery } from "@tanstack/react-query";
+import type { CompetitionDetail } from "@kemet/shared";
 import {
   getMe,
   listCompetitions,
@@ -16,7 +18,11 @@ import { Skeleton } from "../components/ui/Skeleton.js";
 import { Textarea } from "../components/ui/Textarea.js";
 import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
+import { HeaderActionLink } from "../components/ui/HeaderActionLink.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { useSession } from "../session/SessionProvider.js";
+import { goToSignUp, SIGN_UP_PATH } from "../session/signUpInvite.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 
 const PHASE_LABELS = {
   registration: fr.competitions.phaseRegistration,
@@ -26,10 +32,16 @@ const PHASE_LABELS = {
 };
 
 export function CompetitionsPage() {
+  const { status } = useSession();
+  const isVisitor = status === "visitor";
   const toast = useToast();
-  const [competitions, setCompetitions] = useState<CompetitionSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const competitionsQuery = useQuery({
+    queryKey: ["competitions"],
+    queryFn: () => listCompetitions().then((page) => page.items),
+  });
+  const competitions = competitionsQuery.data ?? [];
+  const loading = competitionsQuery.isPending;
+  const error = competitionsQuery.isError && !competitionsQuery.data;
   const [isAdmin, setIsAdmin] = useState(false);
   const [pending, setPending] = useState<CompetitionDetail[]>([]);
   const [pendingLoading, setPendingLoading] = useState(false);
@@ -38,14 +50,8 @@ export function CompetitionsPage() {
   const [rejectTarget, setRejectTarget] = useState<CompetitionDetail | null>(null);
   const [rejectNote, setRejectNote] = useState("");
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    listCompetitions()
-      .then((page) => setCompetitions(page.items))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, []);
+  const refetchCompetitions = competitionsQuery.refetch;
+  const load = useCallback(() => void refetchCompetitions(), [refetchCompetitions]);
 
   const loadPending = useCallback(() => {
     setPendingLoading(true);
@@ -84,22 +90,17 @@ export function CompetitionsPage() {
   }
 
   return (
-    <RailPage activeSection="competitions" className="gap-6 px-4 py-8">
+    <RailPage activeSection="competitions" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex flex-wrap items-center justify-between gap-y-3">
-        <div>
-          <h1 className="text-lg font-bold text-text">{fr.competitions.title}</h1>
-          <p className="text-sm text-subtle">{fr.competitions.subtitle}</p>
-        </div>
+        <h1 className="text-lg font-bold text-text">{fr.competitions.title}</h1>
         <div className="flex items-center gap-2">
-          <a
-            href="/competitions/nouvelle"
-            className="inline-flex h-control max-md:h-control-mobile shrink-0 items-center justify-center gap-2 rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
-          >
-            <Plus className="size-4" aria-hidden="true" />
+          <HeaderActionLink href={isVisitor ? SIGN_UP_PATH : "/competitions/nouvelle"} icon={Plus}>
             {fr.competitions.requestTitle}
-          </a>
+          </HeaderActionLink>
         </div>
       </div>
+
+      {isVisitor && <VisitorBanner />}
 
       {isAdmin && (
         <div className="flex flex-col gap-3 rounded-card bg-surface p-4">
@@ -120,7 +121,7 @@ export function CompetitionsPage() {
                   <p className="text-sm font-medium text-text">{competition.name}</p>
                   <p className="text-sm text-text-2">{competition.pitch}</p>
                   <p className="mt-1 text-xs text-subtle">
-                    {fr.competitions.createdBy(competition.createdByHandle)}
+                    {fr.competitions.createdByLabel} {competition.createdBy.displayName}
                   </p>
                   <div className="mt-2 flex gap-2">
                     <Button
@@ -161,7 +162,7 @@ export function CompetitionsPage() {
           message={fr.competitions.noCompetitions}
           action={{
             label: fr.competitions.requestTitle,
-            onClick: () => (window.location.href = "/competitions/nouvelle"),
+            onClick: isVisitor ? goToSignUp : () => navigate("/competitions/nouvelle"),
           }}
         />
       ) : (
@@ -180,7 +181,8 @@ export function CompetitionsPage() {
                 </div>
                 <p className="mt-1 text-sm text-text-2">{competition.pitch}</p>
                 <p className="mt-2 text-xs text-subtle">
-                  {competition.teamCount} équipes · {competition.submissionCount} soumissions
+                  {fr.competitions.teamCount(competition.teamCount)} ·{" "}
+                  {fr.competitions.submissionCount(competition.submissionCount)}
                 </p>
               </a>
             </li>

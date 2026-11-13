@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { VENDORED_ASSETS } from "./vendored-assets.js";
 import { matchesTarget, readPlatformPackages, splitKey } from "./lockfile-platforms.js";
 
 const FORBIDDEN = ["GPL", "AGPL", "LGPL"];
@@ -8,6 +9,7 @@ const FORBIDDEN = ["GPL", "AGPL", "LGPL"];
 const OFL_ALLOWED_PACKAGES = new Set([
   "@fontsource/plus-jakarta-sans",
   "@fontsource-variable/geist-mono",
+  "@fontsource-variable/space-grotesk",
 ]);
 
 // Plateforme des images de production (node:22-alpine, musl) et de la CI
@@ -147,6 +149,17 @@ const lines = [
       ([license, names]) =>
         `| ${escapeTableCell(license)} | ${escapeTableCell([...names].sort().join(", "))} |`,
     ),
+  "",
+  "## Ressources copiées dans le dépôt",
+  "",
+  "Aucun paquet ne les apporte : liste tenue dans `scripts/vendored-assets.ts`.",
+  "",
+  "| Ressource | Licence | Source | Fichier |",
+  "| --- | --- | --- | --- |",
+  ...VENDORED_ASSETS.map(
+    (asset) =>
+      `| ${escapeTableCell(asset.name)} | ${escapeTableCell(asset.license)} | ${escapeTableCell(asset.source)} | \`${asset.usedIn}\` |`,
+  ),
   "",
 ];
 

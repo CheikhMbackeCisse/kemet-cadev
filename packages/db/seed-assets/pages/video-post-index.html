@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="video-vertical.css">
+<style>
+/* Filmé 6 secondes : une requête lente, l'index ajouté, la même requête rapide. */
+body { background: #fbf7ef; color: #1f2430; }
+.label { font-size: 28px; font-weight: 600; margin-bottom: 14px; }
+.bar { height: 72px; border-radius: 14px; display: flex; align-items: center; padding: 0 22px; font-size: 32px; font-weight: 800; color: #fff; white-space: nowrap; }
+.slow { background: #c8443a; width: 100%; animation: grow 1.6s 0.3s ease-out backwards; }
+.fast { background: #1f8a55; width: 18%; min-width: 150px; animation: grow 0.25s 4.2s ease-out backwards; }
+.sql { background: #1f2430; color: #e6edf6; border-radius: 20px; padding: 30px; font-size: 26px; line-height: 1.6; animation: show 0s 2.4s forwards; }
+.sql b { color: #f4c95d; font-weight: 400; }
+.after { animation: show 0s 4.1s forwards; }
+.gain { font-size: 64px; font-weight: 800; color: #1f8a55; animation: show 0s 4.7s forwards; }
+</style>
+</head>
+<body>
+  <h1>Une requête de 4,2 s ramenée à 80 ms</h1>
+  <div>
+    <div class="label">Avant</div>
+    <div class="bar slow">4 200 ms</div>
+  </div>
+  <div class="sql mono late"><b>CREATE INDEX</b> orders_shop_created<br>ON orders (shop_id, created_at);</div>
+  <div class="late after">
+    <div class="label">Après</div>
+    <div class="bar fast">80 ms</div>
+  </div>
+  <div class="gain late">52 fois plus rapide</div>
+  <div class="sign">Vidéo d'exemple, Kemet</div>
+</body>
+</html>

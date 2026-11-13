@@ -1,9 +1,11 @@
 import {
   BookOpen,
+  Flag,
   FolderGit2,
-  Hash,
-  MessagesSquare,
-  Rss,
+  House,
+  LockKeyhole,
+  MessageSquare,
+  Send,
   Settings,
   ShieldCheck,
   Trophy,
@@ -16,6 +18,12 @@ export interface RailNavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  /**
+   * Vrai si l'icône reste lisible remplie. Les autres (dossier, trophée,
+   * bouclier, cadenas, roue) perdent leurs détails une fois pleines et
+   * marquent la section ouverte par un trait plus épais.
+   */
+  fillWhenActive?: boolean;
 }
 
 export interface NavSection extends RailNavItem {
@@ -33,11 +41,39 @@ export interface NavSection extends RailNavItem {
  * (mobile), jamais dans la barre du haut d'une page. Ordre du bureau.
  */
 export const NAV_SECTIONS: NavSection[] = [
-  { id: "fil", label: "Fil", href: "/fil", icon: Rss, mobile: "tab" },
-  { id: "travaux", label: "Travaux", href: "/travaux", icon: BookOpen, mobile: "tab" },
-  { id: "salons", label: "Salons", href: "/salons", icon: Hash, mobile: "tab" },
-  { id: "messages", label: "Messages", href: "/messages", icon: MessagesSquare, mobile: "salons" },
-  { id: "skills", label: "Skills", href: "/skills", icon: Wrench, mobile: "tab" },
+  { id: "fil", label: "Fil", href: "/fil", icon: House, fillWhenActive: true, mobile: "tab" },
+  {
+    id: "travaux",
+    label: "Travaux",
+    href: "/travaux",
+    icon: BookOpen,
+    fillWhenActive: true,
+    mobile: "tab",
+  },
+  {
+    id: "salons",
+    label: "Salons",
+    href: "/salons",
+    icon: MessageSquare,
+    fillWhenActive: true,
+    mobile: "tab",
+  },
+  {
+    id: "messages",
+    label: "Messages",
+    href: "/messages",
+    icon: Send,
+    fillWhenActive: true,
+    mobile: "salons",
+  },
+  {
+    id: "skills",
+    label: "Skills",
+    href: "/skills",
+    icon: Wrench,
+    fillWhenActive: true,
+    mobile: "tab",
+  },
   { id: "projets", label: "Projets", href: "/projets", icon: FolderGit2, mobile: "moi" },
   { id: "competitions", label: "Compétitions", href: "/competitions", icon: Trophy, mobile: "moi" },
 ];
@@ -47,12 +83,20 @@ export const MOBILE_TAB_ORDER = ["fil", "salons", "travaux", "skills"];
 
 export const RAIL_NAV: RailNavItem[] = NAV_SECTIONS;
 
-/** Au pied du rail, separe des sections : une page a lire, pas un espace de travail. */
+/** Au pied du rail, séparé des sections : une page à lire, pas un espace de travail. */
 export const RAIL_FOOTER_NAV: RailNavItem = {
   id: "confidentialite",
   label: "Confidentialité",
   href: "/confidentialite",
   icon: ShieldCheck,
+};
+
+/** Au pied du rail, sous Confidentialité. */
+export const SECURITY_NAV: RailNavItem = {
+  id: "securite",
+  label: "Sécurité",
+  href: "/securite",
+  icon: LockKeyhole,
 };
 
 /** Au pied de la barre d'activité sur bureau, dans la feuille "Moi" sur mobile. */
@@ -61,6 +105,15 @@ export const SETTINGS_NAV: RailNavItem = {
   label: "Paramètres",
   href: "/parametres",
   icon: Settings,
+};
+
+/** Au pied de la barre sur bureau, pour un administrateur seulement. */
+export const MODERATION_NAV: RailNavItem = {
+  id: "moderation",
+  label: "Modération",
+  href: "/moderation",
+  icon: Flag,
+  fillWhenActive: true,
 };
 
 export function sectionLabel(id: string): string {
@@ -77,5 +130,7 @@ export function activeRailSection(pathname: string): string {
   if (pathname.startsWith("/salons")) return "salons";
   if (pathname.startsWith("/messages")) return "messages";
   if (pathname === "/confidentialite") return "confidentialite";
+  if (pathname === "/securite") return "securite";
+  if (pathname === "/moderation") return "moderation";
   return "";
 }

@@ -9,6 +9,7 @@ import { createAuth } from "../auth/auth.js";
 import { SmtpEmailSender } from "../email/smtp-email-sender.js";
 import { subscribeChatEvents } from "../chat/pubsub.js";
 import { canAccessChannel, findProfileId } from "./access.js";
+import { acknowledge, readChannelId } from "./channel-event.js";
 
 if (!process.env.BETTER_AUTH_SECRET) {
   throw new Error(
@@ -79,19 +80,24 @@ app
     // Sans session, connexion acceptée en visiteur (`profileId = null`). Une
     // session sans profil reste refusée.
     io.use(async (socket, next) => {
-      const session = await auth.api.getSession({ headers: fromNodeHeaders(socket.handshake.headers) });
-      if (!session) {
-        socket.data.profileId = null;
+      try {
+        const session = await auth.api.getSession({ headers: fromNodeHeaders(socket.handshake.headers) });
+        if (!session) {
+          socket.data.profileId = null;
+          next();
+          return;
+        }
+        const profileId = await findProfileId(db, session.user.id);
+        if (!profileId) {
+          next(new Error("profile_required"));
+          return;
+        }
+        socket.data.profileId = profileId;
         next();
-        return;
+      } catch (error) {
+        app.log.error({ err: error }, "poignée de main refusée");
+        next(new Error("handshake_failed"));
       }
-      const profileId = await findProfileId(db, session.user.id);
-      if (!profileId) {
-        next(new Error("profile_required"));
-        return;
-      }
-      socket.data.profileId = profileId;
-      next();
     });
 
     io.on("connection", (socket) => {
@@ -104,31 +110,41 @@ app
       }
       app.log.info({ socketId: socket.id, profileId }, "client connecté");
 
-      socket.on("channel:join", async ({ channelId }: { channelId: string }, ack?: (ok: boolean) => void) => {
-        const allowed = await canAccessChannel(db, profileId, channelId);
-        if (!allowed) {
-          ack?.(false);
+      socket.on("channel:join", async (payload: unknown, ack?: unknown) => {
+        const channelId = readChannelId(payload);
+        if (!channelId) {
+          acknowledge(ack, false);
           return;
         }
-        await socket.join(channelRoom(channelId));
-        ack?.(true);
+        // Un gestionnaire asynchrone qui rejette arrêterait le processus :
+        // une panne de la base ne doit couper le temps réel de personne.
+        try {
+          if (!(await canAccessChannel(db, profileId, channelId))) {
+            acknowledge(ack, false);
+            return;
+          }
+          await socket.join(channelRoom(channelId));
+          acknowledge(ack, true);
+        } catch (error) {
+          app.log.error({ err: error, channelId }, "channel:join a échoué");
+          acknowledge(ack, false);
+        }
       });
 
-      socket.on("channel:leave", ({ channelId }: { channelId: string }) => {
-        void socket.leave(channelRoom(channelId));
+      socket.on("channel:leave", (payload: unknown) => {
+        const channelId = readChannelId(payload);
+        if (channelId) void socket.leave(channelRoom(channelId));
       });
 
       // Un visiteur n'a pas de composeur côté interface ; le serveur ne lui
       // fait pas confiance pour autant et ignore ces événements sans profil.
-      socket.on("typing:start", ({ channelId }: { channelId: string }) => {
-        if (!profileId || !socket.rooms.has(channelRoom(channelId))) return;
-        socket.to(channelRoom(channelId)).emit("typing:start", { channelId, profileId });
-      });
-
-      socket.on("typing:stop", ({ channelId }: { channelId: string }) => {
-        if (!profileId || !socket.rooms.has(channelRoom(channelId))) return;
-        socket.to(channelRoom(channelId)).emit("typing:stop", { channelId, profileId });
-      });
+      for (const state of ["start", "stop"] as const) {
+        socket.on(`typing:${state}`, (payload: unknown) => {
+          const channelId = readChannelId(payload);
+          if (!profileId || !channelId || !socket.rooms.has(channelRoom(channelId))) return;
+          socket.to(channelRoom(channelId)).emit(`typing:${state}`, { channelId, profileId });
+        });
+      }
 
       socket.on("disconnect", () => {
         if (!profileId) return;

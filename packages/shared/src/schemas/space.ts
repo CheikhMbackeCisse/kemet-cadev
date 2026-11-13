@@ -48,3 +48,13 @@ export const spaceMemberSchema = z.object({
 });
 
 export type SpaceMember = z.infer<typeof spaceMemberSchema>;
+
+/** Post épinglé en tête des salons d'un espace : de quoi afficher le bandeau. */
+export const spacePinnedPostSchema = z.object({
+  postId: z.string().uuid(),
+  title: z.string(),
+  /** Première image du post, en vignette. */
+  imageId: z.string().uuid().nullable(),
+});
+
+export type SpacePinnedPost = z.infer<typeof spacePinnedPostSchema>;

@@ -30,7 +30,7 @@ import {
   type LlmProviderName,
   type StreamingLlmProvider,
 } from "./llm-provider.js";
-import { checkDailyQuota } from "./quota.js";
+import { checkDailyQuota, databaseQuotaCounter, type QuotaCounter } from "./quota.js";
 import type { WorkRetriever } from "./work-retriever.js";
 
 const CANDIDATE_SUMMARY_LENGTH = 500;
@@ -56,7 +56,7 @@ const WORK_TYPE_LABELS: Record<WorkType, string> = {
 // Exporté pour evals/ : la suite d'attaques et l'éval de mise en relation
 // testent exactement la consigne envoyée en production.
 export const WORK_MATCH_SYSTEM_PROMPT = [
-  "Tu es @kemet, l'assistant de la plateforme Kemet pour les développeurs africains.",
+  "Tu es Kocc, l'assistant de la plateforme Kemet pour les développeurs africains.",
   "Tu mets en relation : on te donne un sujet et une liste de travaux publiés sur Kemet (projets de classe, stages, mémoires, applications, articles), chacun avec ses auteurs.",
   "Choisis de 0 à 5 personnes dont le travail est vraiment proche du sujet. Pour chacune, écris une seule phrase en français qui cite son travail et dit en quoi il est proche du sujet.",
   "N'invente aucun travail ni aucune personne : utilise seulement les identifiants de travail (t1, t2…) et les identifiants de personne (@…) de la liste.",
@@ -69,6 +69,8 @@ export interface WorkMatchOptions {
   recordedAnswers: boolean;
   /** Limite fixe pour les tests ; en production, le quota dépend du niveau. */
   dailyQuotaOverride?: number;
+  /** Compteur partagé avec l'assistant ; compté en base par défaut (tests). */
+  quotaCounter?: QuotaCounter;
 }
 
 interface ResolvedSubject {
@@ -224,7 +226,12 @@ export class WorkMatcher {
 
     // Vérifié avant d'écrire la ligne du jour, qui compterait sinon dans son
     // propre total (même piège que pour les mentions dans un salon).
-    const quota = await checkDailyQuota(this.db, viewer.id, this.options.dailyQuotaOverride);
+    const quota = await checkDailyQuota(
+      this.db,
+      viewer.id,
+      this.options.dailyQuotaOverride,
+      this.options.quotaCounter,
+    );
     if (!quota.allowed) return this.fullText(candidates, "quota_exceeded");
 
     const prompt = buildMatchMessages(subject.text, candidates);
@@ -247,7 +254,9 @@ export class WorkMatcher {
       const result = recorded
         ? { mode: "recorded" as const, fallbackReason: null, suggestions: recorded }
         : this.fullText(candidates, "unavailable");
-      // Aucun fournisseur n'a répondu : rien ne compte dans le quota.
+      // Aucun fournisseur n'a répondu : rien n'est écrit en base, l'appel
+      // compté par le compteur du jour est rendu.
+      await (this.options.quotaCounter ?? databaseQuotaCounter).release(viewer.id);
       return result;
     }
 

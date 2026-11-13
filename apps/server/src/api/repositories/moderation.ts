@@ -13,6 +13,7 @@ import {
 import { canAccessChannel } from "../../realtime/access.js";
 import { findPostById } from "./posts.js";
 import { findWorkById } from "./works.js";
+import { findOpportunityById } from "./opportunities.js";
 
 const TARGET_SUMMARY_LENGTH = 140;
 const REPORTED_CONVERSATION_EXCERPT = 10;
@@ -68,6 +69,11 @@ export async function resolveReportTarget(
     if (!work || work.deletedAt) return null;
     return { authorId: work.publisherId, summary: truncate(work.title, TARGET_SUMMARY_LENGTH) };
   }
+  if (targetType === "opportunity") {
+    const opportunity = await findOpportunityById(db, targetId);
+    if (!opportunity || opportunity.deletedAt) return null;
+    return { authorId: opportunity.authorId, summary: truncate(opportunity.title, TARGET_SUMMARY_LENGTH) };
+  }
   const profile = await findProfileById(db, targetId);
   if (!profile) return null;
   return { authorId: profile.id, summary: `@${profile.handle}` };
@@ -99,6 +105,11 @@ export async function describeReportTarget(
     const work = await findWorkById(db, targetId);
     if (!work) return "(travail introuvable)";
     return work.deletedAt ? "(travail masqué)" : truncate(work.title, TARGET_SUMMARY_LENGTH);
+  }
+  if (targetType === "opportunity") {
+    const opportunity = await findOpportunityById(db, targetId);
+    if (!opportunity) return "(offre introuvable)";
+    return opportunity.deletedAt ? "(offre masquée)" : truncate(opportunity.title, TARGET_SUMMARY_LENGTH);
   }
   const profile = await findProfileById(db, targetId);
   return profile ? `@${profile.handle}` : "(profil introuvable)";

@@ -4,6 +4,7 @@ export default {
   theme: {
     fontFamily: {
       sans: ["Plus Jakarta Sans", "sans-serif"],
+      display: ["Space Grotesk Variable", "Plus Jakarta Sans", "sans-serif"],
       mono: ["Geist Mono Variable", "monospace"],
     },
     fontSize: {
@@ -35,9 +36,27 @@ export default {
         // sombre quel que soit le thème (voir docs/adr/0019).
         "auth-text": "var(--auth-text)",
         "auth-text-muted": "var(--auth-text-muted)",
+        "auth-button-hover": "var(--auth-button-hover)",
+        "auth-danger": "var(--auth-danger)",
+        "auth-success": "var(--auth-success)",
+        "auth-divider": "var(--auth-divider)",
+        "auth-skeleton": "var(--auth-skeleton)",
+        "auth-glass-border": "var(--auth-glass-border)",
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
+        "nav-active": "var(--nav-active)",
+        "action-strong": {
+          DEFAULT: "var(--action-strong)",
+          hover: "var(--action-strong-hover)",
+        },
+        "on-action-strong": "var(--on-action-strong)",
         "level-badge-text": "var(--level-badge-text)",
+        "level-apprenti": "var(--level-apprenti)",
+        "level-artisan": "var(--level-artisan)",
+        "level-scribe": "var(--level-scribe)",
+        "level-architecte": "var(--level-architecte)",
+        "level-legende": "var(--level-legende)",
+        "rating-star": "var(--rating-star)",
         "assistant-bg": "var(--assistant-bg)",
         "assistant-border": "var(--assistant-border)",
         success: {
@@ -63,8 +82,15 @@ export default {
         "control-compact": "32px",
         "control-mobile": "44px",
       },
+      // Hauteur minimale d'une cible : la ligne peut grandir avec son texte.
+      minHeight: {
+        control: "36px",
+        "control-compact": "32px",
+        "control-mobile": "44px",
+      },
       width: {
         "activity-bar": "56px",
+        sidebar: "232px",
         "side-panel": "264px",
         panel: "300px",
       },

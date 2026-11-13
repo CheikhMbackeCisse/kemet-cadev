@@ -89,15 +89,18 @@ exemple pour déboguer un échec de ce job.
 
 ## Production : vue d'ensemble
 
-Rien n'est construit sur le serveur. À chaque commit de `main` dont la CI
-est verte, le workflow `Images` (`.github/workflows/images.yml`) publie
-quatre images sur GitHub Container Registry, étiquetées par le SHA du
-commit : `ghcr.io/cheikhmbackecisse/kemet-web`, `-api`, `-realtime`,
-`-worker`. Un commit qui ne touche que la documentation (`*.md` de la racine, `docs/`)
-n'est pas reconstruit : il reçoit les images du dernier commit qui a changé
-autre chose, sous son propre SHA, ou il est reconstruit si ces images
-n'existent pas et que son code a passé la CI complète. Pour reconstruire les images d'un commit
-de `main` déjà vert (une image purgée, par exemple) :
+Depuis le 13/11/2026, le workflow `Images` (`.github/workflows/images.yml`)
+ne se lance plus tout seul après la CI de `main` : le quota gratuit de
+minutes d'Actions ne couvre plus une construction à chaque fusion. La
+production se déploie en construisant les images sur le serveur
+(`KEMET_BUILD_ON_SERVER=1`, voir plus bas). Sur `main`, la CI ne repasse
+que lint et typecheck, et rien du tout pour un commit de fusion identique à
+la tête de sa pull request, qui a déjà joué la CI complète.
+
+Lancé à la main, `Images` publie quatre images sur GitHub Container
+Registry, étiquetées par le SHA du commit :
+`ghcr.io/cheikhmbackecisse/kemet-web`, `-api`, `-realtime`, `-worker`, pour
+un commit de `main` dont la CI est verte :
 `gh workflow run images.yml -f sha=<SHA complet>`. `infra/deploy.sh`
 demande au serveur de télécharger celles d'un commit précis et de
 redémarrer dessus. Les migrations Drizzle tournent au
@@ -221,7 +224,7 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    déploiement :
 
    ```
-   infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev
+   infra/deploy.sh kemet-prod https://kemetlabs.dev
    ```
 
    Il n'y a pas d'étape de migration à lancer : l'api joue les migrations
@@ -257,11 +260,17 @@ docker compose -f infra/docker-compose.yml --env-file .env --env-file .env.deplo
 ```
 
 Ce seed est sans risque à relancer : s'il trouve déjà les dix comptes de
-démonstration, il ne fait rien, sauf échouer si l'un d'eux est
-administrateur (base remplie par une ancienne version). Tout est créé dans une seule transaction,
-et il échoue sans rien écrire s'il trouve une base où il ne reste qu'une
-partie de ces comptes, ou si un compte de démonstration se retrouvait
-administrateur.
+démonstration, il ne recrée rien, sauf échouer si l'un d'eux est
+administrateur (base remplie par une ancienne version). Il rejoue ensuite
+l'étape des médias de démonstration (images, vidéos, bannières, chiffres des
+skills), qui ne complète que ce qui manque et ne touche qu'aux comptes,
+posts, travaux et skills de démonstration. Les fichiers sont écrits dans
+`UPLOADS_DIR`, déjà défini pour le service `api`. Chaque étape tient dans
+sa propre transaction : la première échoue sans rien écrire si elle trouve une
+base où il ne reste qu'une partie de ces comptes, ou si un compte de
+démonstration se retrouvait administrateur. Si l'étape des médias échoue,
+les fichiers déjà copiés restent sur le disque et sont réécrits au même nom
+au passage suivant.
 
 Pour donner le rôle administrateur, créer d'abord un compte normal par la
 page d'inscription (adresse vérifiée et profil complété), avec un mot de
@@ -276,14 +285,55 @@ adresse non vérifiée, un compte suspendu et un compte de démonstration. En lo
 `pnpm db:seed:demo` (ou `pnpm db:seed`, identique) et
 `pnpm db:promote-admin <email>`.
 
+## Préparer un compte réel pour la démonstration
+
+`packages/db/src/prepare-account.ts` prépare, une seule fois, un compte réel
+déjà inscrit : nom, identifiant, rôle, établissement et pays, travaux avec
+leurs images, skills publics, et une ligne de points de source
+`demonstration` qui amène le total du compte à 40 % du chemin entre Scribe
+et Architecte (1600 points avec les seuils actuels). Ce n'est pas une étape
+du seed : le seed ne touche qu'aux comptes de démonstration.
+
+Le script lit un fichier JSON qui n'est jamais versionné (adresse du compte,
+profil, travaux, skills, chemins des images et des fichiers Markdown,
+relatifs à son dossier). Il ne modifie que le compte de cette adresse et
+s'arrête sans rien écrire s'il ne la trouve pas. Il refuse un compte dont
+l'adresse n'a pas été vérifiée, un compte de démonstration, un figurant, un
+compte suspendu ou supprimé, un identifiant ou un slug déjà pris par un
+autre profil, un chemin qui sort du dossier du fichier et une image qui
+n'est pas un PNG, un JPEG ou un WebP de 5 Mo au plus. Il ne crée ni abonné
+ni cœur. Il affiche les moyens de connexion du compte et les autres profils
+dont le nom ressemble à celui qu'on prépare, sans les toucher. Relancé, il
+ne recrée rien et remet la ligne `demonstration` au montant qui garde la
+cible. Les images ne sont pas comptées dans le quota du compte ; le script
+affiche leur poids.
+
+Après une sauvegarde, copier le dossier du fichier JSON sur le serveur, par
+exemple dans `~/compte-demo`, puis, depuis le dossier de déploiement :
+
+```
+docker compose -f infra/docker-compose.yml --env-file .env --env-file .env.deployed   run --rm --no-deps -v "$HOME/compte-demo:/compte:ro" api   node node_modules/@kemet/db/dist/prepare-account.js /compte/<fichier>.json --essai
+```
+
+`--essai` affiche ce qui serait fait sans rien écrire. La même commande sans
+`--essai` écrit tout dans une seule transaction (les images copiées sont
+effacées si elle échoue). En local : `pnpm --filter @kemet/db prepare-account
+<fichier>.json [--essai]`, avec `DATABASE_URL` et `UPLOADS_DIR`.
+
 ## Déploiements suivants
 
 Depuis le poste de l'administrateur, à la racine du dépôt, une fois le workflow
 `Images` du commit voulu terminé :
 
 ```
-infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev
+infra/deploy.sh kemet-prod https://kemetlabs.dev
 ```
+
+La cible `kemet-prod` est un alias de `~/.ssh/config` sur le poste, qui porte
+l'hôte, l'utilisateur et la clé de déploiement (`Host kemet-prod`, `HostName`,
+`User`, `IdentityFile`). Le script passe sa cible telle quelle à `ssh` : une
+cible écrite `utilisateur@adresse` ne trouve pas la clé de l'alias et la
+connexion est refusée (`Permission denied (publickey)`).
 
 Sans troisième argument, le script déploie le dernier commit de
 `origin/main`. Pour un commit précis, passer son SHA complet en troisième
@@ -301,7 +351,18 @@ argument. Dans l'ordre, le script :
    `pnpm --filter @kemet/web exec playwright install chromium`.
 
 Si l'étape 3 ou 4 échoue, le script revient au commit déployé juste avant,
-noté dans `.deploy-history` sur le serveur, et sort en erreur. Une
+noté dans `.deploy-history` sur le serveur (une ligne par déploiement
+devenu sain, `<commit>` pour GHCR, `<commit> server` pour une construction
+sur place), et sort en erreur. `.deploy-pending` marque une activation en
+cours : un commit qui n'est jamais devenu sain n'entre pas dans
+l'historique, et un commit refusé par le test de fumée en est retiré.
+
+`infra/Caddyfile` est monté fichier par fichier dans le conteneur Caddy :
+après `git checkout`, le conteneur en place lit toujours l'ancien fichier,
+même rechargé. Le script compare la configuration lue par Caddy à celle du
+commit et recrée le conteneur quand elles diffèrent (quelques secondes
+d'interruption). Sans ça, l'en-tête `Permissions-Policy` du 11/11 n'a jamais
+été servi, ce que le test de fumée a relevé le 12/11. Une
 migration n'est jamais annulée par ce retour arrière : les migrations
 restent additives pour que l'ancienne version tourne sur le nouveau schéma.
 
@@ -314,6 +375,43 @@ Si le dépôt n'est pas dans `/opt/kemet` sur le serveur, le préciser avec
 
 Une fois l'adresse connue, une sonde UptimeRobot gratuite vérifie `/` et
 `/api/health` toutes les cinq minutes et prévient par email.
+
+## Secours : construction sur le serveur
+
+Quand les images GHCR ne sont pas disponibles (CI indisponible ou épuisée,
+aperçu d'une branche qui n'est pas encore sur `main`), le même script
+construit les images sur le serveur au lieu de les télécharger. La branche
+doit être poussée sur `origin`, sans pull request ouverte : aucun workflow
+ne se déclenche alors (`ci.yml` ne réagit qu'à `main` et aux pull requests,
+`images.yml` qu'à la CI de `main`).
+
+```
+KEMET_BUILD_ON_SERVER=1 infra/deploy.sh kemet-prod https://kemetlabs.dev $(git rev-parse <branche>)
+```
+
+Différences avec le déploiement normal :
+
+- les quatre images (api, realtime, worker, web) sont construites une par
+  une pendant que la pile tourne, pour ménager la mémoire (4 Go, pas de
+  swap). Compter une dizaine de minutes la première fois, moins ensuite
+  grâce au cache de construction ;
+- elles portent le préfixe `kemet-local` au lieu de
+  `ghcr.io/cheikhmbackecisse/kemet`, écrit avec le commit dans
+  `.env.deployed` ;
+- le commit, troisième argument, est obligatoire : sans lui le script
+  s'arrête avant toute connexion au serveur, plutôt que de construire
+  `origin/main` sans le dire ;
+- le commit est noté `<commit> server` dans `.deploy-history`. Un retour
+  arrière vers lui reconstruit ses images sur le serveur au lieu de les
+  chercher sur GHCR. Un déploiement en place avant cette règle est noté au
+  déploiement suivant, d'après `.env.deployed`.
+
+Le seed se lance ensuite comme d'habitude (commande de la section
+"Comptes de démonstration et administrateur", qui lit `.env.deployed`).
+
+Pour revenir aux images GHCR, il suffit d'un déploiement normal :
+`infra/deploy.sh` sans `KEMET_BUILD_ON_SERVER` réécrit `.env.deployed` sans
+le préfixe local, et supprime les images `kemet-local-*`.
 
 ## Sauvegardes
 

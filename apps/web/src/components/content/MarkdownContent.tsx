@@ -1,5 +1,5 @@
 import type { Element, ElementContent } from "hast";
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
@@ -133,6 +133,26 @@ const COMPONENTS: Components = {
   hr: () => <hr className="my-3 border-border" />,
 };
 
+// Revenir sur le fil remonte toutes ses cartes : sans ce cache, chaque texte
+// serait de nouveau analysé. Les éléments React produits sont immuables et
+// réutilisables d'un montage à l'autre. Les plus anciens sortent en premier.
+const RENDERED_CACHE_LIMIT = 300;
+const rendered = new Map<string, ReactElement>();
+
+function renderMarkdown(source: string): ReactElement {
+  const cached = rendered.get(source);
+  if (cached) {
+    rendered.delete(source);
+    rendered.set(source, cached);
+    return cached;
+  }
+  // Markdown (version synchrone de react-markdown) n'utilise aucun hook.
+  const element = Markdown({ children: source, remarkPlugins: REMARK_PLUGINS, components: COMPONENTS });
+  rendered.set(source, element);
+  if (rendered.size > RENDERED_CACHE_LIMIT) rendered.delete(rendered.keys().next().value!);
+  return element;
+}
+
 export interface MarkdownContentProps {
   source: string;
   className?: string;
@@ -143,9 +163,7 @@ export interface MarkdownContentProps {
 export default function MarkdownContent({ source, className, suffix }: MarkdownContentProps) {
   return (
     <div className={cn("break-words", className)}>
-      <Markdown remarkPlugins={REMARK_PLUGINS} components={COMPONENTS}>
-        {source}
-      </Markdown>
+      {renderMarkdown(source)}
       {suffix && <div className="mt-0.5">{suffix}</div>}
     </div>
   );

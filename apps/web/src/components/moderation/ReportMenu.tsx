@@ -10,7 +10,7 @@ import { useToast } from "../ui/Toast.js";
 import { fr } from "../../i18n/fr.js";
 
 export interface ReportMenuProps {
-  contentType: "message" | "post" | "work" | "conversation";
+  contentType: "message" | "post" | "work" | "conversation" | "opportunity";
   contentId: string;
   authorId: string;
   authorHandle: string;
@@ -22,6 +22,7 @@ const CONTENT_LABELS: Record<ReportMenuProps["contentType"], string> = {
   message: fr.moderation.reportThisMessage,
   post: fr.moderation.reportThisPost,
   work: fr.moderation.reportThisWork,
+  opportunity: fr.moderation.reportThisOpportunity,
   conversation: fr.moderation.reportThisConversation,
 };
 
@@ -84,7 +85,11 @@ export function ReportDialog({
       toast.show(fr.moderation.reportSent, "success");
       close();
     } catch (err) {
-      setError(err instanceof ChatApiError && err.statusCode === 409 ? fr.moderation.reportAlreadySent : fr.moderation.reportError);
+      setError(
+        err instanceof ChatApiError && err.statusCode === 409
+          ? fr.moderation.reportAlreadySent
+          : fr.moderation.reportError,
+      );
     } finally {
       setSubmitting(false);
     }

@@ -8,8 +8,11 @@ import {
   mcpServers,
   messageAttachments,
   messages,
+  opportunities,
   postAttachments,
+  postBookmarks,
   postReplies,
+  postReposts,
   posts,
   profiles,
   projects,
@@ -22,6 +25,11 @@ import {
   verification,
   votes,
   workAttachments,
+  workMedia,
+  profileCvs,
+  profileAvatars,
+  organizationManagers,
+  organizationRequests,
   workAuthors,
   type Db,
 } from "@kemet/db";
@@ -113,12 +121,24 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
       displayName: DELETED_ACCOUNT_DISPLAY_NAME,
       country: "",
       role: null,
+      roleOther: null,
+      workMode: null,
+      organization: null,
       title: null,
       bio: null,
       stack: [],
       githubUrl: null,
+      gitlabUrl: null,
+      linkedinUrl: null,
+      portfolioUrl: null,
+      websiteUrl: null,
+      helpsBeginners: false,
       avatarUrl: null,
+      bannerUrl: null,
       openToOpportunities: false,
+      interests: [],
+      interestOther: null,
+      intents: [],
       isPlatformAdmin: false,
       deletedAt: now,
     })
@@ -131,6 +151,9 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
   await handOverOwnedSpaces(tx, profileId, now);
   await tx.delete(spaceMembers).where(eq(spaceMembers.profileId, profileId));
   await tx.delete(readStates).where(eq(readStates.profileId, profileId));
+  await tx.delete(postBookmarks).where(eq(postBookmarks.profileId, profileId));
+  // Une republication sans personne derrière gonflerait le compteur et le fil.
+  await tx.delete(postReposts).where(eq(postReposts.profileId, profileId));
   await tx.delete(skillRatings).where(eq(skillRatings.raterId, profileId));
   await tx.delete(mcpServers).where(eq(mcpServers.addedBy, profileId));
   // Le vote d'une compétition close reste : le retirer changerait un
@@ -168,23 +191,66 @@ async function anonymizeProfile(tx: Tx, profileId: string): Promise<string[]> {
     .update(projects)
     .set({ name: "", pitch: "", description: "", repoUrl: "", demoUrl: null, stack: [] })
     .where(and(eq(projects.ownerId, profileId), isNotNull(projects.deletedAt)));
+  // Une offre appelle à écrire à son auteur : sans compte, elle n'a plus de sens.
+  await tx.delete(opportunities).where(eq(opportunities.authorId, profileId));
 
   const messageFiles = await tx
     .select({ storageKey: messageAttachments.storageKey })
     .from(messageAttachments)
     .where(eq(messageAttachments.authorId, profileId));
-  const postFiles = await tx
-    .select({ storageKey: postAttachments.storageKey })
+  const postRows = await tx
+    .select({
+      storageKey: postAttachments.storageKey,
+      posterStorageKey: postAttachments.posterStorageKey,
+    })
     .from(postAttachments)
     .where(eq(postAttachments.authorId, profileId));
+  // L'image d'aperçu d'une vidéo est un second fichier sur le disque.
+  const postFiles = postRows.flatMap((row) => [
+    { storageKey: row.storageKey },
+    ...(row.posterStorageKey ? [{ storageKey: row.posterStorageKey }] : []),
+  ]);
   // Le PDF d'un travail porte en général le nom de son auteur : il part avec
   // le compte, comme les images de post. Le travail reste, sans pièce jointe.
   const workFiles = await tx
     .delete(workAttachments)
     .where(eq(workAttachments.authorId, profileId))
     .returning({ storageKey: workAttachments.storageKey });
+  // Même règle pour la couverture, la galerie et les vidéos : un visage, une
+  // voix. Les liens YouTube partent aussi, ils pointent vers une chaîne.
+  const mediaFiles = await tx
+    .delete(workMedia)
+    .where(eq(workMedia.authorId, profileId))
+    .returning({ storageKey: workMedia.storageKey });
+  const cvFiles = await tx
+    .delete(profileCvs)
+    .where(eq(profileCvs.profileId, profileId))
+    .returning({ storageKey: profileCvs.storageKey });
+  const avatarFiles = await tx
+    .delete(profileAvatars)
+    .where(eq(profileAvatars.profileId, profileId))
+    .returning({ storageKey: profileAvatars.storageKey });
   await tx
     .delete(workAuthors)
     .where(and(eq(workAuthors.profileId, profileId), eq(workAuthors.status, "pending")));
-  return [...messageFiles, ...postFiles, ...workFiles].map((file) => file.storageKey);
+  // Une demande de référencement encore en attente part avec le compte. La
+  // page d'une organisation déjà acceptée reste : elle n'est pas à la
+  // personne, qui perd seulement le droit d'y publier.
+  const requestLogos = await tx
+    .delete(organizationRequests)
+    .where(
+      and(
+        eq(organizationRequests.requesterId, profileId),
+        eq(organizationRequests.status, "pending"),
+      ),
+    )
+    .returning({ storageKey: organizationRequests.logoStorageKey });
+  await tx.delete(organizationManagers).where(eq(organizationManagers.managerId, profileId));
+  return [
+    ...[...messageFiles, ...postFiles, ...workFiles, ...cvFiles, ...avatarFiles].map(
+      (file) => file.storageKey,
+    ),
+    ...requestLogos.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
+    ...mediaFiles.flatMap((file) => (file.storageKey ? [file.storageKey] : [])),
+  ];
 }

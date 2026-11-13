@@ -13,6 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { channels, messages, spaces } from "./chat.js";
+import { postReplies, posts } from "./feed.js";
 import { profiles } from "./profiles.js";
 
 export const skillVisibilityEnum = pgEnum("skill_visibility", ["private", "space", "public"]);
@@ -47,6 +48,7 @@ export const skills = pgTable(
     content: text("content").notNull(),
     tags: text("tags").array().notNull().default([]),
     visibility: skillVisibilityEnum("visibility").notNull().default("public"),
+    isBeginner: boolean("is_beginner").notNull().default(false),
     // Valeur de secours sans portée : le trigger `skills_search_vector_trigger`
     // (voir la migration) la recalcule avant chaque insertion ou mise à jour.
     searchVector: tsvector("search_vector")
@@ -106,12 +108,13 @@ export const assistantInvocations = pgTable(
   "assistant_invocations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    channelId: uuid("channel_id")
-      .notNull()
-      .references(() => channels.id, { onDelete: "cascade" }),
-    triggerMessageId: uuid("trigger_message_id")
-      .notNull()
-      .references(() => messages.id, { onDelete: "cascade" }),
+    // Une invocation répond soit dans un salon (message), soit sous un post
+    // (réponse du fil) : voir la contrainte assistant_invocations_one_target.
+    channelId: uuid("channel_id").references(() => channels.id, { onDelete: "cascade" }),
+    triggerMessageId: uuid("trigger_message_id").references(() => messages.id, { onDelete: "cascade" }),
+    postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }),
+    triggerReplyId: uuid("trigger_reply_id").references(() => postReplies.id, { onDelete: "cascade" }),
+    responseReplyId: uuid("response_reply_id").references(() => postReplies.id, { onDelete: "set null" }),
     requestedBy: uuid("requested_by")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
@@ -133,6 +136,15 @@ export const assistantInvocations = pgTable(
   (table) => [
     index("assistant_invocations_requested_by_created_at_idx").on(table.requestedBy, table.createdAt),
     index("assistant_invocations_channel_idx").on(table.channelId),
+    index("assistant_invocations_post_idx").on(table.postId),
+    index("assistant_invocations_response_reply_idx").on(table.responseReplyId),
+    check(
+      "assistant_invocations_one_target",
+      sql`(${table.channelId} is not null and ${table.triggerMessageId} is not null and ${table.postId} is null and ${table.triggerReplyId} is null)
+        or (${table.postId} is not null and ${table.triggerReplyId} is not null and ${table.channelId} is null and ${table.triggerMessageId} is null)`,
+    ),
+    // Compte des utilisations d'un skill (liste des skills) : `skill_ids @> array[id]`.
+    index("assistant_invocations_skill_ids_idx").using("gin", table.skillIds),
   ],
 );
 
@@ -199,6 +211,7 @@ export const assistantInvocationsRelations = relations(assistantInvocations, ({ 
     fields: [assistantInvocations.responseMessageId],
     references: [messages.id],
   }),
+  post: one(posts, { fields: [assistantInvocations.postId], references: [posts.id] }),
   requester: one(profiles, { fields: [assistantInvocations.requestedBy], references: [profiles.id] }),
 }));
 

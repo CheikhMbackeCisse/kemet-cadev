@@ -4,11 +4,13 @@ export { KEMET_HANDLE } from "@kemet/shared";
 // jamais connectable, aucun identifiant de compte ne lui correspond.
 export const KEMET_ASSISTANT_PROFILE_ID = "00000000-0000-0000-0000-000000000001";
 
-const MENTION_PATTERN = /@kemet\b/i;
-// Le "," qui suit le slug dans "@kemet avec wave-paiements, comment…" est une
+// "@kocc" est le nom affiché ; "@kemet", l'ancien, appelle toujours
+// l'assistant (messages déjà écrits, habitudes prises).
+const MENTION_PATTERN = /@(?:kocc|kemet)(?![a-z0-9-])/i;
+// Le "," qui suit le slug dans "@kocc avec wave-paiements, comment…" est une
 // virgule de grammaire française, pas un séparateur de liste : un seul skill
 // peut être demandé explicitement à la fois.
-const MENTION_WITH_SKILL_PATTERN = /@kemet\s+avec\s+([a-z0-9][a-z0-9-]*)\s*,?\s*/i;
+const MENTION_WITH_SKILL_PATTERN = /@(?:kocc|kemet)\s+avec\s+([a-z0-9][a-z0-9-]*)\s*,?\s*/i;
 
 export function mentionsAssistant(body: string): boolean {
   return MENTION_PATTERN.test(body);
@@ -20,7 +22,7 @@ export interface AssistantRequest {
 }
 
 /**
- * "@kemet avec wave-paiements, comment…" demande un skill précis ; une
+ * "@kocc avec wave-paiements, comment…" demande un skill précis ; une
  * simple mention laisse l'assistant choisir.
  */
 export function parseAssistantRequest(body: string): AssistantRequest {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { levelSchema } from "./points.js";
 import { handleSchema } from "./profile.js";
+import { workImageSchema, workMediaFieldsSchema, workVideoSchema } from "./work-media.js";
 
 export const MAX_WORK_TITLE_LENGTH = 140;
 export const MAX_WORK_SUMMARY_LENGTH = 6000;
@@ -13,6 +14,8 @@ export const MAX_WORK_MATCH_SUGGESTIONS = 5;
 export const MAX_WORK_MATCH_JUSTIFICATION_LENGTH = 300;
 
 const slugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+// Adresses de pages sous /travaux/ : un travail ne peut pas les prendre.
+const RESERVED_WORK_SLUGS = ["nouveau", "filtres"];
 
 export const workTypeSchema = z.enum([
   "class_project",
@@ -92,11 +95,14 @@ const workFieldsSchema = z.object({
 });
 
 export const createWorkSchema = workFieldsSchema.extend({
+  /** Absent : aucun média. Validé à part, il ne fait pas partie des champs modifiables un à un. */
+  media: workMediaFieldsSchema.optional(),
   slug: z
     .string()
     .min(3)
     .max(80)
-    .regex(slugPattern, "Lettres minuscules, chiffres et tirets seulement."),
+    .regex(slugPattern, "Lettres minuscules, chiffres et tirets seulement.")
+    .refine((slug) => !RESERVED_WORK_SLUGS.includes(slug), "Cet identifiant est déjà pris."),
   // Sans cette case cochée, rien n'est publié : refusé ici et en base.
   publishRightConfirmed: z.literal(true),
   coauthorHandles: z.array(handleSchema).max(MAX_WORK_COAUTHORS).default([]),
@@ -105,7 +111,10 @@ export type CreateWorkInput = z.input<typeof createWorkSchema>;
 
 // Les coauteurs se gèrent par leurs propres routes (inviter, retirer), pour
 // qu'un statut "accepté" ne soit jamais écrasé par un formulaire.
-export const updateWorkSchema = workFieldsSchema.partial();
+export const updateWorkSchema = workFieldsSchema.partial().extend({
+  /** Présent : remplace la couverture, la galerie et les vidéos. */
+  media: workMediaFieldsSchema.optional(),
+});
 export type UpdateWorkInput = z.input<typeof updateWorkSchema>;
 
 export const inviteWorkCoauthorSchema = z.object({ handle: handleSchema });
@@ -161,6 +170,8 @@ export const workSummarySchema = z.object({
   coauthors: z.array(workPersonSchema),
   externalAuthors: z.array(z.string()),
   hasPdf: z.boolean(),
+  /** Image de couverture, pour la carte du travail. */
+  coverMediaId: z.string().uuid().nullable(),
   /** Messages de la discussion, pour le tri "les plus discutés". */
   messageCount: z.number().int().nonnegative(),
   createdAt: z.string().datetime(),
@@ -196,6 +207,8 @@ export const workDetailSchema = workSummarySchema.extend({
   publisherLevel: levelSchema,
   links: z.array(workLinkSchema),
   attachment: workAttachmentSchema.nullable(),
+  gallery: z.array(workImageSchema),
+  videos: z.array(workVideoSchema),
   /** Toutes les invitations et leur statut, pour le publieur seulement ; `null` pour tout autre lecteur. */
   invitations: z.array(workInvitationEntrySchema).nullable(),
   viewerRole: workViewerRoleSchema.nullable(),
@@ -217,6 +230,16 @@ export const pendingWorkInvitationSchema = z.object({
 });
 export type PendingWorkInvitation = z.infer<typeof pendingWorkInvitationSchema>;
 
+/**
+ * Personnes qui ont travaillé sur un sujet proche, par tags communs, sans
+ * l'assistant : ce qu'un visiteur voit avant de se connecter.
+ */
+export const relatedPeopleSchema = z.object({
+  total: z.number().int().nonnegative(),
+  people: z.array(workPersonSchema),
+});
+export type RelatedPeople = z.infer<typeof relatedPeopleSchema>;
+
 export const workMatchSubjectSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("work"), slug: z.string().min(1).max(80) }),
   z.object({ type: z.literal("project"), slug: z.string().min(1).max(80) }),
@@ -228,7 +251,7 @@ export const workMatchRequestSchema = z.object({ subject: workMatchSubjectSchema
 export type WorkMatchRequestInput = z.infer<typeof workMatchRequestSchema>;
 
 /**
- * `assistant` : choix et justifications de @kemet. `recorded` : réponse de
+ * `assistant` : choix et justifications de @kocc. `recorded` : réponse de
  * démonstration enregistrée. `full_text` : recherche plein texte seule, sans
  * l'assistant (fournisseurs saturés, quota atteint ou réponse refusée).
  */

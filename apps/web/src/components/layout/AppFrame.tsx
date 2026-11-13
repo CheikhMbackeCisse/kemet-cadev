@@ -5,7 +5,11 @@ import { MobileTabBar } from "../shell/MobileTabBar.js";
 import { SidePanelColumn } from "../shell/SidePanelColumn.js";
 import { SidePanelProvider } from "../shell/sidePanel.js";
 import { useSession } from "../../session/SessionProvider.js";
-import { messagesBadgeCount, useConversationUnread } from "../../lib/messaging/conversationUnread.js";
+import {
+  messagesBadgeCount,
+  useConversationUnread,
+} from "../../lib/messaging/conversationUnread.js";
+import { useTabSwipe } from "../../lib/navigation/tabSwipe.js";
 
 export interface AppFrameSidePanel {
   title: string;
@@ -23,6 +27,8 @@ export interface AppFrameProps {
    * pas, seule la liste des messages défile.
    */
   fixedHeight?: boolean;
+  /** Page racine d'un onglet du bas : un glissement passe à l'onglet voisin. */
+  tabSwipe?: boolean;
   children: ReactNode;
 }
 
@@ -35,15 +41,18 @@ export function AppFrame({
   activeMobileTab,
   sidePanel,
   fixedHeight,
+  tabSwipe = false,
   children,
 }: AppFrameProps) {
   const { status } = useSession();
   const messagesBadge = messagesBadgeCount(useConversationUnread(status === "ready"));
+  useTabSwipe(tabSwipe, activeMobileTab);
   return (
     <SidePanelProvider enabled={Boolean(sidePanel)}>
       <div
         className={cn(
-          "flex w-full bg-bg",
+          // Une page qui entre en glissant ne doit pas faire défiler l'écran de côté.
+          "flex w-full overflow-x-clip bg-bg",
           fixedHeight ? "h-viewport overflow-hidden overscroll-none" : "min-h-viewport",
         )}
       >

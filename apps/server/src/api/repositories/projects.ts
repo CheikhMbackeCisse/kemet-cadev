@@ -1,6 +1,12 @@
-import { and, count, desc, eq, isNull, lt } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 import { applications, helpRequests, profiles, projects, type Db, type DbOrTx } from "@kemet/db";
 import type { CreateHelpRequestInput, CreateProjectInput, UpdateProjectInput } from "@kemet/shared";
+import { notWrittenByFiller } from "./fillers.js";
+
+// Un projet entre dans le fil quand il est publié ou qu'il ouvre une demande
+// d'aide, et y reste le temps de cette fenêtre.
+const FEED_PROJECT_WINDOW_DAYS = 30;
+export const FEED_PROJECT_ROLES = 3;
 
 function toPage<T extends { createdAt: Date }>(rows: T[], limit: number) {
   const hasMore = rows.length > limit;
@@ -147,4 +153,50 @@ export async function decideApplication(db: Db, applicationId: string, accepted:
     }
     return application;
   });
+}
+
+/**
+ * Projets à montrer dans le fil, classés comme les posts "Pour toi" : un
+ * score (demandes ouvertes, candidatures reçues), puis la date de la dernière
+ * activité (publication ou nouvelle demande). `ownerIds` restreint aux
+ * projets de ces personnes (onglet Abonnements).
+ */
+export async function listFeedProjects(db: Db, ownerIds: string[] | null, limit: number) {
+  if (ownerIds !== null && ownerIds.length === 0) return [];
+  const since = new Date(Date.now() - FEED_PROJECT_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  // Colonnes écrites en toutes lettres : voir la remarque de listPourToiFeed (posts.ts).
+  const lastOpenRequestAt = sql`(select max("help_requests"."created_at") from "help_requests"
+    where "help_requests"."project_id" = "projects"."id" and "help_requests"."status" = 'open')`;
+  const activityAt = sql<Date>`greatest("projects"."created_at", coalesce(${lastOpenRequestAt}, "projects"."created_at"))`;
+  const score = sql<number>`(
+    (select count(*) from "help_requests" where "help_requests"."project_id" = "projects"."id" and "help_requests"."status" = 'open') * 3 +
+    (select count(*) from "applications" inner join "help_requests" on "help_requests"."id" = "applications"."help_request_id"
+      where "help_requests"."project_id" = "projects"."id" and "help_requests"."status" = 'open')
+  )`;
+  const rows = await db
+    .select({ project: projects })
+    .from(projects)
+    .where(
+      and(
+        isNull(projects.deletedAt),
+        notWrittenByFiller(projects.ownerId),
+        // Date passée en texte : comparée à une expression SQL brute, le
+        // pilote ne sait pas la convertir.
+        sql`${activityAt} > ${since.toISOString()}`,
+        ...(ownerIds ? [inArray(projects.ownerId, ownerIds)] : []),
+      ),
+    )
+    .orderBy(desc(score), desc(activityAt))
+    .limit(limit);
+  return rows.map((row) => row.project);
+}
+
+/** Demandes ouvertes d'un projet, les plus récentes d'abord : les rôles recherchés de sa carte. */
+export async function listOpenRoles(db: Db, projectId: string, limit: number) {
+  return db
+    .select({ id: helpRequests.id, title: helpRequests.title, kind: helpRequests.kind })
+    .from(helpRequests)
+    .where(and(eq(helpRequests.projectId, projectId), eq(helpRequests.status, "open")))
+    .orderBy(desc(helpRequests.createdAt))
+    .limit(limit);
 }

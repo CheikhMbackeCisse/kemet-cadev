@@ -1,0 +1,14 @@
+/* Vidéos verticales du fil (720 x 1280), filmées par render.ts. Polices du
+   système seulement : rien n'est chargé depuis le réseau. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 720px; height: 1280px; overflow: hidden; }
+body { font-family: "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; justify-content: center; padding: 72px 56px 140px; gap: 40px; position: relative; }
+h1 { font-size: 54px; line-height: 1.12; font-weight: 800; letter-spacing: -0.5px; }
+.sub { font-size: 28px; opacity: 0.75; }
+.mono { font-family: Consolas, "Cascadia Mono", monospace; }
+.late { opacity: 0; }
+@keyframes show { to { opacity: 1; } }
+@keyframes hide { to { opacity: 0; } }
+@keyframes grow { from { width: 0; } }
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+.sign { position: absolute; left: 56px; bottom: 64px; font-size: 24px; opacity: 0.6; }

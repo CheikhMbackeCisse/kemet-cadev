@@ -23,6 +23,6 @@ export function ProfileLink({ handle, className, children, ...props }: ProfileLi
 }
 
 /** Pas de badge de niveau pour un compte supprimé. */
-export function authorLevel(handle: string, level: Level): Level | undefined {
-  return isDeletedAccountHandle(handle) ? undefined : level;
+export function authorLevel(handle: string, level: Level | null): Level | undefined {
+  return isDeletedAccountHandle(handle) || level === null ? undefined : level;
 }

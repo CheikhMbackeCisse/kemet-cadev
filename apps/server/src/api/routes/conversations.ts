@@ -26,6 +26,7 @@ import {
   hasBlocked,
   insertConversation,
   isBlockedEitherWay,
+  listBlockedProfiles,
   knowsSender,
   listConversationMembers,
   listConversationsForViewer,
@@ -37,6 +38,7 @@ import { findProfileByHandle, findProfileByUserId } from "../repositories/profil
 import { findWorkBySlug, listWorkAccountAuthorIds } from "../repositories/works.js";
 import { computeLevels } from "../repositories/points.js";
 import { serializeConversation } from "../conversation-serializers.js";
+import { serializeProfileSummary } from "../serializers.js";
 import type { ChatAppDeps } from "../app.js";
 
 const MAX_CONVERSATIONS_PER_MINUTE = 10;
@@ -129,6 +131,8 @@ export function registerConversationRoutes(app: FastifyInstance, { db, auth, cha
         const recipient = await findProfileByHandle(db, handle);
         if (!recipient) throw notFound(`Le profil @${handle} n'existe pas.`);
         if (recipient.id === viewer.id) throw badRequest("Vous ne pouvez pas vous écrire à vous-même.");
+        // Profil sans compte de connexion (organisation du seed) : personne ne lirait la demande.
+        if (recipient.userId === null) throw forbidden(`@${handle} ne reçoit pas de messages.`);
         if (await isBlockedEitherWay(db, viewer.id, recipient.id)) {
           throw forbidden(`Vous ne pouvez pas écrire à @${handle}.`);
         }
@@ -272,6 +276,13 @@ export function registerConversationRoutes(app: FastifyInstance, { db, auth, cha
       return { left: true };
     },
   );
+
+  app.get("/api/me/blocks", async (request) => {
+    const userId = await requireSessionUserId(auth, request);
+    const viewer = await requireViewer(db, userId);
+    const rows = await listBlockedProfiles(db, viewer.id);
+    return { items: rows.map((row) => serializeProfileSummary(row.profile)) };
+  });
 
   app.get<{ Params: { handle: string } }>("/api/users/:handle/block", async (request) => {
     const userId = await requireSessionUserId(auth, request);

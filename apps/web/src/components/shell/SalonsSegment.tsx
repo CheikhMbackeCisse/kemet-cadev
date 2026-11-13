@@ -1,6 +1,9 @@
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
-import { messagesBadgeCount, useConversationUnread } from "../../lib/messaging/conversationUnread.js";
+import {
+  messagesBadgeCount,
+  useConversationUnread,
+} from "../../lib/messaging/conversationUnread.js";
 import { useSession } from "../../session/SessionProvider.js";
 
 export interface SalonsSegmentProps {
@@ -11,6 +14,7 @@ export interface SalonsSegmentProps {
  * Sous lg, l'onglet Salons porte aussi les messages privés : deux liens
  * soulignés en haut de page plutôt qu'un sixième onglet que la barre du bas
  * n'a pas la place d'afficher. Absent pour un visiteur, qui n'a pas de messages.
+ * Posé dans la ligne de la recherche (ChatSearch), qui porte le filet du bas.
  */
 export function SalonsSegment({ active }: SalonsSegmentProps) {
   const { status } = useSession();
@@ -19,11 +23,16 @@ export function SalonsSegment({ active }: SalonsSegmentProps) {
 
   const items = [
     { id: "salons" as const, label: fr.messages.segmentSalons, href: "/salons", count: 0 },
-    { id: "messages" as const, label: fr.messages.segmentMessages, href: "/messages", count: unread },
+    {
+      id: "messages" as const,
+      label: fr.messages.segmentMessages,
+      href: "/messages",
+      count: unread,
+    },
   ];
 
   return (
-    <nav aria-label={fr.messages.segmentLabel} className="shrink-0 border-b border-border px-3 lg:hidden">
+    <nav aria-label={fr.messages.segmentLabel} className="shrink-0 px-3 lg:hidden">
       <ul className="grid grid-cols-2">
         {items.map((item) => (
           <li key={item.id}>
@@ -31,9 +40,11 @@ export function SalonsSegment({ active }: SalonsSegmentProps) {
               href={item.href}
               aria-current={item.id === active ? "page" : undefined}
               className={cn(
-                "relative flex h-control-mobile items-center justify-center gap-2 text-sm font-medium transition-colors duration-150",
+                "relative flex h-14 items-center justify-center gap-2 text-sm font-medium transition-colors duration-150",
                 "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary",
-                item.id === active ? "text-text after:opacity-100" : "text-muted after:opacity-0 hover:text-text",
+                item.id === active
+                  ? "text-text after:opacity-100"
+                  : "text-muted after:opacity-0 hover:text-text",
               )}
             >
               {item.label}

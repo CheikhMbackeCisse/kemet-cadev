@@ -1,5 +1,3 @@
-import { KEMET_HANDLE } from "@kemet/shared";
-
 export interface MentionQuery {
   kind: "profile" | "skill";
   query: string;
@@ -8,7 +6,7 @@ export interface MentionQuery {
 }
 
 const PROFILE_TRIGGER = /(^|\s)@([\w-]*)$/;
-const SKILL_TRIGGER = new RegExp(`(^|\\s)@${KEMET_HANDLE}\\s+avec\\s+([\\w-]*)$`, "i");
+const SKILL_TRIGGER = /(^|\s)@(?:kocc|kemet)\s+avec\s+([\w-]*)$/i;
 
 /** Ce qui est en train d'être tapé juste avant le curseur, s'il appelle une suggestion. */
 export function findMentionQuery(text: string, caret: number): MentionQuery | null {

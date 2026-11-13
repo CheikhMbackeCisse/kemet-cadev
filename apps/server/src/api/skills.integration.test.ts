@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, profiles, type Db } from "@kemet/db";
+import { assistantInvocations, createDb, messages, profiles, skills, type Db } from "@kemet/db";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
@@ -105,6 +105,28 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     expect((list.json().items as { slug: string }[]).map((skill) => skill.slug)).toEqual(["wave-paiements"]);
   });
 
+  it("montre l'échange enregistré d'un skill du seed, jamais celui d'un skill recréé sous son slug", async () => {
+    const author = await createMember("author-e@test.kemet", "authore");
+    await createSkill(author);
+
+    const created = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(created.json().exampleAnswer).toBeNull();
+
+    // Un skill du seed : seul le seed pose `is_demo` sur le skill et sur son auteur.
+    await db.update(skills).set({ isDemo: true }).where(eq(skills.slug, "wave-paiements"));
+    await db.update(profiles).set({ isDemo: true }).where(eq(profiles.handle, "authore"));
+    const asVisitor = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(asVisitor.json().exampleAnswer).toMatchObject({
+      question: "@kocc avec wave-paiements, comment vérifier la signature d'un webhook Wave en Node.js ?",
+    });
+    const asMember = await app.inject({
+      method: "GET",
+      url: "/api/skills/wave-paiements",
+      headers: { cookie: author },
+    });
+    expect(asMember.json().exampleAnswer).not.toBeNull();
+  });
+
   it("ne montre jamais à un visiteur un skill limité à un espace", async () => {
     const author = await createMember("author-s@test.kemet", "authors");
     const space = await app.inject({
@@ -192,5 +214,88 @@ describe.skipIf(!databaseUrl)("Skills (base Postgres réelle)", () => {
     await createSkill(author);
     const again = await createSkill(author);
     expect(again.statusCode).toBe(409);
+  });
+
+  it("cherche les skills par mot ou par début de nom", async () => {
+    const cookie = await createMember("search@test.kemet", "chercheuse");
+    await createSkill(cookie);
+    await createSkill(cookie, {
+      slug: "migrations-postgres",
+      name: "migrations-postgres",
+      description: "Écrire des migrations sans bloquer la base.",
+      tags: ["postgres"],
+    });
+
+    const byWord = await app.inject({ method: "GET", url: "/api/skills?q=migrations" });
+    expect(byWord.json().items.map((skill: { slug: string }) => skill.slug)).toEqual(["migrations-postgres"]);
+    const byPrefix = await app.inject({ method: "GET", url: "/api/skills?q=wav" });
+    expect(byPrefix.json().items.map((skill: { slug: string }) => skill.slug)).toEqual(["wave-paiements"]);
+    const wildcard = await app.inject({ method: "GET", url: "/api/skills?q=%25" });
+    expect(wildcard.json().items).toEqual([]);
+    const all = await app.inject({ method: "GET", url: "/api/skills" });
+    expect(all.json().items).toHaveLength(2);
+  });
+
+  it("compte les réponses de @kocc terminées qui ont retenu un skill", async () => {
+    const cookie = await createMember("uses@test.kemet", "utilisatrice");
+    const skillId = (await createSkill(cookie)).json().skill.id as string;
+    const [profile] = await db.select().from(profiles).where(eq(profiles.handle, "utilisatrice"));
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/spaces",
+      headers: { cookie },
+      payload: { name: "usages", slug: "usages", visibility: "public" },
+    });
+    const spaceId = created.json().space.id as string;
+    const channels = (await app.inject({ method: "GET", url: `/api/spaces/${spaceId}/channels`, headers: { cookie } })).json()
+      .items as { id: string; slug: string }[];
+    const channelId = channels[0]!.id;
+    const [trigger] = await db
+      .insert(messages)
+      .values({ channelId, authorId: profile!.id, clientId: crypto.randomUUID(), body: "@kocc Wave ?" })
+      .returning();
+    const base = { channelId, triggerMessageId: trigger!.id, requestedBy: profile!.id };
+    await db.insert(assistantInvocations).values([
+      { ...base, skillIds: [skillId], status: "done" },
+      { ...base, skillIds: [skillId], status: "done" },
+      { ...base, skillIds: [skillId], status: "failed" },
+      { ...base, skillIds: [], status: "done" },
+    ]);
+
+    const list = await app.inject({ method: "GET", url: "/api/skills" });
+    expect(list.json().items[0].usageCount).toBe(2);
+    const detail = await app.inject({ method: "GET", url: "/api/skills/wave-paiements" });
+    expect(detail.json().skill.usageCount).toBe(2);
+  });
+
+  it("ne montre jamais un skill privé d'un autre dans la liste ni la recherche, même avec un ancien espace", async () => {
+    const author = await createMember("private-author@test.kemet", "autrice");
+    const member = await createMember("private-member@test.kemet", "membre");
+    const space = (
+      await app.inject({
+        method: "POST",
+        url: "/api/spaces",
+        headers: { cookie: author },
+        payload: { name: "atelier", slug: "atelier", visibility: "public" },
+      })
+    ).json().space as { id: string };
+    await app.inject({ method: "POST", url: `/api/spaces/${space.id}/join`, headers: { cookie: member } });
+    await createSkill(author, { slug: "secret-interne", name: "secret-interne", visibility: "space", spaceId: space.id });
+    await app.inject({
+      method: "PATCH",
+      url: "/api/skills/secret-interne",
+      headers: { cookie: author },
+      payload: { visibility: "private" },
+    });
+
+    for (const cookie of [member, undefined]) {
+      const headers = cookie ? { cookie } : {};
+      const list = await app.inject({ method: "GET", url: "/api/skills", headers });
+      expect(list.json().items.map((skill: { slug: string }) => skill.slug)).not.toContain("secret-interne");
+      const search = await app.inject({ method: "GET", url: "/api/skills?q=secret", headers });
+      expect(search.json().items).toEqual([]);
+    }
+    const own = await app.inject({ method: "GET", url: "/api/skills?q=secret", headers: { cookie: author } });
+    expect(own.json().items.map((skill: { slug: string }) => skill.slug)).toEqual(["secret-interne"]);
   });
 });

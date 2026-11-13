@@ -6,6 +6,9 @@ RUN corepack enable
 WORKDIR /repo
 COPY . .
 RUN pnpm install --frozen-lockfile
+# Commit de l'image, affiché dans Paramètres > Aide.
+ARG KEMET_VERSION=dev
+ENV VITE_KEMET_VERSION=$KEMET_VERSION
 RUN pnpm --filter @kemet/shared build && pnpm --filter @kemet/web build
 
 FROM node:22-alpine

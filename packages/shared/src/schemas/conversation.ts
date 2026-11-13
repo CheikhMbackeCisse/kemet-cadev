@@ -52,6 +52,7 @@ export const conversationLastMessageSchema = z.object({
   authorId: z.string().uuid(),
   body: z.string(),
   hasAttachments: z.boolean(),
+  hasVoice: z.boolean(),
   deleted: z.boolean(),
   createdAt: z.string().datetime(),
 });

@@ -1,0 +1,278 @@
+/* Styles partagés par les pages de démonstration. Chaque `.frame` est
+   capturé à sa taille exacte par render.mjs. Polices du système seulement :
+   rien n'est chargé depuis le réseau. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #222;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.frame {
+  width: 1280px;
+  height: 720px;
+  position: relative;
+  overflow: hidden;
+  flex: none;
+}
+
+.frame.banner {
+  width: 1500px;
+  height: 500px;
+}
+
+.mono {
+  font-family: Consolas, "Cascadia Mono", monospace;
+}
+
+/* Téléphone posé sur un fond uni */
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 56px;
+  height: 100%;
+}
+
+.phone {
+  width: 300px;
+  height: 620px;
+  border-radius: 40px;
+  background: #0d0f14;
+  padding: 12px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+  flex: none;
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 30px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.statusbar {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 22px 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.caption {
+  max-width: 420px;
+  color: inherit;
+}
+
+.caption h2 {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.caption p {
+  font-size: 20px;
+  line-height: 1.45;
+  opacity: 0.8;
+}
+
+/* Fenêtre de bureau */
+.window {
+  position: absolute;
+  inset: 40px;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.3);
+}
+
+.window-bar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  flex: none;
+}
+
+.window-bar i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+}
+
+.window-bar span {
+  margin-left: 12px;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* Terminal */
+.terminal {
+  background: #0f1117;
+  color: #d6dae3;
+}
+
+.terminal .window-bar {
+  background: #1a1d26;
+}
+
+.terminal pre {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 21px;
+  line-height: 1.55;
+  padding: 26px 32px;
+  white-space: pre-wrap;
+}
+
+.t-green { color: #5fd38d; }
+.t-red { color: #ff6b6b; }
+.t-yellow { color: #f4c95d; }
+.t-blue { color: #6cb2ff; }
+.t-dim { color: #7c8496; }
+.t-bold { font-weight: 700; }
+
+/* Tableau de bord */
+.dash {
+  background: #f4f6fa;
+  color: #18202e;
+}
+
+.dash .window-bar {
+  background: #e6e9f0;
+}
+
+.dash-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+}
+
+.dash-nav {
+  background: #18202e;
+  color: #c9d1e0;
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.dash-nav b {
+  color: #fff;
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+
+.dash-nav span {
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.dash-nav span.on {
+  background: #2b3850;
+  color: #fff;
+}
+
+.dash-main {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.dash-main h3 {
+  font-size: 24px;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.kpi {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e1e5ee;
+}
+
+.kpi small {
+  font-size: 13px;
+  color: #5d6678;
+}
+
+.kpi strong {
+  display: block;
+  font-size: 26px;
+  margin-top: 4px;
+}
+
+.kpi em {
+  font-style: normal;
+  font-size: 13px;
+}
+
+.panel {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e1e5ee;
+  padding: 16px 18px;
+}
+
+.panel h4 {
+  font-size: 15px;
+  margin-bottom: 10px;
+  color: #3b4456;
+}
+
+table.rows {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+table.rows td,
+table.rows th {
+  text-align: left;
+  padding: 7px 6px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+table.rows th {
+  color: #6b7486;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pill.ok { background: #dcf5e7; color: #106b3c; }
+.pill.wait { background: #fff1d1; color: #8a5a00; }
+.pill.ko { background: #ffe0e0; color: #a01f1f; }
+.pill.info { background: #dfeafe; color: #1849a9; }

@@ -4,12 +4,15 @@ import type {
   ProfileWork,
   WorkAttachment,
   WorkDetail,
+  WorkImage,
   WorkInvitationEntry,
   WorkLink,
   WorkPerson,
   WorkSummary,
+  WorkVideo,
   WorkViewerRole,
 } from "@kemet/shared";
+import type { WorkMediaRow } from "./repositories/work-media.js";
 import type {
   ProfileRow,
   WorkAttachmentRow,
@@ -65,6 +68,7 @@ export function serializeWorkSummary(row: WorkRow, people: WorkPeople): WorkSumm
     coauthors: people.coauthors.map((person) => serializeWorkPerson(person, levelOf(people, person.id))),
     externalAuthors: people.externalAuthors,
     hasPdf: people.hasPdf,
+    coverMediaId: people.coverMediaId,
     messageCount: people.messageCount,
     createdAt: row.createdAt.toISOString(),
   };
@@ -89,6 +93,22 @@ function serializeWorkAttachment(row: WorkAttachmentRow): WorkAttachment {
   return { id: row.id, originalName: row.originalName, byteSize: row.byteSize };
 }
 
+function serializeGallery(media: WorkMediaRow[]): WorkImage[] {
+  return media
+    .filter((item) => item.role === "gallery")
+    .map((item) => ({ id: item.id, originalName: item.originalName ?? "" }));
+}
+
+function serializeVideos(media: WorkMediaRow[]): WorkVideo[] {
+  return media
+    .filter((item) => item.role === "video")
+    .map((item) =>
+      item.kind === "youtube"
+        ? { kind: "youtube", id: item.id, youtubeId: item.youtubeId! }
+        : { kind: "file", id: item.id, mimeType: item.mimeType!, originalName: item.originalName ?? "" },
+    );
+}
+
 export function serializeWorkDetail(
   row: WorkRow,
   people: WorkPeople,
@@ -96,6 +116,7 @@ export function serializeWorkDetail(
     publisherLevel: Level;
     links: WorkLinkRow[];
     attachment: WorkAttachmentRow | null;
+    media: WorkMediaRow[];
     invitations: { status: WorkInvitationEntry["status"]; profile: ProfileRow }[] | null;
     viewerRole: WorkViewerRole | null;
     participantCount: number;
@@ -107,6 +128,8 @@ export function serializeWorkDetail(
     publisherLevel: extra.publisherLevel,
     links: extra.links.map(serializeWorkLink),
     attachment: extra.attachment ? serializeWorkAttachment(extra.attachment) : null,
+    gallery: serializeGallery(extra.media),
+    videos: serializeVideos(extra.media),
     invitations: extra.invitations
       ? extra.invitations.map((entry) => ({
           person: serializeWorkPerson(entry.profile, levelOf(people, entry.profile.id)),

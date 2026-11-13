@@ -284,6 +284,7 @@ describe.skipIf(!databaseUrl)("Suppression du compte (base Postgres réelle)", (
         bio: null,
         title: null,
         avatarUrl: null,
+        bannerUrl: null,
         githubUrl: null,
         stack: [],
       });

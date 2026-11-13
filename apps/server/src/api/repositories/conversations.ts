@@ -192,6 +192,16 @@ export async function hasBlocked(db: Db, blockerId: string, blockedId: string) {
   return row != null;
 }
 
+/** Profils bloqués par une personne, du plus récent au plus ancien. */
+export async function listBlockedProfiles(db: Db, blockerId: string) {
+  return db
+    .select({ profile: profiles })
+    .from(profileBlocks)
+    .innerJoin(profiles, eq(profiles.id, profileBlocks.blockedId))
+    .where(eq(profileBlocks.blockerId, blockerId))
+    .orderBy(desc(profileBlocks.createdAt));
+}
+
 export async function blockProfile(db: Db, blockerId: string, blockedId: string) {
   await db.insert(profileBlocks).values({ blockerId, blockedId }).onConflictDoNothing();
 }
@@ -233,6 +243,7 @@ export interface ConversationListRow {
     deletedAt: Date | null;
     createdAt: Date;
     hasAttachments: boolean;
+    hasVoice: boolean;
   } | null;
 }
 
@@ -252,6 +263,7 @@ interface RawConversationListRow extends Record<string, unknown> {
   last_deleted_at: Date | string | null;
   last_created_at: Date | string | null;
   last_has_attachments: boolean | null;
+  last_has_voice: boolean | null;
 }
 
 // Colonnes `timestamp` sans fuseau, écrites en UTC : même lecture que
@@ -278,6 +290,7 @@ function toListRow(row: RawConversationListRow): ConversationListRow {
             deletedAt: row.last_deleted_at ? toDate(row.last_deleted_at) : null,
             createdAt: toDate(row.last_created_at),
             hasAttachments: row.last_has_attachments ?? false,
+            hasVoice: row.last_has_voice ?? false,
           }
         : null,
   };
@@ -292,6 +305,7 @@ function conversationRowsQuery(viewerId: string, condition: SQL) {
       lm.id as last_id, lm.author_id as last_author_id, lm.body as last_body,
       lm.deleted_at as last_deleted_at, lm.created_at as last_created_at,
       exists (select 1 from message_attachments a where a.message_id = lm.id) as last_has_attachments,
+      exists (select 1 from message_attachments a where a.message_id = lm.id and a.kind = 'voice') as last_has_voice,
       coalesce(lm.created_at, c.created_at) as activity_at
     from conversation_members cm
     join conversations c on c.id = cm.conversation_id

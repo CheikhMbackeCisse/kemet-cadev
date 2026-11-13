@@ -1,6 +1,13 @@
+import { navigate } from "../lib/navigation/navigate.js";
 import { ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { CompetitionDetail, Submission, SubmissionResult, Team } from "@kemet/shared";
+import type {
+  CompetitionDetail,
+  CompetitionPerson,
+  Submission,
+  SubmissionResult,
+  Team,
+} from "@kemet/shared";
 import {
   ChatApiError,
   createTeam,
@@ -25,6 +32,29 @@ import { Tabs } from "../components/ui/Tabs.js";
 import { useToast } from "../components/ui/Toast.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
+import { useSession } from "../session/SessionProvider.js";
+import { goToSignUp } from "../session/signUpInvite.js";
+import { VisitorBanner } from "../components/shell/VisitorBanner.js";
+import { Avatar } from "../components/ui/Avatar.js";
+import { ProfileLink } from "../components/ui/ProfileLink.js";
+import { splitExampleNote } from "../lib/competitions/exampleNote.js";
+
+function PersonChip({ person }: { person: CompetitionPerson }) {
+  return (
+    <ProfileLink
+      handle={person.handle}
+      className="inline-flex items-center gap-1.5 text-sm text-text hover:underline max-md:min-h-control-mobile"
+    >
+      <Avatar
+        name={person.displayName}
+        src={person.avatarUrl ?? undefined}
+        countryCode={person.country}
+        size={24}
+      />
+      {person.displayName}
+    </ProfileLink>
+  );
+}
 
 const PHASE_LABELS = {
   registration: fr.competitions.phaseRegistration,
@@ -38,8 +68,12 @@ function readSlug(pathname: string): string {
 }
 
 export function CompetitionPage() {
+  const { status } = useSession();
+  const isVisitor = status === "visitor";
   const toast = useToast();
-  const slug = readSlug(window.location.pathname);
+  // Lu une seule fois : pendant un retour, la page reste affichée alors que
+  // l'adresse a déjà changé.
+  const [slug] = useState(() => readSlug(window.location.pathname));
 
   const [competition, setCompetition] = useState<CompetitionDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,12 +123,14 @@ export function CompetitionPage() {
     loadCompetition();
     loadTeams();
     loadSubmissions();
-    getMe().then((me) => setMyProfileId(me.profile?.id ?? null));
+    getMe()
+      .then((me) => setMyProfileId(me.profile?.id ?? null))
+      .catch(() => {});
   }, [loadCompetition, loadTeams, loadSubmissions]);
 
   useEffect(() => {
     if (!competition) return;
-    if (competition.phase === "voting" || competition.phase === "closed") {
+    if (status === "ready" && (competition.phase === "voting" || competition.phase === "closed")) {
       getMyVote(slug)
         .then((result) => setMyVote(result.submissionId))
         .catch(() => {});
@@ -104,7 +140,7 @@ export function CompetitionPage() {
         .then((result) => setResults(result.items))
         .catch(() => {});
     }
-  }, [competition, slug]);
+  }, [competition, slug, status]);
 
   const myTeam = teams.find((team) => team.viewerIsMember) ?? null;
 
@@ -152,7 +188,7 @@ export function CompetitionPage() {
 
   if (loading) {
     return (
-      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+      <RailPage activeSection="competitions" className="gap-4 px-4 pt-3 lg:pt-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-32 w-full" />
       </RailPage>
@@ -161,12 +197,12 @@ export function CompetitionPage() {
 
   if (notFound) {
     return (
-      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+      <RailPage activeSection="competitions" className="gap-4 px-4 pt-3 lg:pt-6">
         <ErrorState
           message={fr.competitions.competitionNotFound}
           retry={{
             label: fr.competitions.back,
-            onClick: () => (window.location.href = "/competitions"),
+            onClick: () => navigate("/competitions"),
           }}
         />
       </RailPage>
@@ -175,7 +211,7 @@ export function CompetitionPage() {
 
   if (error || !competition) {
     return (
-      <RailPage activeSection="competitions" className="gap-4 px-4 py-8">
+      <RailPage activeSection="competitions" className="gap-4 px-4 pt-3 lg:pt-6">
         <ErrorState
           message={fr.competitions.loadingError}
           retry={{ label: fr.chat.retry, onClick: loadCompetition }}
@@ -184,8 +220,10 @@ export function CompetitionPage() {
     );
   }
 
+  const example = splitExampleNote(competition.description);
+
   return (
-    <RailPage activeSection="competitions" className="gap-6 px-4 py-8">
+    <RailPage activeSection="competitions" className="gap-6 px-4 pt-3 lg:pt-6">
       <div className="flex items-center justify-between">
         <a
           href="/competitions"
@@ -199,7 +237,10 @@ export function CompetitionPage() {
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h1 className="text-xl font-bold text-text">{competition.name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold text-text">{competition.name}</h1>
+              {example.isExample && <Badge>{fr.competitions.exampleBadge}</Badge>}
+            </div>
             <p className="mt-1 text-sm text-text-2">{competition.pitch}</p>
           </div>
           {competition.status === "published" ? (
@@ -214,11 +255,10 @@ export function CompetitionPage() {
             </Badge>
           )}
         </div>
-        {competition.description && (
-          <RichText source={competition.description} className="text-sm text-text" />
-        )}
-        <p className="text-xs text-subtle">
-          {fr.competitions.createdBy(competition.createdByHandle)}
+        {example.body && <RichText source={example.body} className="text-sm text-text" />}
+        <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
+          {fr.competitions.createdByLabel}
+          <PersonChip person={competition.createdBy} />
         </p>
         {competition.reviewNote && (
           <p className="text-xs text-subtle">
@@ -226,6 +266,8 @@ export function CompetitionPage() {
           </p>
         )}
       </div>
+
+      {isVisitor && <VisitorBanner />}
 
       <Tabs
         value={activeTab}
@@ -236,8 +278,8 @@ export function CompetitionPage() {
             label: fr.competitions.teamsTab,
             content: (
               <div className="flex flex-col gap-3">
-                {myProfileId && !myTeam && competition.phase === "registration" && (
-                  <Button onClick={() => setCreateTeamOpen(true)}>
+                {(isVisitor || myProfileId) && !myTeam && competition.phase === "registration" && (
+                  <Button onClick={isVisitor ? goToSignUp : () => setCreateTeamOpen(true)}>
                     {fr.competitions.createTeamTitle}
                   </Button>
                 )}
@@ -253,12 +295,16 @@ export function CompetitionPage() {
                             <Badge tone="success">{fr.competitions.yourTeam}</Badge>
                           )}
                         </div>
-                        <p className="mt-1 text-xs text-subtle">
-                          {fr.competitions.captain(team.captainHandle)}
-                        </p>
-                        <p className="text-xs text-subtle">
-                          {fr.competitions.members(team.memberHandles)}
-                        </p>
+                        <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                          {team.members.map((member) => (
+                            <li key={member.handle} className="flex items-center gap-1.5">
+                              <PersonChip person={member} />
+                              {member.handle === team.captain.handle && (
+                                <Badge>{fr.competitions.captainBadge}</Badge>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
                         <div className="mt-2 flex items-center gap-2">
                           {team.hasSubmission && <Badge>{fr.competitions.hasSubmission}</Badge>}
                           {!team.viewerIsMember &&
@@ -267,7 +313,7 @@ export function CompetitionPage() {
                               <Button
                                 variant="secondary"
                                 className="text-xs"
-                                onClick={() => handleJoinTeam(team.id)}
+                                onClick={isVisitor ? goToSignUp : () => handleJoinTeam(team.id)}
                               >
                                 {fr.competitions.joinTeam}
                               </Button>
@@ -288,7 +334,7 @@ export function CompetitionPage() {
                 {myTeam && !myTeam.hasSubmission && competition.phase === "submission" && (
                   <a
                     href={`/competitions/${slug}/soumettre`}
-                    className="inline-flex h-control max-md:h-control-mobile w-fit items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-white hover:bg-primary-hover"
+                    className="inline-flex h-control max-md:h-control-mobile w-fit items-center justify-center rounded-control bg-action-strong px-4 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover"
                   >
                     {fr.competitions.submitProjectTitle}
                   </a>
@@ -305,14 +351,17 @@ export function CompetitionPage() {
                         </div>
                         <p className="mt-1 text-sm text-text-2">{submission.pitch}</p>
                         {submission.description && (
-                          <RichText source={submission.description} className="mt-2 text-sm text-text" />
+                          <RichText
+                            source={submission.description}
+                            className="mt-2 text-sm text-text"
+                          />
                         )}
                         {submission.viewerIsTeamMember && competition.phase === "submission" && (
                           <Button
                             variant="secondary"
                             className="mt-2 text-xs"
                             onClick={() =>
-                              (window.location.href = `/competitions/${slug}/soumettre?modifier=${submission.id}`)
+                              navigate(`/competitions/${slug}/soumettre?modifier=${submission.id}`)
                             }
                           >
                             {fr.competitions.editSubmission}
@@ -349,7 +398,7 @@ export function CompetitionPage() {
                             <Button
                               variant={myVote === submission.id ? "secondary" : "primary"}
                               className="text-xs"
-                              onClick={() => handleVote(submission.id)}
+                              onClick={isVisitor ? goToSignUp : () => handleVote(submission.id)}
                             >
                               {myVote === submission.id
                                 ? fr.competitions.votedFor
