@@ -1,5 +1,5 @@
 import * as RadixTabs from "@radix-ui/react-tabs";
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
 import { useInnerTabSwipe, type SwipeDirection } from "../../lib/navigation/tabSwipe.js";
 
@@ -57,9 +57,22 @@ export function Tabs({
     setSwipedIn({ value: next, direction });
     onValueChange(next);
   });
+  const listRef = useRef<HTMLDivElement>(null);
+  // Un onglet ouvert par l'adresse (?onglet=enregistres) peut être hors de la
+  // rangée qui défile : on la décale, sans faire défiler la page.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const tab = list?.querySelector<HTMLElement>('[data-state="active"]');
+    if (!scrollable || !list || !tab) return;
+    const listBox = list.getBoundingClientRect();
+    const tabBox = tab.getBoundingClientRect();
+    if (tabBox.left < listBox.left) list.scrollLeft += tabBox.left - listBox.left;
+    else if (tabBox.right > listBox.right) list.scrollLeft += tabBox.right - listBox.right;
+  }, [scrollable, value, values]);
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className={className}>
       <RadixTabs.List
+        ref={listRef}
         aria-labelledby={labelledBy}
         className={cn(
           "flex items-end border-b border-border",

@@ -53,6 +53,8 @@ function Slide({ attachment, linked }: { attachment: Attachment; linked: boolean
   );
 }
 
+const FRAME_MAX_HEIGHT = "min(512px, 70vh)";
+
 const ARROW_CLASS =
   "absolute top-1/2 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black [@media(hover:hover)]:flex";
 
@@ -120,7 +122,7 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
         tabIndex={0}
         role="region"
         aria-label={fr.feed.carouselScroller}
-        className="scrollbar-none flex max-h-[min(512px,70vh)] snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+        className="scrollbar-none flex max-h-[min(512px,70vh)] w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         style={{ aspectRatio: String(ratio) }}
       >
         {attachments.map((attachment, position) => (
@@ -226,10 +228,15 @@ export function PostImages({
   // image et le nombre d'images.
   const single = attachments.length === 1 || !linked;
 
+  // Sans largeur bornée, la hauteur maximale rétrécit le cadre mais pas sa
+  // bordure : une bande vide restait à droite d'une image carrée sur bureau.
   return (
-    <div className={cn("mt-2 overflow-hidden rounded-card border border-border", className)}>
+    <div
+      className={cn("mt-2 overflow-hidden rounded-card border border-border", className)}
+      style={{ maxWidth: `calc(${FRAME_MAX_HEIGHT} * ${ratio})` }}
+    >
       {single ? (
-        <div className="relative max-h-[min(512px,70vh)]" style={{ aspectRatio: String(ratio) }}>
+        <div className="relative w-full" style={{ aspectRatio: String(ratio) }}>
           <Slide attachment={attachments[0]!} linked={linked} />
           {attachments.length > 1 && (
             <>
