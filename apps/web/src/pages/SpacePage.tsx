@@ -501,7 +501,7 @@ export function SpacePage() {
           channelsError,
           onRetryChannels: () => activeSpaceId && void refreshChannels(activeSpaceId),
           canCreateSpace: canWrite,
-          search: { canJoin: canInteract, onOpen: openSearchedSpace },
+          onOpenSearchedSpace: openSearchedSpace,
         }}
         channelList={{
           // Le nombre de membres est déjà dans le titre du panneau de droite.

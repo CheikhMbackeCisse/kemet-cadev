@@ -1,5 +1,5 @@
 import { Search, X } from "lucide-react";
-import { useId, useRef } from "react";
+import { useId, useRef, type RefObject } from "react";
 import { fr } from "../../i18n/fr.js";
 import { cn } from "../../lib/cn.js";
 import { Input } from "./Input.js";
@@ -10,15 +10,28 @@ export interface SearchFieldProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  /** Pour donner le focus au champ dans le geste qui l'ouvre (clavier du téléphone). */
+  inputRef?: RefObject<HTMLInputElement>;
+  /** Échap sur un champ déjà vide : referme la recherche qui le porte. */
+  onEscapeEmpty?: () => void;
 }
 
 /**
  * Champ de recherche : loupe à gauche, croix pour vider à droite dès qu'il y
  * a du texte. Échap vide aussi le champ.
  */
-export function SearchField({ label, placeholder, value, onChange, className }: SearchFieldProps) {
+export function SearchField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  className,
+  inputRef: externalRef,
+  onEscapeEmpty,
+}: SearchFieldProps) {
   const id = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const ownRef = useRef<HTMLInputElement>(null);
+  const inputRef = externalRef ?? ownRef;
   return (
     <div className={cn("relative", className)}>
       <label htmlFor={id} className="sr-only">
@@ -39,9 +52,13 @@ export function SearchField({ label, placeholder, value, onChange, className }: 
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Escape" && value) {
+          if (event.key !== "Escape") return;
+          if (value) {
             event.preventDefault();
             onChange("");
+          } else if (onEscapeEmpty) {
+            event.preventDefault();
+            onEscapeEmpty();
           }
         }}
         className="px-9"

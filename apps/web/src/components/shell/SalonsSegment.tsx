@@ -14,6 +14,7 @@ export interface SalonsSegmentProps {
  * Sous lg, l'onglet Salons porte aussi les messages privés : deux liens
  * soulignés en haut de page plutôt qu'un sixième onglet que la barre du bas
  * n'a pas la place d'afficher. Absent pour un visiteur, qui n'a pas de messages.
+ * Posé dans la ligne de la recherche (ChatSearch), qui porte le filet du bas.
  */
 export function SalonsSegment({ active }: SalonsSegmentProps) {
   const { status } = useSession();
@@ -31,10 +32,7 @@ export function SalonsSegment({ active }: SalonsSegmentProps) {
   ];
 
   return (
-    <nav
-      aria-label={fr.messages.segmentLabel}
-      className="shrink-0 border-b border-border px-3 lg:hidden"
-    >
+    <nav aria-label={fr.messages.segmentLabel} className="shrink-0 px-3 lg:hidden">
       <ul className="grid grid-cols-2">
         {items.map((item) => (
           <li key={item.id}>

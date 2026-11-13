@@ -686,6 +686,16 @@ export const fr = {
     assistantCitedFrom: "D'après",
     assistantCitedAuthor: "de",
   },
+  chatSearch: {
+    label: "Chercher un espace ou une personne",
+    placeholder: "Chercher un espace ou une personne",
+    visitorLabel: "Chercher un espace",
+    open: "Rechercher",
+    close: "Fermer",
+    spacesGroup: "Espaces",
+    peopleGroup: "Personnes",
+  },
+
   spaces: {
     pinned: "Épinglé",
     searchLabel: "Chercher un espace",

@@ -1,7 +1,7 @@
 import { ArrowLeft, PanelRight, Plus, Users } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Space } from "@kemet/shared";
-import { SpaceSearch } from "../spaces/SpaceSearch.js";
+import { ChatSearch } from "../search/ChatSearch.js";
 import { useMobileChatView } from "../../lib/chat/useMobileChatView.js";
 import { useEdgeSwipe } from "../../lib/useEdgeSwipe.js";
 import { fr } from "../../i18n/fr.js";
@@ -11,7 +11,6 @@ import { IconButton } from "../ui/IconButton.js";
 import { Sheet } from "../ui/Sheet.js";
 import type { ChannelListProps } from "./ChannelList.js";
 import { RightPanel } from "./RightPanel.js";
-import { SalonsSegment } from "./SalonsSegment.js";
 import { sectionLabel } from "./railNav.js";
 import { SpaceNavigator, type SpaceNavigatorStatus } from "./SpaceNavigator.js";
 import type { SpaceItem } from "./types.js";
@@ -29,8 +28,8 @@ export interface AppShellSpaces {
   onRetryChannels: () => void;
   /** Faux pour un visiteur ou un compte suspendu : le lien n'est pas rendu. */
   canCreateSpace: boolean;
-  /** Recherche des espaces publics, en tête de la liste. */
-  search: { canJoin: boolean; onOpen: (space: Space) => void };
+  /** Ouvre un espace trouvé par la recherche (espaces et personnes), en tête de la liste. */
+  onOpenSearchedSpace: (space: Space) => void;
 }
 
 export interface AppShellProps {
@@ -93,7 +92,7 @@ export function AppShell({
       sidePanel={{
         title: sectionLabel("salons"),
         content: (
-          <SpaceSearch layout="panel" canJoin={spaces.search.canJoin} onOpen={spaces.search.onOpen}>
+          <ChatSearch layout="panel" section="salons" onOpenSpace={spaces.onOpenSearchedSpace}>
             <SpaceNavigator
               layout="panel"
               title={spaces.title}
@@ -111,7 +110,7 @@ export function AppShell({
               onSelectChannel={channelList.onSelect}
               canCreateSpace={false}
             />
-          </SpaceSearch>
+          </ChatSearch>
         ),
         footer: spaces.canCreateSpace ? <CreateSpaceLink /> : undefined,
       }}
@@ -122,11 +121,11 @@ export function AppShell({
             ref={navigatorRef}
             className="flex min-h-0 flex-1 flex-col pb-[calc(44px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:hidden"
           >
-            <SalonsSegment active="salons" />
-            <SpaceSearch
+            <ChatSearch
               layout="page"
-              canJoin={spaces.search.canJoin}
-              onOpen={spaces.search.onOpen}
+              section="salons"
+              onOpenSpace={spaces.onOpenSearchedSpace}
+              visitorTitle={spaces.title}
             >
               <SpaceNavigator
                 layout="page"
@@ -148,7 +147,7 @@ export function AppShell({
                 }}
                 canCreateSpace={spaces.canCreateSpace}
               />
-            </SpaceSearch>
+            </ChatSearch>
           </div>
         )}
         <div

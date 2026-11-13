@@ -656,6 +656,29 @@
 }
 
 /*
+ * Recherche des salons et messages sur téléphone : la barre se déploie depuis
+ * la loupe, à droite, par-dessus les onglets Salons et Messages.
+ */
+@keyframes chat-search-reveal {
+  from {
+    clip-path: inset(0 0 0 calc(100% - 48px));
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+.chat-search-reveal {
+  animation: chat-search-reveal 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-search-reveal {
+    animation: none;
+  }
+}
+
+/*
  * Squelette de chargement (components/ui/Skeleton.tsx) : invisible pendant
  * les 300 premières millisecondes. Une réponse rapide ou un cache n'en montre
  * jamais ; sa place est réservée, rien ne saute à son apparition.

@@ -8,8 +8,7 @@ import {
   ConversationListSkeleton,
 } from "../components/messaging/ConversationList.js";
 import { ConversationView } from "../components/messaging/ConversationView.js";
-import { PeopleSearch } from "../components/messaging/PeopleSearch.js";
-import { SalonsSegment } from "../components/shell/SalonsSegment.js";
+import { ChatSearch } from "../components/search/ChatSearch.js";
 import { EmptyState } from "../components/ui/EmptyState.js";
 import { Tabs } from "../components/ui/Tabs.js";
 import { useConversationUnread } from "../lib/messaging/conversationUnread.js";
@@ -176,9 +175,9 @@ export function MessagesPage() {
           ? {
               title: fr.messages.title,
               content: (
-                <PeopleSearch layout="panel">
+                <ChatSearch layout="panel" section="messages">
                   <ConversationBoxes activeConversationId={conversationId} />
-                </PeopleSearch>
+                </ChatSearch>
               ),
               footer: <NewConversationLink />,
             }
@@ -194,17 +193,14 @@ export function MessagesPage() {
         ) : conversationId ? (
           conversation
         ) : (
-          <>
-            <SalonsSegment active="messages" />
+          <ChatSearch layout="page" section="messages">
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <PeopleSearch layout="page">
-                <ConversationBoxes activeConversationId={null} />
-                <div className="border-t border-border px-2 py-3">
-                  <NewConversationLink />
-                </div>
-              </PeopleSearch>
+              <ConversationBoxes activeConversationId={null} />
+              <div className="border-t border-border px-2 py-3">
+                <NewConversationLink />
+              </div>
             </div>
-          </>
+          </ChatSearch>
         )}
       </main>
     </AppFrame>
