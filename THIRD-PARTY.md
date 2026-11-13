@@ -114,13 +114,14 @@ trois paquets.
 ## Contenus de Systalink
 
 Systalink, organisatrice de la CADEV 2026, a donné le 12/11/2026 son accord
-écrit pour trois usages, et seulement ceux-là :
+écrit pour ces usages, et seulement ceux-là :
 
 | Contenu | Source | Usage |
 | --- | --- | --- |
 | Visuel promotionnel de la CADEV 2026, repris sans retouche ni recadrage | Publication Instagram de Systalink (https://www.instagram.com/systalink/p/DewrHGNjtTM/) | Images du post « La CADEV 2026 en bref » (`packages/db/seed-assets/cadev/`) |
 | Symbole de leur logo, deux tracés repris à l'identique de leur icône | https://systalink.com/icon0.svg | Photo de profil du compte Systalink du seed (`packages/db/src/seed/systalink.ts`) |
 | Post « La CADEV 2026 en bref » publié à leur nom | Texte écrit par nous | Espace CADEV 2026, épinglé, avec un lien vers la publication d'origine (`packages/db/src/seed/cadev-post.ts`) |
+| Logo « <cadev/> 2026 » de la compétition, redessiné en tracés vectoriels sans déformation (lettres de Plus Jakarta Sans 700, « dev » en vert, « 2026 » en dessous, fond bleu nuit) | Leur visuel promotionnel (ligne ci-dessus) | Icône de l'espace CADEV 2026, et de lui seul (`apps/web/src/components/ui/CadevLogo.tsx`) |
 
 Le compte Systalink n'a ni bio, ni bannière, ni badge de vérification, et
 aucun moyen de connexion. Tous droits réservés à Systalink sur ces contenus.

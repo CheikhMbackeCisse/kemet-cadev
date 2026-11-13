@@ -14,6 +14,7 @@ import {
   Trophy,
   type LucideIcon,
 } from "lucide-react";
+import { CadevLogo } from "./CadevLogo.js";
 import { TECH_LOGOS, type TechLogoName } from "./techLogos.js";
 import { techLogoFor } from "../../lib/skills/techLogo.js";
 import { cn } from "../../lib/cn.js";
@@ -48,6 +49,12 @@ function tintOf(seed: string): number {
 
 export function spaceTechLogo(name: string): TechLogoName | null {
   return techLogoFor([name]);
+}
+
+// Le logo de Systalink ne vaut que pour l'espace de la compétition elle-même ;
+// un autre espace dont le nom cite la CADEV garde le drapeau.
+export function isCadevSpaceName(name: string): boolean {
+  return /^cadev 2026$/i.test(name.trim());
 }
 
 function themeOf(name: string): [RegExp, LucideIcon, number] | undefined {
@@ -88,9 +95,10 @@ export interface SpaceIconProps {
 }
 
 /**
- * Pastille d'un espace : son image, sinon le logo de sa technologie en
- * couleur sur fond blanc, sinon une icône blanche sur une teinte propre à
- * l'espace (--space-tint-N, contraste vérifié dans tokens.test.ts).
+ * Pastille d'un espace : son image, sinon le logo de la CADEV 2026 pour son
+ * espace, sinon le logo de sa technologie en couleur sur fond blanc, sinon
+ * une icône blanche sur une teinte propre à l'espace (--space-tint-N,
+ * contraste vérifié dans tokens.test.ts).
  */
 export function SpaceIcon({
   id,
@@ -110,6 +118,13 @@ export function SpaceIcon({
           decoding="async"
           className="size-full object-cover"
         />
+      </span>
+    );
+  }
+  if (isCadevSpaceName(name)) {
+    return (
+      <span aria-hidden="true" className={frame}>
+        <CadevLogo className="size-full" />
       </span>
     );
   }

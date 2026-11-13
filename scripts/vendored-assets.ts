@@ -41,4 +41,10 @@ export const VENDORED_ASSETS: readonly VendoredAsset[] = [
     license: "© Systalink, tous droits réservés. Utilisé avec l'accord écrit de Systalink, donné le 12/11/2026, comme photo de profil du compte Systalink du seed, sans badge ni mention de vérification",
     usedIn: "packages/db/src/seed/systalink.ts",
   },
+  {
+    name: "Logo « <cadev/> 2026 » de la CADEV 2026, © Systalink, redessiné en tracés vectoriels d'après le visuel promotionnel (lettres de Plus Jakarta Sans 700, « dev » en vert, « 2026 » en dessous, fond bleu nuit)",
+    source: "https://www.instagram.com/systalink/p/DewrHGNjtTM/",
+    license: "© Systalink, tous droits réservés. Utilisé avec l'accord écrit de Systalink, donné le 12/11/2026, comme icône de l'espace CADEV 2026 seulement",
+    usedIn: "apps/web/src/components/ui/CadevLogo.tsx (apps/web/src/components/ui/SpaceIcon.tsx)",
+  },
 ];

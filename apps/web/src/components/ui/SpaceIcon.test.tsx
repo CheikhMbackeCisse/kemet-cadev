@@ -1,3 +1,4 @@
+import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   AppWindow,
@@ -12,7 +13,13 @@ import {
   Sprout,
   Trophy,
 } from "lucide-react";
-import { spaceTechLogo, spaceThemeIcon, spaceTints } from "./SpaceIcon.js";
+import {
+  isCadevSpaceName,
+  SpaceIcon,
+  spaceTechLogo,
+  spaceThemeIcon,
+  spaceTints,
+} from "./SpaceIcon.js";
 
 describe("spaceThemeIcon", () => {
   it("donne à chaque espace du seed l'icône de son sujet", () => {
@@ -73,5 +80,22 @@ describe("spaceTints", () => {
       expect(tints.get(space.id)).toBeLessThanOrEqual(12);
     }
     expect(new Set(spaces.slice(0, 12).map((space) => tints.get(space.id))).size).toBe(12);
+  });
+});
+
+describe("logo de la CADEV 2026", () => {
+  it("ne vaut que pour l'espace de la compétition", () => {
+    expect(isCadevSpaceName("CADEV 2026")).toBe(true);
+    expect(isCadevSpaceName(" cadev 2026 ")).toBe(true);
+    expect(isCadevSpaceName("Équipe CADEV 2026")).toBe(false);
+    expect(isCadevSpaceName("CADEV 2027")).toBe(false);
+  });
+
+  it("remplace le drapeau par le logo, sur fond bleu nuit", () => {
+    const { container } = render(<SpaceIcon id="cadev" name="CADEV 2026" className="size-12" />);
+    expect(container.querySelector("rect")).toHaveAttribute("fill", "#0A1858");
+    expect(container.querySelector(".lucide-flag")).toBeNull();
+    const other = render(<SpaceIcon id="equipe" name="Équipe CADEV" className="size-12" />);
+    expect(other.container.querySelector(".lucide-flag")).not.toBeNull();
   });
 });
