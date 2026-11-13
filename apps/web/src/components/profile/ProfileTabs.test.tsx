@@ -65,7 +65,6 @@ describe("ProfileTabs", () => {
         workCount={0}
         credentials={[]}
         isOwnProfile
-        includeSaved
         worksReloadKey={0}
       />,
     );
@@ -93,5 +92,19 @@ describe("ProfileTabs", () => {
     expect(await screen.findByText("Rien de publié pour l'instant.")).toBeVisible();
     expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.queryByRole("region", { name: "Complète ton profil" })).toBeNull();
+  });
+
+  it("ne montre jamais les enregistrés d'une autre personne, même quand son profil a des onglets", async () => {
+    renderTabs(
+      <ProfileTabs
+        profile={PROFILE}
+        workCount={0}
+        credentials={[]}
+        isOwnProfile={false}
+        worksReloadKey={0}
+      />,
+    );
+    expect(await screen.findByRole("tab", { name: "Bibliothèque" })).toBeVisible();
+    expect(screen.queryByRole("tab", { name: "Enregistrés" })).toBeNull();
   });
 });

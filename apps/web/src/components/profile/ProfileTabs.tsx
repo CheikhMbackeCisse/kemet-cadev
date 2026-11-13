@@ -27,9 +27,8 @@ export interface ProfileTabsProps {
   /** `null` tant que le profil public n'est pas lu. */
   workCount: number | null;
   credentials: Credential[];
+  /** Ajoute l'onglet "Enregistrés", jamais montré sur le profil d'une autre personne. */
   isOwnProfile: boolean;
-  /** Onglet "Enregistrés" : seulement sur Moi. */
-  includeSaved?: boolean;
   worksReloadKey: number;
 }
 
@@ -42,7 +41,6 @@ export function ProfileTabs({
   workCount,
   credentials,
   isOwnProfile,
-  includeSaved = false,
   worksReloadKey,
 }: ProfileTabsProps) {
   const libraryQuery = useQuery({
@@ -115,7 +113,7 @@ export function ProfileTabs({
       content: <CredentialsList credentials={credentials} />,
     });
   }
-  if (includeSaved) {
+  if (isOwnProfile) {
     items.push({ value: "enregistres", label: fr.profile.tabSaved, content: <SavedPostsList /> });
   }
 

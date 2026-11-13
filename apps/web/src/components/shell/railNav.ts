@@ -1,5 +1,4 @@
 import {
-  Bookmark,
   BookOpen,
   Flag,
   FolderGit2,
@@ -43,10 +42,38 @@ export interface NavSection extends RailNavItem {
  */
 export const NAV_SECTIONS: NavSection[] = [
   { id: "fil", label: "Fil", href: "/fil", icon: House, fillWhenActive: true, mobile: "tab" },
-  { id: "travaux", label: "Travaux", href: "/travaux", icon: BookOpen, fillWhenActive: true, mobile: "tab" },
-  { id: "salons", label: "Salons", href: "/salons", icon: MessageSquare, fillWhenActive: true, mobile: "tab" },
-  { id: "messages", label: "Messages", href: "/messages", icon: Send, fillWhenActive: true, mobile: "salons" },
-  { id: "skills", label: "Skills", href: "/skills", icon: Wrench, fillWhenActive: true, mobile: "tab" },
+  {
+    id: "travaux",
+    label: "Travaux",
+    href: "/travaux",
+    icon: BookOpen,
+    fillWhenActive: true,
+    mobile: "tab",
+  },
+  {
+    id: "salons",
+    label: "Salons",
+    href: "/salons",
+    icon: MessageSquare,
+    fillWhenActive: true,
+    mobile: "tab",
+  },
+  {
+    id: "messages",
+    label: "Messages",
+    href: "/messages",
+    icon: Send,
+    fillWhenActive: true,
+    mobile: "salons",
+  },
+  {
+    id: "skills",
+    label: "Skills",
+    href: "/skills",
+    icon: Wrench,
+    fillWhenActive: true,
+    mobile: "tab",
+  },
   { id: "projets", label: "Projets", href: "/projets", icon: FolderGit2, mobile: "moi" },
   { id: "competitions", label: "Compétitions", href: "/competitions", icon: Trophy, mobile: "moi" },
 ];
@@ -80,15 +107,6 @@ export const SETTINGS_NAV: RailNavItem = {
   icon: Settings,
 };
 
-/** Sur bureau, sous les sections, pour un compte connecté ; dans la page Moi sur mobile. */
-export const SAVED_NAV: RailNavItem = {
-  id: "enregistres",
-  label: "Enregistrés",
-  href: "/enregistres",
-  icon: Bookmark,
-  fillWhenActive: true,
-};
-
 /** Au pied de la barre sur bureau, pour un administrateur seulement. */
 export const MODERATION_NAV: RailNavItem = {
   id: "moderation",
@@ -113,7 +131,6 @@ export function activeRailSection(pathname: string): string {
   if (pathname.startsWith("/messages")) return "messages";
   if (pathname === "/confidentialite") return "confidentialite";
   if (pathname === "/securite") return "securite";
-  if (pathname === "/enregistres") return "enregistres";
   if (pathname === "/moderation") return "moderation";
   return "";
 }

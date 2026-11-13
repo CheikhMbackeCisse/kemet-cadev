@@ -138,7 +138,6 @@ export function MoiPage() {
               workCount={publicProfile.workCount}
               credentials={publicProfile.credentials}
               isOwnProfile
-              includeSaved
               worksReloadKey={worksReloadKey}
             />
           )}
