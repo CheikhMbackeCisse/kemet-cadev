@@ -157,6 +157,13 @@ docker compose -f infra/docker-compose.yml --env-file .env up -d --build
 
 Tests : `pnpm test`, `pnpm test:e2e`, `pnpm lint`, `pnpm typecheck`.
 
+## Sécurité
+
+Notes relevées sur kemetlabs.dev le 13 novembre 2026, toutes A+ :
+[Mozilla HTTP Observatory](https://developer.mozilla.org/en-US/observatory/analyze?host=kemetlabs.dev) (115/100, 12 tests sur 12),
+[Qualys SSL Labs](https://www.ssllabs.com/ssltest/analyze.html?d=kemetlabs.dev) et
+[securityheaders.com](https://securityheaders.com/?q=kemetlabs.dev&followRedirects=on). Détail et limites sur la page `/securite`.
+
 ## Licences
 
 Code : copyright (c) 2026 Cheikh Mbacke Cisse, tous droits réservés

@@ -519,30 +519,40 @@ export const fr = {
   security: {
     navLink: "Sécurité",
     title: "Sécurité",
-    testsTitle: "Tests passés",
-    notMeasured: "Pas encore mesuré",
-    rerun: "Relancer le test",
-    // Une note n'est écrite ici qu'une fois lue sur le rapport de l'outil,
-    // avec la date du passage.
-    tests: [
+    measuredTitle: "Notes mesurées",
+    measuredDate: "Relevées le 13 novembre 2026 sur kemetlabs.dev.",
+    measuredScope:
+      "Ces tests mesurent la connexion chiffrée et les en-têtes envoyés au navigateur, pas toute l'application : ils ne lisent ni le code du serveur, ni les droits d'accès, ni Kocc.",
+    // Une note n'est écrite ici qu'une fois lue sur le rapport de l'outil.
+    measured: [
       {
         id: "observatory",
         tool: "Mozilla HTTP Observatory",
-        checks: "En-têtes de sécurité et cookies de kemetlabs.dev",
-        result: null as string | null,
-        date: null as string | null,
+        grade: "A+",
+        detail: "115 sur 100, 12 tests réussis sur 12 : en-têtes de sécurité et cookies.",
         href: "https://developer.mozilla.org/en-US/observatory/analyze?host=kemetlabs.dev",
-        command: null as string | null,
       },
       {
         id: "ssllabs",
         tool: "Qualys SSL Labs",
-        checks: "Certificat et configuration HTTPS",
-        result: null as string | null,
-        date: null as string | null,
+        grade: "A+",
+        detail:
+          "Certificat et protocoles à 100. TLS 1.3 et 1.2 seulement, échange de clés post-quantique X25519MLKEM768, HSTS d'un an.",
         href: "https://www.ssllabs.com/ssltest/analyze.html?d=kemetlabs.dev",
-        command: null as string | null,
       },
+      {
+        id: "securityheaders",
+        tool: "securityheaders.com",
+        grade: "A+",
+        detail:
+          "Les six en-têtes présents : Content-Security-Policy, Permissions-Policy, Referrer-Policy, Strict-Transport-Security, X-Content-Type-Options, X-Frame-Options.",
+        href: "https://securityheaders.com/?q=kemetlabs.dev&followRedirects=on",
+      },
+    ],
+    testsTitle: "Autres tests",
+    notMeasured: "Pas encore mesuré",
+    rerun: "Relancer le test",
+    tests: [
       {
         id: "zap",
         tool: "OWASP ZAP, analyse passive",
@@ -571,13 +581,65 @@ export const fr = {
         command: "pnpm tsx --env-file=.env evals/prompt-injection.ts" as string | null,
       },
     ],
-    protectionsTitle: "Protections en place",
+    protectionsTitle: "Protections dans le code",
+    protectionsIntro: "Chaque ligne indique le fichier du dépôt où la lire.",
     protections: [
-      "HTTPS partout, et HSTS : ton navigateur refuse ensuite toute connexion non chiffrée à Kemet pendant un an.",
-      "Une politique de contenu stricte : la page n'exécute que le code servi par Kemet, jamais un script venu d'ailleurs ou glissé dans un message.",
-      "Une limite de débit sur les actions d'écriture et sur la connexion, par compte, ou par adresse sans compte.",
-      "Des sauvegardes chaque nuit, chiffrées avant de quitter le serveur. Leur restauration est rejouée automatiquement à chaque modification du code.",
-      "Kocc reçoit les messages et les skills comme des données à lire, jamais comme des ordres, et n'a aucun outil pour agir à ta place.",
+      {
+        text: "HTTPS partout, HSTS d'un an, et une politique de contenu qui n'exécute que le code servi par Kemet.",
+        file: "infra/Caddyfile",
+      },
+      {
+        text: "Une limite de débit sur les actions d'écriture, par compte, ou par adresse sans compte.",
+        file: "apps/server/src/api/rate-limit.ts",
+      },
+      {
+        text: "Cinq essais de connexion par minute au plus, comme pour le changement de mot de passe.",
+        file: "apps/server/src/auth/auth.ts",
+      },
+      {
+        text: "Une limite plus basse pour un compte créé depuis moins de 24 heures.",
+        file: "apps/server/src/moderation/anti-spam.ts",
+      },
+      {
+        text: "Chaque entrée envoyée au serveur passe par un schéma Zod avant d'être lue ; une entrée refusée reçoit une erreur 400.",
+        file: "packages/shared/src/schemas/",
+      },
+      {
+        text: "Les requêtes JSON sont limitées à 100 Ko.",
+        file: "apps/server/src/api/json-body-limit.ts",
+      },
+      {
+        text: "Le type d'un fichier envoyé est lu dans son contenu, jamais dans son nom.",
+        file: "apps/server/src/storage/detect-attachment.ts",
+      },
+      {
+        text: "Le HTML écrit dans un message ou un post s'affiche comme du texte, et les liens javascript: sont vidés.",
+        file: "apps/web/src/components/content/MarkdownContent.tsx",
+      },
+      {
+        text: "Kocc reçoit les messages, les posts et les skills dans des balises de données, séparés de sa consigne, et n'a aucun outil pour agir à ta place.",
+        file: "apps/server/src/ai/assistant-answerer.ts",
+      },
+      {
+        text: "Une suite d'attaques rejoue des instructions cachées dans des skills, des messages et des posts contre Kocc.",
+        file: "evals/prompt-injection.ts",
+      },
+      {
+        text: "Le temps réel ne fait entrer dans un salon qu'après un contrôle d'accès fait par le serveur.",
+        file: "apps/server/src/realtime/access.ts",
+      },
+      {
+        text: "Les mots de passe sont hachés avec Argon2id.",
+        file: "apps/server/src/auth/password.ts",
+      },
+      {
+        text: "Le cookie de session est Secure, HttpOnly et SameSite=Lax, contrôlé par un test.",
+        file: "apps/server/src/auth/session-cookie.integration.test.ts",
+      },
+      {
+        text: "Des sauvegardes chaque nuit, chiffrées avec age avant de quitter le serveur.",
+        file: "infra/server/backup.sh",
+      },
     ],
     remainingTitle: "Ce qui reste à faire",
     remaining: [

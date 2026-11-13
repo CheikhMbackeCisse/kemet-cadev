@@ -9,10 +9,25 @@ vi.mock("../components/layout/RailPage.js", () => ({
 }));
 
 describe("page Sécurité", () => {
-  it("montre chaque test, avec sa note ou Pas encore mesuré, jamais une note inventée", () => {
+  it("montre les trois notes mesurées, datées, chacune avec un lien pour relancer le test", () => {
     render(<SecurityPage />);
-    const list = screen.getByRole("heading", { name: fr.security.testsTitle }).nextElementSibling;
-    const rows = within(list as HTMLElement).getAllByRole("listitem");
+    const list = screen.getByRole("list", { name: fr.security.measuredTitle });
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows).toHaveLength(3);
+    fr.security.measured.forEach((test, index) => {
+      const row = within(rows[index]!);
+      expect(row.getByText(test.tool)).toBeInTheDocument();
+      expect(row.getByText(test.grade)).toBeInTheDocument();
+      expect(row.getByRole("link", { name: fr.security.rerun })).toHaveAttribute("href", test.href);
+    });
+    expect(screen.getByText(fr.security.measuredDate)).toBeInTheDocument();
+    expect(screen.getByText(fr.security.measuredScope)).toBeInTheDocument();
+  });
+
+  it("montre les autres tests avec Pas encore mesuré, jamais une note inventée", () => {
+    render(<SecurityPage />);
+    const list = screen.getByRole("list", { name: fr.security.testsTitle });
+    const rows = within(list).getAllByRole("listitem");
     expect(rows).toHaveLength(fr.security.tests.length);
     fr.security.tests.forEach((test, index) => {
       const row = within(rows[index]!);
@@ -20,6 +35,17 @@ describe("page Sécurité", () => {
       expect(row.getByText(test.result ?? fr.security.notMeasured)).toBeInTheDocument();
       if (test.result) expect(test.date).not.toBeNull();
     });
+  });
+
+  it("donne pour chaque protection le fichier où la lire", () => {
+    render(<SecurityPage />);
+    const list = screen.getByRole("list", { name: fr.security.protectionsTitle });
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows).toHaveLength(fr.security.protections.length);
+    for (const protection of fr.security.protections) {
+      expect(protection.file).toMatch(/^(apps|packages|infra|evals)\//);
+      expect(within(list).getByText(protection.file, { selector: "code" })).toBeInTheDocument();
+    }
   });
 
   it("ouvre les outils extérieurs dans un nouvel onglet, sans transmettre la page", () => {
@@ -31,12 +57,12 @@ describe("page Sécurité", () => {
     }
   });
 
-  it("dit ce qui reste à faire, à côté des protections en place", () => {
+  it("dit ce qui reste à faire, sans promesse que rien ne prouve", () => {
     render(<SecurityPage />);
-    expect(screen.getByRole("heading", { name: fr.security.protectionsTitle })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: fr.security.remainingTitle })).toBeInTheDocument();
-    expect(fr.security.protections).toHaveLength(5);
+    const text = document.body.textContent ?? "";
     // "Certificat" (HTTPS) est permis ; "certifié" ne doit jamais apparaître.
-    expect(document.body.textContent).not.toMatch(/certifi(?!cat)/i);
+    expect(text).not.toMatch(/certifi(?!cat)/i);
+    expect(text).not.toMatch(/vérifié|100 % sûr|inviolable/i);
   });
 });
