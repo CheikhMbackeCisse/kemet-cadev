@@ -24,7 +24,7 @@ vi.mock("../components/layout/RailPage.js", () => ({
 
 function me(overrides: Partial<MeResponse>): MeResponse {
   return {
-    user: { id: "u1", email: "amina@test.kemet", emailVerified: true },
+    user: { id: "u1", email: "amina@test.kemet", emailVerified: true, name: "Amina" },
     profile: null,
     points: 0,
     credentials: [],

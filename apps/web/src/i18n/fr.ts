@@ -105,7 +105,15 @@ export const fr = {
     resetPasswordInvalidLink: "Ce lien de réinitialisation est invalide ou a expiré.",
     completeProfileTitle: "Complète ton profil",
     handleLabel: "Identifiant",
-    handlePlaceholder: "aminadiallo",
+    yourNameLabel: "Ton nom",
+    // Exemple demandé tel quel : le nom qui sera montré sur le profil.
+    yourNamePlaceholder: "Cheikh Mbacke Cisse",
+    yourHandleLabel: "Ton @",
+    handleExample: "ton-identifiant",
+    handleAvailable: "Libre",
+    handleTakenShort: "Déjà pris",
+    handleReservedShort: "Réservé",
+    profilePreviewLabel: "Aperçu de ton profil",
     handleInvalid:
       "Lettres minuscules, chiffres et tirets seulement, sans tiret au début ni à la fin.",
     handleReserved: "Cet identifiant est réservé.",

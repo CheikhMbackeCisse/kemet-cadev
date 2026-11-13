@@ -18,6 +18,16 @@ export function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+const MAX_HANDLE_LENGTH = 30;
+
+/**
+ * Identifiant proposé d'après un nom : minuscules, sans accents ni espaces
+ * ("Aïssatou Ndiaye" donne "aissatou-ndiaye"), 30 caractères au plus.
+ */
+export function handleFromName(name: string): string {
+  return slugify(name).slice(0, MAX_HANDLE_LENGTH).replace(/-+$/, "");
+}
+
 /** Identifiant tiré du titre, assez long pour le schéma (3 caractères au moins). */
 export function slugFromTitle(title: string, fallback: string): string {
   const base = slugify(title).slice(0, MAX_SLUG_LENGTH).replace(/-+$/, "");

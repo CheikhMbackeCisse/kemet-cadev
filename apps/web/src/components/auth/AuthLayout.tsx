@@ -6,14 +6,16 @@ import { fr } from "../../i18n/fr.js";
 export interface AuthLayoutProps {
   title: string;
   footer?: ReactNode;
+  decor?: "bands" | "universe";
   children: ReactNode;
 }
 
 /** Écrans de compte : le fond calme du parcours d'arrivée et une carte en verre dépoli. */
-export function AuthLayout({ title, footer, children }: AuthLayoutProps) {
+export function AuthLayout({ title, footer, decor, children }: AuthLayoutProps) {
   return (
     <ArrivalLayout
       motion="calm"
+      decor={decor}
       footer={footer}
       headerEnd={
         <a

@@ -8,6 +8,7 @@ export const meResponseSchema = z.object({
     id: z.string(),
     email: z.string().email(),
     emailVerified: z.boolean(),
+    name: z.string(),
   }),
   profile: profileSchema.nullable(),
   // Seulement sur son propre profil : les autres ne voient que le niveau.

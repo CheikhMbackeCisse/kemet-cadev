@@ -276,6 +276,31 @@ caché. Sur connexion lente, en économie de données ou avec
 `prefers-reduced-motion`, rien ne bouge : le réseau reste affiché, fixe,
 sans lueurs.
 
+« Complète ton profil » a son propre fond, tout autour de la carte au lieu
+de deux bandes : l'univers de l'informatique à trois profondeurs
+(`ProfileUniverse`). Au fond, petit, flou (1,5 px) et à 30 % ; au milieu,
+à 60 % ; au premier plan, net, les logos sur la pastille blanche de
+l'accueil. Les seize logos Devicon en couleurs (Python, JavaScript,
+TypeScript, React, Flutter, Dart, Node.js, Go, Java, PHP, HTML, CSS,
+Docker, PostgreSQL, Git, Linux ; jamais Kotlin), cinq bouts de code en
+Geist Mono colorés par `--code-cover-keyword` et `--code-cover-string`
+(`print("Hello, World!")`, `git push origin main`,
+`const kemet = new Communaute()`, `SELECT * FROM devs WHERE pays = 'SN';`,
+`flutter run`) et quatre icônes Lucide (terminal, base de données, réseau,
+puce) : vingt-cinq éléments sur ordinateur, dix sur téléphone, plus petits,
+surtout en haut et en bas. Seul l'arrière-plan passe derrière le verre ; un
+élément du premier plan qui toucherait la carte est caché. Flottaison lente
+et légère parallaxe à la souris (plus forte au premier plan), coupées avec
+`prefers-reduced-motion` et sur connexion lente, où le logo de Linux
+(190 Ko) n'est pas chargé. Aucune phrase, aucun nom, aucun témoignage.
+Au-dessus du champ « Ton nom », la carte de profil de la personne se
+construit pendant qu'elle tape : initiales, nom, ligne de profil choisie
+aux questions, @. « Ton @ » porte le « @ » dans le champ, suit le nom
+(minuscules, sans accents ni espaces) jusqu'à ce qu'on le modifie, et
+montre dessous l'adresse du profil et « Libre », « Déjà pris » ou
+« Réservé » : seule ligne sous un champ du parcours, parce qu'elle répond
+pendant la frappe. Bouton Continuer sur toute la largeur de la carte.
+
 Quand une carte dépasse de l'écran (petit téléphone, Safari et ses barres),
 son bouton principal reste collé au bas de l'écran, au-dessus de la zone
 sûre de l'iPhone, avec l'erreur d'envoi juste au-dessus de lui, sur un fond

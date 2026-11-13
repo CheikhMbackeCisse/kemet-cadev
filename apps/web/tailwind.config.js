@@ -38,6 +38,7 @@ export default {
         "auth-text-muted": "var(--auth-text-muted)",
         "auth-button-hover": "var(--auth-button-hover)",
         "auth-danger": "var(--auth-danger)",
+        "auth-success": "var(--auth-success)",
         "auth-divider": "var(--auth-divider)",
         "auth-skeleton": "var(--auth-skeleton)",
         "auth-glass-border": "var(--auth-glass-border)",

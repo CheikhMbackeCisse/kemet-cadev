@@ -346,6 +346,61 @@
   fill-opacity: calc(1 - var(--auth-network-covered-opacity));
 }
 
+/*
+ * Fond de "Complète ton profil" (ProfileUniverse.tsx) : trois profondeurs.
+ * L'arrière-plan, petit, flou et pâle, peut passer derrière la carte ; le
+ * premier plan, net, jamais. Chaque couche suit le pointeur d'autant plus
+ * qu'elle est proche (--parallax-x et -y, de -1 à 1).
+ */
+.universe-layer {
+  transition: transform 600ms ease-out;
+}
+
+.universe-layer[data-depth="back"] {
+  transform: translate3d(calc(var(--parallax-x, 0) * 4px), calc(var(--parallax-y, 0) * 4px), 0);
+}
+
+.universe-layer[data-depth="middle"] {
+  transform: translate3d(calc(var(--parallax-x, 0) * 10px), calc(var(--parallax-y, 0) * 10px), 0);
+}
+
+.universe-layer[data-depth="front"] {
+  transform: translate3d(calc(var(--parallax-x, 0) * 18px), calc(var(--parallax-y, 0) * 18px), 0);
+}
+
+.universe-item[data-depth="back"] {
+  opacity: 0.3;
+  filter: blur(1.5px);
+}
+
+.universe-item[data-depth="middle"] {
+  opacity: 0.6;
+  filter: blur(0.5px);
+}
+
+.universe-item[data-clash] {
+  visibility: hidden;
+}
+
+.universe-code {
+  color: var(--code-cover-text);
+}
+
+.universe-code [data-tone="keyword"] {
+  color: var(--code-cover-keyword);
+}
+
+.universe-code [data-tone="string"] {
+  color: var(--code-cover-string);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .universe-layer {
+    transition: none;
+    transform: none;
+  }
+}
+
 /* Un élément du décor posé sur le réseau : caché, sans perdre sa place. */
 .arrival-decor-item[data-clash] {
   visibility: hidden;

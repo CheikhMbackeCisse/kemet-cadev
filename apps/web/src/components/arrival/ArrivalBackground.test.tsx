@@ -168,6 +168,19 @@ describe("ArrivalLayout", () => {
     expect(calm.container.querySelector(".arrival-decor-calm img")).toBeNull();
   });
 
+  it("remplace les bandes par l'univers de Complète ton profil, caché aux lecteurs d'écran", () => {
+    const { container } = render(
+      <ArrivalLayout motion="calm" decor="universe">
+        contenu
+      </ArrivalLayout>,
+    );
+    expect(container.querySelector(".arrival-band")).toBeNull();
+    const universe = container.querySelector(".arrival-universe")!;
+    expect(universe.getAttribute("aria-hidden")).toBe("true");
+    expect(universe.querySelector('img[src*="python"]')).not.toBeNull();
+    expect(universe.textContent).toContain("git push origin main");
+  });
+
   it("cache le décor aux lecteurs d'écran", () => {
     const { container } = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
     const bands = container.querySelectorAll(".arrival-band");

@@ -1,5 +1,12 @@
 import type { FastifyInstance } from "fastify";
-import { isLevelAtLeast, OPEN_TO_OPPORTUNITIES_MIN_LEVEL, updateProfileSchema } from "@kemet/shared";
+import {
+  handleSchema,
+  isLevelAtLeast,
+  isReservedHandle,
+  OPEN_TO_OPPORTUNITIES_MIN_LEVEL,
+  updateProfileSchema,
+} from "@kemet/shared";
+import { z } from "zod";
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, conflict, forbidden } from "../../errors.js";
 import {
@@ -16,6 +23,8 @@ import { serializeCredential, serializeProfile } from "../serializers.js";
 import type { AppDeps } from "../app.js";
 import { serializeOnboarding } from "./onboarding.js";
 
+const handleAvailabilityQuerySchema = z.object({ handle: z.string().max(60) });
+
 export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): void {
   app.get("/api/me", async (request) => {
     const userId = await requireSessionUserId(auth, request);
@@ -30,7 +39,13 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       listSocialProviders(db, userId),
     ]);
     return {
-      user: { id: account.id, email: account.email, emailVerified: account.emailVerified },
+      // Le nom donné à l'inscription préremplit "Ton nom" (Complète ton profil).
+      user: {
+        id: account.id,
+        email: account.email,
+        emailVerified: account.emailVerified,
+        name: account.name,
+      },
       profile: profile && points ? serializeProfile(profile, points.level) : null,
       points: points?.totalPoints ?? 0,
       credentials: credentials.map(serializeCredential),
@@ -55,6 +70,23 @@ export function registerMeRoutes(app: FastifyInstance, { db, auth }: AppDeps): v
       reply.header("content-disposition", `attachment; filename="${fileName}"`);
       reply.header("cache-control", "no-store");
       return data;
+    },
+  );
+
+  // Vérifiée pendant la saisie de "Ton @" : la réponse ne dit que si
+  // l'identifiant est libre, jamais à qui il appartient. La règle d'écriture
+  // reste celle de PATCH /api/me/profile, qui refuse un identifiant pris.
+  app.get(
+    "/api/me/handle-availability",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const userId = await requireSessionUserId(auth, request);
+      const { handle } = handleAvailabilityQuerySchema.parse(request.query);
+      if (!handleSchema.safeParse(handle).success) return { available: false, reason: "invalid" };
+      if (isReservedHandle(handle)) return { available: false, reason: "reserved" };
+      const owner = await findProfileOwningHandle(db, handle);
+      if (owner && owner.userId !== userId) return { available: false, reason: "taken" };
+      return { available: true };
     },
   );
 

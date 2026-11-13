@@ -5,6 +5,7 @@ import { markIntroSeen } from "../../lib/intro/introStorage.js";
 import type { ArrivalMotion } from "./ArrivalBackground.js";
 import { usePageVisible, useStillBackground } from "./ArrivalBackdrop.js";
 import { ArrivalDecorBand } from "./ArrivalDecor.js";
+import { ProfileUniverse } from "./ProfileUniverse.js";
 import { AFRICA_OUTLINE_WIDTH } from "./africaOutline.js";
 import { NETWORK_COVERED_ZONE_CLASS } from "./AfricaNetwork.js";
 import { DECOR_DRIFT } from "./decorLayout.js";
@@ -24,6 +25,11 @@ export interface ArrivalLayoutProps {
   pageFooter?: ReactNode;
   /** Faux sur l'accueil, où le logo complet est déjà sur la carte. */
   showLogo?: boolean;
+  /**
+   * "bands" : le décor dans deux bandes autour de la carte. "universe" :
+   * l'univers à trois profondeurs de "Complète ton profil", tout autour.
+   */
+  decor?: "bands" | "universe";
   busy?: boolean;
   children: ReactNode;
 }
@@ -143,6 +149,7 @@ export function ArrivalLayout({
   footer,
   pageFooter,
   showLogo = true,
+  decor = "bands",
   busy,
   children,
 }: ArrivalLayoutProps) {
@@ -161,6 +168,8 @@ export function ArrivalLayout({
       data-still={still ? "" : undefined}
       aria-busy={busy || undefined}
     >
+      {decor === "universe" && !busy && <ProfileUniverse card={card} />}
+
       {hasHeader ? (
         <header className="auth-on-dark relative z-10 flex w-full items-center justify-between gap-4 px-4 pt-4 sm:px-8 sm:pt-6">
           {showLogo ? (
@@ -184,7 +193,7 @@ export function ArrivalLayout({
 
       {!busy && (
         <div className={cn("arrival-stage relative z-10 flex-1", `arrival-stage-${width}`)}>
-          <ArrivalDecorBand side="start" motion={motion} />
+          {decor === "bands" ? <ArrivalDecorBand side="start" motion={motion} /> : <div />}
           <main className="flex min-w-0 flex-col items-center justify-center px-4 py-4 sm:py-8">
             <div className="flex w-full flex-col gap-3">
               <div
@@ -199,7 +208,7 @@ export function ArrivalLayout({
               {footer && <div className="auth-on-dark">{footer}</div>}
             </div>
           </main>
-          <ArrivalDecorBand side="end" motion={motion} />
+          {decor === "bands" ? <ArrivalDecorBand side="end" motion={motion} /> : <div />}
         </div>
       )}
       {!busy && pageFooter && (

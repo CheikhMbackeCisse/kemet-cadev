@@ -577,6 +577,15 @@ export function updateMyProfile(input: UpdateProfileInput) {
   });
 }
 
+export type HandleAvailability =
+  | { available: true }
+  | { available: false; reason: "invalid" | "reserved" | "taken" };
+
+export function checkHandleAvailability(handle: string, signal?: AbortSignal) {
+  const params = new URLSearchParams({ handle });
+  return request<HandleAvailability>(`/api/me/handle-availability?${params}`, { signal });
+}
+
 export function listOrganizationSuggestions(kind: "school" | "company", query: string) {
   const params = new URLSearchParams({ kind, q: query });
   return request<{ items: string[] }>(`/api/organizations?${params.toString()}`);
