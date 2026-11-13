@@ -55,7 +55,7 @@ Le thème suit le réglage du système (`prefers-color-scheme`), avec un choix m
 
 Vérifier chaque couple texte/fond avec un outil de contraste : 4,5:1 minimum pour le texte courant, 3:1 pour le texte de 24 px et plus.
 
-Le bleu (`--primary`, `--link`) est réservé aux liens, à la mention @kocc, aux pastilles de non-lus, aux boutons d'envoi et aux petits accents. Un état actif ou une action de page ne sont plus bleus : ils prennent `--action-strong`, le noir de l'onglet actif de la barre du bas (son équivalent clair en thème sombre). Décidé le 13/11/2026, il y avait trop de bleu dans l'application.
+Le bleu (`--primary`, `--link`) est réservé aux liens, à la mention @kocc, aux pastilles de non-lus, aux boutons d'envoi et aux petits accents. Un état actif ou une action de page ne sont plus bleus : ils prennent `--action-strong`, le noir de l'onglet actif de la barre du bas (son équivalent clair en thème sombre). Décidé le 13/11/2026, il y avait trop de bleu dans l'application. Le bouton principal (`Button` primaire, "Suivre", "Postuler", "Enregistrer" d'un formulaire) et les liens en forme de bouton principal suivent la même règle depuis le 13/11/2026 ; l'envoi d'un message dans le composeur reste bleu.
 
 ## Typographie
 
