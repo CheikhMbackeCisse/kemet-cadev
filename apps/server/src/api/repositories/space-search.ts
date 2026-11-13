@@ -56,8 +56,9 @@ function scoreToken(candidate: Candidate, token: string, topics: Interest[]): nu
 
 /**
  * Espaces publics dont le nom, la description, les salons ou les sujets
- * correspondent à chaque mot cherché. Jamais un espace privé, archivé ou
- * système, même pour l'un de ses membres.
+ * correspondent à chaque mot cherché, ceux dont la personne est membre en
+ * premier. Jamais un espace privé, archivé ou système, même pour l'un de ses
+ * membres.
  */
 export async function searchPublicSpaces(
   db: Db,
@@ -102,21 +103,8 @@ export async function searchPublicSpaces(
       return { space: row.space, score };
     })
     .filter((match) => match.score > 0);
-  // À score égal, l'espace le plus peuplé d'abord.
-  const memberCounts = await countSpaceMembersBatch(
-    db,
-    scored.map((match) => match.space.id),
-  );
-  const count = (id: string) => memberCounts.get(id) ?? 0;
-  const matches = scored
-    .sort(
-      (first, second) =>
-        second.score - first.score || count(second.space.id) - count(first.space.id),
-    )
-    .slice(0, limit);
-
   const roles =
-    viewerProfileId && matches.length > 0
+    viewerProfileId && scored.length > 0
       ? await db
           .select({ spaceId: spaceMembers.spaceId, role: spaceMembers.role })
           .from(spaceMembers)
@@ -125,12 +113,28 @@ export async function searchPublicSpaces(
               eq(spaceMembers.profileId, viewerProfileId),
               inArray(
                 spaceMembers.spaceId,
-                matches.map((match) => match.space.id),
+                scored.map((match) => match.space.id),
               ),
             ),
           )
       : [];
   const roleBySpace = new Map(roles.map((row) => [row.spaceId, row.role]));
+  const isMember = (id: string) => (roleBySpace.has(id) ? 1 : 0);
+  // Mes espaces d'abord, puis le score, puis le plus peuplé.
+  const memberCounts = await countSpaceMembersBatch(
+    db,
+    scored.map((match) => match.space.id),
+  );
+  const count = (id: string) => memberCounts.get(id) ?? 0;
+  const matches = scored
+    .sort(
+      (first, second) =>
+        isMember(second.space.id) - isMember(first.space.id) ||
+        second.score - first.score ||
+        count(second.space.id) - count(first.space.id),
+    )
+    .slice(0, limit);
+
   return matches.map((match) => ({
     space: match.space,
     role: roleBySpace.get(match.space.id) ?? null,

@@ -218,6 +218,54 @@ describe.skipIf(!databaseUrl)("Recherche d'espaces et de personnes (base Postgre
     expect(await handles("a_b")).toEqual(["awa-tiret"]);
   });
 
+  it("met les espaces dont on est membre avant les autres, même moins proches de la requête", async () => {
+    const owner = await createProfile("proprietaire");
+    const reader = await createProfile("lecteur");
+    await createSpace(owner.cookie, { name: "Hackathons", slug: "hackathons" });
+    const joined = await createSpace(owner.cookie, {
+      name: "Concours du soir",
+      slug: "concours-soir",
+      description: "Hackathons et défis",
+    });
+    await app.inject({
+      method: "POST",
+      url: `/api/spaces/${joined}/join`,
+      headers: { cookie: reader.cookie },
+    });
+
+    const slugs = (response: Awaited<ReturnType<typeof searchSpaces>>) =>
+      response.json().items.map((space: { slug: string }) => space.slug);
+    expect(slugs(await searchSpaces("hackathons"))).toEqual(["hackathons", "concours-soir"]);
+    expect(slugs(await searchSpaces("hackathons", reader.cookie))).toEqual([
+      "concours-soir",
+      "hackathons",
+    ]);
+  });
+
+  it("met les personnes suivies en premier, sans jamais une organisation sans compte", async () => {
+    const viewer = await createProfile("lecteur", "Lecteur");
+    await createProfile("awa-diop", "Awa Diop");
+    await createProfile("moussa-awa", "Moussa Sow");
+    await app.inject({
+      method: "POST",
+      url: "/api/users/moussa-awa/follow",
+      headers: { cookie: viewer.cookie },
+    });
+    await db.insert(profiles).values({
+      kind: "organization",
+      organizationType: "company",
+      userId: null,
+      handle: "awa-entreprise",
+      displayName: "Awa Entreprise",
+      country: "SN",
+    });
+
+    const handles = (await searchPeople("awa", viewer.cookie))
+      .json()
+      .items.map((person: { handle: string }) => person.handle);
+    expect(handles).toEqual(["moussa-awa", "awa-diop"]);
+  });
+
   it("refuse la recherche de personnes à un visiteur", async () => {
     expect((await searchPeople("awa")).statusCode).toBe(401);
   });
