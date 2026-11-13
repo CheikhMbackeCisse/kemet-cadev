@@ -21,9 +21,12 @@ export default defineConfig({
   // texte attendu après un envoi réussi a déjà mis plus de 15 s à
   // apparaître, sur des tests différents d'une exécution à l'autre.
   expect: { timeout: 30_000 },
-  // Même cause (CPU limité du runner, émulation mobile). En local, un échec
+  // Même cause (CPU limité du runner, émulation mobile). Une seule nouvelle
+  // tentative : chacune coûte des minutes d'Actions. En local, un échec
   // n'est jamais rejoué.
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
+  // Chromium seul : "Desktop Chrome" et "Pixel 7" sont deux appareils du
+  // même navigateur, un seul binaire à installer et à garder en cache.
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },

@@ -89,15 +89,18 @@ exemple pour déboguer un échec de ce job.
 
 ## Production : vue d'ensemble
 
-Rien n'est construit sur le serveur. À chaque commit de `main` dont la CI
-est verte, le workflow `Images` (`.github/workflows/images.yml`) publie
-quatre images sur GitHub Container Registry, étiquetées par le SHA du
-commit : `ghcr.io/cheikhmbackecisse/kemet-web`, `-api`, `-realtime`,
-`-worker`. Un commit qui ne touche que la documentation (`*.md` de la racine, `docs/`)
-n'est pas reconstruit : il reçoit les images du dernier commit qui a changé
-autre chose, sous son propre SHA, ou il est reconstruit si ces images
-n'existent pas et que son code a passé la CI complète. Pour reconstruire les images d'un commit
-de `main` déjà vert (une image purgée, par exemple) :
+Depuis le 13/11/2026, le workflow `Images` (`.github/workflows/images.yml`)
+ne se lance plus tout seul après la CI de `main` : le quota gratuit de
+minutes d'Actions ne couvre plus une construction à chaque fusion. La
+production se déploie en construisant les images sur le serveur
+(`KEMET_BUILD_ON_SERVER=1`, voir plus bas). Sur `main`, la CI ne repasse
+que lint et typecheck, et rien du tout pour un commit de fusion identique à
+la tête de sa pull request, qui a déjà joué la CI complète.
+
+Lancé à la main, `Images` publie quatre images sur GitHub Container
+Registry, étiquetées par le SHA du commit :
+`ghcr.io/cheikhmbackecisse/kemet-web`, `-api`, `-realtime`, `-worker`, pour
+un commit de `main` dont la CI est verte :
 `gh workflow run images.yml -f sha=<SHA complet>`. `infra/deploy.sh`
 demande au serveur de télécharger celles d'un commit précis et de
 redémarrer dessus. Les migrations Drizzle tournent au
