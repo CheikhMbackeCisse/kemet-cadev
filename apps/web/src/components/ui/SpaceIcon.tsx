@@ -100,13 +100,7 @@ export interface SpaceIconProps {
  * une icône blanche sur une teinte propre à l'espace (--space-tint-N,
  * contraste vérifié dans tokens.test.ts).
  */
-export function SpaceIcon({
-  id,
-  name,
-  imageUrl,
-  tint,
-  className,
-}: SpaceIconProps) {
+export function SpaceIcon({ id, name, imageUrl, tint, className }: SpaceIconProps) {
   const frame = cn("flex shrink-0 items-center justify-center overflow-hidden", className);
   if (imageUrl) {
     return (
@@ -123,7 +117,7 @@ export function SpaceIcon({
   }
   if (isCadevSpaceName(name)) {
     return (
-      <span aria-hidden="true" className={frame}>
+      <span aria-hidden="true" className={cn(frame, "ring-1 ring-inset ring-border")}>
         <CadevLogo className="size-full" />
       </span>
     );

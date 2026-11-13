@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Attachment } from "@kemet/shared";
 import { PostVideo } from "./PostVideo.js";
@@ -16,11 +16,16 @@ const attachment: Attachment = {
   removed: false,
 };
 
+let reportVisibility: IntersectionObserverCallback = () => undefined;
+
 describe("vidéo d'un post", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "IntersectionObserver",
       class {
+        constructor(callback: IntersectionObserverCallback) {
+          reportVisibility = callback;
+        }
         observe() {}
         disconnect() {}
       },
@@ -34,6 +39,21 @@ describe("vidéo d'un post", () => {
       "/videos/post-1",
     );
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("se met en pause sur place une fois qu'elle joue, sans quitter le fil", () => {
+    render(<PostVideo attachment={attachment} postId="post-1" authorName="Awa" />);
+    act(() => {
+      reportVisibility(
+        [{ intersectionRatio: 0.8 } as IntersectionObserverEntry],
+        {} as IntersectionObserver,
+      );
+    });
+    expect(screen.getByRole("button", { name: "Lire : Vidéo de Awa" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Vidéo de Awa, voir en plein écran" }),
+    ).toBeInTheDocument();
+    expect(document.querySelector("video")).toHaveAttribute("aria-hidden", "true");
   });
 
   it("se lit sur place quand elle n'appartient à aucun post", () => {

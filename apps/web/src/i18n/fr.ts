@@ -848,6 +848,7 @@ export const fr = {
     removeVideo: "Retirer la vidéo",
     videoPreparing: "Préparation de la vidéo…",
     playVideo: (label: string) => `Lire : ${label}`,
+    pauseVideo: (label: string) => `Mettre en pause : ${label}`,
     videoOf: (author: string) => `Vidéo de ${author}`,
     videoLoadError: "La vidéo n'a pas pu être lue.",
     videoOpenFile: "Ouvrir le fichier",

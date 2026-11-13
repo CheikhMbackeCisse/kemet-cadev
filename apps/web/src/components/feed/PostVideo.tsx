@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Play } from "lucide-react";
+import { Maximize2, Pause, Play } from "lucide-react";
 import type { Attachment } from "@kemet/shared";
 import { postAttachmentUrl, postVideoPosterUrl } from "../../lib/chat/api.js";
 import { frameRatio } from "../../lib/feed/frameRatio.js";
@@ -33,13 +33,15 @@ export interface PostVideoProps {
  * visible aux trois cinquièmes ; en 3G, en économie de données ou en
  * mouvement réduit, seule l'image d'aperçu est chargée. Dans un post, la
  * toucher ouvre la vue plein écran à cette vidéo : sans commandes du
- * navigateur, qui prendraient le toucher pour elles.
+ * navigateur, qui prendraient le toucher pour elles, mais avec un bouton
+ * pause pour arrêter sur place une vidéo qui joue seule (WCAG 2.2.2).
  */
 export function PostVideo({ attachment, playable = true, postId, authorName }: PostVideoProps) {
   const frame = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [mounted, setMounted] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [paused, setPaused] = useState(true);
   // Le bouton Lire disparaît sous le focus : la vidéo le reprend.
   const focusOnMount = useRef(false);
   const label = authorName ? fr.feed.videoOf(authorName) : attachment.originalName;
@@ -103,9 +105,14 @@ export function PostVideo({ attachment, playable = true, postId, authorName }: P
           playsInline
           controls={!opensViewer}
           preload="metadata"
-          onPlay={(event) => claim(event.currentTarget)}
+          onPlay={(event) => {
+            claim(event.currentTarget);
+            setPaused(false);
+          }}
+          onPause={() => setPaused(true)}
           onError={() => setFailed(true)}
-          aria-label={label}
+          aria-label={opensViewer ? undefined : label}
+          aria-hidden={opensViewer ? true : undefined}
           className="block size-full object-contain"
         >
           {fr.feed.videoUnsupported}
@@ -156,6 +163,30 @@ export function PostVideo({ attachment, playable = true, postId, authorName }: P
             </span>
           )}
         </a>
+      )}
+      {opensViewer && mounted && !failed && (
+        <>
+          <span className="pointer-events-none absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-white">
+            <Maximize2 className="size-4" aria-hidden="true" />
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              const current = video.current;
+              if (!current) return;
+              if (current.paused) void current.play().catch(() => undefined);
+              else current.pause();
+            }}
+            aria-label={paused ? fr.feed.playVideo(label) : fr.feed.pauseVideo(label)}
+            className="absolute bottom-2 left-2 z-10 flex size-11 items-center justify-center rounded-full bg-black/60 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            {paused ? (
+              <Play className="ml-0.5 size-5" aria-hidden="true" />
+            ) : (
+              <Pause className="size-5" aria-hidden="true" />
+            )}
+          </button>
+        </>
       )}
     </div>
   );
