@@ -27,6 +27,11 @@
   --accent-soft-2: #dbe9fd;
   /* Section ouverte de la barre latérale : plus sombre que le survol (surface-2). */
   --nav-active: #e1e7ef;
+  /* État actif fort (barre latérale, espace choisi, action d'en-tête) : le
+     noir de l'onglet actif du bas, à la place du bleu. */
+  --action-strong: #1f1f1f;
+  --action-strong-hover: #3a3a3a;
+  --on-action-strong: #ffffff;
   --level-badge-text: #0f56bd;
   --level-apprenti: #2e7d32;
   --level-artisan: #a14f00;
@@ -72,6 +77,9 @@
     --accent-soft: #16233d;
     --accent-soft-2: #1d2e50;
     --nav-active: #283553;
+    --action-strong: #e8ecf4;
+    --action-strong-hover: #ffffff;
+    --on-action-strong: #0d1320;
     --level-badge-text: #7fb0f7;
     --level-apprenti: #5cc46b;
     --level-artisan: #e8a33c;
@@ -149,6 +157,9 @@
   --accent-soft: #16233d;
   --accent-soft-2: #1d2e50;
   --nav-active: #283553;
+  --action-strong: #e8ecf4;
+  --action-strong-hover: #ffffff;
+  --on-action-strong: #0d1320;
   --level-badge-text: #7fb0f7;
   --level-apprenti: #5cc46b;
   --level-artisan: #e8a33c;

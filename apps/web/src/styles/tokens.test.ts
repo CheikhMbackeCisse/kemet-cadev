@@ -172,3 +172,20 @@ describe("couverture de code d'un skill", () => {
     }
   });
 });
+
+describe("état actif fort", () => {
+  // Texte et icône sur le fond plein, et le fond lui-même sur la page et les
+  // panneaux, où il marque l'élément actif sans bordure.
+  it.each(Object.entries(themes))("garde 4,5:1 en thème %s", (_theme, source) => {
+    for (const background of ["action-strong", "action-strong-hover"]) {
+      expect(
+        contrast(token(source, "on-action-strong"), token(source, background)),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+    for (const page of ["bg", "surface", "surface-2"]) {
+      expect(contrast(token(source, "action-strong"), token(source, page))).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
+});

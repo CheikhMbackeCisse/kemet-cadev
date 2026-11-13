@@ -95,7 +95,7 @@ export function ActivityBar({ activeSection, hasSidePanel, unreadCounts }: Activ
         ? // Panneau replié : la section reste marquée, sans le fond plein.
           togglesPanel && !open
           ? "font-bold text-text hover:bg-surface-2"
-          : "bg-nav-active font-bold text-text"
+          : "bg-action-strong font-bold text-on-action-strong"
         : "text-text-2 hover:bg-surface-2 hover:text-text",
     );
     const common = {

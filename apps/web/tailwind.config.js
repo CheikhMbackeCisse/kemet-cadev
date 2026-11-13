@@ -45,6 +45,11 @@ export default {
         "accent-soft": "var(--accent-soft)",
         "accent-soft-2": "var(--accent-soft-2)",
         "nav-active": "var(--nav-active)",
+        "action-strong": {
+          DEFAULT: "var(--action-strong)",
+          hover: "var(--action-strong-hover)",
+        },
+        "on-action-strong": "var(--on-action-strong)",
         "level-badge-text": "var(--level-badge-text)",
         "level-apprenti": "var(--level-apprenti)",
         "level-artisan": "var(--level-artisan)",

@@ -68,7 +68,7 @@ export function MobileSpaceNavigator({
                   {active && (
                     <span
                       aria-hidden="true"
-                      className="absolute left-0 top-2 h-8 w-1 rounded-r-full bg-primary"
+                      className="absolute left-0 top-2 h-8 w-1 rounded-r-full bg-action-strong"
                     />
                   )}
                   <button
@@ -80,7 +80,7 @@ export function MobileSpaceNavigator({
                     }
                     className={cn(
                       "relative flex size-12 items-center justify-center rounded-card",
-                      active && "ring-2 ring-primary ring-offset-2 ring-offset-bg",
+                      active && "ring-2 ring-action-strong ring-offset-2 ring-offset-bg",
                     )}
                   >
                     <SpaceIcon

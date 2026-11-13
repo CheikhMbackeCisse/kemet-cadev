@@ -42,7 +42,7 @@ function SharedPostPreview({ post }: { post: PostSummary["sharedPost"] }) {
   return (
     <a
       href={`/fil/${post.id}`}
-      className="mt-2 block rounded-card bg-surface-2 p-3 hover:bg-accent-soft"
+      className="mt-2 block rounded-card bg-surface-2 p-3"
     >
       <div className="flex items-center gap-2">
         <Avatar
@@ -76,7 +76,7 @@ function WorkPreview({ work }: { work: PostSummary["work"] }) {
   return (
     <a
       href={`/travaux/${work.slug}`}
-      className="mt-2 block rounded-card bg-surface-2 p-3 hover:bg-accent-soft"
+      className="mt-2 block rounded-card bg-surface-2 p-3"
     >
       <p className="text-xs text-muted">{WORK_TYPE_LABELS[work.type]}</p>
       <p className="mt-0.5 text-sm font-medium text-text">{work.title}</p>
@@ -253,8 +253,7 @@ export function PostCard({
         POST_ROW_CLASS,
         bodyHref && OFFSCREEN_SKIP_CLASS,
         bodyHref && !heightKey && "[contain-intrinsic-size:auto_220px]",
-        bodyHref && "transition-colors duration-150 lg:hover:bg-surface-2",
-      )}
+              )}
     >
       {reposter && (
         <p className="mb-1 flex items-center gap-3 text-xs font-medium text-muted">

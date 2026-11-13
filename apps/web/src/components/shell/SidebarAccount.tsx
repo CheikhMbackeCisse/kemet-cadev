@@ -24,7 +24,7 @@ export function SidebarAccount({ expanded, active }: SidebarAccountProps) {
   const rowClass = cn(
     "flex items-center rounded-full text-text hover:bg-surface-2",
     expanded ? "w-full gap-3 px-2 py-1.5" : "size-11 justify-center",
-    active && "bg-nav-active hover:bg-nav-active",
+    active && "bg-action-strong text-on-action-strong hover:bg-action-strong",
   );
 
   if (status !== "ready" || !profile) {
@@ -58,7 +58,9 @@ export function SidebarAccount({ expanded, active }: SidebarAccountProps) {
       {expanded && (
         <span className="flex min-w-0 flex-col" aria-hidden="true">
           <span className="truncate text-base font-semibold">{profile.displayName}</span>
-          <span className="truncate text-base text-muted">@{profile.handle}</span>
+          <span className={cn("truncate text-base", active ? "opacity-80" : "text-muted")}>
+            @{profile.handle}
+          </span>
         </span>
       )}
     </a>

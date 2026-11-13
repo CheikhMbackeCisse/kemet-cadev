@@ -19,7 +19,7 @@ export function HeaderActionLink({ href, icon: Icon, className, children }: Head
     <a
       href={href}
       className={cn(
-        "relative inline-flex h-control shrink-0 items-center justify-center gap-1.5 rounded-control bg-primary px-3 text-sm font-medium text-white hover:bg-primary-hover",
+        "relative inline-flex h-control shrink-0 items-center justify-center gap-1.5 rounded-control bg-action-strong px-3 text-sm font-medium text-on-action-strong hover:bg-action-strong-hover",
         "after:absolute after:inset-x-0 after:-inset-y-1 after:content-['']",
         className,
       )}
