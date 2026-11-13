@@ -221,7 +221,7 @@ compte utilisateur avec `sudo`, et la clé SSH publique de l'administrateur pos�
    déploiement :
 
    ```
-   infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev
+   infra/deploy.sh kemet-prod https://kemetlabs.dev
    ```
 
    Il n'y a pas d'étape de migration à lancer : l'api joue les migrations
@@ -323,8 +323,14 @@ Depuis le poste de l'administrateur, à la racine du dépôt, une fois le workfl
 `Images` du commit voulu terminé :
 
 ```
-infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev
+infra/deploy.sh kemet-prod https://kemetlabs.dev
 ```
+
+La cible `kemet-prod` est un alias de `~/.ssh/config` sur le poste, qui porte
+l'hôte, l'utilisateur et la clé de déploiement (`Host kemet-prod`, `HostName`,
+`User`, `IdentityFile`). Le script passe sa cible telle quelle à `ssh` : une
+cible écrite `utilisateur@adresse` ne trouve pas la clé de l'alias et la
+connexion est refusée (`Permission denied (publickey)`).
 
 Sans troisième argument, le script déploie le dernier commit de
 `origin/main`. Pour un commit précis, passer son SHA complet en troisième
@@ -377,7 +383,7 @@ ne se déclenche alors (`ci.yml` ne réagit qu'à `main` et aux pull requests,
 `images.yml` qu'à la CI de `main`).
 
 ```
-KEMET_BUILD_ON_SERVER=1 infra/deploy.sh <utilisateur>@kemetlabs.dev https://kemetlabs.dev $(git rev-parse <branche>)
+KEMET_BUILD_ON_SERVER=1 infra/deploy.sh kemet-prod https://kemetlabs.dev $(git rev-parse <branche>)
 ```
 
 Différences avec le déploiement normal :
