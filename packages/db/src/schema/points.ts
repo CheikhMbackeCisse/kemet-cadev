@@ -2,7 +2,9 @@ import { relations } from "drizzle-orm";
 import { index, integer, pgEnum, pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { profiles } from "./profiles.js";
 
-// Une valeur par source réellement câblée.
+// Une valeur par source réellement câblée. "demonstration" n'est écrite que
+// par le script de préparation d'un compte présenté au jury
+// (prepare-cheikh-account.ts) : elle reste visible comme telle au registre.
 export const pointsSourceEnum = pgEnum("points_source", [
   "credential_verified",
   "post_reply_solution",
@@ -11,6 +13,7 @@ export const pointsSourceEnum = pgEnum("points_source", [
   "project_help_confirmed",
   "competition_participation",
   "competition_victory",
+  "demonstration",
 ]);
 
 export const pointsLedger = pgTable(

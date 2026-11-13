@@ -89,6 +89,13 @@ export function createAuth(config: AuthConfig) {
           .catch((error) => console.error("Échec de l'envoi de l'email de vérification", error));
       },
     },
+    // Écrit en clair plutôt que laissé aux valeurs par défaut : une connexion
+    // GitHub, Google ou LinkedIn rejoint le compte de même adresse seulement
+    // si le fournisseur confirme l'adresse et si le compte l'a déjà vérifiée
+    // (google-account-linking.integration.test.ts).
+    account: {
+      accountLinking: { enabled: true, requireLocalEmailVerified: true, trustedProviders: [] },
+    },
     socialProviders: {
       ...(config.github && { github: config.github }),
       ...(config.google && { google: config.google }),

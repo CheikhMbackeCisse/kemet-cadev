@@ -302,6 +302,13 @@
       "when": 1794557223809,
       "tag": "0042_feed_pinned_posts",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794588229836,
+      "tag": "0043_points_demonstration",
+      "breakpoints": true
     }
   ]
 }

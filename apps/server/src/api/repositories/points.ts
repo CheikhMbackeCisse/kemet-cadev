@@ -1,6 +1,13 @@
-import { and, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
-import { pointsLedger, profiles, type DbOrTx } from "@kemet/db";
-import { levelForPoints, type Level } from "@kemet/shared";
+import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
+import {
+  computeProfilePoints,
+  computeProfilesPoints,
+  pointsLedger,
+  profiles,
+  type DbOrTx,
+  type PointsSource,
+} from "@kemet/db";
+import type { Level } from "@kemet/shared";
 
 export {
   POINTS_ASSISTANT_SKILL_HELPFUL,
@@ -9,17 +16,18 @@ export {
   POINTS_POST_FEEDBACK_GIVEN,
   POINTS_POST_REPLY_SOLUTION,
   POINTS_PROJECT_HELP_CONFIRMED,
+  POINTS_PARCOURS_CAP,
+  POINTS_REGULARITE_CAP,
+  POINTS_REGULARITE_DAILY_BONUS,
+  POINTS_REGULARITE_WINDOW_DAYS,
+  computeProfilePoints,
+  computeProfilesPoints,
+  type PointsSource,
+  type ProfilePoints,
 } from "@kemet/db";
 
 // Plafond quotidien de points qu'une même personne peut donner : valeur arbitraire.
 export const POINTS_DAILY_GIVER_CAP = 50;
-
-// Parcours vérifié : barème dans `credentialPoints` (@kemet/db).
-export const POINTS_PARCOURS_CAP = 1500;
-
-export const POINTS_REGULARITE_CAP = 500;
-export const POINTS_REGULARITE_WINDOW_DAYS = 90;
-export const POINTS_REGULARITE_DAILY_BONUS = 5;
 
 // "Presque rien si compte récent" (docs/CONTEXTE.md) est traduit ici par
 // rien du tout avant ce seuil, pour rester simple à expliquer et à tester.
@@ -34,20 +42,6 @@ export const UTILE_LEVEL_MULTIPLIER: Record<Level, number> = {
   architecte: 1.5,
   legende: 2,
 };
-
-type PointsLedgerRow = typeof pointsLedger.$inferSelect;
-export type PointsSource = PointsLedgerRow["source"];
-
-// Tout ce qui n'est pas de l'entraide relève du parcours, plafonné. La
-// régularité n'a pas de source : elle se déduit des dates du registre.
-const ENTRAIDE_SOURCES: ReadonlySet<PointsSource> = new Set([
-  "post_reply_solution",
-  "post_feedback_given",
-  "assistant_skill_helpful",
-  "project_help_confirmed",
-  "competition_participation",
-  "competition_victory",
-]);
 
 export interface AwardPointsInput {
   profileId: string;
@@ -129,85 +123,6 @@ async function sumGivenToday(
       ),
     );
   return row?.total ?? 0;
-}
-
-async function countActiveDaysByProfile(
-  db: DbOrTx,
-  profileIds: string[],
-  windowDays: number,
-): Promise<Map<string, number>> {
-  const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
-  const rows = await db
-    .select({ profileId: pointsLedger.profileId, createdAt: pointsLedger.createdAt })
-    .from(pointsLedger)
-    .where(
-      and(
-        inArray(pointsLedger.profileId, profileIds),
-        gte(pointsLedger.createdAt, since),
-        // Une vérification de parcours n'est pas une action de la personne.
-        ne(pointsLedger.source, "credential_verified"),
-      ),
-    );
-  const days = new Map<string, Set<string>>();
-  for (const row of rows) {
-    const profileDays = days.get(row.profileId) ?? new Set<string>();
-    profileDays.add(row.createdAt.toISOString().slice(0, 10));
-    days.set(row.profileId, profileDays);
-  }
-  return new Map([...days].map(([profileId, profileDays]) => [profileId, profileDays.size]));
-}
-
-export interface ProfilePoints {
-  totalPoints: number;
-  level: Level;
-}
-
-/**
- * Recalculé à chaque lecture, pour qu'un total s'explique toujours. La
- * régularité (+5 par jour actif sur 90 jours, plafond 500) se déduit des
- * dates du registre : un gain annulé corrige le bonus tout seul. Deux
- * requêtes quel que soit le nombre de profils, pour les listes.
- */
-export async function computeProfilesPoints(
-  db: DbOrTx,
-  profileIds: string[],
-): Promise<Map<string, ProfilePoints>> {
-  const uniqueIds = [...new Set(profileIds)];
-  const result = new Map<string, ProfilePoints>();
-  if (uniqueIds.length === 0) return result;
-
-  const bySource = await db
-    .select({
-      profileId: pointsLedger.profileId,
-      source: pointsLedger.source,
-      total: sql<number>`coalesce(sum(${pointsLedger.amount}), 0)::int`,
-    })
-    .from(pointsLedger)
-    .where(inArray(pointsLedger.profileId, uniqueIds))
-    .groupBy(pointsLedger.profileId, pointsLedger.source);
-  const activeDays = await countActiveDaysByProfile(db, uniqueIds, POINTS_REGULARITE_WINDOW_DAYS);
-
-  for (const profileId of uniqueIds) {
-    let parcours = 0;
-    let entraide = 0;
-    for (const row of bySource) {
-      if (row.profileId !== profileId) continue;
-      if (ENTRAIDE_SOURCES.has(row.source)) entraide += row.total;
-      else parcours += row.total;
-    }
-    const regularite = Math.min(
-      POINTS_REGULARITE_CAP,
-      POINTS_REGULARITE_DAILY_BONUS * (activeDays.get(profileId) ?? 0),
-    );
-    const totalPoints = Math.min(parcours, POINTS_PARCOURS_CAP) + entraide + regularite;
-    result.set(profileId, { totalPoints, level: levelForPoints(totalPoints) });
-  }
-  return result;
-}
-
-export async function computeProfilePoints(db: DbOrTx, profileId: string): Promise<ProfilePoints> {
-  const points = await computeProfilesPoints(db, [profileId]);
-  return points.get(profileId)!;
 }
 
 /** Niveau de chaque profil, pour l'afficher à côté des noms. */
