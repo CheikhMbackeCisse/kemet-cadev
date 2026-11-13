@@ -388,32 +388,31 @@ export function FeedPage() {
     </div>
   );
 
+  const action =
+    tab === "opportunites"
+      ? { href: "/opportunites/nouvelle", label: fr.opportunities.publish }
+      : tab === "projets"
+        ? { href: "/projets/nouveau", label: fr.projects.createTitle }
+        : { href: "/fil/nouveau", label: fr.feed.newPostLink };
+
   const header = (
-    // Le mot-symbole au centre, à la place du titre : la page garde son titre
-    // "Fil" pour les lecteurs d'écran et le changement de page.
-    <div className="grid min-h-control grid-cols-[1fr_auto_1fr] items-center gap-2">
-      <span aria-hidden="true" />
-      <h1 className="flex justify-center">
-        <span className="sr-only">{fr.feed.title}</span>
-        <span aria-hidden="true" className="flex">
-          <KemetWordmark className="h-[22px] w-auto" />
-        </span>
-      </h1>
+    // Titre à gauche, mot-symbole au centre exact, action à droite. Sur un
+    // téléphone étroit, l'action dit seulement "Publier" ; son nom complet
+    // reste lu par un lecteur d'écran.
+    <div className="grid min-h-control grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+      <h1 className="text-lg font-bold text-text">{fr.feed.title}</h1>
+      <span aria-hidden="true" className="flex">
+        <KemetWordmark className="h-[22px] w-auto" />
+      </span>
       <div className="flex items-center justify-end gap-2">
-        {canInteract &&
-          (tab === "opportunites" ? (
-            <HeaderActionLink href="/opportunites/nouvelle" icon={Plus}>
-              {fr.opportunities.publish}
-            </HeaderActionLink>
-          ) : tab === "projets" ? (
-            <HeaderActionLink href="/projets/nouveau" icon={Plus}>
-              {fr.projects.createTitle}
-            </HeaderActionLink>
-          ) : (
-            <HeaderActionLink href="/fil/nouveau" icon={Plus}>
+        {canInteract && (
+          <HeaderActionLink href={action.href} icon={Plus}>
+            <span className="sm:hidden" aria-hidden="true">
               {fr.feed.newPostLink}
-            </HeaderActionLink>
-          ))}
+            </span>
+            <span className="max-sm:sr-only">{action.label}</span>
+          </HeaderActionLink>
+        )}
       </div>
     </div>
   );
