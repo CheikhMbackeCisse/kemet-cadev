@@ -1,4 +1,5 @@
 import { navigate } from "../lib/navigation/navigate.js";
+import { pageFor } from "../lib/navigation/pages.js";
 import {
   ArrowDown,
   Hash,
@@ -95,6 +96,9 @@ function readParam(name: string): string | null {
 }
 
 function writeParams(params: Record<string, string>) {
+  // Cette page reste affichée pendant que la suivante charge : elle ne doit
+  // pas réécrire l'adresse d'une autre page.
+  if (pageFor(window.location.pathname) !== "space") return;
   const url = new URL(window.location.href);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   // Garde l'état de l'historique : il porte la vue mobile (liste ou salon).

@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import type { Attachment } from "@kemet/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -30,6 +31,15 @@ const progress: { report: ((fraction: number) => void) | null; finish: (() => vo
   report: null,
   finish: null,
 };
+
+function renderPage() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <NewPostPage />
+    </QueryClientProvider>,
+  );
+}
 
 function attachment(kind: "image" | "video"): Attachment {
   return {
@@ -85,7 +95,7 @@ describe("NewPostPage", () => {
   });
 
   it("garde le bouton vidéo visible et le désactive une fois une image choisie", async () => {
-    const { container } = render(<NewPostPage />);
+    const { container } = renderPage();
     fireEvent.change(fileInputs(container).image, {
       target: { files: [new File(["x"], "capture.png", { type: "image/png" })] },
     });
@@ -95,7 +105,7 @@ describe("NewPostPage", () => {
   });
 
   it("garde le bouton image visible et le désactive une fois une vidéo choisie", async () => {
-    const { container } = render(<NewPostPage />);
+    const { container } = renderPage();
     fireEvent.change(fileInputs(container).video, {
       target: { files: [new File(["x"], "demo.mp4", { type: "video/mp4" })] },
     });
@@ -108,7 +118,7 @@ describe("NewPostPage", () => {
 
   it("n'annonce au lecteur d'écran que le début, 50 % et la fin de l'envoi", async () => {
     progress.finish = null;
-    const { container } = render(<NewPostPage />);
+    const { container } = renderPage();
     const status = screen.getByRole("status");
     const announced: string[] = [];
     const record = () => {

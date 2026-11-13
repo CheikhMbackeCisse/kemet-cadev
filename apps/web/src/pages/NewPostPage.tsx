@@ -1,6 +1,7 @@
 import { navigate } from "../lib/navigation/navigate.js";
 import { Clapperboard, Image as ImageIcon, X } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { MAX_POST_ATTACHMENTS, type Attachment, type PostFormat } from "@kemet/shared";
 import { Button } from "../components/ui/Button.js";
 import { IconButton } from "../components/ui/IconButton.js";
@@ -31,6 +32,7 @@ import { PublishAsField, PUBLISH_AS_ME } from "../components/organizations/Publi
 
 export function NewPostPage() {
   const toast = useToast();
+  const queryClient = useQueryClient();
   const { status, isSuspended } = useSession();
   const [body, setBody] = useState("");
   const [format, setFormat] = useState<"none" | PostFormat>("none");
@@ -129,6 +131,9 @@ export function NewPostPage() {
         isBeginner,
         asOrganizationId: publishAs === PUBLISH_AS_ME ? null : publishAs,
       });
+      // Sans cela, un fil lu il y a moins d'une minute revient depuis le
+      // cache, sans le post qu'on vient de publier.
+      void queryClient.invalidateQueries({ queryKey: ["feed"] });
       navigate("/fil");
     } catch (err) {
       setError(err instanceof ChatApiError ? err.message : fr.feed.createError);
