@@ -1,5 +1,5 @@
 import { customAlphabet } from "nanoid";
-import { and, asc, count, desc, eq, gt, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, lt, not, or, sql } from "drizzle-orm";
 import {
   BEGINNERS_SPACE_ID,
   channels,
@@ -115,8 +115,16 @@ export async function listSpacesForViewer(
       : eq(spaces.visibility, "public");
   // L'espace système des discussions de travaux ne figure jamais dans la liste.
   const listed = and(visibility, isNull(spaces.archivedAt), eq(spaces.kind, "community"));
-  const featured = or(eq(spaces.id, BEGINNERS_SPACE_ID), eq(spaces.slug, CADEV_SPACE_SLUG));
-  const notFeatured = and(ne(spaces.id, BEGINNERS_SPACE_ID), ne(spaces.slug, CADEV_SPACE_SLUG));
+  // Le slug seul ne suffit pas : sur une base neuve, n'importe qui pourrait le
+  // prendre avant le seed. Seul l'espace créé par un compte de démonstration monte.
+  const featured = or(
+    eq(spaces.id, BEGINNERS_SPACE_ID),
+    and(
+      eq(spaces.slug, CADEV_SPACE_SLUG),
+      sql`exists (select 1 from ${profiles} where ${profiles.id} = ${spaces.createdBy} and ${profiles.isDemo})`,
+    ),
+  );
+  const notFeatured = not(featured!);
   const select = (where: ReturnType<typeof and>, max: number) =>
     profileId
       ? db

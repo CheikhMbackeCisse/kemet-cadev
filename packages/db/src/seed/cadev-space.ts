@@ -442,12 +442,19 @@ async function seedCadevPost(
  * fil. Relançable : rien n'est ajouté deux fois, rien n'est supprimé.
  */
 export async function seedCadevSpace(db: DbOrTx): Promise<CadevSpaceResult> {
+  // Un espace qu'une personne réelle aurait créé sous ce slug n'est jamais touché.
   const [space] = await db
     .select({ id: spaces.id })
     .from(spaces)
-    .where(eq(spaces.slug, CADEV_SPACE_SLUG));
+    .innerJoin(profiles, eq(profiles.id, spaces.createdBy))
+    .where(and(eq(spaces.slug, CADEV_SPACE_SLUG), eq(profiles.isDemo, true)));
   if (!space)
-    return { status: "skipped", reason: "espace CADEV 2026 absent", messages: 0, replies: 0 };
+    return {
+      status: "skipped",
+      reason: "espace CADEV 2026 absent ou créé hors démonstration",
+      messages: 0,
+      replies: 0,
+    };
 
   const authors = await db
     .select({ id: profiles.id, handle: profiles.handle })

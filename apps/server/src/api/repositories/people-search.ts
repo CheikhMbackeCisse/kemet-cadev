@@ -39,6 +39,7 @@ export async function searchPeopleToWrite(
     .where(
       and(
         isNotNull(profiles.userId),
+        eq(profiles.kind, "person"),
         eq(profiles.isFiller, false),
         isNull(profiles.deletedAt),
         isNull(profiles.suspendedAt),

@@ -5,9 +5,11 @@ import {
   feedPinnedPosts,
   posts,
   profiles,
+  spaceMembers,
   spaces,
   type Db,
 } from "@kemet/db";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
 import { InMemoryEmailSender } from "../email/in-memory-email-sender.js";
@@ -131,19 +133,41 @@ describe.skipIf(!databaseUrl)("Posts épinglés en tête du fil et espaces mis e
     }
   });
 
-  it("n'épingle jamais un post d'espace privé ni un post supprimé", async () => {
+  it("n'épingle jamais un post d'espace privé ou archivé, supprimé, ou écrit par un figurant", async () => {
     const authorId = await createAuthor();
     const [privateSpace] = await db
       .insert(spaces)
       .values({ name: "Privé", slug: "prive", visibility: "private", createdBy: authorId })
       .returning({ id: spaces.id });
+    const [archivedSpace] = await db
+      .insert(spaces)
+      .values({ name: "Archivé", slug: "archive", createdBy: authorId, archivedAt: new Date() })
+      .returning({ id: spaces.id });
+    const [filler] = await db
+      .insert(profiles)
+      .values({
+        userId: null,
+        handle: "figurant-test",
+        displayName: "Figurant",
+        country: "SN",
+        isDemo: true,
+        isFiller: true,
+        onboardingCompletedAt: new Date(),
+      })
+      .returning({ id: profiles.id });
     const secret = await createPost(authorId, "Post d'un espace privé", {
       spaceId: privateSpace!.id,
     });
+    const archived = await createPost(authorId, "Post d'un espace archivé", {
+      spaceId: archivedSpace!.id,
+    });
     const removed = await createPost(authorId, "Post supprimé", { deletedAt: new Date() });
+    const fromFiller = await createPost(filler!.id, "Post d'un figurant");
     await db.insert(feedPinnedPosts).values([
       { postId: secret, position: 0 },
       { postId: removed, position: 1 },
+      { postId: archived, position: 2 },
+      { postId: fromFiller, position: 3 },
     ]);
     const cookie = await signUp("curieux");
 
@@ -151,19 +175,20 @@ describe.skipIf(!databaseUrl)("Posts épinglés en tête du fil et espaces mis e
       const bodies = items.map((item) => item.body);
       expect(bodies).not.toContain("Post d'un espace privé");
       expect(bodies).not.toContain("Post supprimé");
+      expect(bodies).not.toContain("Post d'un espace archivé");
+      expect(bodies).not.toContain("Post d'un figurant");
+      expect(items.some((item) => item.pinned)).toBe(false);
     }
   });
 
   it("place Débuter en informatique puis CADEV 2026 en tête des espaces, même plus anciens", async () => {
     const authorId = await createAuthor();
-    await db
-      .insert(spaces)
-      .values({
-        name: "CADEV 2026",
-        slug: "cadev-2026",
-        createdBy: authorId,
-        createdAt: new Date(2020, 0, 1),
-      });
+    await db.insert(spaces).values({
+      name: "CADEV 2026",
+      slug: "cadev-2026",
+      createdBy: authorId,
+      createdAt: new Date(2020, 0, 1),
+    });
     await db
       .insert(spaces)
       .values({ name: "Flutter Afrique", slug: "flutter-afrique", createdBy: authorId });
@@ -176,6 +201,65 @@ describe.skipIf(!databaseUrl)("Posts épinglés en tête du fil et espaces mis e
       expect(items[0]!.id).toBe(BEGINNERS_SPACE_ID);
       expect(items[1]!.name).toBe("CADEV 2026");
       expect(items.filter((item) => item.name === "CADEV 2026")).toHaveLength(1);
+    }
+  });
+
+  async function spaceNames(cookie?: string): Promise<string[]> {
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/spaces",
+      headers: cookie ? { cookie } : {},
+    });
+    expect(response.statusCode).toBe(200);
+    return response.json().items.map((item: { name: string }) => item.name);
+  }
+
+  async function profileIdOf(handle: string): Promise<string> {
+    const [row] = await db
+      .select({ id: profiles.id })
+      .from(profiles)
+      .where(eq(profiles.handle, handle));
+    return row!.id;
+  }
+
+  it("ne montre un espace CADEV 2026 privé qu'à ses membres", async () => {
+    const authorId = await createAuthor();
+    const [space] = await db
+      .insert(spaces)
+      .values({
+        name: "CADEV 2026",
+        slug: "cadev-2026",
+        visibility: "private",
+        createdBy: authorId,
+      })
+      .returning({ id: spaces.id });
+    const outsider = await signUp("dehors");
+    const member = await signUp("dedans");
+    await db
+      .insert(spaceMembers)
+      .values({ spaceId: space!.id, profileId: await profileIdOf("dedans"), role: "member" });
+
+    expect(await spaceNames()).not.toContain("CADEV 2026");
+    expect(await spaceNames(outsider)).not.toContain("CADEV 2026");
+    expect((await spaceNames(member))[1]).toBe("CADEV 2026");
+  });
+
+  it("ne met pas en avant un espace cadev-2026 créé par une personne réelle", async () => {
+    const cookie = await signUp("premiere");
+    await db.insert(spaces).values({
+      name: "CADEV 2026",
+      slug: "cadev-2026",
+      createdBy: await profileIdOf("premiere"),
+      createdAt: new Date(2020, 0, 1),
+    });
+    await db.insert(spaces).values({
+      name: "Flutter Afrique",
+      slug: "flutter-afrique",
+      createdBy: await profileIdOf("premiere"),
+    });
+
+    for (const names of [await spaceNames(), await spaceNames(cookie)]) {
+      expect(names.indexOf("Flutter Afrique")).toBeLessThan(names.indexOf("CADEV 2026"));
     }
   });
 });
