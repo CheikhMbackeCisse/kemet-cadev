@@ -62,8 +62,8 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
   await page.getByRole("button", { name: "Me connecter" }).click();
 
   await expect(page).toHaveURL(/\/completer-profil/);
-  await page.getByLabel("Nom affiché").fill(name);
-  await page.getByLabel("Identifiant").fill(handle);
+  await page.getByLabel("Ton nom").fill(name);
+  await page.getByLabel("Ton @").fill(handle);
   await page.getByRole("button", { name: "Continuer" }).click();
 
   // L'onboarding se passe écran par écran ; son parcours complet est testé

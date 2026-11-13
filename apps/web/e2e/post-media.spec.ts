@@ -88,18 +88,22 @@ test("une vidéo publiée se lit dans le post et s'ouvre en plein écran", async
   await expect(page.getByAltText(name)).toBeVisible();
   await publishAndOpen(page, `Ma vidéo ${handle}`);
 
-  // Une seule vidéo sur la page du post ; son nom accessible est celui de
-  // l'auteur, pas celui du fichier.
+  // Une seule vidéo sur la page du post. Le lien posé sur elle porte son nom
+  // accessible, celui de l'auteur et pas celui du fichier : la vidéo
+  // elle-même est cachée des lecteurs d'écran.
   const inline = page.locator("main video");
   await expect(inline).toHaveCount(1);
   await expect(inline).toBeVisible();
-  const label = await inline.getAttribute("aria-label");
-  expect(label).toMatch(/^Vidéo de /);
   await expect.poll(() => inline.evaluate((video: HTMLVideoElement) => video.muted)).toBe(true);
 
   // Toucher la vidéo ouvre la vue plein écran : plus de bouton à part.
   await expect(page.getByRole("button", { name: "Voir en plein écran" })).toHaveCount(0);
-  await page.getByRole("link", { name: `${label}, voir en plein écran` }).click();
+  const viewerLink = page.getByRole("link", { name: /^Vidéo de .+, voir en plein écran$/ });
+  const label = (await viewerLink.getAttribute("aria-label"))!.replace(
+    /, voir en plein écran$/,
+    "",
+  );
+  await viewerLink.click();
   await expect(page).toHaveURL(/\/videos\/[0-9a-f-]{36}$/);
   await expect(page).toHaveTitle(/Vidéos/);
   const fullscreen = page.locator(`main section video[aria-label="${label}"]`);

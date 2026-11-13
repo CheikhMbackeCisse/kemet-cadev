@@ -132,7 +132,7 @@ test("enregistre un post, le retrouve dans Enregistrés et copie son lien", asyn
   // Sans feuille de partage (navigateur de bureau), le lien est copié.
   await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
   await page.evaluate(() => Object.defineProperty(navigator, "share", { value: undefined }));
-  await page.getByRole("button", { name: "Partager" }).first().click();
+  await page.getByRole("button", { name: "Partager", exact: true }).first().click();
   await expect(page.getByText(/Lien copié|Le lien n'a pas pu être copié/).first()).toBeVisible();
 });
 

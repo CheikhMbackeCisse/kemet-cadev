@@ -74,9 +74,14 @@ async function navigateInApp(page: Page, path: string) {
 
 async function expectNextVersionShowing(page: Page, path: string) {
   await expect(page).toHaveURL(`${server.origin}${path}`);
+  // La page précédente reste affichée pendant que la suivante charge : son
+  // titre ne prouve rien tant que le document n'a pas été rechargé. Pendant
+  // le rechargement, evaluate échoue ; on considère alors l'ancien document.
+  await expect
+    .poll(() => page.evaluate(() => "versionMarker" in window).catch(() => true))
+    .toBe(false);
   await expect(page.locator("main h1").first()).toBeVisible();
   await expect(page.getByText(fr.shell.pageLoadFailed)).toHaveCount(0);
-  expect(await page.evaluate(() => "versionMarker" in window)).toBe(false);
   expect(await page.locator('script[src*="-next"]').count()).toBeGreaterThan(0);
 }
 

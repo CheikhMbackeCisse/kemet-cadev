@@ -59,8 +59,9 @@ test("publie un skill et le retrouve sur sa page publique", async ({ page, reque
 
   await page.getByLabel("Nom").fill(slug);
   await page.getByLabel(/Description/).fill("Une phrase qui explique quand utiliser ce skill.");
+  // Les onglets Écrire et Aperçu portent le même libellé que le champ.
   await page
-    .getByLabel(/Contenu/)
+    .getByRole("textbox", { name: /Contenu/ })
     .fill("Instructions détaillées pour ce skill de test bout en bout.");
   await page.getByRole("button", { name: "Publier", exact: true }).click();
 

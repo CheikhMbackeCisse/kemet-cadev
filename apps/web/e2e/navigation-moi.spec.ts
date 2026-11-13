@@ -22,9 +22,13 @@ test("sur mobile, l'onglet Salons liste les espaces et leurs salons, un salon s'
   await page.getByRole("button", { name: "mèmes" }).click();
   await expect(page.getByPlaceholder("Écrire un message…")).toBeVisible();
 
+  // L'espace ouvert d'office est le premier de la liste, "Débuter en
+  // informatique", sans salon "général" : on choisit celui du test.
   await page.goto("/salons");
   await expect(page.getByPlaceholder("Écrire un message…")).toBeHidden();
+  await page.getByRole("button", { name: `Espace ${handle}` }).click();
   await expect(page.getByRole("button", { name: "général" }).first()).toBeVisible();
+  await expect(page.getByPlaceholder("Écrire un message…")).toBeHidden();
 });
 
 test("la page Moi montre le profil, ce qui manque, et mène aux paramètres par son menu", async ({
