@@ -1,5 +1,13 @@
 import { and, count, desc, eq, isNull, lt, ne, sql } from "drizzle-orm";
-import { credentials, follows, profileBlocks, profiles, user, type Db } from "@kemet/db";
+import {
+  credentials,
+  follows,
+  profileBlocks,
+  profiles,
+  user,
+  type Db,
+  type DbOrTx,
+} from "@kemet/db";
 import {
   ASSISTANT_MENTION_HANDLE,
   KEMET_HANDLE,
@@ -128,7 +136,7 @@ export async function upsertProfile(db: Db, userId: string, input: UpdateProfile
   return updated!;
 }
 
-export async function suspendProfile(db: Db, profileId: string) {
+export async function suspendProfile(db: DbOrTx, profileId: string) {
   const [profile] = await db
     .update(profiles)
     .set({ suspendedAt: new Date() })

@@ -54,3 +54,19 @@ export async function sumUserAvatarBytes(db: DbOrTx, profileId: string): Promise
     .where(eq(profileAvatars.profileId, profileId));
   return Number(row?.total ?? 0);
 }
+
+/**
+ * Retire la photo envoyée (suspension par la modération) : la ligne et
+ * l'adresse partent ici, le fichier est effacé par l'appelant une fois la
+ * transaction validée. Une photo du seed ou un logo d'organisation n'a pas
+ * de ligne et reste en place.
+ */
+export async function removeAvatar(db: DbOrTx, profileId: string): Promise<string | null> {
+  const [removed] = await db
+    .delete(profileAvatars)
+    .where(eq(profileAvatars.profileId, profileId))
+    .returning({ storageKey: profileAvatars.storageKey });
+  if (!removed) return null;
+  await db.update(profiles).set({ avatarUrl: null }).where(eq(profiles.id, profileId));
+  return removed.storageKey;
+}

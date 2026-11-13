@@ -11,6 +11,7 @@ import {
 import { requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
 import { contentDisposition } from "../../storage/content-disposition.js";
+import { PUBLIC_FILE_CACHE } from "../../storage/cache-control.js";
 import { MULTIPART_FIELD_LIMITS } from "../multipart-limits.js";
 import { lockUserStorageQuota } from "../repositories/attachments.js";
 import { avatarUrl, findAvatar, findAvatarByKey, upsertAvatar } from "../repositories/avatars.js";
@@ -91,7 +92,13 @@ export function registerAvatarRoutes(
           throw error;
         });
       // Après la validation seulement : une transaction annulée garde l'ancienne photo.
-      if (previousKey) await storage.delete(previousKey);
+      // La nouvelle photo est enregistrée : un ancien fichier qui résiste ne
+      // doit pas faire croire à un échec, il est seulement signalé.
+      if (previousKey) {
+        await storage.delete(previousKey).catch((error: unknown) => {
+          request.log.warn({ err: error, storageKey: previousKey }, "ancienne photo non effacée");
+        });
+      }
       return { avatarUrl: avatarUrl(storageKey) };
     },
   );
@@ -108,7 +115,7 @@ export function registerAvatarRoutes(
         .header("X-Content-Type-Options", "nosniff")
         .header("Content-Security-Policy", "default-src 'none'")
         // La clé change à chaque envoi : une adresse ne désigne jamais deux images.
-        .header("Cache-Control", "public, max-age=31536000, immutable")
+        .header("Cache-Control", PUBLIC_FILE_CACHE)
         .header("Content-Length", avatar.byteSize)
         .header("Content-Disposition", contentDisposition("inline", "photo"))
         .type(avatar.mimeType);

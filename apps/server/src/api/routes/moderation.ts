@@ -21,6 +21,7 @@ import {
 } from "../repositories/profiles.js";
 import { findProfileById, softDeleteMessage } from "../repositories/chat.js";
 import { softDeletePost } from "../repositories/posts.js";
+import { removeAvatar } from "../repositories/avatars.js";
 import { softDeleteWork } from "../repositories/works.js";
 import { softDeleteOpportunity } from "../repositories/opportunities.js";
 import { serializeModerationActionEntry, serializeReport } from "../moderation-serializers.js";
@@ -45,7 +46,7 @@ async function requireAdmin(db: ChatAppDeps["db"], userId: string) {
 
 export function registerModerationRoutes(
   app: FastifyInstance,
-  { db, auth, antiSpamConfig }: ChatAppDeps,
+  { db, auth, antiSpamConfig, storage }: ChatAppDeps,
 ): void {
   app.post(
     "/api/reports",
@@ -165,7 +166,13 @@ export function registerModerationRoutes(
         const suspendedId =
           report.targetType === "conversation" ? report.reportedProfileId : report.targetId;
         if (!suspendedId) throw badRequest("Personne à suspendre dans cette conversation.");
-        await suspendProfile(db, suspendedId);
+        // La photo envoyée part avec la suspension : elle reste sinon
+        // affichée partout, et aucune autre action ne la retire.
+        const removedAvatar = await db.transaction(async (tx) => {
+          await suspendProfile(tx, suspendedId);
+          return removeAvatar(tx, suspendedId);
+        });
+        if (removedAvatar) await storage.delete(removedAvatar);
         await resolvePendingReportsForTarget(db, report.targetType, report.targetId, admin.id);
         await insertModerationAction(db, {
           actorId: admin.id,

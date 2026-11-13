@@ -178,6 +178,36 @@ describe.skipIf(!databaseUrl)("Photo de profil (base Postgres réelle)", () => {
     );
   });
 
+  it("retire la photo envoyée et son fichier quand la modération suspend le compte", async () => {
+    const awa = await createMember("awa");
+    const binta = await createMember("binta");
+    const admin = await createMember("admin");
+    await db.update(profiles).set({ isPlatformAdmin: true }).where(eq(profiles.id, admin.profileId));
+    const url = (await upload(awa.cookie)).json().avatarUrl as string;
+    const [row] = await storedKeys(awa.profileId);
+
+    const reported = await app.inject({
+      method: "POST",
+      url: "/api/reports",
+      headers: { cookie: binta.cookie },
+      payload: { targetType: "profile", targetId: awa.profileId, reason: "Photo choquante." },
+    });
+    const resolved = await app.inject({
+      method: "PUT",
+      url: `/api/reports/${reported.json().report.id}/resolve`,
+      headers: { cookie: admin.cookie },
+      payload: { action: "suspend" },
+    });
+    expect(resolved.statusCode).toBe(200);
+
+    expect(await storedKeys(awa.profileId)).toHaveLength(0);
+    const [suspended] = await db.select().from(profiles).where(eq(profiles.id, awa.profileId));
+    expect(suspended!.avatarUrl).toBeNull();
+    expect(suspended!.suspendedAt).not.toBeNull();
+    expect(() => storage.read(row!.storageKey)).toThrow();
+    expect((await app.inject({ method: "GET", url })).statusCode).toBe(404);
+  });
+
   it("efface la photo et son fichier avec le compte", async () => {
     const awa = await createMember("awa");
     const uploaded = await upload(awa.cookie);

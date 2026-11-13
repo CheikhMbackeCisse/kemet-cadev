@@ -492,6 +492,7 @@ export const fr = {
       "Le journal de tes appels à Kocc est gardé tant que ton compte existe.",
       "Un fichier envoyé mais jamais rattaché à un message ou à un post est effacé une à deux heures plus tard.",
       "Une réponse de Kocc reste en cache une heure au plus.",
+      "Ta photo de profil est effacée du serveur quand tu la changes ou supprimes ton compte, mais un navigateur qui l'avait déjà affichée peut la garder en cache quelque temps.",
       "Ta session de connexion expire après 7 jours sans visite.",
       "Les sauvegardes chiffrées de la base sont gardées 7 jours sur le serveur et 14 jours hors du serveur.",
     ],
