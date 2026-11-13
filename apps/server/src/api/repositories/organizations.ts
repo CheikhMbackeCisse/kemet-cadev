@@ -9,9 +9,9 @@ const ROLES_BY_KIND = {
 
 /**
  * Noms déjà saisis par d'autres, les plus fréquents d'abord. Deux écritures
- * qui ne diffèrent que par la casse comptent ensemble ; la plus ancienne
- * dans l'ordre alphabétique est proposée. Ces noms sont déjà publics : ils
- * s'affichent sur les profils.
+ * qui ne diffèrent que par la casse comptent ensemble ; la première dans
+ * l'ordre binaire (majuscules d'abord) est proposée. Ces noms sont déjà
+ * publics : ils s'affichent sur les profils.
  */
 export async function listOrganizationSuggestions(
   db: Db,
@@ -20,8 +20,11 @@ export async function listOrganizationSuggestions(
   limit: number,
 ): Promise<string[]> {
   const key = sql`lower(${profiles.organization})`;
+  // Sans COLLATE "C", min() suit le classement de la base : en_US.utf8
+  // (image postgres officielle) range "ept" avant "EPT".
+  const name = sql<string>`min(${profiles.organization} collate "C")`;
   const rows = await db
-    .select({ name: sql<string>`min(${profiles.organization})` })
+    .select({ name })
     .from(profiles)
     .where(
       and(
@@ -34,7 +37,7 @@ export async function listOrganizationSuggestions(
       ),
     )
     .groupBy(key)
-    .orderBy(sql`count(*) desc`, sql`min(${profiles.organization})`)
+    .orderBy(sql`count(*) desc`, name)
     .limit(limit);
   return rows.map((row) => row.name);
 }
