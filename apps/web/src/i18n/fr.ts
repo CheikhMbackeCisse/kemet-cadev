@@ -851,7 +851,7 @@ export const fr = {
     videoOf: (author: string) => `Vidéo de ${author}`,
     videoLoadError: "La vidéo n'a pas pu être lue.",
     videoOpenFile: "Ouvrir le fichier",
-    openVideoViewer: "Voir en plein écran",
+    openVideoViewer: (label: string) => `${label}, voir en plein écran`,
     viewerTitle: "Vidéos",
     viewerSlide: "vidéo",
     viewerSlideLabel: (position: number, total: number, author: string) =>

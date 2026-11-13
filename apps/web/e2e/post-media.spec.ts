@@ -97,7 +97,9 @@ test("une vidéo publiée se lit dans le post et s'ouvre en plein écran", async
   expect(label).toMatch(/^Vidéo de /);
   await expect.poll(() => inline.evaluate((video: HTMLVideoElement) => video.muted)).toBe(true);
 
-  await page.getByRole("button", { name: "Voir en plein écran" }).click();
+  // Toucher la vidéo ouvre la vue plein écran : plus de bouton à part.
+  await expect(page.getByRole("button", { name: "Voir en plein écran" })).toHaveCount(0);
+  await page.getByRole("link", { name: `${label}, voir en plein écran` }).click();
   await expect(page).toHaveURL(/\/videos\/[0-9a-f-]{36}$/);
   await expect(page).toHaveTitle(/Vidéos/);
   const fullscreen = page.locator(`main section video[aria-label="${label}"]`);
