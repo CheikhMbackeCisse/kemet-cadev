@@ -28,6 +28,12 @@ export interface TabsProps {
   swipeable?: boolean;
   /** Identifiant du libellé qui nomme la rangée d'onglets. */
   labelledBy?: string;
+  /**
+   * La rangée reste collée en haut de l'écran quand la page défile. Elle
+   * déborde de la marge de 16 px de la page pour couvrir le contenu d'un bord
+   * à l'autre.
+   */
+  sticky?: boolean;
 }
 
 // Le panneau actif est rendu hors de RadixTabs.Content : son Presence lit
@@ -42,6 +48,7 @@ export function Tabs({
   scrollable = false,
   swipeable = false,
   labelledBy,
+  sticky = false,
 }: TabsProps) {
   const centered = layout === "centered";
   const baseId = useId();
@@ -69,6 +76,19 @@ export function Tabs({
     if (tabBox.left < listBox.left) list.scrollLeft += tabBox.left - listBox.left;
     else if (tabBox.right > listBox.right) list.scrollLeft += tabBox.right - listBox.right;
   }, [scrollable, value, values]);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const shownValue = useRef(value);
+  // Rangée collée : un autre onglet s'ouvre à son début, pas au milieu de la
+  // page où l'on était dans l'onglet précédent.
+  useLayoutEffect(() => {
+    if (shownValue.current === value) return;
+    shownValue.current = value;
+    const list = listRef.current;
+    const panel = panelRef.current;
+    if (!sticky || !list || !panel) return;
+    const gap = panel.getBoundingClientRect().top - list.getBoundingClientRect().bottom;
+    if (gap < 0) window.scrollBy({ top: gap });
+  }, [sticky, value]);
   return (
     <RadixTabs.Root value={value} onValueChange={onValueChange} className={className}>
       <RadixTabs.List
@@ -76,6 +96,7 @@ export function Tabs({
         aria-labelledby={labelledBy}
         className={cn(
           "flex items-end border-b border-border",
+          sticky && "sticky top-0 z-20 -mx-4 bg-bg px-4 pt-[env(safe-area-inset-top)]",
           centered ? "justify-center gap-2 [&>*]:after:h-[3px]" : "gap-5",
           // Une rangée qui défile coupe ce qui déborde de sa boîte : le filet est
           // dessiné à l'intérieur et le soulignement de l'onglet actif se pose dessus.
@@ -107,6 +128,7 @@ export function Tabs({
         <div
           key={swipeable ? active.value : undefined}
           data-swipe-in={swipedIn?.value === active.value ? swipedIn.direction : undefined}
+          ref={panelRef}
           role="tabpanel"
           id={panelId(active.value)}
           aria-labelledby={triggerId(active.value)}

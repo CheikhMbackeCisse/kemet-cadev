@@ -747,3 +747,32 @@
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
+
+/* Liste de posts (fil, enregistrés, organisation) : une bande de 8 px
+   --surface-2 d'un bord à l'autre de la colonne sépare deux posts, à la
+   place du filet qui ne marquait pas assez la fin d'un post. Chaque ligne
+   déborde de la marge de la page pour que la bande touche les bords. */
+.post-band-list > * {
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+}
+.post-band-list > * + * {
+  border-top: 8px solid var(--surface-2);
+}
+@media (min-width: 1024px) {
+  .post-band-list > * {
+    margin-inline: -0.75rem;
+    padding-inline: 0.75rem;
+  }
+}
+
+/* Page Projets : la bande de 8 px sur téléphone, des cartes séparées de
+   12 px en grille de deux colonnes à partir de 1024 px. */
+@media (min-width: 1024px) {
+  .project-grid > *,
+  .project-grid > * + * {
+    margin-inline: 0;
+    padding-inline: 0;
+    border-top: 0;
+  }
+}

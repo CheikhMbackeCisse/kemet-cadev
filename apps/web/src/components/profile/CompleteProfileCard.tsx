@@ -1,11 +1,10 @@
-import { BookOpen, FileText, FolderGit2, Link2, Wrench, type LucideIcon } from "lucide-react";
+import { BookOpen, FileText, Link2, Wrench, type LucideIcon } from "lucide-react";
 import { fr } from "../../i18n/fr.js";
 
 export interface ProfileGaps {
   cv: boolean;
   links: boolean;
   work: boolean;
-  project: boolean;
   skill: boolean;
 }
 
@@ -40,13 +39,6 @@ const ROWS: GapRow[] = [
     href: "/travaux/nouveau",
   },
   {
-    key: "project",
-    icon: FolderGit2,
-    label: fr.profile.missingProject,
-    action: fr.profile.publish,
-    href: "/projets/nouveau",
-  },
-  {
     key: "skill",
     icon: Wrench,
     label: fr.profile.missingSkill,
@@ -57,7 +49,8 @@ const ROWS: GapRow[] = [
 
 /**
  * Sur son propre profil, une seule carte pour tout ce qui manque, une ligne
- * par élément, plutôt qu'un bloc vide par section.
+ * par élément, plutôt qu'un bloc vide par section. Pas de ligne pour un
+ * projet : un projet cherche de l'aide, il ne complète pas un profil.
  */
 export function CompleteProfileCard({ gaps }: { gaps: ProfileGaps }) {
   const rows = ROWS.filter((row) => gaps[row.key]);

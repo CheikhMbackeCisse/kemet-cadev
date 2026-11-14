@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Attachment } from "@kemet/shared";
 import { postAttachmentUrl } from "../../lib/chat/api.js";
@@ -38,8 +38,16 @@ function Picture({ attachment, eager = false }: { attachment: Attachment; eager?
   );
 }
 
-function Slide({ attachment, linked }: { attachment: Attachment; linked: boolean }) {
-  if (!linked) return <Picture attachment={attachment} />;
+function Slide({
+  attachment,
+  linked,
+  eager = false,
+}: {
+  attachment: Attachment;
+  linked: boolean;
+  eager?: boolean;
+}) {
+  if (!linked) return <Picture attachment={attachment} eager={eager} />;
   return (
     <a
       href={postAttachmentUrl(attachment.id)}
@@ -48,7 +56,7 @@ function Slide({ attachment, linked }: { attachment: Attachment; linked: boolean
       aria-label={fr.feed.openImage(attachment.originalName)}
       className="block size-full"
     >
-      <Picture attachment={attachment} />
+      <Picture attachment={attachment} eager={eager} />
     </a>
   );
 }
@@ -107,6 +115,13 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
     element.scrollTo({ left: target * element.clientWidth, behavior: reduced ? "auto" : "smooth" });
   }
 
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const target = index + (event.key === "ArrowLeft" ? -1 : 1);
+    if (target >= 0 && target < count) go(target);
+  }
+
   return (
     <div
       role="group"
@@ -117,6 +132,7 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
       <div
         ref={scroller}
         onScroll={onScroll}
+        onKeyDown={onKeyDown}
         // Le glissement entre onglets ne part jamais d'un carrousel.
         data-no-tab-swipe
         tabIndex={0}
@@ -133,7 +149,8 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
             aria-label={fr.feed.slideLabel(position + 1, count)}
             className="h-full w-full shrink-0 snap-center snap-always"
           >
-            <Slide attachment={attachment} linked />
+            {/* Le premier visuel arrive tout de suite, les suivants au défilement. */}
+            <Slide attachment={attachment} linked eager={position === 0} />
           </div>
         ))}
       </div>

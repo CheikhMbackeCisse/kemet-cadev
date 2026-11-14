@@ -135,7 +135,6 @@ export function ProfileTabs({
             cv: library.cv === null,
             links: profileLinks(profile).length === 0,
             work: workCount === 0,
-            project: library.projects.length === 0,
             skill: library.skills.length === 0,
           }}
         />

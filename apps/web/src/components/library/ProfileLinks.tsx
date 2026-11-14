@@ -12,7 +12,7 @@ const LINK_LABELS: Record<ProfileLinkKind, string> = {
 
 // Icônes Lucide, jamais les logos des services : DESIGN.md réserve les
 // logos de marque aux boutons de connexion.
-const LINK_ICONS: Record<ProfileLinkKind, LucideIcon> = {
+export const LINK_ICONS: Record<ProfileLinkKind, LucideIcon> = {
   github: GitBranch,
   gitlab: GitMerge,
   linkedin: UserRound,

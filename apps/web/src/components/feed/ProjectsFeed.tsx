@@ -19,7 +19,7 @@ export function ProjectsFeed({ viewerProfileId }: { viewerProfileId: string | nu
 
   if (projects.isPending) {
     return (
-      <div className="flex flex-col divide-y divide-border">
+      <div className="post-band-list flex flex-col">
         <ProjectFeedCardSkeleton />
         <ProjectFeedCardSkeleton />
       </div>
@@ -47,7 +47,7 @@ export function ProjectsFeed({ viewerProfileId }: { viewerProfileId: string | nu
     );
   }
   return (
-    <ul className="flex flex-col divide-y divide-border">
+    <ul className="post-band-list flex flex-col">
       {projects.data.items.map((project) => (
         <ProjectFeedCard
           key={project.id}

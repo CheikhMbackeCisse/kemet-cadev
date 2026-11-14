@@ -70,7 +70,9 @@ describe("ProfileTabs", () => {
     );
     const card = await screen.findByRole("region", { name: "Complète ton profil" });
     expect(card).toHaveTextContent("Ton CV");
-    expect(card).toHaveTextContent("Un premier travail");
+    expect(card).toHaveTextContent("Ajoute un travail");
+    // Un projet cherche de l'aide : il ne complète pas un profil.
+    expect(card).not.toHaveTextContent("Un projet");
     // Un lien est déjà posé : la ligne des liens n'apparaît pas.
     expect(card).not.toHaveTextContent("Tes liens");
     expect(screen.getByRole("tab", { name: "Bibliothèque" })).toBeVisible();

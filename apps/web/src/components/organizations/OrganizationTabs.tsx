@@ -7,7 +7,6 @@ import {
   setPostBookmark,
   togglePostReaction,
 } from "../../lib/chat/api.js";
-import { navigate } from "../../lib/navigation/navigate.js";
 import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
 import { PostCard, PostCardSkeleton } from "../feed/PostCard.js";
@@ -83,7 +82,7 @@ export function OrganizationTabs({ handle }: { handle: string }) {
 
   if (posts.isPending || offers.isPending) {
     return (
-      <div className="flex flex-col divide-y divide-border" aria-hidden="true">
+      <div className="post-band-list flex flex-col" aria-hidden="true">
         <PostCardSkeleton />
         <PostCardSkeleton />
       </div>
@@ -113,7 +112,7 @@ export function OrganizationTabs({ handle }: { handle: string }) {
       label: fr.organizations.tabPosts,
       content: (
         <div className="flex flex-col gap-3">
-          <ul className="flex flex-col divide-y divide-border">
+          <ul className="post-band-list flex flex-col">
             {postItems.map((post) => (
               <PostCard
                 key={post.id}
@@ -123,11 +122,9 @@ export function OrganizationTabs({ handle }: { handle: string }) {
                 replyHref={`/fil/${post.id}`}
                 canInteract={canInteract}
                 isOwnPost={false}
-                canFeedback={canInteract && post.format === "a_tester"}
                 canReport={canInteract && !post.deletedAt}
                 onReact={() => void handleReact(post)}
                 onSave={() => void handleSave(post)}
-                onFeedback={() => navigate(`/fil/${post.id}`)}
                 onDelete={() => undefined}
                 onChange={(change) => updatePost(post.id, change)}
               />
@@ -153,7 +150,7 @@ export function OrganizationTabs({ handle }: { handle: string }) {
       label: fr.organizations.tabOpportunities,
       content: (
         <div className="flex flex-col gap-3">
-          <ul className="flex flex-col divide-y divide-border">
+          <ul className="post-band-list flex flex-col">
             {offerItems.map((offer) => (
               <OpportunityRow key={offer.id} opportunity={offer} />
             ))}

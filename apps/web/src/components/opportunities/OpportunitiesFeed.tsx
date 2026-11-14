@@ -74,7 +74,7 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
   let content;
   if (loading) {
     content = (
-      <div className="flex flex-col divide-y divide-border">
+      <div className="post-band-list flex flex-col">
         <OpportunityRowSkeleton />
         <OpportunityRowSkeleton />
         <OpportunityRowSkeleton />
@@ -112,7 +112,7 @@ export function OpportunitiesFeed({ viewerProfileId }: { viewerProfileId: string
     );
   } else {
     content = (
-      <ul className="flex flex-col divide-y divide-border">
+      <ul className="post-band-list flex flex-col">
         {entries.map((offer) => (
           <OpportunityRow key={offer.id} opportunity={offer} />
         ))}

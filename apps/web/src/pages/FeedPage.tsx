@@ -8,8 +8,6 @@ import {
   type PostSummary,
 } from "@kemet/shared";
 import {
-  ChatApiError,
-  createPostFeedback,
   deletePost,
   listOpportunities,
   listPosts,
@@ -59,7 +57,6 @@ import { fr } from "../i18n/fr.js";
 import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
 import { ProjectsFeed } from "../components/feed/ProjectsFeed.js";
 import { KemetWordmark } from "../components/ui/KemetWordmark.js";
-import { CodeTextarea } from "../components/content/CodeTextarea.js";
 
 const postHeightKey = (postId: string) => `post:${postId}`;
 const projectHeightKey = (projectId: string) => `project:${projectId}`;
@@ -130,7 +127,6 @@ function PostListItem({
   viewerProfileId,
   onReact,
   onSave,
-  onFeedback,
   onDeleteRequest,
   onChange,
 }: {
@@ -139,7 +135,6 @@ function PostListItem({
   viewerProfileId: string | null;
   onReact: (postId: string) => void;
   onSave: (postId: string) => void;
-  onFeedback: (postId: string) => void;
   onDeleteRequest: (postId: string) => void;
   onChange: (post: PostSummary, change: Partial<PostSummary>) => void;
 }) {
@@ -154,11 +149,9 @@ function PostListItem({
       replyHref={`/fil/${post.id}`}
       canInteract={canInteract}
       isOwnPost={isOwnPost}
-      canFeedback={canInteract && post.format === "a_tester"}
       canReport={canInteract && !post.deletedAt}
       onReact={() => onReact(post.id)}
       onSave={() => onSave(post.id)}
-      onFeedback={() => onFeedback(post.id)}
       onDelete={() => onDeleteRequest(post.id)}
       onChange={(change) => onChange(post, change)}
     />
@@ -215,9 +208,6 @@ export function FeedPage() {
   );
   const isBuilt = useVisibleFirst(entryKeys, POST_ESTIMATED_HEIGHT_PX);
 
-  const [feedbackPostId, setFeedbackPostId] = useState<string | null>(null);
-  const [feedbackBody, setFeedbackBody] = useState("");
-  const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
 
   function updateFeed(update: (data: FeedData) => FeedData) {
@@ -289,24 +279,6 @@ export function FeedPage() {
     }
   }
 
-  async function handleSubmitFeedback() {
-    if (!feedbackPostId) return;
-    setFeedbackError(null);
-    try {
-      await createPostFeedback(feedbackPostId, feedbackBody.trim());
-      setFeedbackPostId(null);
-      setFeedbackBody("");
-      toast.show(fr.feed.feedbackSent, "success");
-      reload();
-    } catch (err) {
-      setFeedbackError(
-        err instanceof ChatApiError && err.statusCode === 409
-          ? fr.feed.feedbackAlready
-          : fr.feed.feedbackError,
-      );
-    }
-  }
-
   async function handleDeletePost() {
     if (!postToDelete) return;
     const postId = postToDelete;
@@ -320,7 +292,7 @@ export function FeedPage() {
   }
 
   const feedContent = loading ? (
-    <div className="flex flex-col divide-y divide-border">
+    <div className="post-band-list flex flex-col">
       <PostCardSkeleton />
       <PostCardSkeleton />
     </div>
@@ -333,7 +305,7 @@ export function FeedPage() {
     <EmptyState icon={Rss} message={fr.feed.noPosts} />
   ) : (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col divide-y divide-border">
+      <ul className="post-band-list flex flex-col">
         {entries.map((entry, index) =>
           !isBuilt(index) ? (
             <RowPlaceholder
@@ -372,7 +344,6 @@ export function FeedPage() {
               viewerProfileId={profile?.id ?? null}
               onReact={handleReact}
               onSave={handleSave}
-              onFeedback={setFeedbackPostId}
               onDeleteRequest={setPostToDelete}
               onChange={handlePostChange}
             />
@@ -433,6 +404,7 @@ export function FeedPage() {
         <Tabs
           layout="centered"
           swipeable
+          sticky
           value={tab}
           onValueChange={(value) => {
             setTab(value as FeedTabValue);
@@ -466,30 +438,6 @@ export function FeedPage() {
             },
           ]}
         />
-
-        <Dialog
-          open={feedbackPostId !== null}
-          onOpenChange={(open) => !open && setFeedbackPostId(null)}
-          title={fr.feed.feedbackTitle}
-        >
-          <div className="flex flex-col gap-3">
-            <CodeTextarea
-              placeholder={fr.feed.feedbackPlaceholder}
-              aria-label={fr.feed.feedbackPlaceholder}
-              value={feedbackBody}
-              onValueChange={setFeedbackBody}
-              autoFocus
-            />
-            {feedbackError && (
-              <p className="text-sm text-danger" role="alert">
-                {feedbackError}
-              </p>
-            )}
-            <Button onClick={handleSubmitFeedback} disabled={!feedbackBody.trim()}>
-              {fr.feed.feedbackSubmit}
-            </Button>
-          </div>
-        </Dialog>
 
         <Dialog
           open={postToDelete !== null}

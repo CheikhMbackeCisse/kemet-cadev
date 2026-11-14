@@ -101,7 +101,7 @@ export function SavedPostsList() {
   }
   if (posts === null) {
     return (
-      <div className="flex flex-col divide-y divide-border">
+      <div className="post-band-list flex flex-col">
         <PostCardSkeleton />
         <PostCardSkeleton />
       </div>
@@ -118,7 +118,7 @@ export function SavedPostsList() {
   }
   return (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col divide-y divide-border">
+      <ul className="post-band-list flex flex-col">
         {posts.map((post) => (
           <PostCard
             key={post.id}
@@ -128,12 +128,10 @@ export function SavedPostsList() {
             replyHref={`/fil/${post.id}`}
             canInteract={canInteract}
             isOwnPost={profile?.id === post.authorId && !post.deletedAt}
-            canFeedback={canInteract && post.format === "a_tester"}
             canReport={canInteract && !post.deletedAt}
             onReact={() => void handleReact(post)}
             onSave={() => void handleSave(post)}
             // Le retour structuré se donne depuis la page du post.
-            onFeedback={() => navigate(`/fil/${post.id}`)}
             onDelete={() => setPostToDelete(post.id)}
             onChange={(change) => update(post.id, change)}
           />

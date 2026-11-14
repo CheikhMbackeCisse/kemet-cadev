@@ -55,7 +55,7 @@ test("la page Moi montre le profil, ce qui manque, et mène aux paramètres par 
   await expect(page.getByRole("heading", { name: "Apparence" })).toBeVisible();
 
   await page.goto("/parametres/profil");
-  await page.getByLabel("Bio").fill("Je construis des API de paiement.");
+  await page.getByLabel("Bio", { exact: true }).fill("Je construis des API de paiement.");
   await page.getByRole("button", { name: "Enregistrer" }).click();
   await expect(page.getByText("Enregistré.", { exact: true }).first()).toBeVisible();
   const me = await (await page.request.get("/api/me")).json();

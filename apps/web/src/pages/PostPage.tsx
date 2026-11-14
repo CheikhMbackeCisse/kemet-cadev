@@ -12,13 +12,11 @@ import {
 import {
   isDeletedAccountHandle,
   isAssistantHandle,
-  type PostFeedbackEntry,
   type PostReply,
   type PostSummary,
 } from "@kemet/shared";
 import {
   ChatApiError,
-  createPostFeedback,
   createPostReply,
   deletePost,
   deletePostReply,
@@ -49,7 +47,6 @@ import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
 import { useSession } from "../session/SessionProvider.js";
 import { WorkMatchPanel } from "../components/works/WorkMatchPanel.js";
 import { fr } from "../i18n/fr.js";
-import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { CodeButton } from "../components/content/CodeButton.js";
 import { usePasteAsCode } from "../components/content/usePasteAsCode.js";
 import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
@@ -135,14 +132,6 @@ export function PostPage() {
     enabled: post?.format === "a_tester",
   });
   const feedback = feedbackQuery.data ?? [];
-  function setFeedback(update: (current: PostFeedbackEntry[]) => PostFeedbackEntry[]) {
-    queryClient.setQueryData<PostFeedbackEntry[]>(postFeedbackQueryKey(postId), (current) =>
-      update(current ?? []),
-    );
-  }
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackBody, setFeedbackBody] = useState("");
-  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -254,23 +243,6 @@ export function PostPage() {
     }
   }
 
-  async function handleSubmitFeedback() {
-    setFeedbackError(null);
-    try {
-      const { feedback: created } = await createPostFeedback(postId, feedbackBody.trim());
-      setFeedback((current) => [created, ...current]);
-      setFeedbackOpen(false);
-      setFeedbackBody("");
-      toast.show(fr.feed.feedbackSent, "success");
-    } catch (err) {
-      setFeedbackError(
-        err instanceof ChatApiError && err.statusCode === 409
-          ? fr.feed.feedbackAlready
-          : fr.feed.feedbackError,
-      );
-    }
-  }
-
   const header = (
     <div className="flex items-center justify-between">
       <a href="/fil" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
@@ -312,8 +284,6 @@ export function PostPage() {
     canInteract &&
     !reply.deletedAt &&
     (isOwnPost || (profile !== null && reply.assistant?.requestedBy === profile.id));
-  const hasGivenFeedback =
-    profile !== null && feedback.some((entry) => entry.authorId === profile.id);
 
   return (
     <>
@@ -330,11 +300,9 @@ export function PostPage() {
           post={post}
           canInteract={canInteract}
           isOwnPost={isOwnPost}
-          canFeedback={canInteract && post.format === "a_tester" && !hasGivenFeedback}
           canReport={canInteract && !post.deletedAt}
           onReact={handleReact}
           onSave={handleSave}
-          onFeedback={() => setFeedbackOpen(true)}
           onDelete={() => setDeleteOpen(true)}
           onReply={() => replyTextareaRef.current?.focus()}
           onChange={(change) =>
@@ -561,26 +529,6 @@ export function PostPage() {
             </div>
           )}
         </div>
-
-        <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen} title={fr.feed.feedbackTitle}>
-          <div className="flex flex-col gap-3">
-            <CodeTextarea
-              placeholder={fr.feed.feedbackPlaceholder}
-              aria-label={fr.feed.feedbackPlaceholder}
-              value={feedbackBody}
-              onValueChange={setFeedbackBody}
-              autoFocus
-            />
-            {feedbackError && (
-              <p className="text-sm text-danger" role="alert">
-                {feedbackError}
-              </p>
-            )}
-            <Button onClick={handleSubmitFeedback} disabled={!feedbackBody.trim()}>
-              {fr.feed.feedbackSubmit}
-            </Button>
-          </div>
-        </Dialog>
 
         <Dialog
           open={deleteOpen}

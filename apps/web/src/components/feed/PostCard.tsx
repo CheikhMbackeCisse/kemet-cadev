@@ -1,11 +1,10 @@
 import { navigate } from "../../lib/navigation/navigate.js";
 import { heightKeyProps } from "../../lib/navigation/rememberedHeights.js";
 import { useEffect, useState, type MouseEvent } from "react";
-import { Bookmark, CheckCircle2, Heart, MessageCircle, Pin, Repeat2, Share2 } from "lucide-react";
+import { Bookmark, Heart, MessageCircle, Pin, Repeat2, Share2 } from "lucide-react";
 import { isDeletedAccountHandle, type PostFormat, type PostSummary } from "@kemet/shared";
 import { Avatar } from "../ui/Avatar.js";
 import { Badge } from "../ui/Badge.js";
-import { Button } from "../ui/Button.js";
 import { MoreActionsMenu } from "../ui/MoreActionsMenu.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { UserName } from "../ui/UserName.js";
@@ -103,11 +102,9 @@ export interface PostCardProps {
   replyHref?: string;
   canInteract: boolean;
   isOwnPost: boolean;
-  canFeedback: boolean;
   canReport: boolean;
   onReact: () => void;
   onSave: () => void;
-  onFeedback: () => void;
   onDelete: () => void;
   onReply?: () => void;
   /** Republication ou abonnement réglés depuis la carte, pour que la liste suive. */
@@ -135,11 +132,9 @@ export function PostCard({
   replyHref,
   canInteract,
   isOwnPost,
-  canFeedback,
   canReport,
   onReact,
   onSave,
-  onFeedback,
   onDelete,
   onReply,
   onChange,
@@ -371,12 +366,6 @@ export function PostCard({
             </a>
           )}
           {post.testAsk && <p className="mt-1 text-sm text-subtle">{post.testAsk}</p>}
-          {canFeedback && (
-            <Button variant="secondary" className="mt-2 whitespace-nowrap" onClick={onFeedback}>
-              <CheckCircle2 className="size-5" aria-hidden="true" />
-              {fr.feed.iTested}
-            </Button>
-          )}
 
           <div className="-ml-2 mt-2 flex max-w-md items-center justify-between">
             {replyHref ? (
