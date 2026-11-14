@@ -56,7 +56,7 @@ import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
 import { ProjectsFeed } from "../components/feed/ProjectsFeed.js";
-import { KemetWordmark } from "../components/ui/KemetWordmark.js";
+import { HeaderWordmark } from "../components/ui/HeaderWordmark.js";
 
 const postHeightKey = (postId: string) => `post:${postId}`;
 const projectHeightKey = (projectId: string) => `project:${projectId}`;
@@ -372,9 +372,7 @@ export function FeedPage() {
     // reste lu par un lecteur d'écran.
     <div className="grid min-h-control grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
       <h1 className="text-lg font-bold text-text">{fr.feed.title}</h1>
-      <span aria-hidden="true" className="flex">
-        <KemetWordmark className="h-[22px] w-auto" />
-      </span>
+      <HeaderWordmark />
       <div className="flex items-center justify-end gap-2">
         {canInteract && (
           <HeaderActionLink href={action.href} icon={Plus}>

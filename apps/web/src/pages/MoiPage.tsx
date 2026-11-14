@@ -13,6 +13,7 @@ import {
   PROFILE_ACTIONS_ROW_CLASS,
 } from "../components/profile/profileActionClass.js";
 import { Card } from "../components/ui/Card.js";
+import { HeaderWordmark } from "../components/ui/HeaderWordmark.js";
 import { IconButton } from "../components/ui/IconButton.js";
 import { KemetSymbol } from "../components/ui/KemetSymbol.js";
 import { Skeleton } from "../components/ui/Skeleton.js";
@@ -61,7 +62,10 @@ export function MoiPage() {
 
   return (
     <RailPage activeSection="moi" className="gap-4 pt-1 lg:pt-6" tabSwipe>
-      <div className="-mb-2 flex justify-end lg:mb-0">
+      <div className="-mb-2 flex items-start justify-between lg:mb-0 lg:justify-end">
+        {/* Même place que le mot-symbole du Fil, dont l'en-tête commence 8 px
+            plus bas (pt-3 contre pt-1) : il ne bouge pas d'une page à l'autre. */}
+        <HeaderWordmark className="mt-2 lg:hidden" />
         <IconButton aria-label={fr.moi.menu} onClick={() => setMenuOpen(true)} className="-mr-2">
           <Menu className="size-6" aria-hidden="true" />
         </IconButton>
