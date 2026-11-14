@@ -23,6 +23,21 @@ export const DEFAULT_CHANNELS = [
   { name: "mèmes", slug: "memes" },
 ];
 
+/**
+ * Un message supprimé disparaît de la conversation pour tout le monde, et la
+ * réponse de l'assistant à une question supprimée avec lui. La seconde règle
+ * couvre aussi les réponses restées en base avant qu'elles soient supprimées
+ * en même temps que leur question.
+ */
+export const visibleMessage = and(
+  isNull(messages.deletedAt),
+  sql`not exists (
+    select 1 from assistant_invocations ai
+    join messages question on question.id = ai.trigger_message_id
+    where ai.response_message_id = ${messages.id} and question.deleted_at is not null
+  )`,
+)!;
+
 function toPage<T extends { createdAt: Date }>(rows: T[], limit: number) {
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
@@ -273,6 +288,7 @@ export async function findSpacesWithUnread(
     .where(
       and(
         inArray(channels.spaceId, spaceIds),
+        visibleMessage,
         gt(messages.createdAt, sql`coalesce(${readStates.lastReadAt}, ${spaceMembers.joinedAt})`),
       ),
     );
@@ -334,7 +350,7 @@ export async function countUnreadMessages(
   const rows = await db
     .select({ id: messages.id })
     .from(messages)
-    .where(and(eq(messages.channelId, channelId), gt(messages.createdAt, since)));
+    .where(and(eq(messages.channelId, channelId), visibleMessage, gt(messages.createdAt, since)));
   return rows.length;
 }
 
@@ -390,6 +406,11 @@ export async function editMessage(db: Db, messageId: string, body: string) {
   return message!;
 }
 
+/** Une seule écriture : une question ne part jamais sans la réponse de l'assistant liée. */
+export async function softDeleteMessages(db: Db, messageIds: string[]) {
+  await db.update(messages).set({ deletedAt: new Date() }).where(inArray(messages.id, messageIds));
+}
+
 export async function softDeleteMessage(db: Db, messageId: string) {
   const [message] = await db
     .update(messages)
@@ -413,6 +434,7 @@ export async function listChannelMessages(
   const topLevelInChannel = and(
     eq(messages.channelId, channelId),
     isNull(messages.parentMessageId),
+    visibleMessage,
   );
   const condition = cursor
     ? and(
@@ -451,6 +473,7 @@ export async function findFirstUnreadMessageId(
       and(
         eq(messages.channelId, channelId),
         isNull(messages.parentMessageId),
+        visibleMessage,
         gt(messages.createdAt, since),
       ),
     )
@@ -469,12 +492,11 @@ export async function listThreadReplies(
     .select()
     .from(messages)
     .where(
-      cursor
-        ? and(
-            eq(messages.parentMessageId, parentMessageId),
-            gt(messages.createdAt, new Date(cursor)),
-          )
-        : eq(messages.parentMessageId, parentMessageId),
+      and(
+        eq(messages.parentMessageId, parentMessageId),
+        visibleMessage,
+        cursor ? gt(messages.createdAt, new Date(cursor)) : undefined,
+      ),
     )
     .orderBy(asc(messages.createdAt))
     .limit(limit + 1);
@@ -488,7 +510,7 @@ export async function countReplies(db: Db, parentMessageId: string) {
   const rows = await db
     .select({ id: messages.id })
     .from(messages)
-    .where(eq(messages.parentMessageId, parentMessageId));
+    .where(and(eq(messages.parentMessageId, parentMessageId), visibleMessage));
   return rows.length;
 }
 

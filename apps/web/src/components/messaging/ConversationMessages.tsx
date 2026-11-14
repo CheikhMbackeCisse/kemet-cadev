@@ -97,24 +97,18 @@ export function ConversationMessages({
                     <span className="text-xs text-subtle">{formatTime(message.createdAt)}</span>
                   </div>
                 )}
-                {message.deletedAt ? (
-                  <p className="mt-0.5 text-base text-text">{fr.chat.messageDeleted}</p>
-                ) : (
-                  <>
-                    {message.body && (
-                      <RichText
-                        source={message.body}
-                        className="mt-0.5 text-base text-text"
-                        suffix={
-                          message.editedAt && (
-                            <span className="text-xs text-subtle">({fr.chat.edited})</span>
-                          )
-                        }
-                      />
-                    )}
-                    <MessageAttachments attachments={message.attachments} />
-                  </>
+                {message.body && (
+                  <RichText
+                    source={message.body}
+                    className="mt-0.5 text-base text-text"
+                    suffix={
+                      message.editedAt && (
+                        <span className="text-xs text-subtle">({fr.chat.edited})</span>
+                      )
+                    }
+                  />
                 )}
+                <MessageAttachments attachments={message.attachments} />
                 {message.reactions.length > 0 && (
                   <div className="mt-1 flex flex-wrap items-center gap-1">
                     {message.reactions.map((reaction) => {
@@ -147,7 +141,7 @@ export function ConversationMessages({
                   </div>
                 )}
               </div>
-              {canReact && !message.deletedAt && (
+              {canReact && (
                 <div
                   role="toolbar"
                   aria-label={fr.chat.messageActions}

@@ -505,7 +505,7 @@ export function ConversationView({ conversationId, onClosed }: ConversationViewP
           onOpenChange={(open) => !open && setActionsMessageId(null)}
           onReact={() => void react(actionsMessage.id, "👍")}
           onCopy={
-            actionsMessage.body && !actionsMessage.deletedAt
+            actionsMessage.body
               ? () =>
                   void navigator.clipboard.writeText(actionsMessage.body).then(
                     () => toast.show(fr.chat.textCopied, "success"),
@@ -514,7 +514,7 @@ export function ConversationView({ conversationId, onClosed }: ConversationViewP
               : undefined
           }
           onReport={
-            actionsMessage.authorId !== profile?.id && !actionsMessage.deletedAt
+            actionsMessage.authorId !== profile?.id
               ? () => setReportMessage(actionsMessage)
               : undefined
           }

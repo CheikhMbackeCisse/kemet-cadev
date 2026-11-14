@@ -67,13 +67,7 @@ export function useThread(channelId: string | null, parentId: string | null) {
         setOutgoing((current) => removeOutgoing(current, event.message.clientId));
       } else if (event.type === "message:deleted") {
         if (event.channelId !== channelId) return;
-        setReplies((current) =>
-          current.map((reply) =>
-            reply.id === event.messageId
-              ? { ...reply, body: "", deletedAt: new Date().toISOString() }
-              : reply,
-          ),
-        );
+        setReplies((current) => current.filter((reply) => reply.id !== event.messageId));
       }
     });
     return () => {

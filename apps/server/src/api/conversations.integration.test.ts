@@ -168,6 +168,29 @@ describe.skipIf(!databaseUrl)("Messagerie privée (base Postgres réelle)", () =
     expect((await send(binta, conversation.channelId, "Avec plaisir")).statusCode).toBe(200);
   });
 
+  it("retire un message supprimé de la conversation et de son aperçu", async () => {
+    const awa = await createMember("awa");
+    const binta = await createMember("binta");
+    await follow(binta, awa);
+    const conversation = (await openConversation(awa, binta)).json().conversation;
+    await send(awa, conversation.channelId, "Premier message");
+    const last = (await send(awa, conversation.channelId, "Message regretté")).json().message.id;
+
+    const removed = await app.inject({ method: "DELETE", url: `/api/messages/${last}`, headers: { cookie: awa.cookie } });
+
+    expect(removed.statusCode).toBe(200);
+    const history = await app.inject({
+      method: "GET",
+      url: `/api/channels/${conversation.channelId}/messages`,
+      headers: { cookie: binta.cookie },
+    });
+    expect((history.json().items as { body: string }[]).map((item) => item.body)).toEqual(["Premier message"]);
+    const inbox = await app.inject({ method: "GET", url: "/api/conversations?box=inbox", headers: { cookie: binta.cookie } });
+    const [item] = inbox.json().items as { lastMessage: { body: string; deleted: boolean }; unreadCount: number }[];
+    expect(item!.lastMessage).toMatchObject({ body: "Premier message", deleted: false });
+    expect(item!.unreadCount).toBe(1);
+  });
+
   it("accepte directement quand le destinataire suit l'expéditeur ou partage un espace privé avec lui", async () => {
     const awa = await createMember("awa");
     const binta = await createMember("binta");

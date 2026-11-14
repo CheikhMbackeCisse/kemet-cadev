@@ -388,14 +388,24 @@ export async function countPostReactions(db: DbOrTx, postId: string) {
   return rows.length;
 }
 
-// Exclut les réponses supprimées, à la différence de countReplies côté
-// messages : le compteur d'une carte ne doit pas annoncer des réponses
-// absentes de la page du post.
+/**
+ * Une réponse supprimée disparaît de la page du post, et la réponse de
+ * l'assistant à une question supprimée avec elle, comme dans un salon.
+ */
+const visiblePostReply = and(
+  isNull(postReplies.deletedAt),
+  sql`not exists (
+    select 1 from assistant_invocations ai
+    join post_replies question on question.id = ai.trigger_reply_id
+    where ai.response_reply_id = ${postReplies.id} and question.deleted_at is not null
+  )`,
+)!;
+
 export async function countPostReplies(db: DbOrTx, postId: string) {
   const rows = await db
     .select({ id: postReplies.id })
     .from(postReplies)
-    .where(and(eq(postReplies.postId, postId), isNull(postReplies.deletedAt)));
+    .where(and(eq(postReplies.postId, postId), visiblePostReply));
   return rows.length;
 }
 
@@ -593,6 +603,14 @@ export async function findPostReplyById(db: Db, replyId: string) {
   return reply ?? null;
 }
 
+/** Une seule écriture : une question ne part jamais sans la réponse de l'assistant liée. */
+export async function softDeletePostReplies(db: Db, replyIds: string[]) {
+  await db
+    .update(postReplies)
+    .set({ deletedAt: new Date() })
+    .where(inArray(postReplies.id, replyIds));
+}
+
 export async function softDeletePostReply(db: Db, replyId: string) {
   const [reply] = await db
     .update(postReplies)
@@ -608,7 +626,11 @@ export async function listPostReplies(
   cursor: string | undefined,
   limit: number,
 ) {
-  const visible = and(eq(postReplies.postId, postId), notWrittenByFiller(postReplies.authorId));
+  const visible = and(
+    eq(postReplies.postId, postId),
+    visiblePostReply,
+    notWrittenByFiller(postReplies.authorId),
+  );
   const condition = cursor ? and(visible, gt(postReplies.createdAt, new Date(cursor))) : visible;
   const rows = await db
     .select()

@@ -222,10 +222,13 @@ export function PostPage() {
   async function handleDeleteReply(replyId: string) {
     setReplyToDelete(null);
     try {
-      await deletePostReply(replyId);
-      setReplies((current) => current.filter((reply) => reply.id !== replyId));
+      const { removedReplyIds } = await deletePostReply(replyId);
+      const removed = new Set(removedReplyIds);
+      setReplies((current) => current.filter((reply) => !removed.has(reply.id)));
       setPost((current) =>
-        current ? { ...current, replyCount: Math.max(0, current.replyCount - 1) } : current,
+        current
+          ? { ...current, replyCount: Math.max(0, current.replyCount - removed.size) }
+          : current,
       );
     } catch {
       toast.show(fr.feed.replyDeleteError, "danger");
@@ -282,7 +285,6 @@ export function PostPage() {
   // Une réponse de @kemet se retire par qui l'a demandée ou par l'auteur du post.
   const canRemoveAssistantReply = (reply: PostReply) =>
     canInteract &&
-    !reply.deletedAt &&
     (isOwnPost || (profile !== null && reply.assistant?.requestedBy === profile.id));
 
   return (
@@ -349,9 +351,7 @@ export function PostPage() {
               isAssistantHandle(reply.authorHandle) && reply.assistant ? (
                 <div key={reply.id} className="flex flex-col gap-1">
                   <AssistantMessage
-                    content={
-                      reply.deletedAt ? fr.chat.messageDeleted : <RichText source={reply.body} />
-                    }
+                    content={<RichText source={reply.body} />}
                     skill={
                       reply.assistant.skill ? skillReferenceFrom(reply.assistant.skill) : undefined
                     }
@@ -377,7 +377,7 @@ export function PostPage() {
                     canRemoveAssistantReply(reply)) && (
                     <div className="flex items-center gap-2">
                       {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
-                      {isOwnPost && post.format === "question" && !reply.deletedAt && (
+                      {isOwnPost && post.format === "question" && (
                         <button
                           type="button"
                           onClick={() => handleToggleSolution(reply)}
@@ -422,13 +422,9 @@ export function PostPage() {
                       <span className="text-xs text-subtle">{formatTime(reply.createdAt)}</span>
                       {reply.isSolution && <Badge tone="success">{fr.feed.solutionBadge}</Badge>}
                     </div>
-                    {reply.deletedAt ? (
-                      <p className="mt-0.5 text-sm text-text">{fr.chat.messageDeleted}</p>
-                    ) : (
-                      <RichText source={reply.body} className="mt-0.5 text-sm text-text" />
-                    )}
+                    <RichText source={reply.body} className="mt-0.5 text-sm text-text" />
                     <div className="mt-1 flex items-center gap-2">
-                      {isOwnPost && post.format === "question" && !reply.deletedAt && (
+                      {isOwnPost && post.format === "question" && (
                         <button
                           type="button"
                           onClick={() => handleToggleSolution(reply)}
@@ -437,7 +433,7 @@ export function PostPage() {
                           {reply.isSolution ? fr.feed.unmarkSolution : fr.feed.markSolution}
                         </button>
                       )}
-                      {profile?.id === reply.authorId && !reply.deletedAt && (
+                      {profile?.id === reply.authorId && (
                         <IconButton
                           aria-label={fr.feed.delete}
                           onClick={() => setReplyToDelete(reply.id)}

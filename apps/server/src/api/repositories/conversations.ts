@@ -314,7 +314,7 @@ function conversationRowsQuery(viewerId: string, condition: SQL) {
     left join lateral (
       select m.id, m.author_id, m.body, m.deleted_at, m.created_at
       from messages m
-      where m.channel_id = ch.id and m.parent_message_id is null
+      where m.channel_id = ch.id and m.parent_message_id is null and m.deleted_at is null
       order by m.created_at desc, m.id desc
       limit 1
     ) lm on true

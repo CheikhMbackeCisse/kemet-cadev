@@ -3,7 +3,8 @@ import { z } from "zod";
 import { assistantFeedbackSchema, type SkillCitation } from "@kemet/shared";
 import { getSessionUserId, requireSessionUserId } from "../../auth/session.js";
 import { badRequest, forbidden, notFound } from "../../errors.js";
-import { findPostById } from "../repositories/posts.js";
+import { findPostById, findPostReplyById } from "../repositories/posts.js";
+import { findMessageById } from "../repositories/chat.js";
 import {
   findInvocationById,
   findInvocationByResponseMessageId,
@@ -22,6 +23,24 @@ import { canActForAuthor } from "../repositories/organization-accounts.js";
 import { requireChannelAccess, requireWritableSpace } from "./channels.js";
 
 const messageIdParamsSchema = z.object({ id: z.string().uuid() });
+
+type Invocation = NonNullable<Awaited<ReturnType<typeof findInvocationById>>>;
+
+/** Question ou réponse supprimée : la réponse n'est plus montrée, elle ne se note plus. */
+async function isAnswerRemoved(db: ChatAppDeps["db"], invocation: Invocation): Promise<boolean> {
+  const [trigger, response] = await Promise.all(
+    invocation.channelId
+      ? [
+          invocation.triggerMessageId ? findMessageById(db, invocation.triggerMessageId) : null,
+          invocation.responseMessageId ? findMessageById(db, invocation.responseMessageId) : null,
+        ]
+      : [
+          invocation.triggerReplyId ? findPostReplyById(db, invocation.triggerReplyId) : null,
+          invocation.responseReplyId ? findPostReplyById(db, invocation.responseReplyId) : null,
+        ],
+  );
+  return !trigger || trigger.deletedAt !== null || !response || response.deletedAt !== null;
+}
 
 export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: ChatAppDeps): void {
   // Pour réafficher la citation d'un skill, l'état "Utile" et la marque
@@ -87,6 +106,7 @@ export function registerAssistantRoutes(app: FastifyInstance, { db, auth }: Chat
           );
         }
       }
+      if (await isAnswerRemoved(db, invocation)) throw notFound("Cette réponse n'existe pas.");
       const input = assistantFeedbackSchema.parse(request.body);
       if (input.helpful && invocation.helpful !== true) {
         const citedSkills = await findSkillsByIds(db, invocation.skillIds);

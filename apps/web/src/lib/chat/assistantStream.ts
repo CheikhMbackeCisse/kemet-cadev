@@ -1,3 +1,6 @@
+/** Envoyé quand la question a été supprimée pendant la rédaction de la réponse. */
+export const QUESTION_REMOVED_ERROR = "question_removed";
+
 export interface AssistantStream {
   invocationId: string;
   text: string;
@@ -50,6 +53,8 @@ export function failureForViewer(
   viewerProfileId: string | null,
 ): AssistantFailure | null {
   if (viewerProfileId === null || event.requestedBy !== viewerProfileId) return null;
+  // La question a été supprimée : il n'y a plus rien à reposer.
+  if (event.errorCode === QUESTION_REMOVED_ERROR) return null;
   return {
     invocationId: event.invocationId,
     errorCode: event.errorCode,

@@ -44,11 +44,7 @@ function ThreadMessage({ message }: { message: Message }) {
         <UserName name={message.authorDisplayName} handle={message.authorHandle} />
         <span className="text-xs text-subtle">{formatTime(message.createdAt)}</span>
       </div>
-      {message.deletedAt ? (
-        <p className="text-base text-muted">{fr.chat.messageDeleted}</p>
-      ) : (
-        <RichText source={message.body} className="text-base text-text" />
-      )}
+      <RichText source={message.body} className="text-base text-text" />
     </div>
   );
 }

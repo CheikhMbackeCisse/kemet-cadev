@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { appendAssistantChunk, dropFailedStream, failureForViewer } from "./assistantStream.js";
+import {
+  appendAssistantChunk,
+  dropFailedStream,
+  failureForViewer,
+  QUESTION_REMOVED_ERROR,
+} from "./assistantStream.js";
 
 const ASKER = "11111111-1111-4111-8111-111111111111";
 const VIEWER = "22222222-2222-4222-8222-222222222222";
@@ -41,6 +46,10 @@ describe("assistantStream", () => {
       errorCode: "assistant_unavailable",
       triggerMessageId: TRIGGER,
     });
+  });
+
+  it("ne montre rien quand la question a été supprimée pendant la réponse", () => {
+    expect(failureForViewer(failedEvent(QUESTION_REMOVED_ERROR), ASKER)).toBeNull();
   });
 
   it("ne montre l'échec ni aux autres membres ni à un visiteur", () => {

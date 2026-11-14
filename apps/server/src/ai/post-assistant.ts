@@ -6,7 +6,13 @@ import {
   insertPostInvocation,
   markInvocationStreaming,
 } from "../api/repositories/assistant.js";
-import { findPostById, findPostReplyById, insertPostReply, listRepliesBefore } from "../api/repositories/posts.js";
+import {
+  findPostById,
+  findPostReplyById,
+  insertPostReply,
+  listRepliesBefore,
+  softDeletePostReply,
+} from "../api/repositories/posts.js";
 import { findWorkById } from "../api/repositories/works.js";
 import { AssistantAnswerer, isProviderUnavailable, type ContextBlock, type RecordedAnswersOptions } from "./assistant-answerer.js";
 import type { StreamingLlmProvider } from "./llm-provider.js";
@@ -126,6 +132,10 @@ export class KemetPostAssistant implements PostAssistant {
         skillIds: answer.skills.map((skill) => skill.id),
         recorded: answer.recorded,
       });
+      // Question supprimée entre la vérification et l'écriture : la suppression
+      // n'a pas pu voir cette réponse, elle part ici.
+      const questionAfter = await findPostReplyById(this.db, input.triggerReplyId);
+      if (!questionAfter || questionAfter.deletedAt) await softDeletePostReply(this.db, reply.id);
     } catch (error) {
       await failInvocation(this.db, invocationId, isProviderUnavailable(error) ? "assistant_unavailable" : "internal_error");
       if (!isProviderUnavailable(error)) throw error;

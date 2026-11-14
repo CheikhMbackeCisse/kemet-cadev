@@ -138,8 +138,8 @@ describe.skipIf(!databaseUrl)("Modération (base Postgres réelle)", () => {
     expect(resolved.json().report.status).toBe("resolved");
 
     const history = await app.inject({ method: "GET", url: `/api/channels/${channelId}/messages`, headers: { cookie: author.cookie } });
-    const stored = (history.json().items as { id: string; deletedAt: string | null }[]).find((item) => item.id === message.id)!;
-    expect(stored.deletedAt).not.toBeNull();
+    const ids = (history.json().items as { id: string }[]).map((item) => item.id);
+    expect(ids).not.toContain(message.id);
 
     const remainingQueue = await app.inject({ method: "GET", url: "/api/reports", headers: { cookie: admin.cookie } });
     expect(remainingQueue.json().items).toHaveLength(0);

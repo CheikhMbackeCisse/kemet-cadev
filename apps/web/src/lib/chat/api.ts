@@ -771,7 +771,9 @@ export function listFeedProjects(tab: FeedTab, limit: number): Promise<{ items: 
 }
 
 export function deletePostReply(replyId: string) {
-  return request<{ deleted: boolean }>(`/api/post-replies/${replyId}`, { method: "DELETE" });
+  return request<{ deleted: boolean; removedReplyIds: string[] }>(`/api/post-replies/${replyId}`, {
+    method: "DELETE",
+  });
 }
 
 export function markPostReplySolution(replyId: string, isSolution: boolean) {

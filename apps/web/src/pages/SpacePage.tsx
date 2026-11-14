@@ -381,6 +381,20 @@ export function SpacePage() {
   const actionsMessage = messages.find((message) => message.id === actionsMessageId) ?? null;
   const threadParent = messages.find((message) => message.id === threadParentId) ?? null;
   const thread = useThread(activeChannelId, threadParent?.id ?? null);
+  // Message supprimé par quelqu'un d'autre pendant qu'il était ouvert : son fil
+  // ou sa feuille d'actions se referment en rendant le focus à la liste.
+  const threadParentRemoved = threadParentId !== null && threadParent === null;
+  useEffect(() => {
+    if (!threadParentRemoved) return;
+    closeThread();
+    toast.show(fr.chat.threadParentDeleted);
+  }, [threadParentRemoved]);
+  useEffect(() => {
+    if (actionsMessageId !== null && actionsMessage === null) {
+      setActionsMessageId(null);
+      messageListRef.current?.focus();
+    }
+  }, [actionsMessageId, actionsMessage]);
   const threadView = threadParent && (
     <ThreadView
       parent={threadParent}
@@ -721,13 +735,7 @@ export function SpacePage() {
                     return isAssistantHandle(group.authorHandle) ? (
                       <AssistantMessage
                         key={group.messages[0]!.id}
-                        content={
-                          group.messages[0]!.deletedAt ? (
-                            fr.chat.messageDeleted
-                          ) : (
-                            <RichText source={group.messages[0]!.body} />
-                          )
-                        }
+                        content={<RichText source={group.messages[0]!.body} />}
                         skill={
                           assistantMetaByMessageId[group.messages[0]!.id]?.skill
                             ? skillReferenceFrom(
@@ -808,27 +816,20 @@ export function SpacePage() {
                                   </span>
                                 </div>
                               )}
-                              {message.body &&
-                                (message.deletedAt ? (
-                                  <p className="mt-0.5 text-base text-text">
-                                    {fr.chat.messageDeleted}
-                                  </p>
-                                ) : (
-                                  <RichText
-                                    source={message.body}
-                                    className="mt-0.5 text-base text-text"
-                                    suffix={
-                                      message.editedAt && (
-                                        <span className="text-xs text-subtle">
-                                          ({fr.chat.edited})
-                                        </span>
-                                      )
-                                    }
-                                  />
-                                ))}
-                              {!message.deletedAt && (
-                                <MessageAttachments attachments={message.attachments} />
+                              {message.body && (
+                                <RichText
+                                  source={message.body}
+                                  className="mt-0.5 text-base text-text"
+                                  suffix={
+                                    message.editedAt && (
+                                      <span className="text-xs text-subtle">
+                                        ({fr.chat.edited})
+                                      </span>
+                                    )
+                                  }
+                                />
                               )}
+                              <MessageAttachments attachments={message.attachments} />
                               {message.reactions.length > 0 && (
                                 <div className="mt-1 flex flex-wrap items-center gap-1">
                                   {message.reactions.map((reaction) => {
@@ -898,16 +899,13 @@ export function SpacePage() {
                                 >
                                   <SmilePlus className="size-4" aria-hidden="true" />
                                 </IconButton>
-                                {!message.deletedAt && (
-                                  <IconButton
-                                    aria-label={fr.chat.replyInThread}
-                                    onClick={() => openThread(message.id)}
-                                  >
-                                    <MessageSquareReply className="size-4" aria-hidden="true" />
-                                  </IconButton>
-                                )}
-                                {!message.deletedAt &&
-                                  profile &&
+                                <IconButton
+                                  aria-label={fr.chat.replyInThread}
+                                  onClick={() => openThread(message.id)}
+                                >
+                                  <MessageSquareReply className="size-4" aria-hidden="true" />
+                                </IconButton>
+                                {profile &&
                                   profile.id !== message.authorId && (
                                     <ReportMenu
                                       contentType="message"
@@ -1178,16 +1176,14 @@ export function SpacePage() {
             open
             onOpenChange={(open) => !open && setActionsMessageId(null)}
             onReact={() => void react(actionsMessage.id, "👍")}
-            onReplyInThread={
-              actionsMessage.deletedAt ? undefined : () => openThread(actionsMessage.id)
-            }
+            onReplyInThread={() => openThread(actionsMessage.id)}
             onCopy={
-              actionsMessage.body && !actionsMessage.deletedAt
+              actionsMessage.body
                 ? () => void copyMessage(actionsMessage.body)
                 : undefined
             }
             onReport={
-              profile && !actionsMessage.deletedAt && profile.id !== actionsMessage.authorId
+              profile && profile.id !== actionsMessage.authorId
                 ? () => setReportMessageId(actionsMessage.id)
                 : undefined
             }

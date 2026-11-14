@@ -2,7 +2,13 @@ import { randomUUID } from "node:crypto";
 import type { Db } from "@kemet/db";
 import type { ChatPublisher } from "../chat/pubsub.js";
 import { KEMET_ASSISTANT_PROFILE_ID, parseAssistantRequest } from "../chat/kemet-assistant.js";
-import { hydrateMessage, insertMessage, listChannelMessages } from "../api/repositories/chat.js";
+import {
+  findMessageById,
+  hydrateMessage,
+  insertMessage,
+  listChannelMessages,
+  softDeleteMessage,
+} from "../api/repositories/chat.js";
 import { serializeMessage } from "../api/chat-serializers.js";
 import { computeProfilePoints } from "../api/repositories/points.js";
 import { completeInvocation, failInvocation, insertInvocation, markInvocationStreaming } from "../api/repositories/assistant.js";
@@ -36,6 +42,9 @@ export class NoopAssistantOrchestrator implements AssistantOrchestrator {
 }
 
 const CONVERSATION_HISTORY_SIZE = 10;
+
+/** Code d'échec d'une réponse dont la question a été supprimée, jamais montré. */
+export const QUESTION_REMOVED_ERROR = "question_removed";
 
 export const RECORDED_ANSWER_REPLAY_DELAY_MS = 40;
 
@@ -133,6 +142,21 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
         skillIds: answer.skills.map((skill) => skill.id),
         recorded: answer.recorded,
       });
+      // Question supprimée pendant la rédaction : la suppression n'a pas pu
+      // voir cette réponse, elle part ici et le salon n'en reçoit rien.
+      const trigger = await findMessageById(this.db, input.triggerMessageId);
+      if (!trigger || trigger.deletedAt) {
+        await softDeleteMessage(this.db, message.id);
+        await this.chat.publish({
+          type: "assistant:failed",
+          channelId: input.channelId,
+          invocationId,
+          errorCode: QUESTION_REMOVED_ERROR,
+          requestedBy: input.requestedBy,
+          triggerMessageId: input.triggerMessageId,
+        });
+        return;
+      }
       await this.chat.publish({
         type: "assistant:done",
         channelId: input.channelId,
@@ -168,7 +192,6 @@ export class KemetAssistantOrchestrator implements AssistantOrchestrator {
     const historyText = history.items
       .slice()
       .reverse()
-      .filter((item) => !item.deletedAt)
       .map((item) => `- ${item.body}`)
       .join("\n");
     return [{ tag: "historique", content: historyText || "Aucun message précédent." }];

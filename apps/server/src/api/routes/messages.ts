@@ -22,7 +22,7 @@ import {
   listChannelMessages,
   listThreadReplies,
   resolveMentionableProfiles,
-  softDeleteMessage,
+  softDeleteMessages,
   toggleReaction,
 } from "../repositories/chat.js";
 import { attachToMessage, findPendingAttachment } from "../repositories/attachments.js";
@@ -34,6 +34,7 @@ import { antiSpamMax } from "../../moderation/anti-spam.js";
 import { accessJoinedAt, requireChannelAccess, requireWritableSpace } from "./channels.js";
 import { requireCanWrite } from "../../messaging/write-block.js";
 import { findMessageByClientId } from "../repositories/conversations.js";
+import { listAssistantResponseMessageIds } from "../repositories/assistant.js";
 import { publishConversationActivity } from "../../messaging/activity.js";
 
 const MAX_MESSAGES_PER_MINUTE = 20;
@@ -103,7 +104,7 @@ export function registerMessageRoutes(
       const userId = await getSessionUserId(auth, request);
       const profile = await findOwnProfile(db, userId);
       const parent = await findMessageById(db, request.params.id);
-      if (!parent) throw notFound("Ce message n'existe pas.");
+      if (!parent || parent.deletedAt) throw notFound("Ce message n'existe pas.");
       await requireChannelAccess(db, parent.channelId, profile?.id ?? null);
       const query = paginationQuerySchema.parse(request.query);
       const page = await listThreadReplies(db, request.params.id, query.cursor, query.limit);
@@ -134,7 +135,7 @@ export function registerMessageRoutes(
 
       if (input.parentMessageId) {
         const parent = await findMessageById(db, input.parentMessageId);
-        if (!parent || parent.channelId !== channel.id) {
+        if (!parent || parent.deletedAt || parent.channelId !== channel.id) {
           throw badRequest("Le message parent n'existe pas dans ce salon.");
         }
         // Un seul niveau de fil : on répond au message d'origine, pas à une réponse.
@@ -241,8 +242,26 @@ export function registerMessageRoutes(
       const isAdmin =
         access.kind === "space" && (access.membership?.role === "owner" || access.membership?.role === "admin");
       if (!isAuthor && !isAdmin) throw forbidden("Impossible de supprimer le message d'un autre membre.");
-      await softDeleteMessage(db, message.id);
-      await chat.publish({ type: "message:deleted", channelId: message.channelId, messageId: message.id });
+      // La réponse de l'assistant à cette question part avec elle.
+      const assistantResponseIds = await listAssistantResponseMessageIds(db, message.id);
+      await softDeleteMessages(db, [message.id, ...assistantResponseIds]);
+      await chat.publish({
+        type: "message:deleted",
+        channelId: message.channelId,
+        messageId: message.id,
+        parentMessageId: message.parentMessageId,
+      });
+      for (const id of assistantResponseIds) {
+        await chat.publish({
+          type: "message:deleted",
+          channelId: message.channelId,
+          messageId: id,
+          parentMessageId: null,
+        });
+      }
+      if (access.kind === "conversation") {
+        await publishConversationActivity(db, chat, access.conversation.id);
+      }
       return { deleted: true };
     },
   );

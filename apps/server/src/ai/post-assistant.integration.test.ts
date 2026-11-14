@@ -579,6 +579,33 @@ describe.skipIf(!databaseUrl)("@kocc sous un post (base Postgres réelle)", () =
     ]);
   });
 
+  it("retire de la page du post une réponse supprimée et la réponse de @kocc à cette question", async () => {
+    setup(new FakeStreamingProvider(["Une boucle répète."]));
+    const author = await createMember("auteur@test.kemet", "auteur");
+    const asker = await createMember("asker@test.kemet", "asker");
+    const postId = await createPost(author.cookie, "for ou while ?");
+    const kept = await reply(author.cookie, postId, "Une réponse qui reste.");
+    const question = await reply(asker.cookie, postId, "@kocc c'est quoi une boucle ?");
+    await postAssistant.idle();
+    const replyIds = async () => {
+      const page = await app.inject({ method: "GET", url: `/api/posts/${postId}/replies` });
+      return (page.json().items as { id: string }[]).map((item) => item.id);
+    };
+    expect(await replyIds()).toHaveLength(3);
+
+    const removed = await app.inject({
+      method: "DELETE",
+      url: `/api/post-replies/${question.reply.id}`,
+      headers: { cookie: asker.cookie },
+    });
+
+    expect(removed.statusCode).toBe(200);
+    expect(removed.json().removedReplyIds).toHaveLength(2);
+    expect(await replyIds()).toEqual([kept.reply.id]);
+    const post = await app.inject({ method: "GET", url: `/api/posts/${postId}` });
+    expect(post.json().post.replyCount).toBe(1);
+  });
+
   it("ne publie rien si le post est supprimé pendant la rédaction", async () => {
     // Le fournisseur ne répond qu'une fois le post supprimé.
     let release!: () => void;

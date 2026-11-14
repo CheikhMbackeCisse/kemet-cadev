@@ -9,6 +9,8 @@ export const chatEventSchema = z.discriminatedUnion("type", [
     type: z.literal("message:deleted"),
     channelId: z.string().uuid(),
     messageId: z.string().uuid(),
+    /** Message d'origine quand le message supprimé est une réponse dans un fil. */
+    parentMessageId: z.string().uuid().nullable(),
   }),
   z.object({
     type: z.literal("reaction:updated"),

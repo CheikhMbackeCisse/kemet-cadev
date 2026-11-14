@@ -19,6 +19,7 @@ import type { postReplies, posts } from "@kemet/db";
 import { KEMET_ASSISTANT_PROFILE_ID, mentionsAssistant } from "../../chat/kemet-assistant.js";
 import {
   findInvocationById,
+  listAssistantResponseReplyIds,
   listFirstAssistantRepliesByPostIds,
   listInvocationsByResponseReplyIds,
 } from "../repositories/assistant.js";
@@ -48,7 +49,7 @@ import {
   setPostReplySolution,
   setPostRepost,
   softDeletePost,
-  softDeletePostReply,
+  softDeletePostReplies,
   togglePostReaction,
 } from "../repositories/posts.js";
 import {
@@ -602,8 +603,10 @@ export function registerPostRoutes(
       if (reply.authorId !== profile.id && !(await canRemoveAssistantReply(reply, profile.id))) {
         throw forbidden("Seul l'auteur peut supprimer cette réponse.");
       }
-      await softDeletePostReply(db, reply.id);
-      return { deleted: true };
+      // La réponse de l'assistant à cette question part avec elle.
+      const removedReplyIds = [reply.id, ...(await listAssistantResponseReplyIds(db, reply.id))];
+      await softDeletePostReplies(db, removedReplyIds);
+      return { deleted: true, removedReplyIds };
     },
   );
 

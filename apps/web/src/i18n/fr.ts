@@ -685,7 +685,7 @@ export const fr = {
     loadingMessages: "Chargement des messages…",
     loadingMessagesError: "Impossible de charger les messages.",
     noChannelSelected: "Choisissez un salon pour commencer à discuter.",
-    messageDeleted: "Message supprimé",
+    threadParentDeleted: "Le message d'origine a été supprimé.",
     openImage: (name: string) => `Afficher l'image ${name} en grand`,
     fileRemoved: (name: string) => `Fichier supprimé : ${name}`,
     imagesRemoved: (count: number) =>

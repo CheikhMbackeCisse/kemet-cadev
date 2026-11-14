@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, profiles, WAVE_WEBHOOK_RECORDING, type Db } from "@kemet/db";
+import { createDb, messages, profiles, WAVE_WEBHOOK_RECORDING, type Db } from "@kemet/db";
 import type { ChatEvent } from "@kemet/shared";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -52,6 +52,7 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
   let db: Db;
   let app: ReturnType<typeof buildApp>;
   let emailSender: InMemoryEmailSender;
+  let appChat: RecordingChatPublisher;
 
   beforeEach(async () => {
     await resetTestDatabase(databaseUrl!);
@@ -65,7 +66,8 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
       secret: "test-secret-at-least-32-characters-long",
       rateLimitEnabled: false,
     });
-    app = buildApp({ db, auth });
+    appChat = new RecordingChatPublisher();
+    app = buildApp({ db, auth, chat: appChat });
   });
 
   function extractCookie(response: { headers: Record<string, unknown> }): string {
@@ -367,6 +369,71 @@ describe.skipIf(!databaseUrl)("KemetAssistantOrchestrator (base Postgres réelle
 
     const authorMe = await app.inject({ method: "GET", url: "/api/me", headers: { cookie: authorCookie } });
     expect(authorMe.json().points).toBe(0);
+  });
+
+  async function historyIds(cookie: string, channelId: string): Promise<string[]> {
+    const history = await app.inject({ method: "GET", url: `/api/channels/${channelId}/messages`, headers: { cookie } });
+    return (history.json().items as { id: string }[]).map((item) => item.id);
+  }
+
+  async function assistantResponseId(chat: RecordingChatPublisher): Promise<string> {
+    const done = chat.events.find((event) => event.type === "assistant:done");
+    if (done?.type !== "assistant:done") throw new Error("Aucune réponse de l'assistant.");
+    return done.message.id;
+  }
+
+  describe("suppression de la question", () => {
+    it("retire la question et la réponse de l'assistant, de l'historique comme en temps réel", async () => {
+      const { cookie, profileId } = await createMember("question@test.kemet", "question");
+      const { channelId } = await createSpaceAndChannel(cookie);
+      const triggerMessageId = await sendTriggerMessage(cookie, channelId, "@kocc c'est quoi une boucle ?");
+      const chat = new RecordingChatPublisher();
+      const orchestrator = new KemetAssistantOrchestrator(db, chat, new FakeStreamingProvider(["Une boucle"]), new FullTextRetriever(db), new InMemoryResponseCache());
+      await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: profileId, body: "@kocc c'est quoi une boucle ?" });
+      const responseId = await assistantResponseId(chat);
+      expect(await historyIds(cookie, channelId)).toEqual([responseId, triggerMessageId]);
+
+      const removed = await app.inject({ method: "DELETE", url: `/api/messages/${triggerMessageId}`, headers: { cookie } });
+
+      expect(removed.statusCode).toBe(200);
+      expect(await historyIds(cookie, channelId)).toEqual([]);
+      const deletedIds = appChat.events.flatMap((event) => (event.type === "message:deleted" ? [event.messageId] : []));
+      expect(deletedIds).toEqual([triggerMessageId, responseId]);
+    });
+
+    it("ne montre jamais une réponse terminée après la suppression de sa question", async () => {
+      const { cookie, profileId } = await createMember("pressee@test.kemet", "pressee");
+      const { channelId } = await createSpaceAndChannel(cookie);
+      const triggerMessageId = await sendTriggerMessage(cookie, channelId, "@kocc une question");
+      const deletingProvider: StreamingLlmProvider = {
+        async *streamResponse() {
+          yield { provider: "gemini", model: "gemini-test", delta: "Début" };
+          await app.inject({ method: "DELETE", url: `/api/messages/${triggerMessageId}`, headers: { cookie } });
+          yield { provider: "gemini", model: "gemini-test", delta: " fin" };
+        },
+      };
+      const chat = new RecordingChatPublisher();
+      const orchestrator = new KemetAssistantOrchestrator(db, chat, deletingProvider, new FullTextRetriever(db), new InMemoryResponseCache());
+
+      await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: profileId, body: "@kocc une question" });
+
+      expect(chat.events.some((event) => event.type === "assistant:done")).toBe(false);
+      const failed = chat.events.find((event) => event.type === "assistant:failed");
+      expect(failed?.type === "assistant:failed" && failed.errorCode).toBe("question_removed");
+      expect(await historyIds(cookie, channelId)).toEqual([]);
+    });
+
+    it("cache aussi une réponse restée en base dont la question avait été supprimée", async () => {
+      const { cookie, profileId } = await createMember("ancienne@test.kemet", "ancienne");
+      const { channelId } = await createSpaceAndChannel(cookie);
+      const triggerMessageId = await sendTriggerMessage(cookie, channelId, "@kocc ancienne question");
+      const chat = new RecordingChatPublisher();
+      const orchestrator = new KemetAssistantOrchestrator(db, chat, new FakeStreamingProvider(["Réponse"]), new FullTextRetriever(db), new InMemoryResponseCache());
+      await orchestrator.handleMention({ channelId, triggerMessageId, requestedBy: profileId, body: "@kocc ancienne question" });
+      await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, triggerMessageId));
+
+      expect(await historyIds(cookie, channelId)).toEqual([]);
+    });
   });
 
   describe("réponses enregistrées", () => {

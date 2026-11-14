@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { assistantInvocations, postReplies, type Db } from "@kemet/db";
 import type { LlmProviderName } from "../../ai/llm-provider.js";
 
@@ -64,6 +64,34 @@ export async function findInvocationByResponseMessageId(db: Db, messageId: strin
   return row ?? null;
 }
 
+/** Réponses de l'assistant déjà écrites pour cette question d'un salon. */
+export async function listAssistantResponseMessageIds(db: Db, triggerMessageId: string): Promise<string[]> {
+  const rows = await db
+    .select({ id: assistantInvocations.responseMessageId })
+    .from(assistantInvocations)
+    .where(
+      and(
+        eq(assistantInvocations.triggerMessageId, triggerMessageId),
+        isNotNull(assistantInvocations.responseMessageId),
+      ),
+    );
+  return rows.flatMap((row) => (row.id ? [row.id] : []));
+}
+
+/** Réponses de l'assistant déjà écrites pour cette question sous un post. */
+export async function listAssistantResponseReplyIds(db: Db, triggerReplyId: string): Promise<string[]> {
+  const rows = await db
+    .select({ id: assistantInvocations.responseReplyId })
+    .from(assistantInvocations)
+    .where(
+      and(
+        eq(assistantInvocations.triggerReplyId, triggerReplyId),
+        isNotNull(assistantInvocations.responseReplyId),
+      ),
+    );
+  return rows.flatMap((row) => (row.id ? [row.id] : []));
+}
+
 export async function listInvocationsByResponseReplyIds(db: Db, replyIds: string[]) {
   if (replyIds.length === 0) return [];
   return db.select().from(assistantInvocations).where(inArray(assistantInvocations.responseReplyId, replyIds));
@@ -81,6 +109,10 @@ export async function listFirstAssistantRepliesByPostIds(db: Db, postIds: string
         inArray(assistantInvocations.postId, postIds),
         eq(assistantInvocations.status, "done"),
         isNull(postReplies.deletedAt),
+        sql`not exists (
+          select 1 from post_replies question
+          where question.id = ${assistantInvocations.triggerReplyId} and question.deleted_at is not null
+        )`,
       ),
     )
     .orderBy(postReplies.postId, asc(postReplies.createdAt));

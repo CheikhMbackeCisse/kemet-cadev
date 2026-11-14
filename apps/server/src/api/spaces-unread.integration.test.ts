@@ -165,6 +165,40 @@ describe.skipIf(!databaseUrl)("Non-lus d'un espace (base Postgres réelle)", () 
     expect(await hasUnreadInList(spaceId, member.cookie)).toBe(false);
   });
 
+  it("ne compte jamais un message supprimé comme non lu", async () => {
+    const owner = await createMember("deletedowner");
+    const member = await createMember("deletedmember");
+    const { spaceId, generalId } = await createSpaceWithGeneral(owner.cookie, "deleted-unread", "public");
+    await addMember(owner.cookie, spaceId, "deletedmember");
+    const [message] = await insertMessages(generalId, owner.profileId, [new Date(Date.now() + 1_000)]);
+    expect(await hasUnreadInList(spaceId, member.cookie)).toBe(true);
+
+    const removed = await app.inject({
+      method: "DELETE",
+      url: `/api/messages/${message!.id}`,
+      headers: { cookie: owner.cookie },
+    });
+
+    expect(removed.statusCode).toBe(200);
+    expect(await hasUnreadInList(spaceId, member.cookie)).toBe(false);
+    const channels = await app.inject({
+      method: "GET",
+      url: `/api/spaces/${spaceId}/channels`,
+      headers: { cookie: member.cookie },
+    });
+    const general = (channels.json().items as { id: string; unreadCount: number }[]).find(
+      (channel) => channel.id === generalId,
+    );
+    expect(general!.unreadCount).toBe(0);
+    const history = await app.inject({
+      method: "GET",
+      url: `/api/channels/${generalId}/messages`,
+      headers: { cookie: member.cookie },
+    });
+    expect(history.json().items).toEqual([]);
+    expect(history.json().firstUnreadMessageId).toBeNull();
+  });
+
   it("ne signale rien à un visiteur ni à un non-membre d'un espace public", async () => {
     const owner = await createMember("publicowner");
     const outsider = await createMember("outsider");

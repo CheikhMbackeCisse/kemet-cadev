@@ -16,6 +16,7 @@ import {
   type OutgoingMessage,
 } from "./outgoing.js";
 import { joinChannel, leaveChannel, onChatEvent } from "./socket.js";
+import { removeDeletedMessage } from "./removeDeletedMessage.js";
 import {
   appendAssistantChunk,
   dropFailedStream,
@@ -165,12 +166,9 @@ export function useChannelMessages(
         if (event.type === "message:new") markRead(event.message.id);
       } else if (event.type === "message:deleted") {
         if (event.channelId !== channelId) return;
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === event.messageId
-              ? { ...message, body: "", deletedAt: new Date().toISOString() }
-              : message,
-          ),
+        setMessages((current) => removeDeletedMessage(current, event));
+        setAssistantFailure((current) =>
+          current?.triggerMessageId === event.messageId ? null : current,
         );
       } else if (event.type === "reaction:updated") {
         if (event.channelId !== channelId) return;

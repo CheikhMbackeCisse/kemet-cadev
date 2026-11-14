@@ -146,6 +146,37 @@ describe.skipIf(!databaseUrl)("Fils de discussion (base Postgres réelle)", () =
     expect(items[0]!.replyCount).toBe(1);
   });
 
+  it("retire une réponse supprimée du fil et du nombre de réponses", async () => {
+    const owner = await createMember("threaddelete");
+    const { generalId } = await createSpaceWithGeneral(owner.cookie, "thread-delete", "public");
+    const [parent] = await insertMessages(generalId, owner.profileId, [new Date()]);
+    const kept = (await reply(owner.cookie, generalId, parent!.id, "Reste")).json().message.id;
+    const removedId = (await reply(owner.cookie, generalId, parent!.id, "Part")).json().message.id;
+
+    const removed = await app.inject({
+      method: "DELETE",
+      url: `/api/messages/${removedId}`,
+      headers: { cookie: owner.cookie },
+    });
+
+    expect(removed.statusCode).toBe(200);
+    const replies = await listReplies(parent!.id);
+    expect((replies.json().items as MessageItem[]).map((item) => item.id)).toEqual([kept]);
+    const channel = await app.inject({ method: "GET", url: `/api/channels/${generalId}/messages` });
+    expect((channel.json().items as MessageItem[])[0]!.replyCount).toBe(1);
+  });
+
+  it("ne donne plus le fil d'un message supprimé", async () => {
+    const owner = await createMember("parentdelete");
+    const { generalId } = await createSpaceWithGeneral(owner.cookie, "parent-delete", "public");
+    const [parent] = await insertMessages(generalId, owner.profileId, [new Date()]);
+    await reply(owner.cookie, generalId, parent!.id, "Une réponse");
+
+    await app.inject({ method: "DELETE", url: `/api/messages/${parent!.id}`, headers: { cookie: owner.cookie } });
+
+    expect((await listReplies(parent!.id)).statusCode).toBe(404);
+  });
+
   it("refuse un message parent venu d'un autre salon", async () => {
     const owner = await createMember("crossowner");
     const { generalId, memesId } = await createSpaceWithGeneral(owner.cookie, "cross", "public");
