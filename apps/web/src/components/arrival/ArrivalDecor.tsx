@@ -1,4 +1,4 @@
-import { Database, Network, SquareTerminal, type LucideIcon } from "lucide-react";
+import { Cpu, Network, ShieldCheck, type LucideIcon } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { cn } from "../../lib/cn.js";
 import {
@@ -17,15 +17,15 @@ import type { ArrivalMotion } from "./ArrivalBackground.js";
 
 const TECH_LOGOS: Partial<Record<DeviconName, (typeof SIMPLE_ICONS)[TechLogoName]>> = {
   python: SIMPLE_ICONS.python,
-  javascript: SIMPLE_ICONS.javascript,
+  pytorch: SIMPLE_ICONS.pytorch,
   typescript: SIMPLE_ICONS.typescript,
   react: SIMPLE_ICONS.react,
-  flutter: SIMPLE_ICONS.flutter,
+  docker: SIMPLE_ICONS.docker,
 };
 
 const ICONS: Record<DecorIcon, LucideIcon> = {
-  terminal: SquareTerminal,
-  database: Database,
+  cpu: Cpu,
+  shield: ShieldCheck,
   network: Network,
 };
 
@@ -42,7 +42,7 @@ function DecorView({
   switch (content.kind) {
     case "logo": {
       // Écrans calmes : la silhouette blanche de Simple Icons, qui garde les
-      // lettres de JS et TS (celle d'un logo Devicon en couleurs serait un
+      // lettres de TS (celle d'un logo Devicon en couleurs serait un
       // carré plein).
       const silhouette = vivid ? null : TECH_LOGOS[content.name];
       if (silhouette) {

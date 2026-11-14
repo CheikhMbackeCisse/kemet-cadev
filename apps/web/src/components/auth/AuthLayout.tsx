@@ -10,11 +10,15 @@ export interface AuthLayoutProps {
   children: ReactNode;
 }
 
-/** Écrans de compte : le fond calme du parcours d'arrivée et une carte en verre dépoli. */
+/**
+ * Écrans de compte : le fond de l'accueil (continent, réseau, logos) et une
+ * carte en verre dépoli. "Complète ton profil" garde son propre décor, sur le
+ * fond calme.
+ */
 export function AuthLayout({ title, footer, decor, children }: AuthLayoutProps) {
   return (
     <ArrivalLayout
-      motion="calm"
+      motion={decor === "universe" ? "calm" : "rich"}
       decor={decor}
       footer={footer}
       headerEnd={

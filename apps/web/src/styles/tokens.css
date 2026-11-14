@@ -241,12 +241,12 @@
    */
   --auth-continent-fill: rgba(147, 197, 253, 0.06);
   --auth-continent-line: rgba(147, 197, 253, 0.4);
-  --auth-network-line: rgba(147, 197, 253, 0.38);
+  --auth-network-line: rgba(147, 197, 253, 0.4);
   --auth-network-glow: #e0f2fe;
   --auth-network-covered-opacity: 0.25;
   --auth-capital-dot: #e0f2fe;
-  --auth-capital-halo: rgba(125, 211, 252, 0.45);
-  --auth-city-dot: rgba(191, 219, 254, 0.55);
+  --auth-capital-halo: rgba(125, 211, 252, 0.6);
+  --auth-city-dot: rgba(191, 219, 254, 0.7);
   --auth-tile-bg: #ffffff;
   --auth-decor-icon: rgba(255, 255, 255, 0.72);
   --auth-decor-code: rgba(255, 255, 255, 0.56);

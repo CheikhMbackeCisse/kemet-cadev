@@ -2,7 +2,6 @@ import { navigate } from "../lib/navigation/navigate.js";
 import { useEffect } from "react";
 import { ArrivalLayout } from "../components/arrival/ArrivalLayout.js";
 import { KemetWordmark } from "../components/ui/KemetWordmark.js";
-import { introQuestionPath } from "../lib/intro/introSteps.js";
 import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { markIntroSeen } from "../lib/intro/introStorage.js";
 import { useSession } from "../session/SessionProvider.js";
@@ -25,7 +24,7 @@ function PoweredBy() {
  */
 export function WelcomePage() {
   const { status } = useSession();
-  usePreloadNext(introQuestionPath("who"), "/inscription", "/fil");
+  usePreloadNext("/inscription", "/fil");
   const signedIn = status === "ready" || status === "incomplete";
 
   useEffect(() => {
@@ -41,6 +40,7 @@ export function WelcomePage() {
     <ArrivalLayout
       motion="rich"
       width="sm"
+      clearCard
       showLogo={false}
       pageFooter={<PoweredBy />}
       busy={status === "loading" || signedIn}
@@ -59,7 +59,8 @@ export function WelcomePage() {
         </div>
         <div className="flex w-full flex-col items-center gap-2">
           <a
-            href={introQuestionPath("who")}
+            href="/inscription"
+            onClick={markIntroSeen}
             className="inline-flex h-control-mobile w-full items-center justify-center rounded-control bg-auth-text px-6 text-base font-semibold text-[var(--auth-bg-to)] hover:bg-auth-button-hover md:h-control md:w-auto md:min-w-48"
           >
             {fr.intro.start}

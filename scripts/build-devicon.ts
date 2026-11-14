@@ -22,6 +22,7 @@ export const DEVICON_NAMES = [
   "postgresql",
   "git",
   "linux",
+  "pytorch",
 ] as const;
 
 const directory = resolve(import.meta.dirname, "../apps/web/src/components/arrival/devicon");

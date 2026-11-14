@@ -1,6 +1,6 @@
 import type { DeviconName } from "./deviconLogos.js";
 
-export type DecorIcon = "terminal" | "database" | "network";
+export type DecorIcon = "cpu" | "shield" | "network";
 
 export type DecorContent =
   | { kind: "logo"; name: DeviconName }
@@ -44,38 +44,40 @@ export const DECOR_MIN_BAND: Record<DecorScreen, { width: number; height: number
 };
 
 const python = { kind: "logo", name: "python" } as const;
-const javascript = { kind: "logo", name: "javascript" } as const;
+const pytorch = { kind: "logo", name: "pytorch" } as const;
 const typescript = { kind: "logo", name: "typescript" } as const;
 const react = { kind: "logo", name: "react" } as const;
-const flutter = { kind: "logo", name: "flutter" } as const;
-const terminal = { kind: "icon", name: "terminal" } as const;
-const database = { kind: "icon", name: "database" } as const;
+const docker = { kind: "logo", name: "docker" } as const;
+const cpu = { kind: "icon", name: "cpu" } as const;
+const shield = { kind: "icon", name: "shield" } as const;
 const network = { kind: "icon", name: "network" } as const;
-const hello = { kind: "code", text: 'print("Hello, World!")' } as const;
+const modelFit = { kind: "code", text: "model.fit(X_train, y_train)" } as const;
+const sshKeygen = { kind: "code", text: "ssh-keygen -t ed25519" } as const;
 const gitPush = { kind: "code", text: "git push origin main" } as const;
 const gitPushShort = { kind: "code", text: "git push" } as const;
 const kemet = { kind: "code", text: "const kemet = new Communaute()" } as const;
 
-// Places fixes plutôt qu'aléatoires : le même écran à chaque visite. Onze
-// éléments sur ordinateur (cinq logos, trois icônes, trois bouts de code),
-// six sur téléphone, vérifiés par decorLayout.test.ts : jamais l'un sur
+// Places fixes plutôt qu'aléatoires : le même écran à chaque visite. Douze
+// éléments sur ordinateur (langages, IA, cybersécurité, infrastructure),
+// cinq sur téléphone, vérifiés par decorLayout.test.ts : jamais l'un sur
 // l'autre, jamais contre le bord de leur bande.
 export const DECOR: Record<DecorScreen, Record<DecorBandSide, readonly DecorItem[]>> = {
   desktop: {
     start: [
       { content: python, x: 30, y: 12, duration: 19, delay: -3 },
-      { content: hello, x: 50, y: 28, duration: 23, delay: -11 },
-      { content: terminal, x: 22, y: 44, duration: 17, delay: -6 },
-      { content: javascript, x: 68, y: 56, duration: 21, delay: -14 },
+      { content: modelFit, x: 50, y: 28, duration: 23, delay: -11 },
+      { content: cpu, x: 22, y: 44, duration: 17, delay: -6 },
+      { content: pytorch, x: 68, y: 56, duration: 21, delay: -14 },
       { content: kemet, x: 50, y: 73, duration: 25, delay: -2 },
       { content: react, x: 32, y: 88, duration: 20, delay: -9 },
     ],
     end: [
-      { content: typescript, x: 70, y: 13, duration: 20, delay: -8 },
-      { content: database, x: 40, y: 31, duration: 18, delay: -12 },
-      { content: gitPush, x: 56, y: 50, duration: 24, delay: -5 },
-      { content: flutter, x: 36, y: 70, duration: 22, delay: -16 },
-      { content: network, x: 74, y: 87, duration: 16, delay: -9 },
+      { content: typescript, x: 70, y: 12.5, duration: 20, delay: -8 },
+      { content: shield, x: 34, y: 28, duration: 18, delay: -12 },
+      { content: gitPush, x: 56, y: 40, duration: 24, delay: -5 },
+      { content: sshKeygen, x: 50, y: 51, duration: 22, delay: -15 },
+      { content: docker, x: 32, y: 67, duration: 22, delay: -16 },
+      { content: network, x: 74, y: 86, duration: 16, delay: -9 },
     ],
   },
   mobile: {
@@ -85,9 +87,8 @@ export const DECOR: Record<DecorScreen, Record<DecorBandSide, readonly DecorItem
       { content: typescript, x: 84, y: 45, duration: 20, delay: -8 },
     ],
     end: [
-      { content: terminal, x: 12, y: 55, duration: 17, delay: -6 },
-      { content: hello, x: 46, y: 55, duration: 23, delay: -11 },
-      { content: javascript, x: 86, y: 55, duration: 21, delay: -14 },
+      { content: modelFit, x: 38, y: 55, duration: 23, delay: -11 },
+      { content: pytorch, x: 84, y: 55, duration: 21, delay: -14 },
     ],
   },
 };

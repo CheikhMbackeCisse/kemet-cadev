@@ -24,8 +24,15 @@ function fillForm(email: string) {
   });
 }
 
+// Les écrans de compte mesurent la carte pour placer le réseau (ArrivalLayout).
+class ResizeObserverStub {
+  observe() {}
+  disconnect() {}
+}
+
 describe("SignupPage", () => {
   beforeEach(() => {
+    vi.stubGlobal("ResizeObserver", ResizeObserverStub);
     signUp.mockReset();
     render(
       <ToastProvider>

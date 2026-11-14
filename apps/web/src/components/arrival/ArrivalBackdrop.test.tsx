@@ -21,10 +21,12 @@ describe("ArrivalBackdrop", () => {
     expect(container.querySelector(".arrival-background")).toBe(background);
   });
 
-  it("porte le réseau sur l'accueil seulement", () => {
+  it("porte le réseau sur l'accueil et les écrans de compte seulement", () => {
     const { container, rerender } = render(<ArrivalBackdrop pathname="/decouvrir" />);
     expect(container.querySelector(".africa-watermark-network")).not.toBeNull();
     rerender(<ArrivalBackdrop pathname="/connexion" />);
+    expect(container.querySelector(".africa-watermark-network")).not.toBeNull();
+    rerender(<ArrivalBackdrop pathname="/bienvenue/pays" />);
     expect(container.querySelector(".africa-watermark-network")).toBeNull();
   });
 

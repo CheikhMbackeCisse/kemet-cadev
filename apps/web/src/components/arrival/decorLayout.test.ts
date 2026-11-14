@@ -47,21 +47,21 @@ const SCREENS: DecorScreen[] = ["mobile", "desktop"];
 const SIDES: DecorBandSide[] = ["start", "end"];
 
 describe("décor du parcours d'arrivée", () => {
-  it("compte onze éléments sur ordinateur, quatre à six sur téléphone", () => {
-    expect(DECOR.desktop.start.length + DECOR.desktop.end.length).toBe(11);
+  it("compte douze éléments sur ordinateur, quatre à six sur téléphone", () => {
+    expect(DECOR.desktop.start.length + DECOR.desktop.end.length).toBe(12);
     const mobile = DECOR.mobile.start.length + DECOR.mobile.end.length;
     expect(mobile).toBeGreaterThanOrEqual(4);
     expect(mobile).toBeLessThanOrEqual(6);
   });
 
-  it("montre sur ordinateur cinq logos, trois icônes et trois bouts de code", () => {
+  it("montre sur ordinateur cinq logos, trois icônes et quatre bouts de code", () => {
     const items = [...DECOR.desktop.start, ...DECOR.desktop.end];
     expect(items.filter((item) => item.content.kind === "logo")).toHaveLength(5);
     expect(items.filter((item) => item.content.kind === "icon")).toHaveLength(3);
-    expect(items.filter((item) => item.content.kind === "code")).toHaveLength(3);
+    expect(items.filter((item) => item.content.kind === "code")).toHaveLength(4);
   });
 
-  it("garde trois à cinq logos et deux ou trois bouts de code", () => {
+  it("garde trois à cinq logos et un à quatre bouts de code", () => {
     for (const screen of SCREENS) {
       const items = [...DECOR[screen].start, ...DECOR[screen].end];
       const logos = new Set(
@@ -71,7 +71,7 @@ describe("décor du parcours d'arrivée", () => {
       expect(logos.size).toBeGreaterThanOrEqual(3);
       expect(logos.size).toBeLessThanOrEqual(5);
       expect(code.length).toBeGreaterThanOrEqual(1);
-      expect(code.length).toBeLessThanOrEqual(3);
+      expect(code.length).toBeLessThanOrEqual(4);
     }
   });
 

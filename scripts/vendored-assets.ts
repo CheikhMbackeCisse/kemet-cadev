@@ -18,7 +18,7 @@ export const VENDORED_ASSETS: readonly VendoredAsset[] = [
     usedIn: "apps/web/src/components/ui/techLogos.ts",
   },
   {
-    name: "Devicon 2.17.0 (16 logos de technologies en couleurs, variantes original), copiés par scripts/build-devicon.ts. Les logos appartiennent à leurs propriétaires et servent seulement à désigner les technologies",
+    name: "Devicon 2.17.0 (17 logos de technologies en couleurs, variantes original), copiés par scripts/build-devicon.ts. Les logos appartiennent à leurs propriétaires et servent seulement à désigner les technologies",
     source: "https://devicon.dev, https://github.com/devicons/devicon",
     license: "MIT",
     usedIn: "apps/web/src/components/arrival/devicon/",

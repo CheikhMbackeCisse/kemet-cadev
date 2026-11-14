@@ -12,9 +12,14 @@ test("une première visite ouvre l'accueil, Explorer sans compte mène au fil", 
   await expect(page.getByRole("heading", { name: "Fil" })).toBeVisible();
 });
 
-test("les trois questions mènent à l'inscription, Passer compris", async ({ page }) => {
+test("Commencer ouvre directement la création de compte", async ({ page }) => {
   await page.goto("/decouvrir");
   await page.getByRole("link", { name: "Commencer" }).click();
+  await expect(page).toHaveURL(/\/inscription$/);
+});
+
+test("les trois questions mènent à l'inscription, Passer compris", async ({ page }) => {
+  await page.goto("/decouvrir/qui");
 
   await expect(page.getByRole("progressbar", { name: "Étape 1 sur 3" })).toBeVisible();
   await page.getByText("Je code", { exact: true }).click();

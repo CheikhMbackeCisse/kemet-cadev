@@ -354,7 +354,7 @@
   width: 6px;
   height: 6px;
   background-color: var(--auth-capital-dot);
-  box-shadow: 0 0 6px 2px var(--auth-capital-halo);
+  box-shadow: 0 0 8px 3px var(--auth-capital-halo);
 }
 
 .city-dot {
@@ -447,8 +447,8 @@
 
 /*
  * Une lueur part d'une capitale, glisse le long de l'arc puis s'efface à
- * l'arrivée, et repart sur un autre arc (AfricaNetwork.tsx). Trois lueurs
- * décalées d'un tiers de cycle. Épaisseurs en unités du contour : plus
+ * l'arrivée, et repart sur un autre arc (AfricaNetwork.tsx). Six lueurs
+ * décalées d'un sixième de cycle, trois sur téléphone. Épaisseurs en unités du contour : plus
  * épaisses sur téléphone, où le continent est plus petit.
  */
 @keyframes network-glow {
@@ -475,11 +475,17 @@
 .network-glow {
   opacity: 0;
   stroke: var(--auth-network-glow);
-  animation: network-glow 9s linear infinite;
+  animation: network-glow 3.6s linear infinite;
+}
+
+@media (max-width: 767px) {
+  .network-glow:nth-child(even) {
+    display: none;
+  }
 }
 
 .network-glow-halo {
-  stroke-opacity: 0.3;
+  stroke-opacity: 0.4;
   stroke-width: 12;
 }
 

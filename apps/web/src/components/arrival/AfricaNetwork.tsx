@@ -7,11 +7,13 @@ import {
 } from "./africaOutline.js";
 import { NETWORK_ARCS, arcPath, glowTurn } from "./networkLayout.js";
 
-// Trois lueurs, décalées d'un tiers de leur cycle (index.css, network-glow) :
-// une nouvelle part toutes les 3 s, deux ou trois voyagent à la fois.
-const GLOW_SLOTS = 3;
+// Six lueurs, décalées d'un sixième de leur cycle de 3,6 s (index.css,
+// network-glow) : quatre ou cinq voyagent à la fois, chacune en 2,5 s. Sur
+// téléphone, une sur deux est masquée : trois au plus.
+const GLOW_SLOTS = 6;
+const GLOW_CYCLE_SECONDS = 3.6;
 // Longueur d'une lueur, en unités de la boîte du contour.
-const GLOW_LENGTH = 14;
+const GLOW_LENGTH = 20;
 
 /** Zone de la carte dans le masque des lueurs, posée par ArrivalLayout. */
 export const NETWORK_COVERED_ZONE_CLASS = "network-covered-zone";
@@ -76,7 +78,7 @@ export function NetworkArcs() {
             key={arc.key}
             className="network-arc"
             d={arcPath(arc)}
-            strokeWidth="1"
+            strokeWidth="1.5"
             vectorEffect="non-scaling-stroke"
           />
         ))}
@@ -89,7 +91,7 @@ export function NetworkArcs() {
               key={slot}
               className="network-glow"
               strokeDasharray={dasharray}
-              style={{ animationDelay: `${slot * -3}s` }}
+              style={{ animationDelay: `${(slot * -GLOW_CYCLE_SECONDS) / GLOW_SLOTS}s` }}
               onAnimationIteration={moveGlow}
             >
               <path className="network-glow-halo" d={d} pathLength={100} />

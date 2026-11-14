@@ -19,7 +19,8 @@ export type DeviconName =
   | "docker"
   | "postgresql"
   | "git"
-  | "linux";
+  | "linux"
+  | "pytorch";
 
 const FILES = import.meta.glob<string>("./devicon/*.svg", {
   eager: true,

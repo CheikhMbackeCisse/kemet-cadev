@@ -1,9 +1,16 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { markIntroSeen } from "./lib/intro/introStorage.js";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App.js";
 
+// Les écrans de compte mesurent la carte pour placer le réseau (ArrivalLayout).
+class ResizeObserverStub {
+  observe() {}
+  disconnect() {}
+}
+
 describe("App", () => {
+  beforeEach(() => vi.stubGlobal("ResizeObserver", ResizeObserverStub));
   // Pages chargées à la demande (React.lazy) et transformées à froid par Vitest :
   // les charger ici plutôt que dans le délai de 5 s des tests.
   beforeAll(async () => {

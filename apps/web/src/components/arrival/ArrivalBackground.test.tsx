@@ -33,7 +33,7 @@ describe("ArrivalBackground", () => {
     expect(rich.container.querySelectorAll(".capital-dot")).toHaveLength(AFRICA_CAPITALS.length);
     expect(rich.container.querySelectorAll(".city-dot")).toHaveLength(AFRICA_CITIES.length);
     expect(rich.container.querySelectorAll(".network-arc")).toHaveLength(NETWORK_ARCS.length);
-    expect(rich.container.querySelectorAll(".network-glow")).toHaveLength(3);
+    expect(rich.container.querySelectorAll(".network-glow")).toHaveLength(6);
     rich.unmount();
 
     const calm = render(<ArrivalBackground motion="calm" />);

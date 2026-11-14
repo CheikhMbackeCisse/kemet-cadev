@@ -35,6 +35,8 @@ export interface ArrivalLayoutProps {
    * son défilement (une liste longue entre un titre et un bouton fixes).
    */
   fitViewport?: boolean;
+  /** Carte plus transparente, pour l'accueil seul : un formulaire garde le verre dépoli. */
+  clearCard?: boolean;
   busy?: boolean;
   children: ReactNode;
 }
@@ -156,6 +158,7 @@ export function ArrivalLayout({
   showLogo = true,
   decor = "bands",
   fitViewport = false,
+  clearCard = false,
   busy,
   children,
 }: ArrivalLayoutProps) {
@@ -215,7 +218,7 @@ export function ArrivalLayout({
                 ref={card}
                 className={cn(
                   "arrival-glass auth-on-dark flex min-h-0 flex-col gap-4 rounded-panel p-5 text-auth-text sm:p-8",
-                  motion === "rich" && "arrival-glass-clear",
+                  clearCard && "arrival-glass-clear",
                 )}
               >
                 {children}

@@ -14,7 +14,9 @@ describe("parcours d'arrivée", () => {
   it("pose le fond riche sur l'accueil et le fond calme sur le reste du parcours", () => {
     expect(arrivalMotionFor("/decouvrir")).toBe("rich");
     expect(arrivalMotionFor("/decouvrir/role")).toBe("calm");
-    expect(arrivalMotionFor("/inscription")).toBe("calm");
+    expect(arrivalMotionFor("/inscription")).toBe("rich");
+    expect(arrivalMotionFor("/connexion")).toBe("rich");
+    expect(arrivalMotionFor("/mot-de-passe-oublie")).toBe("rich");
     expect(arrivalMotionFor("/completer-profil")).toBe("calm");
     expect(arrivalMotionFor("/bienvenue/espaces")).toBe("calm");
     expect(arrivalMotionFor("/fil")).toBeNull();
