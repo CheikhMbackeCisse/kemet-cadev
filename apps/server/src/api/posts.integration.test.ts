@@ -1,5 +1,5 @@
 import { getTestDatabaseUrl, resetTestDatabase } from "@kemet/db/testing";
-import { createDb, profiles, type Db } from "@kemet/db";
+import { createDb, postReposts, posts, profiles, spaces, type Db } from "@kemet/db";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createAuth } from "../auth/auth.js";
@@ -427,6 +427,38 @@ describe.skipIf(!databaseUrl)("Fil de posts (base Postgres réelle)", () => {
     expect((await repost(reader.cookie, postId, true)).statusCode).toBe(404);
     // Annuler reste possible après la suppression.
     expect((await repost(reader.cookie, postId, false)).statusCode).toBe(200);
+  });
+
+  it("liste les republications d'un profil, sans post supprimé ni post d'espace, et 404 pour un profil inconnu", async () => {
+    const author = await createMember("reposts-author@test.kemet", "repostsauthor");
+    const reposter = await createMember("reposts-list@test.kemet", "repostslist");
+    const kept = (await createPost(author.cookie, { body: "Post public gardé." })).json().post.id as string;
+    const removed = (await createPost(author.cookie, { body: "Post supprimé ensuite." })).json().post.id as string;
+    const inSpace = (await createPost(author.cookie, { body: "Post d'un espace privé." })).json().post.id as string;
+    await repost(reposter.cookie, kept, true);
+    await repost(reposter.cookie, removed, true);
+    await app.inject({ method: "DELETE", url: `/api/posts/${removed}`, headers: { cookie: author.cookie } });
+    const [privateSpace] = await db
+      .insert(spaces)
+      .values({ name: "Privé", slug: "prive-reposts", visibility: "private", createdBy: author.profileId })
+      .returning({ id: spaces.id });
+    await db.update(posts).set({ spaceId: privateSpace!.id }).where(eq(posts.id, inSpace));
+    await db.insert(postReposts).values({ postId: inSpace, profileId: reposter.profileId });
+
+    for (const cookie of [undefined, author.cookie, reposter.cookie]) {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/users/repostslist/reposts",
+        ...(cookie ? { headers: { cookie } } : {}),
+      });
+      expect(response.statusCode).toBe(200);
+      const page = response.json() as { items: { id: string }[]; nextCursor: string | null };
+      expect(page.items.map((item) => item.id)).toEqual([kept]);
+      expect(page.nextCursor).toBeNull();
+    }
+
+    const unknown = await app.inject({ method: "GET", url: "/api/users/personne-inconnue/reposts" });
+    expect(unknown.statusCode).toBe(404);
   });
 
   it("fait remonter dans Abonnements un post republié par une personne suivie, une seule fois", async () => {

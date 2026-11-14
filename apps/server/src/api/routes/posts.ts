@@ -43,6 +43,7 @@ import {
   listBeginnerFeed,
   listPourToiFeed,
   listPostsByAuthor,
+  listRepostedPosts,
   setPostBookmark,
   setPostReplySolution,
   setPostRepost,
@@ -286,6 +287,24 @@ export function registerPostRoutes(
         query.cursor,
         query.limit,
       );
+      return {
+        items: await toSerializedPosts(db, page.items, profile?.id ?? null),
+        nextCursor: page.nextCursor,
+      };
+    },
+  );
+
+  app.get<{ Params: { handle: string }; Querystring: { cursor?: string; limit?: string } }>(
+    "/api/users/:handle/reposts",
+    { config: { rateLimit: { max: 60, timeWindow: "1 minute" } } },
+    async (request) => {
+      const { handle } = authorPostsParamsSchema.parse(request.params);
+      const query = authorPostsQuerySchema.parse(request.query);
+      const reposter = await findProfileByHandle(db, handle);
+      if (!reposter || reposter.deletedAt) throw notFound("Ce profil n'existe pas.");
+      const userId = await getSessionUserId(auth, request);
+      const profile = await findOwnProfile(db, userId);
+      const page = await listRepostedPosts(db, reposter.id, query.cursor, query.limit);
       return {
         items: await toSerializedPosts(db, page.items, profile?.id ?? null),
         nextCursor: page.nextCursor,

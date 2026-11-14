@@ -269,6 +269,41 @@ export async function listPostsByAuthor(
 }
 
 /**
+ * Posts republiés par un profil, du plus récemment republié au plus ancien ;
+ * le curseur est la date de republication. Seulement les posts publics (hors
+ * espace) et non supprimés, jamais ceux d'un figurant : la liste se lit sur
+ * un profil public, quel que soit le lecteur.
+ */
+export async function listRepostedPosts(
+  db: Db,
+  profileId: string,
+  cursor: string | undefined,
+  limit: number,
+) {
+  const visible = and(
+    eq(postReposts.profileId, profileId),
+    isNull(posts.deletedAt),
+    isNull(posts.spaceId),
+    notWrittenByFiller(posts.authorId),
+  );
+  const condition = cursor
+    ? and(visible, lt(postReposts.createdAt, parseCursorDate(cursor)))
+    : visible;
+  const rows = await db
+    .select({ post: posts, repostedAt: postReposts.createdAt })
+    .from(postReposts)
+    .innerJoin(posts, eq(posts.id, postReposts.postId))
+    .where(condition)
+    .orderBy(desc(postReposts.createdAt))
+    .limit(limit + 1);
+  const page = toPage(
+    rows.map((row) => ({ ...row, createdAt: row.repostedAt })),
+    limit,
+  );
+  return { items: page.items.map((row) => row.post), nextCursor: page.nextCursor };
+}
+
+/**
  * Posts épinglés en tête de "Pour toi" (table posée par le seed), pour tout le
  * monde. Un post d'espace n'y entre que si son espace est public : l'épingle
  * le montre à qui n'en est pas membre, jamais le contenu d'un espace privé.

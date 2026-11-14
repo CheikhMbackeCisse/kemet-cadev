@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { Bookmark, Repeat2 } from "lucide-react";
+import { useCallback, useState } from "react";
 import type { Credential, Profile } from "@kemet/shared";
-import { getUserLibrary } from "../../lib/chat/api.js";
+import { getUserLibrary, listBookmarkedPosts, listUserReposts } from "../../lib/chat/api.js";
 import { fr } from "../../i18n/fr.js";
-import { SavedPostsList } from "../feed/SavedPostsList.js";
+import { PagedPostList } from "../feed/PagedPostList.js";
 import { libraryHasContent, ProfileLibrary } from "../library/ProfileLibrary.js";
 import { profileLinks } from "../library/ProfileLinks.js";
 import { SkillCard } from "../skills/SkillCard.js";
@@ -14,7 +15,8 @@ import { ProfileWorks } from "../works/ProfileWorks.js";
 import { CompleteProfileCard } from "./CompleteProfileCard.js";
 import { CredentialsList } from "./CredentialsList.js";
 
-export type ProfileTab = "travaux" | "bibliotheque" | "skills" | "parcours" | "enregistres";
+export type ProfileTab =
+  "travaux" | "bibliotheque" | "skills" | "parcours" | "republies" | "enregistres";
 
 const TAB_PARAM = "onglet";
 
@@ -49,6 +51,15 @@ export function ProfileTabs({
     // Un CV ou un lien ajouté dans les paramètres doit apparaître au retour.
     staleTime: 0,
   });
+  const repostsQuery = useQuery({
+    queryKey: ["reposts", profile.handle],
+    queryFn: () => listUserReposts(profile.handle),
+    staleTime: 0,
+  });
+  const loadReposts = useCallback(
+    (cursor?: string) => listUserReposts(profile.handle, cursor),
+    [profile.handle],
+  );
   const [selected, setSelected] = useState(readTab);
 
   if (libraryQuery.isError && !libraryQuery.data) {
@@ -113,8 +124,38 @@ export function ProfileTabs({
       content: <CredentialsList credentials={credentials} />,
     });
   }
+  // Onglet montré une fois la première page lue, et seulement s'il a du contenu.
+  const repostsPage = repostsQuery.data;
+  if (repostsPage && repostsPage.items.length > 0) {
+    items.push({
+      value: "republies",
+      label: fr.profile.tabReposts,
+      content: (
+        <PagedPostList
+          loadPage={loadReposts}
+          initialPage={repostsPage}
+          loadError={fr.profile.repostsLoadError}
+          empty={{ icon: Repeat2, message: fr.profile.repostsEmpty }}
+        />
+      ),
+    });
+  }
   if (isOwnProfile) {
-    items.push({ value: "enregistres", label: fr.profile.tabSaved, content: <SavedPostsList /> });
+    items.push({
+      value: "enregistres",
+      label: fr.profile.tabSaved,
+      content: (
+        <PagedPostList
+          loadPage={listBookmarkedPosts}
+          loadError={fr.saved.loadError}
+          empty={{
+            icon: Bookmark,
+            message: fr.saved.empty,
+            action: { label: fr.saved.goToFeed, href: "/fil" },
+          }}
+        />
+      ),
+    });
   }
 
   const active = items.find((item) => item.value === selected) ?? items[0];

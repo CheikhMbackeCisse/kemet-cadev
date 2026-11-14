@@ -6,12 +6,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileTabs } from "./ProfileTabs.js";
 
 const getUserLibrary = vi.fn();
+const listUserReposts = vi.fn();
 
 vi.mock("../../lib/chat/api.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/chat/api.js")>()),
   getUserLibrary: (handle: string) => getUserLibrary(handle),
   listUserWorks: () => Promise.resolve({ items: [], nextCursor: null }),
   listBookmarkedPosts: () => Promise.resolve({ items: [], nextCursor: null }),
+  listUserReposts: (handle: string) => listUserReposts(handle),
 }));
 
 vi.mock("../../session/SessionProvider.js", () => ({
@@ -56,6 +58,8 @@ describe("ProfileTabs", () => {
   beforeEach(() => {
     getUserLibrary.mockReset();
     getUserLibrary.mockResolvedValue(EMPTY_LIBRARY);
+    listUserReposts.mockReset();
+    listUserReposts.mockResolvedValue({ items: [], nextCursor: null });
   });
 
   it("sur son propre profil, liste ce qui manque dans une seule carte", async () => {
@@ -108,5 +112,35 @@ describe("ProfileTabs", () => {
     );
     expect(await screen.findByRole("tab", { name: "Bibliothèque" })).toBeVisible();
     expect(screen.queryByRole("tab", { name: "Enregistrés" })).toBeNull();
+  });
+
+  it("montre l'onglet Republiés seulement quand la personne a republié un post", async () => {
+    listUserReposts.mockResolvedValue({ items: [{ id: "post-1" }], nextCursor: null });
+    renderTabs(
+      <ProfileTabs
+        profile={PROFILE}
+        workCount={0}
+        credentials={[]}
+        isOwnProfile={false}
+        worksReloadKey={0}
+      />,
+    );
+    expect(await screen.findByRole("tab", { name: "Republiés" })).toBeVisible();
+    expect(listUserReposts).toHaveBeenCalledWith("nala-uwase");
+  });
+
+  it("cache l'onglet Republiés quand il n'y a aucune republication", async () => {
+    renderTabs(
+      <ProfileTabs
+        profile={PROFILE}
+        workCount={0}
+        credentials={[]}
+        isOwnProfile={false}
+        worksReloadKey={0}
+      />,
+    );
+    expect(await screen.findByRole("tab", { name: "Bibliothèque" })).toBeVisible();
+    expect(listUserReposts).toHaveBeenCalled();
+    expect(screen.queryByRole("tab", { name: "Republiés" })).toBeNull();
   });
 });
