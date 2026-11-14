@@ -18,6 +18,7 @@ import {
   workAttachmentUrl,
 } from "../lib/chat/api.js";
 import { RichText } from "../components/content/RichText.js";
+import { WorkGallery } from "../components/works/WorkGallery.js";
 import { WorkVideo } from "../components/works/WorkVideo.js";
 import { Avatar } from "../components/ui/Avatar.js";
 import { Badge } from "../components/ui/Badge.js";
@@ -324,27 +325,7 @@ export function WorkPage() {
 
       {work.gallery.length > 0 && (
         <AsideSection title={fr.works.galleryTitle}>
-          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {work.gallery.map((image, index) => (
-              <li key={image.id}>
-                <a
-                  href={workMediaContentPath(image.id)}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  aria-label={fr.works.openImage(index + 1)}
-                  className="block overflow-hidden rounded-card border border-border hover:border-border-strong"
-                >
-                  <img
-                    src={workMediaContentPath(image.id)}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="aspect-[4/3] w-full bg-surface-2 object-cover"
-                  />
-                </a>
-              </li>
-            ))}
-          </ul>
+          <WorkGallery images={work.gallery} title={work.title} />
         </AsideSection>
       )}
 

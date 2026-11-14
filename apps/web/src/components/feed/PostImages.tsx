@@ -6,6 +6,9 @@ import { cn } from "../../lib/cn.js";
 import { fr } from "../../i18n/fr.js";
 import { frameRatio } from "../../lib/feed/frameRatio.js";
 import { PostVideo } from "./PostVideo.js";
+import { useImageViewer } from "../media/ImageViewer.js";
+
+type OpenImage = (index: number, trigger: HTMLElement | null) => void;
 
 export interface PostImagesProps {
   attachments: Attachment[];
@@ -38,26 +41,29 @@ function Picture({ attachment, eager = false }: { attachment: Attachment; eager?
   );
 }
 
+// Toucher une image l'ouvre dans la visionneuse, par-dessus la page : le
+// fichier brut, ouvert seul, sortait de l'application sans retour possible.
 function Slide({
   attachment,
-  linked,
+  position,
+  onOpen,
   eager = false,
 }: {
   attachment: Attachment;
-  linked: boolean;
+  position: number;
+  onOpen: OpenImage | null;
   eager?: boolean;
 }) {
-  if (!linked) return <Picture attachment={attachment} eager={eager} />;
+  if (!onOpen) return <Picture attachment={attachment} eager={eager} />;
   return (
-    <a
-      href={postAttachmentUrl(attachment.id)}
-      target="_blank"
-      rel="noopener noreferrer"
+    <button
+      type="button"
+      onClick={(event) => onOpen(position, event.currentTarget)}
       aria-label={fr.feed.openImage(attachment.originalName)}
-      className="block size-full"
+      className="block size-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
     >
       <Picture attachment={attachment} eager={eager} />
-    </a>
+    </button>
   );
 }
 
@@ -95,7 +101,15 @@ function ArrowButton({
   );
 }
 
-function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: number }) {
+function Carousel({
+  attachments,
+  ratio,
+  onOpen,
+}: {
+  attachments: Attachment[];
+  ratio: number;
+  onOpen: OpenImage;
+}) {
   const scroller = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const count = attachments.length;
@@ -150,7 +164,12 @@ function Carousel({ attachments, ratio }: { attachments: Attachment[]; ratio: nu
             className="h-full w-full shrink-0 snap-center snap-always"
           >
             {/* Le premier visuel arrive tout de suite, les suivants au défilement. */}
-            <Slide attachment={attachment} linked eager={position === 0} />
+            <Slide
+              attachment={attachment}
+              position={position}
+              onOpen={onOpen}
+              eager={position === 0}
+            />
           </div>
         ))}
       </div>
@@ -221,6 +240,12 @@ export function PostImages({
 }: PostImagesProps) {
   // Images effacées avec le compte de leur auteur : on le dit, sans cadre vide.
   const attachments = all.filter((attachment) => !attachment.removed);
+  const { openAt, viewer } = useImageViewer(
+    attachments.map((attachment) => ({
+      src: postAttachmentUrl(attachment.id),
+      alt: attachment.originalName,
+    })),
+  );
   if (attachments.length === 0) {
     return all.length > 0 ? (
       <p className={cn("mt-2 text-sm text-subtle", className)}>
@@ -254,7 +279,7 @@ export function PostImages({
     >
       {single ? (
         <div className="relative w-full" style={{ aspectRatio: String(ratio) }}>
-          <Slide attachment={attachments[0]!} linked={linked} />
+          <Slide attachment={attachments[0]!} position={0} onOpen={linked ? openAt : null} />
           {attachments.length > 1 && (
             <>
               <span
@@ -268,9 +293,10 @@ export function PostImages({
           )}
         </div>
       ) : (
-        <Carousel attachments={attachments} ratio={ratio} />
+        <Carousel attachments={attachments} ratio={ratio} onOpen={openAt} />
       )}
       {credit && <Credit credit={credit} />}
+      {viewer}
     </div>
   );
 }

@@ -96,5 +96,5 @@ test("un travail montre sa couverture, sa galerie et sa vidéo YouTube chargée 
   await expect(page.getByRole("button", { name: "Retirer ecran.png" })).toBeVisible();
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/travaux/${slug}$`));
-  await expect(page.getByRole("link", { name: "Ouvrir l'image 1 en grand" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Afficher l'image 1 en grand" })).toBeVisible();
 });

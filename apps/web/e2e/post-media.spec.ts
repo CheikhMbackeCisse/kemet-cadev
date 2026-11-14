@@ -76,6 +76,18 @@ test("un carrousel de deux images se fait défiler au doigt sans quitter le post
   await swipeLeft(page, carousel.getByRole("group", { name: "1 sur 2", exact: true }));
   await expect(carousel.getByText("2/2")).toBeVisible();
   expect(page.url()).toBe(url);
+
+  // Toucher l'image l'ouvre dans la visionneuse, par-dessus le post : même
+  // adresse, et le retour du téléphone la referme sans quitter la page.
+  await carousel.getByRole("button", { name: /^Afficher l'image carte-2-/ }).tap();
+  const viewer = page.getByRole("dialog");
+  await expect(viewer).toBeVisible();
+  await expect(viewer.getByText("2 / 2")).toBeVisible();
+  await expect(viewer.getByRole("button", { name: "Fermer l'image" })).toBeFocused();
+  expect(page.url()).toBe(url);
+  await page.goBack();
+  await expect(viewer).toBeHidden();
+  expect(page.url()).toBe(url);
 });
 
 test("une vidéo publiée se lit dans le post et s'ouvre en plein écran", async ({ page }) => {

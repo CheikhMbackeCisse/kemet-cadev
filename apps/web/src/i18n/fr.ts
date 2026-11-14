@@ -8,6 +8,11 @@ export const fr = {
     tooShort: (min: number) => `Au moins ${min} caractères.`,
     tooLong: (max: number) => `${max} caractères au plus.`,
   },
+  imageViewer: {
+    close: "Fermer l'image",
+    titleMany: (position: number, count: number, alt: string) =>
+      `Image ${position} sur ${count} : ${alt}`,
+  },
   shell: {
     activityBarLabel: "Sections",
     sectionWithUnread: (label: string, count: number) =>
@@ -681,6 +686,7 @@ export const fr = {
     loadingMessagesError: "Impossible de charger les messages.",
     noChannelSelected: "Choisissez un salon pour commencer à discuter.",
     messageDeleted: "Message supprimé",
+    openImage: (name: string) => `Afficher l'image ${name} en grand`,
     fileRemoved: (name: string) => `Fichier supprimé : ${name}`,
     imagesRemoved: (count: number) =>
       count > 1 ? `${count} images supprimées` : "Image supprimée",
@@ -875,7 +881,7 @@ export const fr = {
     cancel: "Annuler",
   },
   feed: {
-    openImage: (name: string) => `Ouvrir l'image ${name} en entier (nouvel onglet)`,
+    openImage: (name: string) => `Afficher l'image ${name} en grand`,
     carousel: "carrousel",
     carouselLabel: (count: number) => `${count} images`,
     carouselScroller: "Images",
@@ -1164,7 +1170,8 @@ export const fr = {
     galleryTitle: "Galerie",
     videosTitle: "Vidéos",
     videoTitle: (title: string, index: number) => `${title}, vidéo ${index}`,
-    openImage: (index: number) => `Ouvrir l'image ${index} en grand (nouvel onglet)`,
+    openImage: (index: number) => `Afficher l'image ${index} en grand`,
+    galleryImageAlt: (title: string, index: number) => `${title}, image ${index}`,
     playYoutube: (title: string) => `Lire ${title} sur YouTube`,
     youtubeNotice: "La vidéo se charge depuis YouTube, sans cookie, quand tu la lances.",
     videoUnsupported: "Ton navigateur ne lit pas cette vidéo.",

@@ -3,8 +3,15 @@ import type { Attachment } from "@kemet/shared";
 import { attachmentUrl } from "../../lib/chat/api.js";
 import { fr } from "../../i18n/fr.js";
 import { VoicePlayer } from "./VoicePlayer.js";
+import { useImageViewer } from "../media/ImageViewer.js";
 
 export function MessageAttachments({ attachments }: { attachments: Attachment[] }) {
+  const images = attachments.filter(
+    (attachment) => attachment.kind === "image" && !attachment.removed,
+  );
+  const { openAt, viewer } = useImageViewer(
+    images.map((image) => ({ src: attachmentUrl(image.id), alt: image.originalName })),
+  );
   if (attachments.length === 0) return null;
   return (
     <div className="mt-1 flex flex-wrap gap-2">
@@ -16,14 +23,21 @@ export function MessageAttachments({ attachments }: { attachments: Attachment[] 
         ) : attachment.kind === "voice" ? (
           <VoicePlayer key={attachment.id} attachment={attachment} />
         ) : attachment.kind === "image" ? (
-          <img
+          <button
             key={attachment.id}
-            src={attachmentUrl(attachment.id)}
-            alt={attachment.originalName}
-            loading="lazy"
-            decoding="async"
-            className="max-h-64 max-w-full rounded-card border border-border object-contain sm:max-w-xs"
-          />
+            type="button"
+            onClick={(event) => openAt(images.indexOf(attachment), event.currentTarget)}
+            aria-label={fr.chat.openImage(attachment.originalName)}
+            className="block max-w-full cursor-zoom-in rounded-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:max-w-xs"
+          >
+            <img
+              src={attachmentUrl(attachment.id)}
+              alt={attachment.originalName}
+              loading="lazy"
+              decoding="async"
+              className="max-h-64 max-w-full rounded-card border border-border object-contain"
+            />
+          </button>
         ) : (
           <a
             key={attachment.id}
@@ -36,6 +50,7 @@ export function MessageAttachments({ attachments }: { attachments: Attachment[] 
           </a>
         ),
       )}
+      {viewer}
     </div>
   );
 }
