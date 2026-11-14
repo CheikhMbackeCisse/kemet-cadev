@@ -10,6 +10,8 @@ import { renameCadevSpace } from "./seed/chat-content.js";
 import { completeDemoRoleDetails } from "./seed/role-details.js";
 import { seedHackathonsSpace } from "./seed/hackathons.js";
 import { seedCadevSpace } from "./seed/cadev-space.js";
+import { seedBeginnerFeed } from "./seed/beginner-feed.js";
+import { seedProjectsInProgress } from "./seed/projects-in-progress.js";
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -83,6 +85,19 @@ async function main(): Promise<void> {
     cadevSpace.status === "done"
       ? `Espace CADEV 2026 : ${cadevSpace.messages} messages et ${cadevSpace.replies} réponses au post de Systalink ajoutés.`
       : `Espace CADEV 2026 sauté : ${cadevSpace.reason}.`,
+  );
+  const beginnerFeed = await seedBeginnerFeed(db);
+  console.log(
+    beginnerFeed.status === "done"
+      ? `Fil des débutants : ${beginnerFeed.posts} posts et ${beginnerFeed.replies} réponses ajoutés` +
+          `${beginnerFeed.skill ? ", skill « Choisir la bonne boucle » ajouté" : ""}.`
+      : `Fil des débutants sauté : ${beginnerFeed.reason}.`,
+  );
+  const inProgress = await seedProjectsInProgress(db);
+  console.log(
+    inProgress.status === "done"
+      ? `Projets en cours : ${inProgress.projects} projets et ${inProgress.requests} demandes ajoutés.`
+      : `Projets en cours sautés : ${inProgress.reason}.`,
   );
   console.log(
     `Médias de démonstration : ${media.posts} posts, ${media.postImages} images sur des posts existants, ` +

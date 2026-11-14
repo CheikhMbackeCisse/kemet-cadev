@@ -21,7 +21,6 @@ import { hoursAgo } from "./time.js";
 
 const CADEV_SPACE_SLUG = "cadev-2026";
 const CADEV_POST_ID = demoUuid("post:cadev-en-bref");
-const WAVE_POST_ID = demoUuid("showcase-post:wave-webhook-question");
 const CADEV_POST_HEARTS = 1213;
 const CADEV_POST_REPOSTS = 97;
 const MINUTE_MS = 60 * 1000;
@@ -402,16 +401,10 @@ async function seedCadevPost(
     .where(eq(posts.id, CADEV_POST_ID));
   if (!cadevPost) return { replies: 0, pinned: false };
 
-  const [wavePost] = await db
-    .select({ id: posts.id })
-    .from(posts)
-    .where(eq(posts.id, WAVE_POST_ID));
+  // La deuxième place revient au post sur les boucles (seed/beginner-feed.ts).
   await db
     .insert(feedPinnedPosts)
-    .values([
-      { postId: CADEV_POST_ID, position: 0 },
-      ...(wavePost ? [{ postId: WAVE_POST_ID, position: 1 }] : []),
-    ])
+    .values({ postId: CADEV_POST_ID, position: 0 })
     .onConflictDoNothing();
 
   await topUpHearts(db, CADEV_POST_ID, CADEV_POST_HEARTS);
@@ -438,7 +431,7 @@ async function seedCadevPost(
 
 /**
  * Salons de la compétition dans l'espace CADEV 2026, messages entre comptes
- * de démonstration, post de Systalink et question Wave épinglés en tête du
+ * de démonstration, post de Systalink épinglé en tête du
  * fil. Relançable : rien n'est ajouté deux fois, rien n'est supprimé.
  */
 export async function seedCadevSpace(db: DbOrTx): Promise<CadevSpaceResult> {

@@ -342,7 +342,6 @@ export const DEMO_SKILL_TARGETS: {
  * alternatif d'une image, il doit donc décrire ce qu'elle montre.
  */
 export const DEMO_ASSET_NAMES: Record<string, string> = {
-  "cadev-couverture.jpg": "Coupe d'Afrique des Développeurs, 5 millions de FCFA à gagner.jpg",
   "post-video-deploy.webm": "Déployer un vendredi soir.webm",
   "post-video-index.webm": "Une requête de 4,2 s ramenée à 80 ms.webm",
   "post-video-coupure.webm": "Coupure de courant pendant les tests.webm",

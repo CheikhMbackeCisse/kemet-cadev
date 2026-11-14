@@ -1,4 +1,4 @@
-import { copyFile, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { and, avg, count, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
@@ -19,13 +19,7 @@ import {
   workMedia,
   works,
 } from "../schema/index.js";
-import {
-  CADEV_ASSETS_DIR,
-  CADEV_MEDIA_CREDIT,
-  CADEV_MEDIA_CREDIT_URL,
-  cadevImages,
-  seedCadevPost,
-} from "./cadev-post.js";
+import { CADEV_ASSETS_DIR, CADEV_SLIDES, seedCadevPost } from "./cadev-post.js";
 import { seedDemoDataset } from "./demo-dataset.js";
 import {
   DEMO_ASSET_NAMES,
@@ -67,7 +61,7 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
       posts: DEMO_MEDIA_POSTS.length,
       postImages: DEMO_EXISTING_POST_IMAGES.length,
       postImageSizes: 0,
-      cadevPost: "1 image(s), épinglé",
+      cadevPost: "6 image(s), épinglé",
       works: DEMO_WORK_MEDIA.length,
       skillUses: expect.any(Number),
       skillRatings: expect.any(Number),
@@ -102,21 +96,33 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
     }
   });
 
-  it("publie le post CADEV au nom de Systalink, dans son espace, avec le visuel tel quel, épinglé", async () => {
+  it("publie le post CADEV au nom de Systalink, dans son espace, avec ses six visuels tels quels, épinglé", async () => {
     const [post] = await db.select().from(posts).where(eq(posts.id, demoUuid("post:cadev-en-bref")));
     const [space] = await db.select().from(spaces).where(eq(spaces.slug, "cadev-2026"));
     expect(post).toMatchObject({
       authorId: SYSTALINK_PROFILE_ID,
       spaceId: space!.id,
-      mediaCredit: CADEV_MEDIA_CREDIT,
-      mediaCreditUrl: CADEV_MEDIA_CREDIT_URL,
+      mediaCredit: null,
+      mediaCreditUrl: null,
     });
     const [pin] = await db.select().from(spacePinnedPosts).where(eq(spacePinnedPosts.spaceId, space!.id));
     expect(pin?.postId).toBe(post!.id);
-    const [image] = await db.select().from(postAttachments).where(eq(postAttachments.postId, post!.id));
-    const stored = await readFile(join(uploadsDir, image!.storageKey));
-    expect(stored.equals(await readFile(join(CADEV_ASSETS_DIR, "cadev-couverture.jpg")))).toBe(true);
-    expect(image!.authorId).toBe(SYSTALINK_PROFILE_ID);
+    const images = await db
+      .select()
+      .from(postAttachments)
+      .where(eq(postAttachments.postId, post!.id))
+      .orderBy(postAttachments.position);
+    expect(images.map((image) => image.originalName)).toEqual(CADEV_SLIDES.map((slide) => slide.alt));
+    for (const [position, image] of images.entries()) {
+      const stored = await readFile(join(uploadsDir, image.storageKey));
+      expect(stored.equals(await readFile(join(CADEV_ASSETS_DIR, CADEV_SLIDES[position]!.file)))).toBe(true);
+      expect([image.mimeType, image.width, image.height, image.authorId]).toEqual([
+        "image/webp",
+        1080,
+        1350,
+        SYSTALINK_PROFILE_ID,
+      ]);
+    }
   });
 
   it("crée Systalink sans aucun moyen de connexion, avec son symbole pour seule image", async () => {
@@ -155,8 +161,8 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
     await db.update(posts).set({ authorId: coumba, spaceId: null }).where(eq(posts.id, postId));
     await db.update(postAttachments).set({ authorId: coumba }).where(eq(postAttachments.postId, postId));
 
-    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("1 image(s), épinglé");
-    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("1 image(s), épinglé");
+    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("6 image(s), épinglé");
+    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("6 image(s), épinglé");
 
     const [post] = await db.select().from(posts).where(eq(posts.id, postId));
     expect(post!.authorId).toBe(SYSTALINK_PROFILE_ID);
@@ -165,53 +171,22 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
     expect(await db.$count(profiles, eq(profiles.handle, "systalink"))).toBe(1);
   });
 
-  it("ajoute cadev-1, cadev-2... après la couverture dès qu'ils sont dans le dossier", async () => {
-    const assetsDir = await mkdtemp(join(tmpdir(), "kemet-cadev-"));
-    try {
-      const cover = join(CADEV_ASSETS_DIR, "cadev-couverture.jpg");
-      for (const name of ["cadev-couverture.jpg", "cadev-2.jpg", "cadev-1.jpg", "cadev-10.jpg"]) {
-        await copyFile(cover, join(assetsDir, name));
-      }
-      expect(await cadevImages(assetsDir)).toEqual([
-        "cadev-couverture.jpg",
-        "cadev-1.jpg",
-        "cadev-2.jpg",
-        "cadev-10.jpg",
-      ]);
-      const ids = new Map(
-        (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
-          .map((row) => [row.handle, row.id] as const),
-      );
-      const [before] = await db
-        .select()
-        .from(postAttachments)
-        .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")));
-      expect(await seedCadevPost(db, ids, uploadsDir, assetsDir)).toBe("4 image(s), épinglé");
-      const after = await db
-        .select()
-        .from(postAttachments)
-        .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")))
-        .orderBy(postAttachments.position);
-      expect(after.map((row) => row.position)).toEqual([0, 1, 2, 3]);
-      expect(after[0]!.storageKey).toBe(before!.storageKey);
-      expect((await readFile(join(uploadsDir, before!.storageKey))).byteLength).toBe(before!.byteSize);
-      const keys = after.map((row) => row.id);
-      await seedCadevPost(db, ids, uploadsDir, assetsDir);
-      const again = await db
-        .select({ id: postAttachments.id })
-        .from(postAttachments)
-        .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")))
-        .orderBy(postAttachments.position);
-      expect(again.map((row) => row.id)).toEqual(keys);
-    } finally {
-      await rm(assetsDir, { recursive: true, force: true });
-      // Retour à la couverture seule pour les tests suivants.
-      const ids = new Map(
-        (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
-          .map((row) => [row.handle, row.id] as const),
-      );
-      await seedCadevPost(db, ids, uploadsDir);
-    }
+  it("garde les mêmes visuels d'un passage à l'autre", async () => {
+    const ids = new Map(
+      (await db.select({ id: profiles.id, handle: profiles.handle }).from(profiles).where(eq(profiles.isDemo, true)))
+        .map((row) => [row.handle, row.id] as const),
+    );
+    const listIds = async () =>
+      (
+        await db
+          .select({ id: postAttachments.id })
+          .from(postAttachments)
+          .where(eq(postAttachments.postId, demoUuid("post:cadev-en-bref")))
+          .orderBy(postAttachments.position)
+      ).map((row) => row.id);
+    const before = await listIds();
+    expect(await seedCadevPost(db, ids, uploadsDir)).toBe("6 image(s), épinglé");
+    expect(await listIds()).toEqual(before);
   });
 
   it("donne à chaque travail une couverture, sa galerie et ses vidéos", async () => {
@@ -296,7 +271,7 @@ describe.skipIf(!databaseUrl)("médias de démonstration", () => {
       posts: 0,
       postImages: 0,
       postImageSizes: 0,
-      cadevPost: "1 image(s), épinglé",
+      cadevPost: "6 image(s), épinglé",
       works: 0,
       skillUses: 0,
       skillRatings: 0,

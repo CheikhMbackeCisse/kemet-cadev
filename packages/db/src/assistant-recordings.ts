@@ -99,11 +99,35 @@ export const WAVE_WEBHOOK_RECORDING: AssistantRecording = {
   ].join("\n"),
 };
 
+export const INFINITE_LOOP_RECORDING: AssistantRecording = {
+  skillSlug: "choisir-la-bonne-boucle",
+  explicitSkill: false,
+  question: "c'est quoi une boucle infinie ?",
+  answer: [
+    "Je m'appuie sur le skill choisir-la-bonne-boucle.",
+    "",
+    "Une boucle infinie, c'est une boucle dont la condition ne devient jamais fausse : le programme répète la même chose sans fin et semble bloqué.",
+    "",
+    "```python",
+    "compteur = 0",
+    "while compteur < 3:",
+    "    print(compteur)",
+    "```",
+    "",
+    "Ici, `compteur` reste à 0, donc `compteur < 3` reste vrai pour toujours. Ajoute `compteur += 1` dans la boucle et elle s'arrête après trois tours.",
+    "",
+    "- Cause la plus fréquente : oublier de changer, dans la boucle, la variable que teste la condition.",
+    "- Pour arrêter un programme bloqué dans le terminal : Ctrl+C.",
+    "- Certaines boucles infinies sont voulues (un serveur qui attend des requêtes), mais elles ont toujours une sortie prévue avec `break`.",
+  ].join("\n"),
+};
+
 export const ASSISTANT_RECORDINGS: readonly AssistantRecording[] = [
   FLUTTER_SYNC_RECORDING,
   DESIGN_SYSTEM_RECORDING,
   CI_DOCKER_RECORDING,
   WAVE_WEBHOOK_RECORDING,
+  INFINITE_LOOP_RECORDING,
 ];
 
 /** Corps du message qui appelle l'assistant pour cet enregistrement. */
