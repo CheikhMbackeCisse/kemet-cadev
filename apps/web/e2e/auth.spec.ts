@@ -74,9 +74,8 @@ test("une inscription par email mène au fil sans attendre la confirmation", asy
   expect(me.profile).toMatchObject({ handle, displayName: name });
   expect(me.user.emailVerified).toBe(false);
 
-  const banner = page.getByRole("status").filter({ hasText: "Confirme ton adresse email" });
-  await expect(banner).toBeVisible();
-  await expect(banner.getByRole("button", { name: "Renvoyer le mail" })).toBeVisible();
+  await expect(page.getByText("Confirme ton adresse email")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Renvoyer l'email" })).toBeVisible();
 
   const verificationUrl = new URL(await findVerificationUrl(email));
   await page.request.get(verificationUrl.pathname + verificationUrl.search);

@@ -93,9 +93,9 @@ export const fr = {
     demoEmailError:
       "Cette adresse appartient aux comptes de démonstration de Kemet. Inscris-toi avec ta propre adresse email.",
     verifyEmailBanner: "Confirme ton adresse email",
-    resendVerificationEmail: "Renvoyer le mail",
-    verificationEmailResent: "Mail de confirmation renvoyé.",
-    verificationEmailError: "Le mail n'a pas pu être renvoyé. Réessaie dans une minute.",
+    resendVerificationEmail: "Renvoyer l'email",
+    verificationEmailResent: "Email de confirmation renvoyé.",
+    verificationEmailError: "L'email n'a pas pu être renvoyé. Réessaie dans une minute.",
     dismissVerifyEmailBanner: "Masquer le rappel de confirmation",
     forgotPasswordTitle: "Mot de passe oublié",
     forgotPasswordSubmit: "Envoyer le lien",

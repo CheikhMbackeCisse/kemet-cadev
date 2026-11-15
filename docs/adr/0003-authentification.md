@@ -98,7 +98,7 @@ pressé, ou un mail parti dans les spams. Une inscription par email ouvre
 maintenant une session tout de suite (`requireEmailVerification: false`,
 `autoSignIn: true`), et la connexion par mot de passe marche sans
 confirmation. Le mail part quand même ; le fil montre un rappel
-« Confirme ton adresse email » avec « Renvoyer le mail », qu'on peut fermer,
+« Confirme ton adresse email » avec « Renvoyer l'email », qu'on peut fermer,
 et qui disparaît une fois l'adresse confirmée.
 
 Ce qui ne change pas : la réinitialisation du mot de passe passe par

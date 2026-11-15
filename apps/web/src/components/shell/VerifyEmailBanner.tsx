@@ -59,13 +59,14 @@ export function VerifyEmailBanner() {
   }
 
   return (
-    <div className="flex items-center gap-2 border-b border-border text-sm" role="status">
+    <div className="flex items-center gap-2 border-b border-border text-sm">
       <MailWarning className="size-4 shrink-0 text-muted" aria-hidden="true" />
-      <span className="min-w-0 flex-1 truncate">{fr.auth.verifyEmailBanner}</span>
+      <span className="min-w-0 flex-1 py-1">{fr.auth.verifyEmailBanner}</span>
       <button
         type="button"
         onClick={() => void handleResend()}
         disabled={sending}
+        aria-busy={sending || undefined}
         className="inline-flex h-control shrink-0 items-center text-link hover:underline disabled:opacity-60 max-md:h-control-mobile"
       >
         {fr.auth.resendVerificationEmail}
