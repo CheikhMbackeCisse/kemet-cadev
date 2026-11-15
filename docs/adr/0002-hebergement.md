@@ -71,10 +71,30 @@ et `worker`, chemin donné par `UPLOADS_DIR`), `caddy_data` et
 | `caddy:2-alpine` | Apache 2.0 |
 | `postgres:16-alpine` | Licence PostgreSQL |
 | `valkey/valkey:8-alpine` | BSD-3 (pas Redis 8, dont la licence a changé) |
-| `node:22-alpine` | MIT (Node.js), Alpine (MIT/BSD) |
+| `node:22-alpine` | MIT (Node.js) |
 
-Aucune de ces images ni leurs dépendances de base ne porte de licence
-GPL, AGPL ou LGPL.
+Ces licences sont celles des logiciels principaux, pas de toute l'image.
+La base Alpine de chacune contient des composants sous GPL ou LGPL, relevés
+le 03/11/2026 dans `/lib/apk/db/installed` :
+
+- les quatre images : busybox, apk-tools, scanelf, ssl_client et
+  alpine-baselayout (GPL-2.0), musl-utils (en partie GPL-2.0) ;
+- `node:22-alpine`, `postgres:16-alpine` et `valkey/valkey:8-alpine` :
+  libgcc, et libstdc++ pour les deux premières (GPL avec l'exception GCC
+  Runtime Library 3.1, qui autorise leur liaison avec un logiciel non
+  libre) ;
+- `postgres:16-alpine` : bash, readline et gdbm (GPL-3.0), xz-libs,
+  keyutils-libs et libcom_err (en partie LGPL) ;
+- `caddy:2-alpine` : libidn2 et libunistring (GPL-2.0 ou LGPL-3.0, au
+  choix) ; `valkey/valkey:8-alpine` : libcap-ng et setpriv.
+
+Ce sont des programmes et des bibliothèques du système, livrés tels quels
+par Alpine. Le code de Kemet ne les modifie pas et ne les intègre pas. Le
+seul lien direct est celui du binaire Node.js avec libstdc++ et libgcc,
+couvert par l'exception GCC. La règle des licences du projet porte
+sur les dépendances du code de Kemet, pas sur le système de base des
+images : aucune image Linux courante n'en est exempte. Cette lecture est
+celle de l'équipe et ne constitue pas un avis juridique.
 
 **Déploiement (`infra/deploy.sh`) :** script par SSH qui se connecte au
 serveur, met à jour le dépôt (`git fetch` puis `reset --hard origin/main`),
