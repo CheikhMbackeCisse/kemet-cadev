@@ -30,7 +30,7 @@ export const VENDORED_ASSETS: readonly VendoredAsset[] = [
     usedIn: "apps/web/src/components/arrival/africaOutline.ts",
   },
   {
-    name: "Six visuels de la publication de la CADEV 2026 (« Coupe d'Afrique des Développeurs »), © Systalink, repris sans retouche ni recadrage (PNG sources, WebP pour l'affichage)",
+    name: "Six visuels de la publication de la CADEV 2026 (« Coupe d'Afrique des Développeurs »), © Systalink, recadrés pour l'affichage (PNG sources, WebP pour l'affichage)",
     source: "https://www.instagram.com/systalink/p/DewrHGNjtTM/",
     license: "© Systalink, tous droits réservés. Utilisé avec l'accord écrit de Systalink, donné le 12/11/2026, pour ces visuels, son logo et le post « La CADEV 2026 en bref » publié depuis son compte dans l'espace CADEV 2026",
     usedIn: "packages/db/seed-assets/cadev/carrousel/ (packages/db/src/seed/cadev-post.ts)",

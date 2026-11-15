@@ -118,7 +118,7 @@ Systalink, organisatrice de la CADEV 2026, a donné le 12/11/2026 son accord
 
 | Contenu | Source | Usage |
 | --- | --- | --- |
-| Six visuels de la publication de la CADEV 2026, repris sans retouche ni recadrage | Publication Instagram de Systalink (https://www.instagram.com/systalink/p/DewrHGNjtTM/) | Carrousel du post « La CADEV 2026 en bref » (`packages/db/seed-assets/cadev/carrousel/`) |
+| Six visuels de la publication de la CADEV 2026, recadrés pour l'affichage | Publication Instagram de Systalink (https://www.instagram.com/systalink/p/DewrHGNjtTM/) | Carrousel du post « La CADEV 2026 en bref » (`packages/db/seed-assets/cadev/carrousel/`) |
 | Symbole de leur logo, deux tracés repris à l'identique de leur icône | https://systalink.com/icon0.svg | Photo de profil du compte Systalink du seed (`packages/db/src/seed/systalink.ts`) |
 | Post « La CADEV 2026 en bref » publié à leur nom | Texte écrit par nous | Espace CADEV 2026, épinglé, avec un lien vers la publication d'origine (`packages/db/src/seed/cadev-post.ts`) |
 | Logo « <cadev/> 2026 » de la compétition, redessiné en tracés vectoriels sans déformation (lettres de Plus Jakarta Sans 700, « dev » en vert, « 2026 » en dessous, fond bleu nuit) | Leur visuel promotionnel (ligne ci-dessus) | Icône de l'espace CADEV 2026, et de lui seul (`apps/web/src/components/ui/CadevLogo.tsx`) |
