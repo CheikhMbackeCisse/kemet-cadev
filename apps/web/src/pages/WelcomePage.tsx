@@ -1,5 +1,5 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { releaseStaticWelcome } from "../lib/staticWelcome.js";
 import { ArrivalLayout } from "../components/arrival/ArrivalLayout.js";
 import { KemetWordmark } from "../components/ui/KemetWordmark.js";
@@ -35,12 +35,21 @@ export function WelcomePage() {
     }
   }, [signedIn]);
 
-  // La carte de React est à la place exacte de celle d'index.html : celle-ci
-  // part dans le même affichage, sans saut.
+  // La carte écrite dans index.html, peinte avant le JavaScript, reste la
+  // carte visible : celle de React, invisible à la même place, ne sert qu'à
+  // placer le décor. Remplacer l'une par l'autre compterait comme un nouvel
+  // affichage, plus tardif, du plus grand élément de la page (LCP).
+  const [staticCard] = useState(() => document.getElementById("static-welcome") !== null);
   const busy = status === "loading" || signedIn;
   useLayoutEffect(() => {
-    if (!busy || signedIn) releaseStaticWelcome();
-  }, [busy, signedIn]);
+    if (signedIn) releaseStaticWelcome();
+  }, [signedIn]);
+  useEffect(() => {
+    if (!staticCard) return;
+    const links = document.querySelectorAll("#static-welcome a");
+    links.forEach((link) => link.addEventListener("click", markIntroSeen));
+    return () => links.forEach((link) => link.removeEventListener("click", markIntroSeen));
+  }, [staticCard]);
 
   // Tant que la session n'est pas connue, le fond seul : une personne
   // connectée ne doit pas voir l'accueil passer avant d'être redirigée.
@@ -52,6 +61,7 @@ export function WelcomePage() {
       showLogo={false}
       pageFooter={<PoweredBy />}
       busy={busy}
+      contentHidden={staticCard}
     >
       <div className="flex flex-col items-center gap-3 text-center sm:gap-5">
         <span className="kemet-on-dark">

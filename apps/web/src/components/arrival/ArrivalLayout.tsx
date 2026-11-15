@@ -85,6 +85,11 @@ export interface ArrivalLayoutProps {
   /** Carte plus transparente, pour l'accueil seul : un formulaire garde le verre dépoli. */
   clearCard?: boolean;
   busy?: boolean;
+  /**
+   * La carte et le pied de page gardent leur place sans se montrer : l'accueil
+   * écrit dans index.html est affiché par-dessus (lib/staticWelcome.ts).
+   */
+  contentHidden?: boolean;
   children: ReactNode;
 }
 
@@ -209,6 +214,7 @@ export function ArrivalLayout({
   fitViewport = false,
   clearCard = false,
   busy,
+  contentHidden = false,
   children,
 }: ArrivalLayoutProps) {
   const visible = usePageVisible();
@@ -268,7 +274,9 @@ export function ArrivalLayout({
             <div className="flex max-h-full min-h-0 w-full flex-col gap-3">
               <div
                 ref={card}
+                aria-hidden={contentHidden || undefined}
                 className={cn(
+                  contentHidden && "invisible",
                   "arrival-glass auth-on-dark flex min-h-0 flex-col gap-4 rounded-panel p-5 text-auth-text sm:p-8",
                   clearCard && "arrival-glass-clear",
                 )}
@@ -282,7 +290,13 @@ export function ArrivalLayout({
         </div>
       )}
       {!busy && pageFooter && (
-        <footer className="arrival-footer-space auth-on-dark relative z-10 flex items-center justify-center px-4 pb-[env(safe-area-inset-bottom)]">
+        <footer
+          aria-hidden={contentHidden || undefined}
+          className={cn(
+            "arrival-footer-space auth-on-dark relative z-10 flex items-center justify-center px-4 pb-[env(safe-area-inset-bottom)]",
+            contentHidden && "invisible",
+          )}
+        >
           {pageFooter}
         </footer>
       )}
