@@ -1796,6 +1796,12 @@ export const fr = {
     notFound: "Cette offre n'existe pas ou a été retirée.",
     editLoadingError: "Cette offre n'a pas pu se charger.",
     newTitle: "Publier une offre",
+    sections: {
+      offer: "L'offre",
+      place: "Lieu",
+      conditions: "Contrat et dates",
+      mission: "Budget et critères",
+    },
     editTitle: "Modifier l'offre",
     submitCreate: "Publier",
     submitEdit: "Enregistrer",

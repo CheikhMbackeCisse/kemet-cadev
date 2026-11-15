@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Briefcase,
   Building2,
   ChevronRight,
   Flag as FlagIcon,
@@ -9,6 +10,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
+import { publishesOffers } from "../../lib/opportunities/publishesOffers.js";
 import { useSiteConfig } from "../../lib/useSiteConfig.js";
 import { ORGANIZATION_REQUEST_PATH } from "../../lib/navigation/paths.js";
 import { useMediaQuery } from "../../lib/useMediaQuery.js";
@@ -42,6 +44,9 @@ export function MoiMenu({
   const desktop = useMediaQuery("(min-width: 1024px)");
 
   const rows: MenuRow[] = [
+    ...(publishesOffers(profile)
+      ? [{ label: fr.opportunities.publish, href: "/opportunites/nouvelle", icon: Briefcase }]
+      : []),
     ...(profile
       ? [
           { label: fr.moi.myWorks, href: "/moi/travaux", icon: BookOpen },

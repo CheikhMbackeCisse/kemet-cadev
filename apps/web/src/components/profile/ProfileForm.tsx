@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { FormPair, FormSection } from "../layout/FormSection.js";
 import {
   isValidProfileLink,
   type MeResponse,
@@ -95,34 +96,6 @@ function valuesFrom(profile: Profile): ProfileFormValues {
     },
     helpsBeginners: profile.helpsBeginners,
   };
-}
-
-function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="flex scroll-mt-4 flex-col gap-3 rounded-card border border-border p-3 lg:p-5"
-    >
-      <h2 id={`${id}-title`} className="text-md font-semibold text-text">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-/** Deux champs courts côte à côte à partir de 1024 px, l'un sous l'autre avant. */
-function Pair({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">{children}</div>;
 }
 
 function LinkRow({
@@ -286,14 +259,9 @@ export function ProfileForm({ profile, disabled, onSaved }: ProfileFormProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <form
-        ref={formRef}
-        noValidate
-        className="flex flex-col gap-4"
-        onSubmit={handleSubmit}
-      >
+      <form ref={formRef} noValidate className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <fieldset disabled={disabled} className="contents">
-          <Section id="identite" title={fr.settings.identityTitle}>
+          <FormSection id="identite" title={fr.settings.identityTitle}>
             <div className="flex items-center gap-4">
               <Avatar name={profile.displayName} src={profile.avatarUrl ?? undefined} size={88} />
               <AvatarChangeButton
@@ -302,7 +270,7 @@ export function ProfileForm({ profile, disabled, onSaved }: ProfileFormProps) {
                 disabled={disabled}
               />
             </div>
-            <Pair>
+            <FormPair>
               <FormField label={fr.auth.displayNameLabel} error={fieldErrors.displayName}>
                 <Input
                   value={values.displayName}
@@ -317,11 +285,11 @@ export function ProfileForm({ profile, disabled, onSaved }: ProfileFormProps) {
                   onChange={(event) => update("handle", event.target.value.toLowerCase())}
                 />
               </FormField>
-            </Pair>
-          </Section>
+            </FormPair>
+          </FormSection>
 
-          <Section id="activite" title={fr.settings.activityTitle}>
-            <Pair>
+          <FormSection id="activite" title={fr.settings.activityTitle}>
+            <FormPair>
               <label className="flex flex-col gap-1 text-sm text-text-2">
                 {fr.auth.countryLabel}
                 <CountrySelect
@@ -342,7 +310,7 @@ export function ProfileForm({ profile, disabled, onSaved }: ProfileFormProps) {
                   disabled={disabled}
                 />
               </label>
-            </Pair>
+            </FormPair>
             <RoleDetailFields
               role={selectedRole}
               workMode={values.workMode}
@@ -358,9 +326,9 @@ export function ProfileForm({ profile, disabled, onSaved }: ProfileFormProps) {
                 onChange={(event) => update("specialty", event.target.value)}
               />
             </label>
-          </Section>
+          </FormSection>
 
-          <Section id="bio" title={fr.settings.bioSectionTitle}>
+          <FormSection id="bio" title={fr.settings.bioSectionTitle}>
             <label className="flex flex-col gap-1 text-sm text-text-2">
               {fr.settings.bioLabel}
               <Textarea
@@ -388,9 +356,9 @@ export function ProfileForm({ profile, disabled, onSaved }: ProfileFormProps) {
                 {fr.settings.helpsBeginnersHint}
               </p>
             </div>
-          </Section>
+          </FormSection>
 
-          <Section id="liens" title={fr.settings.linksTitle}>
+          <FormSection id="liens" title={fr.settings.linksTitle}>
             {LINK_KINDS.map((kind) => (
               <LinkRow
                 key={kind}
@@ -401,7 +369,7 @@ export function ProfileForm({ profile, disabled, onSaved }: ProfileFormProps) {
                 onChange={(value) => updateLink(kind, value)}
               />
             ))}
-          </Section>
+          </FormSection>
         </fieldset>
 
         {(dirty || error) && (

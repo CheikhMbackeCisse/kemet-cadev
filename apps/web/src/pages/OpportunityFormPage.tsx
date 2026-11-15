@@ -21,6 +21,7 @@ import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { CodeTextarea } from "../components/content/CodeTextarea.js";
 import { FormPage } from "../components/layout/FormPage.js";
+import { FormPair, FormSection } from "../components/layout/FormSection.js";
 import {
   PublishAsField,
   PUBLISH_AS_ME,
@@ -171,94 +172,103 @@ export function OpportunityFormPage() {
         />
       ) : (
         <>
-          {!slug && (
-            <PublishAsField value={publishAs} onChange={choosePublishAs} disabled={isSuspended} />
-          )}
-          <FormField label={fr.opportunities.kindLabel}>
-            <Select
-              value={draft.kind}
-              onValueChange={(kind) => update("kind", kind as OpportunityKind)}
-              options={KIND_OPTIONS}
-            />
-          </FormField>
-          <FormField label={fr.opportunities.titleLabel} error={errors.title}>
-            <Input
-              value={draft.title}
-              maxLength={120}
-              onChange={(event) => update("title", event.target.value)}
-            />
-          </FormField>
-          <FormField label={fr.opportunities.organizationLabel} error={errors.organization}>
-            <Input
-              value={draft.organization}
-              maxLength={80}
-              disabled={organizationLocked}
-              onChange={(event) => update("organization", event.target.value)}
-            />
-          </FormField>
-
-          <label className="flex items-center gap-2 text-sm text-text max-md:min-h-11">
-            <Checkbox
-              checked={draft.remote}
-              onCheckedChange={(checked) => update("remote", checked)}
-            />
-            {fr.opportunities.remoteLabel}
-          </label>
-          <FormField label={fr.opportunities.countryLabel} error={errors.countryCode}>
-            <CountrySelect
-              value={draft.countryCode}
-              onValueChange={(countryCode) => update("countryCode", countryCode)}
-              placeholder={fr.opportunities.countryPlaceholder}
-            />
-          </FormField>
-          <FormField label={fr.opportunities.cityLabel}>
-            <Input
-              value={draft.city}
-              maxLength={60}
-              onChange={(event) => update("city", event.target.value)}
-            />
-          </FormField>
-
-          <fieldset className="flex flex-col gap-1">
-            <legend className="mb-1 text-sm text-text-2">
-              {fr.opportunities.domainsFieldLabel}
-            </legend>
-            <DomainGrid
-              value={draft.domains}
-              onChange={(domains) => update("domains", domains)}
-              exclude={["other"]}
-              errorId={errors.domains ? domainsErrorId : undefined}
-            />
-            {errors.domains && (
-              <p id={domainsErrorId} className="text-sm text-danger" role="alert">
-                {errors.domains}
-              </p>
+          <FormSection id="offre" title={fr.opportunities.sections.offer}>
+            {!slug && (
+              <PublishAsField value={publishAs} onChange={choosePublishAs} disabled={isSuspended} />
             )}
-          </fieldset>
+            <FormField label={fr.opportunities.titleLabel} error={errors.title}>
+              <Input
+                value={draft.title}
+                maxLength={120}
+                onChange={(event) => update("title", event.target.value)}
+              />
+            </FormField>
+            <FormPair>
+              <FormField label={fr.opportunities.kindLabel}>
+                <Select
+                  value={draft.kind}
+                  onValueChange={(kind) => update("kind", kind as OpportunityKind)}
+                  options={KIND_OPTIONS}
+                />
+              </FormField>
+              <FormField label={fr.opportunities.organizationLabel} error={errors.organization}>
+                <Input
+                  value={draft.organization}
+                  maxLength={80}
+                  disabled={organizationLocked}
+                  onChange={(event) => update("organization", event.target.value)}
+                />
+              </FormField>
+            </FormPair>
+            <CodeTextarea
+              label={fr.opportunities.descriptionLabel}
+              value={draft.description}
+              onValueChange={(description) => update("description", description)}
+              error={errors.description}
+            />
+          </FormSection>
 
-          <CodeTextarea
-            label={fr.opportunities.descriptionLabel}
-            value={draft.description}
-            onValueChange={(description) => update("description", description)}
-            error={errors.description}
-          />
+          <FormSection id="lieu" title={fr.opportunities.sections.place}>
+            <label className="flex items-center gap-2 text-sm text-text max-md:min-h-11">
+              <Checkbox
+                checked={draft.remote}
+                onCheckedChange={(checked) => update("remote", checked)}
+              />
+              {fr.opportunities.remoteLabel}
+            </label>
+            <FormPair>
+              <FormField label={fr.opportunities.countryLabel} error={errors.countryCode}>
+                <CountrySelect
+                  value={draft.countryCode}
+                  onValueChange={(countryCode) => update("countryCode", countryCode)}
+                  placeholder={fr.opportunities.countryPlaceholder}
+                />
+              </FormField>
+              <FormField label={fr.opportunities.cityLabel}>
+                <Input
+                  value={draft.city}
+                  maxLength={60}
+                  onChange={(event) => update("city", event.target.value)}
+                />
+              </FormField>
+            </FormPair>
+          </FormSection>
+
+          <FormSection id="domaines" title={fr.opportunities.domainsFieldLabel}>
+            <fieldset className="flex flex-col gap-1">
+              <legend className="sr-only">{fr.opportunities.domainsFieldLabel}</legend>
+              <DomainGrid
+                value={draft.domains}
+                onChange={(domains) => update("domains", domains)}
+                exclude={["other"]}
+                errorId={errors.domains ? domainsErrorId : undefined}
+              />
+              {errors.domains && (
+                <p id={domainsErrorId} className="text-sm text-danger" role="alert">
+                  {errors.domains}
+                </p>
+              )}
+            </fieldset>
+          </FormSection>
 
           {isMission ? (
-            <>
-              <FormField label={fr.opportunities.budgetMinLabel} error={errors.budgetMin}>
-                <Input
-                  inputMode="numeric"
-                  value={draft.budgetMin}
-                  onChange={(event) => update("budgetMin", event.target.value)}
-                />
-              </FormField>
-              <FormField label={fr.opportunities.budgetMaxLabel} error={errors.budgetMax}>
-                <Input
-                  inputMode="numeric"
-                  value={draft.budgetMax}
-                  onChange={(event) => update("budgetMax", event.target.value)}
-                />
-              </FormField>
+            <FormSection id="conditions" title={fr.opportunities.sections.mission}>
+              <FormPair>
+                <FormField label={fr.opportunities.budgetMinLabel} error={errors.budgetMin}>
+                  <Input
+                    inputMode="numeric"
+                    value={draft.budgetMin}
+                    onChange={(event) => update("budgetMin", event.target.value)}
+                  />
+                </FormField>
+                <FormField label={fr.opportunities.budgetMaxLabel} error={errors.budgetMax}>
+                  <Input
+                    inputMode="numeric"
+                    value={draft.budgetMax}
+                    onChange={(event) => update("budgetMax", event.target.value)}
+                  />
+                </FormField>
+              </FormPair>
               <FormField label={fr.opportunities.deadlineFieldLabel} error={errors.deadline}>
                 <Input
                   type="date"
@@ -274,9 +284,9 @@ export function OpportunityFormPage() {
                   onChange={(event) => update("criteria", event.target.value)}
                 />
               </FormField>
-            </>
+            </FormSection>
           ) : (
-            <>
+            <FormSection id="conditions" title={fr.opportunities.sections.conditions}>
               {draft.kind === "job" && (
                 <FormField label={fr.opportunities.contractFieldLabel} error={errors.contractType}>
                   <Select
@@ -289,20 +299,22 @@ export function OpportunityFormPage() {
                   />
                 </FormField>
               )}
-              <FormField label={fr.opportunities.startDateLabel} error={errors.startDate}>
-                <Input
-                  type="date"
-                  value={draft.startDate}
-                  onChange={(event) => update("startDate", event.target.value)}
-                />
-              </FormField>
-              <FormField label={fr.opportunities.jobDeadlineFieldLabel}>
-                <Input
-                  type="date"
-                  value={draft.deadline}
-                  onChange={(event) => update("deadline", event.target.value)}
-                />
-              </FormField>
+              <FormPair>
+                <FormField label={fr.opportunities.startDateLabel} error={errors.startDate}>
+                  <Input
+                    type="date"
+                    value={draft.startDate}
+                    onChange={(event) => update("startDate", event.target.value)}
+                  />
+                </FormField>
+                <FormField label={fr.opportunities.jobDeadlineFieldLabel}>
+                  <Input
+                    type="date"
+                    value={draft.deadline}
+                    onChange={(event) => update("deadline", event.target.value)}
+                  />
+                </FormField>
+              </FormPair>
               <FormField
                 label={fr.opportunities.compensationFieldLabel}
                 error={errors.compensation}
@@ -313,7 +325,7 @@ export function OpportunityFormPage() {
                   onChange={(event) => update("compensation", event.target.value)}
                 />
               </FormField>
-            </>
+            </FormSection>
           )}
         </>
       )}
