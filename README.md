@@ -49,7 +49,7 @@ chacun redémarre sans l'autre. L'assistant s'appelle désormais Kocc
 (`@kocc`, l'ancien `@kemet` reste reconnu) ; le code garde le nom interne
 `kemet`. Il passe par une chaîne de fournisseurs sur leurs offres gratuites
 et ne reçoit que ce qui est décrit dans
-[`docs/DECLARATION-IA.md`](docs/DECLARATION-IA.md).
+[`DECLARATION-IA.md`](DECLARATION-IA.md).
 
 ## Ce qu'on peut y faire
 
@@ -123,7 +123,7 @@ depuis un compte, et les comptes créés par de vraies personnes.
 | [`docs/GUIDE-JURY.md`](docs/GUIDE-JURY.md) | Un parcours de cinq minutes sur le site |
 | [`docs/VISITE-DU-CODE.md`](docs/VISITE-DU-CODE.md) | Un message, un appel à Kocc et une mise en relation, fichier par fichier |
 | [`docs/conception/`](docs/conception/index.md) | Cas d'utilisation, modèle de données, séquences, déploiement, en Mermaid |
-| [`docs/DECLARATION-IA.md`](docs/DECLARATION-IA.md) | L'IA dans la construction et dans le produit |
+| [`DECLARATION-IA.md`](DECLARATION-IA.md) | L'IA dans la construction et dans le produit |
 | [`docs/EXPLOITATION.md`](docs/EXPLOITATION.md) | Coût, mémoire, reprise, sauvegardes, montée en charge |
 | [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Mesures sur connexion lente et méthode pour les refaire |
 | [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md) | Toutes les commandes de déploiement et de restauration |
@@ -174,6 +174,8 @@ LGPL : `pnpm licenses:check` échoue sinon, et la CI vérifie que
 MinIO et Redis 8 (remplacé par Valkey). Les images Docker de base (Alpine)
 contiennent des outils système sous GPL, comme BusyBox : c'est
 l'environnement d'exécution, Kemet ne les intègre ni ne les modifie.
+
+L'usage de l'IA est déclaré dans [DECLARATION-IA.md](DECLARATION-IA.md).
 
 ## Limites connues
 

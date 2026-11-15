@@ -75,5 +75,5 @@ existent dans les Paramètres.
 - `README.md` : architecture et organisation du dépôt.
 - `docs/VISITE-DU-CODE.md` : les trajets d'un message, d'un appel à Kocc et
   d'une mise en relation, fichier par fichier.
-- `docs/DECLARATION-IA.md` : comment l'IA a servi à construire Kemet, et
+- [`DECLARATION-IA.md`](../DECLARATION-IA.md) : comment l'IA a servi à construire Kemet, et
   comment elle sert dans le produit.
