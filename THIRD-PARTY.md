@@ -139,5 +139,10 @@ Le logo de Kemet (`brand/`) est propre au projet.
 | caddy:2-alpine | Apache-2.0 |
 | node (base des images web, api, realtime, worker) | MIT |
 
+Ces licences sont celles des logiciels principaux. La base Alpine de chaque
+image contient des outils système sous GPL ou LGPL, comme BusyBox : c'est
+l'environnement d'exécution, Kemet ne les intègre ni ne les modifie (détail
+dans `docs/adr/0002-hebergement.md`).
+
 Valkey remplace Redis, dont les versions récentes ne sont plus sous une
 licence libre acceptée par le projet.

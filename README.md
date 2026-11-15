@@ -1,9 +1,9 @@
 # Kemet
 
-La plateforme d'échange des développeurs africains : des salons de discussion
-en temps réel, un fil de posts, un assistant, Kocc, nourri par les skills
-écrits par la communauté, des projets qui cherchent de l'aide, des
-compétitions, et des points qui récompensent l'utilité plutôt que les vues.
+Kemet, c'est l'endroit où les développeurs africains échangent, s'entraident,
+montrent leurs travaux et trouvent des opportunités. Kocc, l'assistant de la
+plateforme, répond en s'appuyant sur les skills écrits par la communauté et
+cite leur auteur.
 
 Projet présenté à la CADEV 2026 (Systalink).
 
@@ -88,8 +88,7 @@ Monorepo pnpm et Turborepo, TypeScript strict partout :
 - `infra/` : Compose, Caddyfile, scripts de déploiement et de sauvegarde ;
 - `evals/` : évaluations de l'assistant lancées à la main (injections,
   choix du skill, mise en relation) ;
-- `docs/` : documents ci-dessous et décisions d'architecture
-  (`docs/adr/`).
+- `docs/` : documents ci-dessous et décisions d'architecture (`docs/adr/`).
 
 ## Données de démonstration
 
@@ -172,7 +171,9 @@ sous licence MIT, Apache 2.0, BSD, ISC ou PostgreSQL, plus OFL-1.1 pour les
 polices et CC0 pour les logos Simple Icons. Aucune dépendance GPL, AGPL ou
 LGPL : `pnpm licenses:check` échoue sinon, et la CI vérifie que
 `THIRD_PARTY_LICENSES.md` est à jour. C'est ce qui a écarté sharp, ClamAV,
-MinIO et Redis 8 (remplacé par Valkey).
+MinIO et Redis 8 (remplacé par Valkey). Les images Docker de base (Alpine)
+contiennent des outils système sous GPL, comme BusyBox : c'est
+l'environnement d'exécution, Kemet ne les intègre ni ne les modifie.
 
 ## Limites connues
 
