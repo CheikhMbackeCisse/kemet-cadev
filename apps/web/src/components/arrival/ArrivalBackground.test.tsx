@@ -156,8 +156,9 @@ describe("ArrivalLayout", () => {
     mockLayout();
     const { container } = renderHome();
     await decorLoaded(container);
+    // Le chevauchement se mesure au rendu qui suit l'arrivée des bandes.
+    await waitFor(() => expect(container.querySelectorAll("[data-clash]")).toHaveLength(1));
     const clashing = [...container.querySelectorAll("[data-clash]")];
-    expect(clashing).toHaveLength(1);
     expect(clashing[0]!.querySelector('img[src*="python"]')).not.toBeNull();
   });
 
