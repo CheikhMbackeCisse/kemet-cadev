@@ -43,6 +43,7 @@ import {
   PROFILE_ACTIONS_ROW_CLASS,
 } from "../components/profile/profileActionClass.js";
 import { fr } from "../i18n/fr.js";
+import { LOCALE } from "../i18n/language.js";
 
 // "Autre" ne dit rien sur un profil : la spécialité suffit.
 
@@ -280,7 +281,7 @@ export function UserPage() {
         {!followListCursor && !followListLoading && followListHidden > 0 && (
           <p className="px-1 text-sm text-text-2">
             {fr.profile.hiddenFollows(
-              new Intl.NumberFormat("fr-FR").format(followListHidden),
+              new Intl.NumberFormat(LOCALE).format(followListHidden),
               followListItems.length > 0,
             )}
           </p>

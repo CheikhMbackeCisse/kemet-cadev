@@ -8,6 +8,7 @@ import { ProfileLinks, profileLinks } from "./ProfileLinks.js";
 import { ProjectFeedCard } from "../feed/ProjectFeedCard.js";
 import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 // pdf.js pèse plusieurs centaines de Ko : chargé seulement quand un CV s'affiche.
 const CvPreview = lazy(() =>
@@ -68,7 +69,7 @@ export function ProfileLibrary({ profile, isOwnProfile, library }: ProfileLibrar
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-text">{cv.originalName}</p>
                     <p className="text-xs text-subtle">
-                      {fr.library.cvUpdated(new Date(cv.updatedAt).toLocaleDateString("fr-FR"))}
+                      {fr.library.cvUpdated(new Date(cv.updatedAt).toLocaleDateString(LOCALE))}
                     </p>
                   </div>
                 </div>

@@ -1,12 +1,14 @@
+import { LOCALE } from "../i18n/language.js";
+import { fr } from "../i18n/fr.js";
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 // toLocaleString avec options crée un formateur à chaque appel, coûteux sur un
 // fil de plusieurs dizaines de cartes : un seul par format, créé une fois.
-const SHORT_DATE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
-const SHORT_DATE_WITH_YEAR = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
-const FULL_DATE = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyle: "short" });
+const SHORT_DATE = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short" });
+const SHORT_DATE_WITH_YEAR = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short", year: "numeric" });
+const FULL_DATE = new Intl.DateTimeFormat(LOCALE, { dateStyle: "long", timeStyle: "short" });
 
 /**
  * Date courte et relative pour une ligne de fil : "à l'instant", "il y a
@@ -16,11 +18,11 @@ const FULL_DATE = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeStyl
 export function formatRelativeTime(iso: string, now: Date = new Date()): string {
   const date = new Date(iso);
   const elapsed = now.getTime() - date.getTime();
-  if (elapsed < MINUTE) return "à l'instant";
-  if (elapsed < HOUR) return `il y a ${Math.floor(elapsed / MINUTE)} min`;
-  if (elapsed < DAY) return `il y a ${Math.floor(elapsed / HOUR)} h`;
-  if (elapsed < 2 * DAY) return "hier";
-  if (elapsed < 7 * DAY) return `il y a ${Math.floor(elapsed / DAY)} j`;
+  if (elapsed < MINUTE) return fr.common.justNow;
+  if (elapsed < HOUR) return fr.common.minutesAgo(Math.floor(elapsed / MINUTE));
+  if (elapsed < DAY) return fr.common.hoursAgo(Math.floor(elapsed / HOUR));
+  if (elapsed < 2 * DAY) return fr.common.yesterday;
+  if (elapsed < 7 * DAY) return fr.common.daysAgo(Math.floor(elapsed / DAY));
   const sameYear = date.getFullYear() === now.getFullYear();
   return (sameYear ? SHORT_DATE : SHORT_DATE_WITH_YEAR).format(date);
 }

@@ -13,6 +13,7 @@ import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { RailPage } from "../components/layout/RailPage.js";
 import { OrganizationRequestsAdmin } from "../components/organizations/OrganizationRequestsAdmin.js";
+import { LOCALE } from "../i18n/language.js";
 
 const TARGET_LABELS = {
   message: fr.moderation.targetMessage,
@@ -31,7 +32,7 @@ const ACTION_LABELS: Record<ModerationActionEntry["action"], string> = {
 };
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-FR", {
+  return new Date(iso).toLocaleString(LOCALE, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",

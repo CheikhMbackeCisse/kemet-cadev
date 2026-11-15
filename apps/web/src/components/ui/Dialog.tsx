@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
 import { focusContent } from "./focusContent.js";
+import { fr } from "../../i18n/fr.js";
 
 export interface DialogProps {
   open: boolean;
@@ -46,7 +47,7 @@ export function Dialog({
               )}
             </div>
             <RadixDialog.Close
-              aria-label="Fermer"
+              aria-label={fr.common.close}
               className="inline-flex size-control shrink-0 items-center justify-center rounded-control text-text-2 hover:bg-surface-2"
             >
               <X className="size-4" aria-hidden="true" />

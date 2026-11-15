@@ -1,5 +1,6 @@
 import { handleSchema, MAX_CONVERSATION_MEMBERS, type Conversation } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 const NAMES_IN_TITLE = 3;
 const EXCERPT_LENGTH = 80;
@@ -44,8 +45,8 @@ export function formatConversationTime(iso: string, now: Date = new Date()): str
   const date = new Date(iso);
   const sameDay = date.toDateString() === now.toDateString();
   return sameDay
-    ? date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-    : date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    ? date.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString(LOCALE, { day: "numeric", month: "short" });
 }
 
 export type ParsedHandles = { ok: true; handles: string[] } | { ok: false; error: string };

@@ -109,12 +109,21 @@
       #static-welcome a:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
       .sw-footer {
         flex-shrink: 0; height: 3rem;
-        display: flex; align-items: center; justify-content: center;
+        display: flex; align-items: center; justify-content: center; gap: 16px;
         padding: 0 16px env(safe-area-inset-bottom);
       }
       .sw-footer p { margin: 0; display: flex; align-items: baseline; gap: 6px; }
       .sw-powered { font-size: 12px; color: rgba(255, 255, 255, 0.72); }
       .sw-systalink { font-size: 13px; font-weight: 500; }
+      .sw-lang-on, .sw-lang {
+        min-width: 44px; min-height: 36px; padding: 0 12px; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font: inherit; font-size: 14px; font-weight: 500;
+      }
+      .sw-lang-on { background-color: #ffffff; color: var(--sw-to); }
+      .sw-lang { color: rgba(255, 255, 255, 0.72); text-decoration: none; }
+      .sw-lang:hover { color: #ffffff; }
+      .sw-lang:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
       @media (min-width: 375px) { .sw-title { font-size: 24px; } }
       @media (min-width: 640px) {
         .sw-main { padding: 32px 16px; }
@@ -147,6 +156,7 @@
       </main>
       <footer class="sw-footer">
         <p><span class="sw-powered">Propulsé par</span><span class="sw-systalink">Systalink</span></p>
+        <p><span class="sw-lang-on" aria-hidden="true">FR</span><a class="sw-lang" data-full-reload href="/decouvrir?lang=en" lang="en" aria-label="English">EN</a></p>
       </footer>
     </div>
     <div id="root"></div>

@@ -12,9 +12,10 @@ import { Avatar } from "../ui/Avatar.js";
 import { IconButton } from "../ui/IconButton.js";
 import { Tooltip } from "../ui/Tooltip.js";
 import { UserName } from "../ui/UserName.js";
+import { LOCALE } from "../../i18n/language.js";
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 }
 
 export interface ConversationMessagesProps {

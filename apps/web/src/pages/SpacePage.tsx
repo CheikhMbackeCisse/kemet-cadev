@@ -90,6 +90,7 @@ import {
   type SpaceMember,
 } from "@kemet/shared";
 import { authorLevel, ProfileLink } from "../components/ui/ProfileLink.js";
+import { LOCALE } from "../i18n/language.js";
 
 function readParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
@@ -106,7 +107,7 @@ function writeParams(params: Record<string, string>) {
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 }
 
 export function SpacePage() {

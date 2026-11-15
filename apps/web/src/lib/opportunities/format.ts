@@ -1,9 +1,10 @@
 import { COUNTRIES, type OpportunitySummary } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
-const AMOUNT = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 });
+const AMOUNT = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 });
 // Dates de l'offre lues telles qu'écrites (AAAA-MM-JJ), sans décalage horaire.
-const DATE = new Intl.DateTimeFormat("fr-FR", {
+const DATE = new Intl.DateTimeFormat(LOCALE, {
   day: "numeric",
   month: "long",
   year: "numeric",

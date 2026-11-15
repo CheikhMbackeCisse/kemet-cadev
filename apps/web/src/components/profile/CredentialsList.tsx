@@ -1,6 +1,7 @@
 import type { Credential, CredentialType } from "@kemet/shared";
 import { Badge } from "../ui/Badge.js";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
   job: fr.profile.credentialTypeJob,
@@ -9,12 +10,12 @@ const CREDENTIAL_TYPE_LABELS: Record<CredentialType, string> = {
 };
 
 function formatCredentialDate(date: string): string {
-  return new Date(date).toLocaleDateString("fr-FR", { year: "numeric", month: "short" });
+  return new Date(date).toLocaleDateString(LOCALE, { year: "numeric", month: "short" });
 }
 
 function formatCredentialRange(startDate: string, endDate: string | null): string {
   const start = formatCredentialDate(startDate);
-  return endDate ? `De ${start} à ${formatCredentialDate(endDate)}` : `Depuis ${start}`;
+  return endDate ? fr.common.dateRange(start, formatCredentialDate(endDate)) : fr.common.since(start);
 }
 
 /** Onglet "Parcours" d'un profil : postes, formations et stages déclarés. */

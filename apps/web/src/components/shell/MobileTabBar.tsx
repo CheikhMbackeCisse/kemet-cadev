@@ -54,7 +54,7 @@ export function MobileTabBar({ activeTabId, privateUnread = 0 }: MobileTabBarPro
             </a>
           </section>
         )}
-        <nav aria-label="Navigation principale" className="flex">
+        <nav aria-label={fr.common.mainNavigation} className="flex">
           {MOBILE_TABS.map((tab) => {
             const isActive = tab.id === activeTabId;
             const className = cn(

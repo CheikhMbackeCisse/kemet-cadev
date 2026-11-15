@@ -3,9 +3,10 @@ import { LEVEL_FILL_CLASSES, LEVEL_TEXT_CLASSES } from "../ui/levelColors.js";
 import { cn } from "../../lib/cn.js";
 import { levelProgress } from "../../lib/levels/progress.js";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 // Ses propres points au point près : "2,6k" ne laisse pas suivre sa progression.
-const exactNumber = new Intl.NumberFormat("fr-FR");
+const exactNumber = new Intl.NumberFormat(LOCALE);
 
 /** Fine barre vers le niveau suivant, à la couleur de l'insigne ; au plus haut niveau, son nom seul. */
 export function LevelProgressBar({ points }: { points: number }) {

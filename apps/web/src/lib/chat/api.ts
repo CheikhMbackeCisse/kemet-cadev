@@ -87,6 +87,7 @@ import type {
   OpportunityInput,
   OpportunitySummary,
 } from "@kemet/shared";
+import { fr } from "../../i18n/fr.js";
 
 class ChatApiError extends Error {
   constructor(
@@ -435,7 +436,7 @@ export function uploadPostVideo(
         );
     };
     xhr.onerror = () =>
-      reject(new ChatApiError("network_error", "La connexion a été coupée pendant l'envoi.", 0));
+      reject(new ChatApiError("network_error", fr.common.networkError, 0));
     xhr.send(formData);
   });
 }

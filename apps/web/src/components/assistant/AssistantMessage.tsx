@@ -162,7 +162,7 @@ export function AssistantMessage({
             )}
           >
             <ThumbsUp className="size-3.5" aria-hidden="true" />
-            Utile
+            {fr.feed.utile}
           </button>
           <button
             type="button"
@@ -174,7 +174,7 @@ export function AssistantMessage({
             )}
           >
             <ThumbsDown className="size-3.5" aria-hidden="true" />
-            Pas utile
+            {fr.feed.notHelpful}
           </button>
         </div>
       )}

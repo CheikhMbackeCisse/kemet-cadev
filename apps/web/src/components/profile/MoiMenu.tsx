@@ -18,6 +18,7 @@ import { useSession } from "../../session/SessionProvider.js";
 import { fr } from "../../i18n/fr.js";
 import { DEMO_DATA_PATH } from "../shell/DemoNotice.js";
 import { MOI_ITEMS } from "../shell/mobileTabs.js";
+import { LanguageSwitch } from "../ui/LanguageSwitch.js";
 import { Sheet } from "../ui/Sheet.js";
 import { useToast } from "../ui/Toast.js";
 
@@ -89,8 +90,12 @@ export function MoiMenu({
               </a>
             </li>
           ))}
+          <li className="mt-1 flex min-h-control-mobile items-center justify-between gap-3 border-t border-border px-2 pt-1">
+            <span className="text-base text-text">{fr.common.language}</span>
+            <LanguageSwitch />
+          </li>
           {profile && (
-            <li className="mt-1 border-t border-border pt-1">
+            <li className="border-t border-border pt-1">
               <button
                 type="button"
                 onClick={handleSignOut}

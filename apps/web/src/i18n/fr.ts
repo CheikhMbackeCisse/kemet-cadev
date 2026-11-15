@@ -1,4 +1,7 @@
-export const fr = {
+import { en } from "./en.js";
+import { currentLanguage } from "./language.js";
+
+export const french = {
   common: {
     back: "Retour",
     clearSearch: "Effacer la recherche",
@@ -7,6 +10,22 @@ export const fr = {
     requiredField: "Champ obligatoire.",
     tooShort: (min: number) => `Au moins ${min} caractères.`,
     tooLong: (max: number) => `${max} caractères au plus.`,
+    close: "Fermer",
+    closeNotification: "Fermer la notification",
+    mainNavigation: "Navigation principale",
+    networkError: "La connexion a été coupée pendant l'envoi.",
+    megabytes: (value: string) => `${value} Mo`,
+    justNow: "à l'instant",
+    minutesAgo: (minutes: number) => `il y a ${minutes} min`,
+    hoursAgo: (hours: number) => `il y a ${hours} h`,
+    yesterday: "hier",
+    daysAgo: (days: number) => `il y a ${days} j`,
+    dateRange: (start: string, end: string) => `De ${start} à ${end}`,
+    since: (start: string) => `Depuis ${start}`,
+    stars: (count: number) => (count === 1 ? "1 étoile" : `${count} étoiles`),
+    amountRange: (min: string, max: string) => `${min} à ${max} FCFA`,
+    language: "Langue",
+    languageNames: { fr: "Français", en: "English" },
   },
   imageViewer: {
     close: "Fermer l'image",
@@ -342,7 +361,7 @@ export const fr = {
     accountHint: "Email, mot de passe, comptes liés",
     profileHint: "Nom, pays, rôle, bio, liens",
     appearanceSection: "Apparence",
-    appearanceHint: "Thème clair ou sombre",
+    appearanceHint: "Thème clair ou sombre, langue",
     dataHint: "Personnes bloquées, export, suppression",
     helpSection: "Aide",
     helpHint: "À propos de Kemet, version, contact",
@@ -425,6 +444,7 @@ export const fr = {
     contactLabel: "Contact",
     contactMissing: "Le contact n'est pas encore configuré sur ce serveur.",
     contactError: "Le contact n'a pas pu être chargé.",
+    languageLabel: "Langue",
   },
   accountDeletion: {
     title: "Supprimer mon compte",
@@ -993,6 +1013,7 @@ export const fr = {
     unfollowedToast: (name: string) => `Tu ne suis plus ${name}.`,
     postUnavailable: "Ce post n'est plus disponible.",
     utile: "Utile",
+    notHelpful: "Pas utile",
     utileCount: (count: number) =>
       count === 1 ? "Utile pour 1 personne" : `Utile pour ${count} personnes`,
     utileAriaLabel: (count: number) =>
@@ -1840,3 +1861,10 @@ export const fr = {
     },
   },
 } as const;
+
+/**
+ * Textes de l'interface dans la langue choisie : le français par défaut,
+ * l'anglais seulement si la personne l'a choisi (FR / EN). Le type reste
+ * celui du français pour que chaque écran garde ses types littéraux.
+ */
+export const fr = (currentLanguage() === "en" ? en : french) as typeof french;

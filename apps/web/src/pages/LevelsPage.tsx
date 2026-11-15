@@ -12,10 +12,11 @@ import { cn } from "../lib/cn.js";
 import { formatCount } from "../lib/formatCount.js";
 
 // Ses propres points au point près : "2,6k" ne laisse pas suivre sa progression.
-const exactNumber = new Intl.NumberFormat("fr-FR");
+const exactNumber = new Intl.NumberFormat(LOCALE);
 import { SIGN_UP_PATH } from "../session/signUpInvite.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
+import { LOCALE } from "../i18n/language.js";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (

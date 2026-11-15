@@ -14,6 +14,7 @@ import { Skeleton } from "../ui/Skeleton.js";
 import { Textarea } from "../ui/Textarea.js";
 import { UserName } from "../ui/UserName.js";
 import { OutgoingMessages } from "./OutgoingMessages.js";
+import { LOCALE } from "../../i18n/language.js";
 
 interface ThreadViewProps {
   parent: Message;
@@ -34,7 +35,7 @@ interface ThreadViewProps {
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 }
 
 function ThreadMessage({ message }: { message: Message }) {

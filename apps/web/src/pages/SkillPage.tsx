@@ -26,7 +26,7 @@ function readSlug(pathname: string): string {
 }
 
 function starLabel(stars: number): string {
-  return stars === 1 ? "1 étoile" : `${stars} étoiles`;
+  return fr.common.stars(stars);
 }
 
 export function SkillPage() {

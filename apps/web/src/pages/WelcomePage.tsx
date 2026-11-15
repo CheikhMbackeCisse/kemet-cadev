@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { releaseStaticWelcome } from "../lib/staticWelcome.js";
 import { ArrivalLayout } from "../components/arrival/ArrivalLayout.js";
 import { KemetWordmark } from "../components/ui/KemetWordmark.js";
+import { LanguageSwitch } from "../components/ui/LanguageSwitch.js";
 import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
 import { markIntroSeen } from "../lib/intro/introStorage.js";
 import { useSession } from "../session/SessionProvider.js";
@@ -12,10 +13,13 @@ import { fr } from "../i18n/fr.js";
 // sur le fond bleu, comme sur leur propre page. Ni leur symbole ni leur police.
 function PoweredBy() {
   return (
-    <p className="flex items-baseline gap-1.5">
-      <span className="text-xs text-auth-text-muted">{fr.intro.poweredBy}</span>
-      <span className="text-sm font-medium text-auth-text">Systalink</span>
-    </p>
+    <div className="flex items-center gap-4">
+      <p className="flex items-baseline gap-1.5">
+        <span className="text-xs text-auth-text-muted">{fr.intro.poweredBy}</span>
+        <span className="text-sm font-medium text-auth-text">Systalink</span>
+      </p>
+      <LanguageSwitch tone="onDark" />
+    </div>
   );
 }
 
@@ -39,14 +43,20 @@ export function WelcomePage() {
   // carte visible : celle de React, invisible à la même place, ne sert qu'à
   // placer le décor. Remplacer l'une par l'autre compterait comme un nouvel
   // affichage, plus tardif, du plus grand élément de la page (LCP).
-  const [staticCard] = useState(() => document.getElementById("static-welcome") !== null);
+  // theme-init.js ne montre la carte statique, écrite en français, qu'à une
+  // personne qui n'a pas choisi l'anglais.
+  const [staticCard] = useState(
+    () =>
+      document.documentElement.hasAttribute("data-static-welcome") &&
+      document.getElementById("static-welcome") !== null,
+  );
   const busy = status === "loading" || signedIn;
   useLayoutEffect(() => {
     if (signedIn) releaseStaticWelcome();
   }, [signedIn]);
   useEffect(() => {
     if (!staticCard) return;
-    const links = document.querySelectorAll("#static-welcome a");
+    const links = document.querySelectorAll("#static-welcome .sw-card a");
     links.forEach((link) => link.addEventListener("click", markIntroSeen));
     return () => links.forEach((link) => link.removeEventListener("click", markIntroSeen));
   }, [staticCard]);

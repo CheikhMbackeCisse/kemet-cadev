@@ -12,6 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { fr } from "../../i18n/fr.js";
 
 export interface RailNavItem {
   id: string;
@@ -41,10 +42,10 @@ export interface NavSection extends RailNavItem {
  * (mobile), jamais dans la barre du haut d'une page. Ordre du bureau.
  */
 export const NAV_SECTIONS: NavSection[] = [
-  { id: "fil", label: "Fil", href: "/fil", icon: House, fillWhenActive: true, mobile: "tab" },
+  { id: "fil", label: fr.feed.title, href: "/fil", icon: House, fillWhenActive: true, mobile: "tab" },
   {
     id: "travaux",
-    label: "Travaux",
+    label: fr.works.title,
     href: "/travaux",
     icon: BookOpen,
     fillWhenActive: true,
@@ -52,7 +53,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "salons",
-    label: "Salons",
+    label: fr.messages.segmentSalons,
     href: "/salons",
     icon: MessageSquare,
     fillWhenActive: true,
@@ -60,7 +61,7 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "messages",
-    label: "Messages",
+    label: fr.messages.title,
     href: "/messages",
     icon: Send,
     fillWhenActive: true,
@@ -68,14 +69,14 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: "skills",
-    label: "Skills",
+    label: fr.skills.title,
     href: "/skills",
     icon: Wrench,
     fillWhenActive: true,
     mobile: "tab",
   },
-  { id: "projets", label: "Projets", href: "/projets", icon: FolderGit2, mobile: "moi" },
-  { id: "competitions", label: "Compétitions", href: "/competitions", icon: Trophy, mobile: "moi" },
+  { id: "projets", label: fr.projects.title, href: "/projets", icon: FolderGit2, mobile: "moi" },
+  { id: "competitions", label: fr.competitions.title, href: "/competitions", icon: Trophy, mobile: "moi" },
 ];
 
 /** Ordre de la barre du bas sur mobile, qui diffère du bureau : Salons reste au pouce. */
@@ -86,7 +87,7 @@ export const RAIL_NAV: RailNavItem[] = NAV_SECTIONS;
 /** Au pied du rail, séparé des sections : une page à lire, pas un espace de travail. */
 export const RAIL_FOOTER_NAV: RailNavItem = {
   id: "confidentialite",
-  label: "Confidentialité",
+  label: fr.privacy.navLink,
   href: "/confidentialite",
   icon: ShieldCheck,
 };
@@ -94,7 +95,7 @@ export const RAIL_FOOTER_NAV: RailNavItem = {
 /** Au pied du rail, sous Confidentialité. */
 export const SECURITY_NAV: RailNavItem = {
   id: "securite",
-  label: "Sécurité",
+  label: fr.security.navLink,
   href: "/securite",
   icon: LockKeyhole,
 };
@@ -102,7 +103,7 @@ export const SECURITY_NAV: RailNavItem = {
 /** Au pied de la barre d'activité sur bureau, dans la feuille "Moi" sur mobile. */
 export const SETTINGS_NAV: RailNavItem = {
   id: "parametres",
-  label: "Paramètres",
+  label: fr.settings.navLink,
   href: "/parametres",
   icon: Settings,
 };
@@ -110,7 +111,7 @@ export const SETTINGS_NAV: RailNavItem = {
 /** Au pied de la barre sur bureau, pour un administrateur seulement. */
 export const MODERATION_NAV: RailNavItem = {
   id: "moderation",
-  label: "Modération",
+  label: fr.moderation.navLink,
   href: "/moderation",
   icon: Flag,
   fillWhenActive: true,

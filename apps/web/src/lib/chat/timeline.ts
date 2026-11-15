@@ -1,5 +1,6 @@
 import { isAssistantHandle, type Level, type Message } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
 
@@ -47,7 +48,7 @@ export function formatDayLabel(date: Date, now: Date): string {
   if (dayKey(date) === dayKey(now)) return fr.chat.today;
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
   if (dayKey(date) === dayKey(yesterday)) return fr.chat.yesterday;
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString(LOCALE, {
     day: "numeric",
     month: "long",
     ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),

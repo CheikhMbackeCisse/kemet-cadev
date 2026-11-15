@@ -59,9 +59,10 @@ import { mentionsAssistant } from "../lib/chat/assistantNotice.js";
 import { KoccSymbol } from "../components/assistant/KoccSymbol.js";
 import { removeKoccMention } from "../lib/assistant/koccDraft.js";
 import { usePostAssistant } from "../lib/feed/usePostAssistant.js";
+import { LOCALE } from "../i18n/language.js";
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleString("fr-FR", {
+  return new Date(iso).toLocaleString(LOCALE, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",

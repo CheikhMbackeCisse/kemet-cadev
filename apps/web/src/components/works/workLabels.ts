@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { WorkLinkType, WorkStatus, WorkType } from "@kemet/shared";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 export const WORK_TYPE_LABELS: Record<WorkType, string> = {
   class_project: fr.works.typeClassProject,
@@ -55,5 +56,7 @@ export const WORK_LINK_ICONS: Record<WorkLinkType, LucideIcon> = {
 
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} ko`;
-  return `${(bytes / (1024 * 1024)).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
+  return fr.common.megabytes(
+    (bytes / (1024 * 1024)).toLocaleString(LOCALE, { maximumFractionDigits: 1 }),
+  );
 }

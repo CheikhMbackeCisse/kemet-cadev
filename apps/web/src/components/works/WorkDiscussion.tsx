@@ -20,6 +20,7 @@ import { useChannelMessages } from "../../lib/chat/useChannelMessages.js";
 import { useChannelDraft } from "../../lib/chat/useChannelDraft.js";
 import { fr } from "../../i18n/fr.js";
 import { SuggestionChips } from "../chat/SuggestionChips.js";
+import { LOCALE } from "../../i18n/language.js";
 
 export interface WorkDiscussionProps {
   work: WorkDetail;
@@ -28,7 +29,7 @@ export interface WorkDiscussionProps {
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" });
 }
 
 /** Débuts de message proposés à qui ouvre la discussion pour la première fois. */

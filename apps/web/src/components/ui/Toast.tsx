@@ -2,6 +2,7 @@ import * as RadixToast from "@radix-ui/react-toast";
 import { X } from "lucide-react";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
+import { fr } from "../../i18n/fr.js";
 
 export type ToastTone = "neutral" | "success" | "danger";
 
@@ -74,7 +75,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               </RadixToast.Action>
             )}
             <RadixToast.Close
-              aria-label="Fermer la notification"
+              aria-label={fr.common.closeNotification}
               className="inline-flex size-control items-center justify-center rounded-control text-muted hover:text-text max-md:size-control-mobile"
             >
               <X className="size-4" aria-hidden="true" />

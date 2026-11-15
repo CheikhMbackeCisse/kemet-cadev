@@ -15,7 +15,7 @@ export const MOI_TAB_ID = "moi";
 
 export const MOBILE_TABS: MobileTabItem[] = [
   ...MOBILE_TAB_ORDER.map((id) => NAV_SECTIONS.find((section) => section.id === id)!),
-  { id: MOI_TAB_ID, label: "Moi", icon: User },
+  { id: MOI_TAB_ID, label: fr.moi.title, icon: User },
 ];
 
 /** Sections sans onglet, atteintes depuis la page "Moi". */

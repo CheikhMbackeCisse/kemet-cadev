@@ -1,4 +1,5 @@
 import { SettingsSubPage } from "../../components/settings/SettingsSubPage.js";
+import { LanguageSwitch } from "../../components/ui/LanguageSwitch.js";
 import { Select } from "../../components/ui/Select.js";
 import { useTheme, type ThemeChoice } from "../../theme/theme-context.js";
 import { fr } from "../../i18n/fr.js";
@@ -23,6 +24,10 @@ export function AppearanceSettingsPage() {
           options={THEME_OPTIONS}
         />
       </label>
+      <div className="mt-5 flex flex-col gap-1 text-base text-text-2">
+        {fr.settings.languageLabel}
+        <LanguageSwitch />
+      </div>
     </SettingsSubPage>
   );
 }

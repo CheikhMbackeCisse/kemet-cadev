@@ -7,6 +7,7 @@ import { Skeleton } from "../ui/Skeleton.js";
 import { cn } from "../../lib/cn.js";
 import { formatCount } from "../../lib/formatCount.js";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 type HeaderProfile = Pick<
   Profile,
@@ -38,7 +39,7 @@ export interface ProfileHeaderProps {
   addNameHref?: string;
 }
 
-const exactNumber = new Intl.NumberFormat("fr-FR");
+const exactNumber = new Intl.NumberFormat(LOCALE);
 
 const STAT_CLASS = "flex min-w-0 flex-col items-center gap-0.5 rounded-control px-1 py-1";
 

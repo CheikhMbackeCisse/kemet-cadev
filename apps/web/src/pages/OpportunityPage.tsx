@@ -74,7 +74,7 @@ function OfferFacts({ offer }: { offer: OpportunityDetail }) {
           <Fact label={fr.opportunities.budgetLabel}>
             {offer.budgetMinFcfa === offer.budgetMaxFcfa
               ? `${formatFcfa(offer.budgetMinFcfa)} FCFA`
-              : `${formatFcfa(offer.budgetMinFcfa)} à ${formatFcfa(offer.budgetMaxFcfa)} FCFA`}
+              : fr.common.amountRange(formatFcfa(offer.budgetMinFcfa), formatFcfa(offer.budgetMaxFcfa))}
           </Fact>
         )}
         {deadline && <Fact label={fr.opportunities.deadlineLabel}>{deadline}</Fact>}

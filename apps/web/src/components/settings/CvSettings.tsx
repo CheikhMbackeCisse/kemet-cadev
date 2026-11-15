@@ -15,6 +15,7 @@ import { Select } from "../ui/Select.js";
 import { Skeleton } from "../ui/Skeleton.js";
 import { useToast } from "../ui/Toast.js";
 import { fr } from "../../i18n/fr.js";
+import { LOCALE } from "../../i18n/language.js";
 
 const VISIBILITY_OPTIONS: { value: CvVisibility; label: string }[] = [
   { value: "members", label: fr.settings.cvVisibilityMembers },
@@ -22,7 +23,9 @@ const VISIBILITY_OPTIONS: { value: CvVisibility; label: string }[] = [
 ];
 
 function formatSize(bytes: number): string {
-  return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(bytes / 1024 / 1024)} Mo`;
+  return fr.common.megabytes(
+    new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 }).format(bytes / 1024 / 1024),
+  );
 }
 
 /** Section CV de Paramètres > Profil : envoyer, remplacer, régler qui le voit, retirer. */

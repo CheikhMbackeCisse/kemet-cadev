@@ -1,6 +1,7 @@
 import { Hash } from "lucide-react";
 import { cn } from "../../lib/cn.js";
 import type { ChannelItem } from "./types.js";
+import { fr } from "../../i18n/fr.js";
 
 export interface ChannelListProps {
   spaceName: string;
@@ -13,7 +14,7 @@ export interface ChannelListProps {
 export function ChannelList({ channels, activeChannelId, onSelect, className }: ChannelListProps) {
   return (
     <div className={cn("flex h-full flex-col", className)}>
-      <nav aria-label="Salons" className="flex-1 overflow-y-auto px-2 py-3">
+      <nav aria-label={fr.messages.segmentSalons} className="flex-1 overflow-y-auto px-2 py-3">
         <ul className="flex flex-col gap-1">
           {channels.map((channel) => (
             <li key={channel.id}>

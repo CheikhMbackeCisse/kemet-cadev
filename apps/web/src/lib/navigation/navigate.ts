@@ -88,6 +88,8 @@ function anchorFrom(event: Event): HTMLAnchorElement | null {
 /** Lien qu'un clic ordinaire doit suivre sans recharger le document. */
 export function routableHref(anchor: HTMLAnchorElement): string | null {
   if (anchor.hasAttribute("download")) return null;
+  // Lien qui doit recharger la page : le choix de langue, lu par theme-init.js.
+  if (anchor.hasAttribute("data-full-reload")) return null;
   if (anchor.target && anchor.target !== "_self") return null;
   const href = anchor.getAttribute("href");
   if (!href || href.startsWith("#")) return null;
