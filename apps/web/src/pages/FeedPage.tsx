@@ -52,6 +52,7 @@ import { useToast } from "../components/ui/Toast.js";
 import { InstallBanner } from "../components/shell/InstallBanner.js";
 import { VisitorBanner } from "../components/shell/VisitorBanner.js";
 import { SuspendedBanner } from "../components/shell/SuspendedBanner.js";
+import { VerifyEmailBanner } from "../components/shell/VerifyEmailBanner.js";
 import { useSession } from "../session/SessionProvider.js";
 import { fr } from "../i18n/fr.js";
 import { DemoNoticeLine } from "../components/shell/DemoNotice.js";
@@ -396,6 +397,7 @@ export function FeedPage() {
         className="pb-[calc(76px+var(--mobile-visitor-bar)+env(safe-area-inset-bottom))] lg:pb-8"
       >
         {status === "visitor" && <VisitorBanner />}
+        {status === "ready" && <VerifyEmailBanner />}
         {status === "ready" && <InstallBanner />}
         {isSuspended && <SuspendedBanner />}
 

@@ -43,7 +43,7 @@ async function signUpVerifyAndSignIn(
   await completeProfile(request, handle);
 }
 
-test("une inscription complète par l'interface mène jusqu'au fil", async ({ page }) => {
+test("une inscription par email mène au fil sans attendre la confirmation", async ({ page }) => {
   const email = `e2e-auth-${test.info().project.name}-${Date.now()}@test.kemet`;
   const handle = `e2eauth${test.info().project.name}${Date.now()}`;
   const name = `Inscrite ${handle}`;
@@ -54,13 +54,7 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
   await page.getByLabel("Mot de passe").fill(PASSWORD);
   await page.getByRole("button", { name: "Créer mon compte" }).click();
 
-  await expect(page.getByText("Vérifie ton adresse email")).toBeVisible();
-
-  const verificationUrl = new URL(await findVerificationUrl(email));
-  await page.request.get(verificationUrl.pathname + verificationUrl.search);
-
-  await page.getByRole("button", { name: "Me connecter" }).click();
-
+  // Aucun écran d'attente : la session est ouverte par l'inscription.
   await expect(page).toHaveURL(/\/completer-profil/);
   await page.getByLabel("Ton nom").fill(name);
   await page.getByLabel("Ton @").fill(handle);
@@ -75,11 +69,36 @@ test("une inscription complète par l'interface mène jusqu'au fil", async ({ pa
   }
 
   await expect(page).toHaveURL(/\/fil/);
-  // Le menu du compte n'existe que sur ordinateur (onglet Moi sur téléphone) :
-  // la session est lue directement.
   await expect(page.getByRole("heading", { name: "Fil", exact: true })).toBeVisible();
   const me = await (await page.request.get("/api/me")).json();
   expect(me.profile).toMatchObject({ handle, displayName: name });
+  expect(me.user.emailVerified).toBe(false);
+
+  const banner = page.getByRole("status").filter({ hasText: "Confirme ton adresse email" });
+  await expect(banner).toBeVisible();
+  await expect(banner.getByRole("button", { name: "Renvoyer le mail" })).toBeVisible();
+
+  const verificationUrl = new URL(await findVerificationUrl(email));
+  await page.request.get(verificationUrl.pathname + verificationUrl.search);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Fil", exact: true })).toBeVisible();
+  await expect(page.getByText("Confirme ton adresse email")).toHaveCount(0);
+});
+
+test("le rappel de confirmation se ferme", async ({ page }) => {
+  const email = `e2e-banner-${test.info().project.name}-${Date.now()}@test.kemet`;
+  const handle = `e2ebanner${test.info().project.name}${Date.now()}`;
+  await page.request.post("/api/auth/sign-up/email", {
+    data: { email, password: PASSWORD, name: handle },
+  });
+  await completeProfile(page.request, handle);
+  await page.goto("/fil");
+  await expect(page.getByText("Confirme ton adresse email")).toBeVisible();
+  await page.getByRole("button", { name: "Masquer le rappel de confirmation" }).click();
+  await expect(page.getByText("Confirme ton adresse email")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Fil", exact: true })).toBeVisible();
+  await expect(page.getByText("Confirme ton adresse email")).toHaveCount(0);
 });
 
 test("un visiteur sans session parcourt un espace public et le fil sans composeur", async ({

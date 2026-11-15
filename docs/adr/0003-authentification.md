@@ -33,7 +33,8 @@ conformes aux recommandations OWASP actuelles.
 
 **Vérification d'email obligatoire avant la création d'une session**
 (`requireEmailVerification: true`) : une connexion avec un email non vérifié
-échoue en 403 plutôt que de créer une session.
+échoue en 403 plutôt que de créer une session. Remplacé le 15/11/2026, voir
+le complément en fin de fichier.
 
 **Emails** derrière une interface `EmailSender` (`apps/server/src/email/`) :
 `SmtpEmailSender` (nodemailer, MIT) configuré par variables d'environnement
@@ -89,3 +90,34 @@ du plugin évite que ce changement affecte les autres routes (`/api/me`,
   doivent utiliser une base compatible (Alpine via la musl de Node, déjà le
   cas dans `apps/server/Dockerfile`) ; vérifié par le job `infra-smoke`
   existant qui construit et démarre l'image réelle.
+
+## Complément du 15/11/2026 : entrer sans attendre la confirmation
+
+Attendre le mail de confirmation faisait perdre des personnes : un juré
+pressé, ou un mail parti dans les spams. Une inscription par email ouvre
+maintenant une session tout de suite (`requireEmailVerification: false`,
+`autoSignIn: true`), et la connexion par mot de passe marche sans
+confirmation. Le mail part quand même ; le fil montre un rappel
+« Confirme ton adresse email » avec « Renvoyer le mail », qu'on peut fermer,
+et qui disparaît une fois l'adresse confirmée.
+
+Ce qui ne change pas : la réinitialisation du mot de passe passe par
+l'email, et elle coupe maintenant toutes les sessions ouvertes
+(`revokeSessionsOnPasswordReset: true`), pour qu'une personne qui se serait
+inscrite avec l'adresse d'un autre perde la sienne ; une connexion sociale ne rejoint jamais un compte dont l'adresse
+n'est pas confirmée (`requireLocalEmailVerified: true`) ; les limites de
+l'inscription et de la connexion. Le renvoi du mail est limité à 3 par
+minute, et Better Auth refuse de l'envoyer à une autre adresse que celle de
+la session.
+
+Conséquence assumée : avec une session ouverte à l'inscription, Better Auth
+renvoie une vraie erreur quand l'adresse existe déjà, ce qui permet de
+savoir qu'un compte existe (avant, Better Auth renvoyait un faux succès).
+L'écran affiche désormais « Cette adresse email est déjà utilisée ».
+L'inscription reste limitée par adresse IP (3 par 10 secondes).
+
+Risque laissé ouvert, à trancher : une adresse inventée suffit maintenant
+pour écrire et appeler Kocc, dont le quota gratuit est partagé. Pistes : un
+quota de Kocc réduit tant que l'adresse n'est pas confirmée, ou une limite
+d'inscription plus stricte.
+

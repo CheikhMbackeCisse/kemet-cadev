@@ -58,7 +58,15 @@ export function createAuth(config: AuthConfig) {
     trustedOrigins: [config.webAppUrl, ...(config.additionalTrustedOrigins ?? [])],
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: true,
+      // On entre dès l'inscription : un juré pressé ou un mail parti dans les
+      // spams ne doit pas bloquer l'accès. Le mail de confirmation part quand
+      // même, et une adresse non confirmée ne rejoint jamais un compte social
+      // (requireLocalEmailVerified plus bas).
+      requireEmailVerification: false,
+      autoSignIn: true,
+      // Quelqu'un peut s'inscrire avec l'adresse d'un autre et garder une
+      // session : la vraie personne la coupe en réinitialisant le mot de passe.
+      revokeSessionsOnPasswordReset: true,
       password: { hash: hashPassword, verify: verifyPassword },
       // Volontairement pas de await ici : un relais SMTP lent ou injoignable
       // ne doit jamais faire attendre la réponse HTTP de demande de
@@ -144,6 +152,8 @@ export function createAuth(config: AuthConfig) {
         "/change-password": { window: 60, max: 5 },
         "/link-social": { window: 60, max: 5 },
         "/unlink-account": { window: 60, max: 5 },
+        // Le bandeau "Renvoyer le mail" ne doit pas servir à inonder une boîte.
+        "/send-verification-email": { window: 60, max: 3 },
       },
     },
   });

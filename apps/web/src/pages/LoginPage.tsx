@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
 import { Input } from "../components/ui/Input.js";
-import { ChatApiError, signIn } from "../lib/chat/api.js";
+import { signIn } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { landingPath } from "../lib/onboarding/steps.js";
 import { FormField } from "../components/ui/FormField.js";
@@ -37,10 +37,8 @@ export function LoginPage() {
     try {
       await signIn({ email, password });
       await refresh();
-    } catch (err) {
-      if (err instanceof ChatApiError && err.statusCode === 403)
-        setError(fr.auth.emailNotVerifiedError);
-      else setError(fr.auth.loginError);
+    } catch {
+      setError(fr.auth.loginError);
     } finally {
       setSubmitting(false);
     }

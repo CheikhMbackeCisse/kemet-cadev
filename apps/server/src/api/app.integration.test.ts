@@ -93,19 +93,100 @@ describe.skipIf(!databaseUrl)("API intégration (base Postgres réelle)", () => 
     expect(response.json()).toEqual({ demoContentNotice: true });
   });
 
-  it("refuse la connexion avant la vérification de l'email", async () => {
+  it("ouvre une session dès l'inscription, avant la vérification de l'email", async () => {
     const email = "non-verifie@test.kemet";
-    await app.inject({
+    const password = "une-passphrase-solide";
+    const signUp = await app.inject({
       method: "POST",
       url: "/api/auth/sign-up/email",
-      payload: { email, password: "une-passphrase-solide", name: "Non Vérifié" },
+      payload: { email, password, name: "Non Vérifié" },
     });
-    const response = await app.inject({
+    expect(signUp.statusCode).toBe(200);
+    const me = await app.inject({
+      method: "GET",
+      url: "/api/me",
+      headers: { cookie: extractCookie(signUp) },
+    });
+    expect(me.statusCode).toBe(200);
+    expect(me.json().user.emailVerified).toBe(false);
+    // Le mail de confirmation part quand même.
+    expect(emailSender.findByRecipient(email)).toHaveLength(1);
+
+    const signIn = await app.inject({
       method: "POST",
       url: "/api/auth/sign-in/email",
-      payload: { email, password: "une-passphrase-solide" },
+      payload: { email, password },
     });
-    expect(response.statusCode).toBe(403);
+    expect(signIn.statusCode).toBe(200);
+
+    const verificationUrl = new URL(extractVerificationUrl(email));
+    await app.inject({ method: "GET", url: verificationUrl.pathname + verificationUrl.search });
+    const verified = await app.inject({
+      method: "GET",
+      url: "/api/me",
+      headers: { cookie: extractCookie(signIn) },
+    });
+    expect(verified.json().user.emailVerified).toBe(true);
+  });
+
+  it("renvoie le mail de confirmation à la personne connectée, jamais à une autre adresse", async () => {
+    const email = "renvoi@test.kemet";
+    const signUp = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-up/email",
+      payload: { email, password: "une-passphrase-solide", name: "Renvoi" },
+    });
+    const cookie = extractCookie(signUp);
+    const resend = await app.inject({
+      method: "POST",
+      url: "/api/auth/send-verification-email",
+      headers: { cookie },
+      payload: { email },
+    });
+    expect(resend.statusCode).toBe(200);
+    expect(emailSender.findByRecipient(email)).toHaveLength(2);
+
+    const other = await app.inject({
+      method: "POST",
+      url: "/api/auth/send-verification-email",
+      headers: { cookie },
+      payload: { email: "victime@test.kemet" },
+    });
+    expect(other.statusCode).toBe(400);
+    expect(emailSender.findByRecipient("victime@test.kemet")).toHaveLength(0);
+  });
+
+  it("coupe la session d'un compte squatté quand la vraie personne réinitialise le mot de passe", async () => {
+    const email = "squat@test.kemet";
+    const signUp = await app.inject({
+      method: "POST",
+      url: "/api/auth/sign-up/email",
+      payload: { email, password: "phrase-de-l-intrus", name: "Intrus" },
+    });
+    const intruderCookie = extractCookie(signUp);
+
+    await app.inject({
+      method: "POST",
+      url: "/api/auth/request-password-reset",
+      payload: { email, redirectTo: "http://localhost:5173/reinitialiser-mot-de-passe" },
+    });
+    await vi.waitFor(() => expect(emailSender.findByRecipient(email)).toHaveLength(2));
+    const resetMail = emailSender.findByRecipient(email)[1]!;
+    const resetUrl = new URL(resetMail.html.match(/href="([^"]+)"/)![1]!);
+    const token = resetUrl.pathname.split("/").pop()!;
+    const reset = await app.inject({
+      method: "POST",
+      url: "/api/auth/reset-password",
+      payload: { token, newPassword: "phrase-de-la-vraie-personne" },
+    });
+    expect(reset.statusCode).toBe(200);
+
+    const me = await app.inject({
+      method: "GET",
+      url: "/api/me",
+      headers: { cookie: intruderCookie },
+    });
+    expect(me.statusCode).toBe(401);
   });
 
   it("refuse l'accès à /api/me sans session", async () => {
@@ -385,6 +466,29 @@ describe.skipIf(!databaseUrl)("limite de tentatives sur la connexion", () => {
 
     const results = [];
     for (let i = 0; i < 4; i += 1) results.push(await request());
+    expect(results.some((response) => response.statusCode === 429)).toBe(true);
+  });
+
+  it("bloque les renvois rapprochés du mail de confirmation", async () => {
+    await resetTestDatabase(databaseUrl!);
+    const db = createDb(databaseUrl!);
+    const auth = createAuth({
+      db,
+      emailSender: new InMemoryEmailSender(),
+      baseUrl: "http://localhost:3001",
+      webAppUrl: "http://localhost:5173",
+      secret: "test-secret-at-least-32-characters-long",
+    });
+    const app = buildApp({ db, auth });
+    const resend = () =>
+      app.inject({
+        method: "POST",
+        url: "/api/auth/send-verification-email",
+        payload: { email: "inconnue@test.kemet" },
+      });
+
+    const results = [];
+    for (let i = 0; i < 5; i += 1) results.push(await resend());
     expect(results.some((response) => response.statusCode === 429)).toBe(true);
   });
 

@@ -4,10 +4,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { DEMO_EMAIL_REJECTED_CODE, isDemoEmailAddress } from "@kemet/shared";
 import { AuthLayout } from "../components/auth/AuthLayout.js";
 import { SocialSignInButtons } from "../components/auth/SocialSignInButtons.js";
-import { Button } from "../components/ui/Button.js";
 import { Input } from "../components/ui/Input.js";
-import { ChatApiError, resendVerificationEmail, signIn, signUp } from "../lib/chat/api.js";
-import { useToast } from "../components/ui/Toast.js";
+import { ChatApiError, signUp } from "../lib/chat/api.js";
 import { useSession } from "../session/SessionProvider.js";
 import { landingPath } from "../lib/onboarding/steps.js";
 import { FormField } from "../components/ui/FormField.js";
@@ -20,7 +18,6 @@ import { PrivacyLine } from "../components/auth/PrivacyLine.js";
 
 export function SignupPage() {
   usePreloadNext("/completer-profil", "/connexion");
-  const toast = useToast();
   const { status, onboarding, refresh } = useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,7 +25,6 @@ export function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { formRef, errors: fieldErrors, report } = useFieldErrors<"name" | "email" | "password">();
-  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const isDemoEmail = isDemoEmailAddress(email);
 
   useEffect(() => {
@@ -47,8 +43,10 @@ export function SignupPage() {
     if (!report(errors)) return;
     setSubmitting(true);
     try {
+      // La session est ouverte par l'inscription : le changement de statut
+      // mène aux questions de départ (voir l'effet plus haut).
       await signUp({ name, email, password });
-      setAwaitingVerification(true);
+      await refresh();
     } catch (err) {
       if (err instanceof ChatApiError && (err.statusCode === 409 || err.statusCode === 422))
         setError(fr.auth.emailAlreadyUsedError);
@@ -58,46 +56,6 @@ export function SignupPage() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  async function handleRetrySignIn() {
-    setError(null);
-    try {
-      await signIn({ email, password });
-      await refresh();
-    } catch {
-      setError(fr.auth.emailNotVerifiedError);
-    }
-  }
-
-  async function handleResend() {
-    try {
-      await resendVerificationEmail(email);
-      toast.show(fr.auth.verificationEmailResent, "success");
-    } catch {
-      toast.show(fr.auth.signupError, "danger");
-    }
-  }
-
-  if (awaitingVerification) {
-    return (
-      <AuthLayout title={fr.auth.checkYourEmailTitle}>
-        <div className="flex flex-col gap-3">
-          <p className="text-sm">{fr.auth.checkYourEmailBody(email)}</p>
-          {error && (
-            <p className="text-sm text-auth-danger" role="alert">
-              {error}
-            </p>
-          )}
-          <Button type="button" variant="inverse" onClick={handleRetrySignIn}>
-            {fr.auth.iVerifiedMyEmail}
-          </Button>
-          <Button type="button" variant="inverse-ghost" onClick={handleResend}>
-            {fr.auth.resendVerificationEmail}
-          </Button>
-        </div>
-      </AuthLayout>
-    );
   }
 
   return (
