@@ -4,9 +4,12 @@ import { ArrivalBackdrop } from "./ArrivalBackdrop.js";
 
 const session = vi.hoisted(() => ({ status: "visitor" }));
 vi.mock("../../session/SessionProvider.js", () => ({ useSession: () => session }));
+const firstPaint = vi.hoisted(() => ({ done: true }));
+vi.mock("../../lib/useAfterFirstPaint.js", () => ({ useAfterFirstPaint: () => firstPaint.done }));
 
 describe("ArrivalBackdrop", () => {
   afterEach(() => {
+    firstPaint.done = true;
     session.status = "visitor";
     localStorage.clear();
   });
@@ -35,6 +38,21 @@ describe("ArrivalBackdrop", () => {
     rerender(<ArrivalBackdrop pathname="/fil" />);
     expect(container.querySelector(".arrival-background")).toBeNull();
     expect(document.documentElement.hasAttribute("data-arrival")).toBe(false);
+  });
+
+  it("attend le premier affichage pour poser le continent, la couleur du fond tout de suite", () => {
+    firstPaint.done = false;
+    const { container } = render(<ArrivalBackdrop pathname="/decouvrir" />);
+    expect(container.querySelector(".arrival-background")).toBeNull();
+    expect(document.documentElement.hasAttribute("data-arrival")).toBe(true);
+  });
+
+  it("retire l'accueil statique sur toute autre page", () => {
+    document.body.insertAdjacentHTML("beforeend", '<div id="static-welcome"></div>');
+    const { rerender } = render(<ArrivalBackdrop pathname="/decouvrir" />);
+    expect(document.getElementById("static-welcome")).not.toBeNull();
+    rerender(<ArrivalBackdrop pathname="/connexion" />);
+    expect(document.getElementById("static-welcome")).toBeNull();
   });
 
   it("laisse la racine au fil pour un compte connecté", () => {

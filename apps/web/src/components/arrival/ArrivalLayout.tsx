@@ -1,14 +1,61 @@
-import { useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { cn } from "../../lib/cn.js";
 import { KemetWordmark } from "../ui/KemetWordmark.js";
 import { markIntroSeen } from "../../lib/intro/introStorage.js";
 import type { ArrivalMotion } from "./ArrivalBackground.js";
 import { usePageVisible, useStillBackground } from "./ArrivalBackdrop.js";
-import { ArrivalDecorBand } from "./ArrivalDecor.js";
 import { ProfileUniverse } from "./ProfileUniverse.js";
 import { AFRICA_OUTLINE_WIDTH } from "./africaOutline.js";
 import { NETWORK_COVERED_ZONE_CLASS } from "./AfricaNetwork.js";
 import { DECOR_DRIFT } from "./decorLayout.js";
+import type { DecorBandSide } from "./decorLayout.js";
+import { useAfterFirstPaint } from "../../lib/useAfterFirstPaint.js";
+
+// Logos et icônes du décor chargés après le premier affichage : ils ne
+// doivent jamais retarder la carte.
+const ArrivalDecorBand = lazy(() =>
+  import("./ArrivalDecor.js").then((module) => ({ default: module.ArrivalDecorBand })),
+);
+
+function EmptyBand() {
+  return <div aria-hidden="true" className="arrival-band pointer-events-none relative min-h-0 min-w-0" />;
+}
+
+// Rendu dans la même frontière que la bande : son effet ne part qu'une fois
+// la bande réellement affichée.
+function OnMount({ callback }: { callback: () => void }) {
+  useEffect(callback, [callback]);
+  return null;
+}
+
+function DecorBand({
+  side,
+  motion,
+  ready,
+  onShown,
+}: {
+  side: DecorBandSide;
+  motion: ArrivalMotion;
+  ready: boolean;
+  onShown: () => void;
+}) {
+  if (!ready) return <EmptyBand />;
+  return (
+    <Suspense fallback={<EmptyBand />}>
+      <ArrivalDecorBand side={side} motion={motion} />
+      <OnMount callback={onShown} />
+    </Suspense>
+  );
+}
 
 export interface ArrivalLayoutProps {
   motion: ArrivalMotion;
@@ -74,6 +121,7 @@ function useNetworkAroundCard(
   root: RefObject<HTMLElement>,
   card: RefObject<HTMLElement>,
   enabled: boolean,
+  decorShown: boolean,
 ) {
   useLayoutEffect(() => {
     const rootElement = root.current;
@@ -136,7 +184,8 @@ function useNetworkAroundCard(
       window.removeEventListener("resize", schedule);
       cancelAnimationFrame(frame);
     };
-  }, [root, card, enabled]);
+    // decorShown : le décor arrive après la carte, il faut le mesurer à son tour.
+  }, [root, card, enabled, decorShown]);
 }
 
 /**
@@ -167,7 +216,10 @@ export function ArrivalLayout({
   const hasHeader = showLogo || headerEnd !== undefined;
   const root = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
-  useNetworkAroundCard(root, card, motion === "rich" && !busy);
+  const decorReady = useAfterFirstPaint();
+  const [decorShown, setDecorShown] = useState(false);
+  const showDecor = useRef(() => setDecorShown(true)).current;
+  useNetworkAroundCard(root, card, motion === "rich" && !busy && decorReady, decorShown);
 
   return (
     <div
@@ -211,7 +263,7 @@ export function ArrivalLayout({
             fitViewport && "arrival-stage-fit",
           )}
         >
-          {decor === "bands" ? <ArrivalDecorBand side="start" motion={motion} /> : <div />}
+          {decor === "bands" ? <DecorBand side="start" motion={motion} ready={decorReady} onShown={showDecor} /> : <div />}
           <main className="flex min-h-0 min-w-0 flex-col items-center justify-center px-4 py-4 sm:py-8">
             <div className="flex max-h-full min-h-0 w-full flex-col gap-3">
               <div
@@ -226,7 +278,7 @@ export function ArrivalLayout({
               {footer && <div className="auth-on-dark">{footer}</div>}
             </div>
           </main>
-          {decor === "bands" ? <ArrivalDecorBand side="end" motion={motion} /> : <div />}
+          {decor === "bands" ? <DecorBand side="end" motion={motion} ready={decorReady} onShown={showDecor} /> : <div />}
         </div>
       )}
       {!busy && pageFooter && (

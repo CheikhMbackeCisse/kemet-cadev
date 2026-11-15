@@ -24,4 +24,8 @@
     }
   }
   if (arrival) root.setAttribute("data-arrival", "");
+  // Accueil écrit dans index.html, affiché avant le JavaScript (voir
+  // src/lib/staticWelcome.ts, qui le retire).
+  if (arrival && (path === "/" || /^\/decouvrir\/?$/.test(path)))
+    root.setAttribute("data-static-welcome", "");
 })();

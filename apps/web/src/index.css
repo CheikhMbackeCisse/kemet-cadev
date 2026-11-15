@@ -259,6 +259,23 @@
   container: arrival-band / size;
 }
 
+/* Le décor arrive après le premier affichage de la carte : en fondu, jamais d'un coup. */
+@keyframes arrival-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.arrival-fade-in {
+  animation: arrival-fade-in 600ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrival-fade-in {
+    animation: none;
+  }
+}
+
 .arrival-band-items {
   display: none;
 }

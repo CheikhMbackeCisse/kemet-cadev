@@ -7,6 +7,7 @@ import { fr } from "./src/i18n/fr.js";
 import { SERVER_NAVIGATION_DENYLIST } from "./src/pwa/navigation-denylist.js";
 import { keepShellEntries } from "./src/pwa/precache-shell.js";
 import { preloadFonts } from "./src/vite/preloadFonts.js";
+import { deferAppStylesheet } from "./src/vite/deferAppStylesheet.js";
 
 const outDir = resolve(import.meta.dirname, "dist");
 
@@ -26,6 +27,7 @@ export default defineConfig({
   plugins: [
     react(),
     preloadFonts(),
+    deferAppStylesheet(),
     VitePWA({
       // Une nouvelle version attend la fermeture de toutes les fenêtres de
       // Kemet : elle ne prend jamais la main sur un écran en cours de lecture.

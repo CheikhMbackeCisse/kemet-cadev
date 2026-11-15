@@ -18,18 +18,132 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>Kemet</title>
     <!-- Fond aux couleurs du thème dès le premier octet, avant le CSS de
-         l'application. Valeurs de --bg et --auth-bg-to dans tokens.css. -->
+         l'application. Valeurs de --bg, --auth-bg-from et --auth-bg-to dans
+         tokens.css. Le dégradé du parcours d'arrivée est celui
+         d'ArrivalBackground : il ne change pas quand le décor arrive. -->
     <style>
       html, body { background-color: #ffffff; }
       html[data-theme="dark"], html[data-theme="dark"] body { background-color: #0d1320; }
       @media (prefers-color-scheme: dark) {
         html:not([data-theme="light"]), html:not([data-theme="light"]) body { background-color: #0d1320; }
       }
-      html[data-arrival], html[data-arrival] body { background-color: #061b47; }
+      html[data-arrival] { background-color: #061b47; --sw-from: #0b2f78; --sw-to: #061b47; }
+      @media (prefers-color-scheme: dark) {
+        html[data-arrival]:not([data-theme="light"]) { --sw-from: #0a1f4c; --sw-to: #050e22; }
+      }
+      html[data-arrival][data-theme="dark"] { --sw-from: #0a1f4c; --sw-to: #050e22; }
+      html[data-arrival] {
+        background: #061b47 linear-gradient(160deg, var(--sw-from), var(--sw-to)) fixed;
+      }
+      html[data-arrival] body { background: transparent; }
+
+      /* Accueil statique, peint avant le JavaScript et la feuille de style
+         (public/theme-init.js le montre, src/lib/staticWelcome.ts le retire).
+         Mêmes mesures que WelcomePage et ArrivalLayout, à garder d'accord. */
+      @font-face {
+        font-family: "Kemet Grotesk Fallback";
+        src: local("Arial Bold"), local("Arial-BoldMT"), local("Arial");
+        font-weight: 700;
+        size-adjust: 100.76%;
+        ascent-override: 97.3%;
+        descent-override: 28.8%;
+        line-gap-override: 0%;
+      }
+      @font-face {
+        font-family: "Kemet Jakarta Fallback";
+        src: local("Arial"), local("ArialMT");
+        size-adjust: 104.77%;
+        ascent-override: 99.3%;
+        descent-override: 21%;
+        line-gap-override: 0%;
+      }
+      #static-welcome { display: none; }
+      html[data-static-welcome] #static-welcome {
+        position: fixed; inset: 0; z-index: 1;
+        display: flex; flex-direction: column;
+        padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+        color: #ffffff;
+        font-family: "Plus Jakarta Sans", "Kemet Jakarta Fallback", sans-serif;
+        font-size: 14px; line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      #static-welcome * { box-sizing: border-box; }
+      .sw-space { flex-shrink: 0; height: 3rem; }
+      .sw-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 16px; }
+      .sw-card {
+        display: flex; flex-direction: column; align-items: center; gap: 12px;
+        width: 100%; max-width: 25rem; padding: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px;
+        background-color: rgba(6, 27, 71, 0.5);
+        -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px);
+        text-align: center;
+      }
+      .sw-logo { display: block; height: 28px; width: auto; }
+      .sw-text { display: flex; flex-direction: column; gap: 6px; }
+      .sw-title {
+        margin: 0;
+        font-family: "Space Grotesk Variable", "Kemet Grotesk Fallback", sans-serif;
+        font-size: 20px; line-height: 1.25; font-weight: 700; letter-spacing: -0.01em;
+        text-wrap: balance;
+      }
+      .sw-promise { margin: 0; font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.72); text-wrap: balance; }
+      .sw-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+      .sw-start {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 100%; height: 44px; padding: 0 24px; border-radius: 8px;
+        background-color: #ffffff; color: var(--sw-to);
+        font-size: 14px; font-weight: 600; text-decoration: none;
+      }
+      .sw-start:hover { background-color: #dbe6fb; }
+      .sw-explore {
+        display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px;
+        color: rgba(255, 255, 255, 0.72); font-size: 14px; font-weight: 500;
+        text-decoration: none; text-underline-offset: 4px;
+      }
+      .sw-explore:hover { color: #ffffff; text-decoration: underline; }
+      #static-welcome a:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
+      .sw-footer {
+        flex-shrink: 0; height: 3rem;
+        display: flex; align-items: center; justify-content: center;
+        padding: 0 16px env(safe-area-inset-bottom);
+      }
+      .sw-footer p { margin: 0; display: flex; align-items: baseline; gap: 6px; }
+      .sw-powered { font-size: 12px; color: rgba(255, 255, 255, 0.72); }
+      .sw-systalink { font-size: 13px; font-weight: 500; }
+      @media (min-width: 375px) { .sw-title { font-size: 24px; } }
+      @media (min-width: 640px) {
+        .sw-main { padding: 32px 16px; }
+        .sw-card { padding: 32px; gap: 20px; }
+      }
+      @media (min-width: 768px) {
+        .sw-logo { height: 40px; }
+        .sw-promise { font-size: 14px; }
+        .sw-start { width: auto; min-width: 12rem; height: 36px; }
+        .sw-explore { min-height: 36px; }
+      }
     </style>
     <script src="/theme-init.js"></script>
   </head>
   <body>
+    <div id="static-welcome">
+      <div class="sw-space"></div>
+      <main class="sw-main">
+        <div class="sw-card">
+          <svg class="sw-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2649 728" role="img" aria-label="Kemet"><title>Kemet</title><path fill="#3B82F0" d="M124.0 395.2 L410.8 696.3 L412.5 698.5 L414.1 702.2 L414.6 707.6 L412.9 712.7 L409.5 716.9 L406.0 719.0 L400.7 720.0 L268.1 720.0 L263.9 719.4 L260.1 717.5 L17.3 463.0 L12.9 457.8 L7.2 449.0 L4.2 442.4 L2.4 436.8 L0.4 426.5 L0.0 419.7 L0.0 14.0 L0.6 9.9 L2.4 6.2 L6.2 2.4 L9.9 0.6 L14.0 0.0 L111.4 0.1 L115.4 1.1 L118.9 3.2 L121.6 6.2 L123.4 9.9 L124.0 14.0 Z M0.0 520.4 L0.6 516.3 L2.4 512.6 L4.2 510.4 L7.5 508.0 L11.5 506.6 L15.6 506.5 L19.6 507.6 L22.0 508.9 L121.8 613.6 L123.4 617.3 L124.0 621.2 L123.9 707.4 L122.9 711.4 L121.6 713.8 L118.9 716.8 L116.6 718.3 L114.1 719.4 L110.0 720.0 L12.6 719.9 L8.6 718.9 L6.2 717.6 L3.2 714.9 L1.7 712.6 L0.6 710.1 L0.0 706.0 Z"/><path fill="#FFFFFF" d="M489.0 404.9 L493.0 391.0 L497.7 377.8 L502.8 365.3 L508.5 353.3 L517.1 337.8 L524.2 326.5 L532.0 315.6 L540.7 304.5 L550.3 293.7 L563.3 280.8 L573.8 271.6 L584.8 262.9 L595.6 255.3 L607.1 248.0 L622.7 239.5 L634.2 234.1 L647.1 228.8 L663.0 223.3 L674.7 220.1 L692.4 216.2 L706.0 214.1 L719.5 212.7 L733.1 212.1 L746.9 212.2 L764.7 213.3 L777.0 214.9 L793.9 218.0 L807.2 221.3 L819.8 225.1 L833.0 229.9 L845.9 235.4 L862.3 243.6 L874.7 250.8 L886.5 258.6 L897.2 266.5 L907.6 275.0 L920.6 287.1 L929.7 296.6 L938.5 306.9 L947.1 318.1 L955.3 330.0 L964.6 345.6 L971.1 358.1 L977.0 371.4 L981.6 383.3 L985.9 396.6 L991.7 419.8 L993.9 432.3 L995.4 444.9 L996.3 457.5 L996.6 470.2 L996.3 482.8 L995.4 495.5 L993.8 508.0 L991.5 520.9 L990.1 524.7 L986.7 528.9 L983.2 531.0 L977.8 532.0 L619.9 532.0 L628.1 545.7 L637.4 557.7 L648.0 568.6 L659.7 578.3 L672.5 586.5 L686.1 593.2 L700.4 598.4 L715.2 601.9 L730.2 603.7 L738.2 604.0 L753.4 603.2 L768.0 600.7 L782.6 596.5 L796.6 590.8 L809.9 583.4 L820.6 576.0 L823.1 574.8 L828.7 574.0 L834.1 575.4 L838.5 578.9 L900.8 652.2 L903.4 656.8 L904.1 660.7 L903.7 664.7 L902.2 668.4 L900.6 670.6 L889.8 679.1 L877.3 687.5 L864.7 695.1 L849.4 703.0 L837.5 708.3 L825.1 713.1 L811.2 717.6 L795.3 721.7 L782.1 724.3 L765.4 726.6 L751.0 727.7 L738.2 728.0 L721.1 727.4 L707.5 726.1 L695.0 724.3 L680.7 721.4 L664.4 717.1 L652.9 713.3 L636.1 706.7 L623.6 700.9 L611.3 694.4 L599.9 687.5 L586.0 678.0 L575.1 669.5 L564.9 660.8 L554.8 651.0 L545.2 640.7 L533.5 626.4 L525.2 615.0 L517.6 603.1 L511.0 591.5 L504.8 579.1 L499.2 566.0 L494.1 552.3 L488.9 534.9 L485.8 521.4 L483.4 507.7 L481.8 494.5 L480.8 477.8 L480.7 463.8 L481.3 451.1 L482.8 436.6 L485.0 422.7 Z M619.9 408.0 L857.3 408.0 L855.4 404.4 L847.5 391.9 L837.7 379.8 L832.4 374.3 L821.3 364.6 L808.5 355.7 L795.4 348.7 L788.4 345.6 L774.1 340.8 L758.8 337.6 L744.1 336.1 L736.5 336.0 L720.9 337.2 L706.0 340.1 L691.9 344.4 L684.8 347.3 L671.0 354.4 L658.3 362.8 L647.0 372.3 L641.6 377.6 L631.5 389.5 L627.1 395.7 Z M1737.0 404.9 L1741.0 391.0 L1745.7 377.8 L1750.8 365.3 L1756.5 353.3 L1765.1 337.8 L1772.2 326.5 L1780.0 315.6 L1788.7 304.5 L1798.3 293.7 L1811.3 280.8 L1821.8 271.6 L1832.8 262.9 L1843.6 255.3 L1855.1 248.0 L1870.7 239.5 L1882.2 234.1 L1895.1 228.8 L1911.0 223.3 L1922.7 220.1 L1940.4 216.2 L1954.0 214.1 L1967.5 212.7 L1981.1 212.1 L1994.9 212.2 L2012.7 213.3 L2025.0 214.9 L2041.9 218.0 L2055.2 221.3 L2067.8 225.1 L2081.0 229.9 L2093.9 235.4 L2110.3 243.6 L2122.7 250.8 L2134.5 258.6 L2145.2 266.5 L2155.6 275.0 L2168.6 287.1 L2177.7 296.6 L2186.5 306.9 L2195.1 318.1 L2203.3 330.0 L2212.6 345.6 L2219.1 358.1 L2225.0 371.4 L2229.6 383.3 L2233.9 396.6 L2239.7 419.8 L2241.9 432.3 L2243.4 444.9 L2244.3 457.5 L2244.6 470.2 L2244.3 482.8 L2243.4 495.5 L2241.8 508.0 L2239.5 520.9 L2238.1 524.7 L2234.7 528.9 L2231.2 531.0 L2225.8 532.0 L1867.9 532.0 L1876.1 545.7 L1885.4 557.7 L1896.0 568.6 L1907.7 578.3 L1920.5 586.5 L1934.1 593.2 L1948.4 598.4 L1963.2 601.9 L1971.1 603.1 L1986.2 604.0 L2001.0 603.2 L2016.0 600.7 L2030.6 596.5 L2044.6 590.8 L2057.9 583.4 L2068.6 576.0 L2071.1 574.8 L2076.7 574.0 L2082.1 575.4 L2086.5 578.9 L2148.8 652.2 L2151.4 656.8 L2152.0 659.4 L2152.0 663.4 L2150.8 667.2 L2148.6 670.6 L2137.8 679.1 L2125.3 687.5 L2112.7 695.1 L2097.4 703.0 L2085.2 708.4 L2073.1 713.1 L2059.2 717.6 L2043.3 721.7 L2030.1 724.3 L2013.4 726.6 L1999.0 727.7 L1986.2 728.0 L1969.1 727.4 L1955.5 726.1 L1943.0 724.3 L1928.7 721.4 L1912.4 717.1 L1900.9 713.3 L1884.1 706.7 L1871.6 700.9 L1859.3 694.4 L1847.9 687.5 L1834.0 678.0 L1823.1 669.5 L1812.9 660.8 L1802.8 651.0 L1793.2 640.7 L1781.5 626.4 L1773.2 615.0 L1765.6 603.1 L1759.0 591.5 L1752.8 579.1 L1747.2 566.0 L1742.1 552.3 L1736.9 534.9 L1733.8 521.4 L1731.4 507.7 L1729.8 494.5 L1728.8 477.8 L1728.7 463.8 L1729.3 451.1 L1730.8 436.6 L1733.0 422.7 Z M1867.9 408.0 L2105.3 408.0 L2103.4 404.4 L2095.5 391.9 L2085.7 379.8 L2075.1 369.4 L2069.3 364.6 L2056.5 355.7 L2043.4 348.7 L2036.4 345.6 L2021.7 340.7 L2006.8 337.6 L1992.1 336.1 L1984.5 336.0 L1968.9 337.2 L1954.0 340.1 L1946.7 342.1 L1932.8 347.3 L1919.0 354.4 L1906.3 362.8 L1900.4 367.5 L1889.6 377.6 L1879.5 389.5 L1875.1 395.7 Z M1044.8 394.9 L1046.1 378.3 L1048.1 365.8 L1051.4 351.7 L1056.4 336.1 L1061.9 322.8 L1067.6 311.4 L1076.0 297.4 L1083.3 287.1 L1092.5 275.9 L1103.9 264.1 L1114.8 254.6 L1124.9 246.9 L1138.6 238.0 L1151.4 231.2 L1163.0 226.0 L1178.6 220.5 L1190.6 217.2 L1202.8 214.7 L1215.1 213.0 L1227.5 212.1 L1239.9 212.1 L1252.3 212.8 L1264.7 214.4 L1276.7 216.7 L1288.9 219.9 L1300.7 223.9 L1312.2 228.6 L1323.2 233.9 L1334.2 240.2 L1344.4 246.9 L1354.3 254.4 L1362.6 261.6 L1374.2 251.8 L1385.8 243.5 L1396.6 236.9 L1411.2 229.4 L1424.5 223.9 L1436.6 219.9 L1452.4 215.9 L1464.9 213.8 L1479.1 212.4 L1491.8 212.0 L1508.1 212.8 L1520.7 214.4 L1534.6 217.2 L1546.9 220.5 L1562.3 226.0 L1575.5 232.0 L1584.8 237.0 L1595.2 243.4 L1610.5 254.6 L1625.8 268.5 L1634.1 277.4 L1640.8 285.6 L1652.6 302.6 L1658.6 313.2 L1663.3 322.8 L1670.9 342.0 L1674.4 353.7 L1676.7 363.8 L1679.6 382.5 L1680.6 401.9 L1680.6 706.0 L1680.4 708.7 L1679.0 712.6 L1676.5 715.9 L1674.4 717.6 L1670.7 719.4 L1666.6 720.0 L1569.2 719.9 L1566.6 719.4 L1562.8 717.6 L1560.7 715.9 L1558.3 712.6 L1556.9 708.7 L1556.6 706.0 L1556.6 402.6 L1555.7 391.1 L1554.4 385.0 L1552.4 378.9 L1547.7 368.9 L1544.3 363.7 L1540.3 358.6 L1532.6 351.1 L1523.7 344.9 L1513.8 340.2 L1507.8 338.3 L1501.5 336.9 L1490.5 336.0 L1484.3 336.3 L1477.9 337.3 L1467.3 340.3 L1461.3 342.9 L1455.9 345.9 L1447.2 352.3 L1439.7 360.0 L1433.4 369.1 L1430.6 374.7 L1428.2 380.7 L1425.5 391.1 L1424.6 402.6 L1424.6 706.0 L1424.4 708.7 L1423.0 712.6 L1420.5 715.9 L1418.4 717.6 L1414.7 719.4 L1410.6 720.0 L1314.6 720.0 L1310.6 719.4 L1305.7 716.8 L1302.3 712.6 L1300.9 708.7 L1300.6 706.0 L1300.6 402.6 L1300.3 395.6 L1299.4 389.2 L1296.3 378.6 L1291.7 368.9 L1288.3 363.7 L1284.3 358.6 L1276.6 351.1 L1267.7 344.9 L1257.8 340.2 L1251.8 338.3 L1245.5 336.9 L1234.5 336.0 L1228.3 336.3 L1221.9 337.3 L1211.3 340.3 L1205.3 342.9 L1199.9 345.9 L1191.2 352.3 L1183.7 360.0 L1177.4 369.1 L1174.6 374.7 L1172.2 380.7 L1169.5 391.1 L1168.6 402.6 L1168.6 706.0 L1168.4 708.7 L1167.0 712.6 L1164.5 715.9 L1162.4 717.6 L1158.7 719.4 L1156.0 719.9 L1058.6 720.0 L1055.9 719.7 L1052.0 718.3 L1048.7 715.9 L1047.0 713.8 L1045.2 710.1 L1044.6 706.0 Z M2294.2 343.9 L2289.0 342.3 L2285.7 339.9 L2282.7 335.4 L2281.7 331.4 L2281.6 234.0 L2282.7 228.6 L2284.8 225.1 L2287.8 222.4 L2291.6 220.6 L2294.2 220.1 L2400.6 220.0 L2400.6 94.0 L2401.7 88.6 L2403.8 85.1 L2408.0 81.7 L2410.6 80.6 L2414.6 80.0 L2510.6 80.0 L2514.7 80.6 L2519.5 83.2 L2521.4 85.1 L2523.6 88.6 L2524.6 94.0 L2524.6 220.0 L2601.4 220.3 L2605.2 221.7 L2609.4 225.1 L2611.6 228.6 L2612.6 234.0 L2612.6 330.0 L2611.6 335.4 L2609.4 338.9 L2605.2 342.3 L2600.0 343.9 L2524.6 344.0 L2524.6 541.7 L2525.7 552.5 L2527.2 558.6 L2529.8 565.0 L2532.8 570.6 L2536.8 576.2 L2541.1 580.8 L2546.4 585.3 L2551.7 588.8 L2558.0 591.9 L2566.4 594.6 L2575.9 595.9 L2636.0 596.1 L2640.0 597.1 L2642.4 598.4 L2646.3 602.2 L2648.0 605.9 L2648.6 610.0 L2648.6 706.0 L2647.6 711.4 L2644.5 715.9 L2641.2 718.3 L2636.0 719.9 L2575.3 720.0 L2554.8 718.4 L2543.5 716.5 L2533.0 714.0 L2521.0 710.4 L2510.0 706.2 L2497.8 700.6 L2487.5 694.9 L2477.0 688.1 L2467.5 681.1 L2457.4 672.3 L2449.0 664.0 L2440.7 654.5 L2432.0 642.9 L2424.8 631.5 L2418.7 620.2 L2413.2 607.8 L2408.5 594.2 L2405.1 581.9 L2402.6 568.6 L2401.2 556.1 L2400.6 544.3 L2400.6 344.0 Z M288.8 221.7 L292.6 220.3 L295.4 220.0 L422.0 220.1 L427.2 221.7 L431.4 225.1 L434.0 229.9 L434.6 235.4 L433.0 240.6 L430.5 243.9 L229.7 444.8 L226.3 447.2 L222.4 448.6 L219.6 448.9 L215.5 448.2 L211.7 446.3 L209.6 444.5 L154.2 386.0 L153.0 383.6 L152.1 379.7 L152.0 363.4 L152.6 359.3 L154.4 355.6 L156.1 353.5 L285.5 224.1 Z"/></svg>
+          <div class="sw-text">
+            <h1 class="sw-title">Bienvenue dans le salon des développeurs africains</h1>
+            <p class="sw-promise">Le futur de la tech africaine s'écrit ici.</p>
+          </div>
+          <div class="sw-actions">
+            <a class="sw-start" href="/inscription">Commencer</a>
+            <a class="sw-explore" href="/fil">Explorer sans compte</a>
+          </div>
+        </div>
+      </main>
+      <footer class="sw-footer">
+        <p><span class="sw-powered">Propulsé par</span><span class="sw-systalink">Systalink</span></p>
+      </footer>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

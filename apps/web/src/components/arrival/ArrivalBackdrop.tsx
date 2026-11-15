@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { isSlowConnection } from "../../lib/network.js";
 import { arrivalMotionFor } from "../../lib/navigation/arrival.js";
 import { useSession } from "../../session/SessionProvider.js";
+import { useAfterFirstPaint } from "../../lib/useAfterFirstPaint.js";
+import { releaseStaticWelcome } from "../../lib/staticWelcome.js";
 import { ArrivalBackground, type ArrivalMotion } from "./ArrivalBackground.js";
 
 /** Vrai tant que l'onglet est visible : un fond animé caché ne doit rien coûter. */
@@ -36,6 +38,13 @@ export function ArrivalBackdrop({ pathname }: { pathname: string }) {
   const active = motion !== null;
   const visible = usePageVisible();
   const still = useStillBackground();
+  const decorReady = useAfterFirstPaint();
+
+  // L'accueil statique ne vaut que pour l'accueil : toute autre page le retire.
+  const welcome = pathname === "/decouvrir" || (pathname === "/" && status !== "ready");
+  useLayoutEffect(() => {
+    if (!welcome) releaseStaticWelcome();
+  }, [welcome]);
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -44,10 +53,12 @@ export function ArrivalBackdrop({ pathname }: { pathname: string }) {
   }, [active]);
   useEffect(() => () => document.documentElement.removeAttribute("data-arrival"), []);
 
-  if (!motion) return null;
+  // Le dégradé de base est déjà posé par index.html : continent, réseau et
+  // halos arrivent après le premier affichage, en fondu.
+  if (!motion || !decorReady) return null;
   return (
     <div
-      className="arrival-root arrival-backdrop"
+      className="arrival-root arrival-backdrop arrival-fade-in"
       data-paused={visible ? undefined : ""}
       data-still={still ? "" : undefined}
     >

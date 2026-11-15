@@ -1,5 +1,6 @@
 import { navigate } from "../lib/navigation/navigate.js";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
+import { releaseStaticWelcome } from "../lib/staticWelcome.js";
 import { ArrivalLayout } from "../components/arrival/ArrivalLayout.js";
 import { KemetWordmark } from "../components/ui/KemetWordmark.js";
 import { usePreloadNext } from "../lib/navigation/usePreloadNext.js";
@@ -34,6 +35,13 @@ export function WelcomePage() {
     }
   }, [signedIn]);
 
+  // La carte de React est à la place exacte de celle d'index.html : celle-ci
+  // part dans le même affichage, sans saut.
+  const busy = status === "loading" || signedIn;
+  useLayoutEffect(() => {
+    if (!busy || signedIn) releaseStaticWelcome();
+  }, [busy, signedIn]);
+
   // Tant que la session n'est pas connue, le fond seul : une personne
   // connectée ne doit pas voir l'accueil passer avant d'être redirigée.
   return (
@@ -43,7 +51,7 @@ export function WelcomePage() {
       clearCard
       showLogo={false}
       pageFooter={<PoweredBy />}
-      busy={status === "loading" || signedIn}
+      busy={busy}
     >
       <div className="flex flex-col items-center gap-3 text-center sm:gap-5">
         <span className="kemet-on-dark">

@@ -148,7 +148,7 @@ function BandItems({
 export function ArrivalDecorBand({ side, motion }: { side: DecorBandSide; motion: ArrivalMotion }) {
   const vivid = motion === "rich";
   return (
-    <div aria-hidden="true" className="arrival-band pointer-events-none relative min-h-0 min-w-0">
+    <div aria-hidden="true" className="arrival-band arrival-fade-in pointer-events-none relative min-h-0 min-w-0">
       <BandItems screen="mobile" side={side} vivid={vivid} />
       <BandItems screen="desktop" side={side} vivid={vivid} />
     </div>

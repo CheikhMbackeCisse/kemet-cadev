@@ -1,4 +1,4 @@
-import { act, fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArrivalBackground } from "./ArrivalBackground.js";
 import { ArrivalLayout } from "./ArrivalLayout.js";
@@ -9,6 +9,14 @@ import {
   AFRICA_OUTLINE_WIDTH,
 } from "./africaOutline.js";
 import { NETWORK_ARCS } from "./networkLayout.js";
+
+// Le décor attend d'habitude la fin du chargement de la page : ici, tout de suite.
+vi.mock("../../lib/useAfterFirstPaint.js", () => ({ useAfterFirstPaint: () => true }));
+
+// Les bandes de décor sont chargées à part (React.lazy).
+async function decorLoaded(container: HTMLElement) {
+  await waitFor(() => expect(container.querySelector(".arrival-decor-item")).not.toBeNull());
+}
 
 function setVisibility(state: DocumentVisibilityState) {
   vi.spyOn(document, "visibilityState", "get").mockReturnValue(state);
@@ -144,9 +152,10 @@ describe("ArrivalLayout", () => {
     ]);
   });
 
-  it("cache un élément du décor posé sur le réseau", () => {
+  it("cache un élément du décor posé sur le réseau, même arrivé après la carte", async () => {
     mockLayout();
     const { container } = renderHome();
+    await decorLoaded(container);
     const clashing = [...container.querySelectorAll("[data-clash]")];
     expect(clashing).toHaveLength(1);
     expect(clashing[0]!.querySelector('img[src*="python"]')).not.toBeNull();
@@ -156,13 +165,15 @@ describe("ArrivalLayout", () => {
     return container.querySelector(".arrival-root")!;
   }
 
-  it("pose les logos en couleur sur l'accueil, en blanc ailleurs", () => {
+  it("pose les logos en couleur sur l'accueil, en blanc ailleurs", async () => {
     const rich = render(<ArrivalLayout motion="rich">contenu</ArrivalLayout>);
+    await decorLoaded(rich.container);
     expect(rich.container.querySelector('.arrival-tile img[src*="python"]')).not.toBeNull();
     expect(rich.container.querySelector(".arrival-tile")).not.toBeNull();
     rich.unmount();
 
     const calm = render(<ArrivalLayout motion="calm">contenu</ArrivalLayout>);
+    await decorLoaded(calm.container);
     expect(calm.container.querySelector(".arrival-tile")).toBeNull();
     expect(calm.container.querySelector(".arrival-decor-calm")).not.toBeNull();
     expect(calm.container.querySelector(".arrival-decor-calm img")).toBeNull();
