@@ -270,11 +270,15 @@ export function ArrivalLayout({
           )}
         >
           {decor === "bands" ? <DecorBand side="start" motion={motion} ready={decorReady} onShown={showDecor} /> : <div />}
-          <main className="flex min-h-0 min-w-0 flex-col items-center justify-center px-4 py-4 sm:py-8">
+          {/* Carte cachée : la zone principale est celle de l'accueil statique,
+              une seule zone « principal » pour un lecteur d'écran. */}
+          <main
+            aria-hidden={contentHidden || undefined}
+            className="flex min-h-0 min-w-0 flex-col items-center justify-center px-4 py-4 sm:py-8"
+          >
             <div className="flex max-h-full min-h-0 w-full flex-col gap-3">
               <div
                 ref={card}
-                aria-hidden={contentHidden || undefined}
                 className={cn(
                   contentHidden && "invisible",
                   "arrival-glass auth-on-dark flex min-h-0 flex-col gap-4 rounded-panel p-5 text-auth-text sm:p-8",

@@ -51,8 +51,10 @@ export function WelcomePage() {
     return () => links.forEach((link) => link.removeEventListener("click", markIntroSeen));
   }, [staticCard]);
 
-  // Tant que la session n'est pas connue, le fond seul : une personne
-  // connectée ne doit pas voir l'accueil passer avant d'être redirigée.
+  // Tant que la session n'est pas connue, la carte de React attend. Celle
+  // d'index.html, elle, s'affiche déjà : une personne connectée sur un
+  // navigateur qui n'a jamais vu l'accueil la voit passer avant d'être
+  // redirigée, cas rare accepté pour un premier affichage sans attendre.
   return (
     <ArrivalLayout
       motion="rich"
